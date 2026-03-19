@@ -1,0 +1,19 @@
+{
+  "name": "@pathwrite/angular-adapter",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=16.0.0"
+  },
+  "dependencies": {
+    "@pathwrite/core": "0.1.0",
+    "rxjs": "^7.8.1"
+  }
+}
+

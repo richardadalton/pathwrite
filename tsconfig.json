@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/angular-adapter" },
+    { "path": "./apps/demo-console" },
+    { "path": "./apps/demo-angular" },
+    { "path": "./apps/demo-angular-course" }
+  ]
+}

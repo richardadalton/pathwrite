@@ -1,0 +1,38 @@
+<main class="page">
+  <h1>{{ title }}</h1>
+
+  <section class="panel">
+    <h2>Controls</h2>
+    <div class="button-row">
+      <button type="button" (click)="startMain()">Start Main Wizard</button>
+      <button type="button" (click)="startSub()" [disabled]="!snapshot()">Start Sub Wizard</button>
+      <button type="button" (click)="previous()" [disabled]="!snapshot()">Previous</button>
+      <button type="button" (click)="next()" [disabled]="!snapshot()">Next</button>
+      <button type="button" (click)="cancel()" [disabled]="!snapshot()">Cancel</button>
+    </div>
+  </section>
+
+  <section class="panel" *ngIf="snapshot() as s; else noWizard">
+    <h2>Current State</h2>
+    <p><strong>Wizard:</strong> {{ s.wizardId }}</p>
+    <p><strong>Step:</strong> {{ s.stepId }} ({{ s.stepIndex + 1 }} / {{ s.stepCount }})</p>
+    <p><strong>Stack depth:</strong> {{ s.stackDepth }}</p>
+    <p><strong>Args:</strong> {{ s.args | json }}</p>
+  </section>
+
+  <ng-template #noWizard>
+    <section class="panel">
+      <h2>Current State</h2>
+      <p>No active wizard.</p>
+    </section>
+  </ng-template>
+
+  <section class="panel">
+    <h2>Event Log</h2>
+    <ul>
+      <li *ngFor="let event of eventLog">{{ event }}</li>
+      <li *ngIf="eventLog.length === 0">No events yet.</li>
+    </ul>
+  </section>
+</main>
+

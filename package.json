@@ -1,0 +1,21 @@
+{
+  "name": "pathwrite",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Headless Pathwrite engine with Angular-friendly adapter",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "build": "npm run -ws build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "npm run -w @pathwrite/demo-console demo",
+    "demo:angular": "npm run -w @pathwrite/demo-angular start",
+    "demo:angular:course": "npm run -w @pathwrite/demo-angular-course start"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}
