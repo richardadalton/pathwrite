@@ -59,6 +59,10 @@ export class WizardFacade implements OnDestroy {
     this.engine.setArg(key, value);
   }
 
+  public goToStep(stepId: string): void {
+    this.engine.goToStep(stepId);
+  }
+
   public snapshot(): WizardSnapshot | null {
     return this._state$.getValue();
   }

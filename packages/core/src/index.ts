@@ -9,6 +9,8 @@ export interface WizardStepContext<TArgs extends WizardArgs = WizardArgs> {
 export interface WizardStepDefinition<TArgs extends WizardArgs = WizardArgs> {
   id: string;
   title?: string;
+  meta?: Record<string, unknown>;
+  shouldSkip?: (ctx: WizardStepContext<TArgs>) => boolean;
   okToMoveNext?: (ctx: WizardStepContext<TArgs>) => boolean;
   okToMovePrevious?: (ctx: WizardStepContext<TArgs>) => boolean;
   onVisit?: (ctx: WizardStepContext<TArgs>) => Partial<TArgs> | void;
@@ -29,6 +31,8 @@ export interface WizardDefinition<TArgs extends WizardArgs = WizardArgs> {
 export interface WizardSnapshot<TArgs extends WizardArgs = WizardArgs> {
   wizardId: string;
   stepId: string;
+  stepTitle?: string;
+  stepMeta?: Record<string, unknown>;
   stepIndex: number;
   stepCount: number;
   isFirstStep: boolean;
@@ -76,6 +80,13 @@ export class WizardEngine {
       args: { ...initialArgs }
     };
 
+    this.skipSteps(1);
+
+    if (this.activeWizard.currentStepIndex >= wizard.steps.length) {
+      this.finishActiveWizard();
+      return;
+    }
+
     this.applyHookResult(this.visitCurrentStep());
     this.emitStateChanged();
   }
@@ -93,6 +104,7 @@ export class WizardEngine {
     if (this.okToMoveNext(active, step)) {
       this.applyHookResult(this.leavingStep(active, step));
       active.currentStepIndex += 1;
+      this.skipSteps(1);
     }
 
     if (active.currentStepIndex >= active.definition.steps.length) {
@@ -111,6 +123,7 @@ export class WizardEngine {
     if (this.okToMovePrevious(active, step)) {
       this.applyHookResult(this.leavingStep(active, step));
       active.currentStepIndex -= 1;
+      this.skipSteps(-1);
     }
 
     if (active.currentStepIndex < 0) {
@@ -143,15 +156,35 @@ export class WizardEngine {
     this.emitStateChanged();
   }
 
+  /** Jumps directly to the step with the given ID. Calls onLeavingStep on the current step and onVisit on the target. Does not check guards or shouldSkip. */
+  public goToStep(stepId: string): void {
+    const active = this.requireActiveWizard();
+    const targetIndex = active.definition.steps.findIndex((s) => s.id === stepId);
+    if (targetIndex === -1) {
+      throw new Error(`Step "${stepId}" not found in wizard "${active.definition.id}".`);
+    }
+
+    const currentStep = this.getCurrentStepDefinition(active);
+    this.applyHookResult(this.leavingStep(active, currentStep));
+
+    active.currentStepIndex = targetIndex;
+
+    this.applyHookResult(this.visitCurrentStep());
+    this.emitStateChanged();
+  }
+
   public getSnapshot(): WizardSnapshot | null {
     if (this.activeWizard === null) {
       return null;
     }
 
     const active = this.activeWizard;
+    const step = this.getCurrentStepDefinition(active);
     return {
       wizardId: active.definition.id,
-      stepId: this.getCurrentStepDefinition(active).id,
+      stepId: step.id,
+      stepTitle: step.title,
+      stepMeta: step.meta,
       stepIndex: active.currentStepIndex,
       stepCount: active.definition.steps.length,
       isFirstStep: active.currentStepIndex === 0,
@@ -224,6 +257,20 @@ export class WizardEngine {
   private applyHookResult(patch: Partial<WizardArgs> | void | undefined): void {
     if (patch != null && this.activeWizard !== null) {
       Object.assign(this.activeWizard.args, patch);
+    }
+  }
+
+  /** Advances (direction=1) or retreats (direction=-1) past steps where shouldSkip returns true. */
+  private skipSteps(direction: 1 | -1): void {
+    const active = this.activeWizard;
+    if (active === null) return;
+    const { steps } = active.definition;
+    while (
+      active.currentStepIndex >= 0 &&
+      active.currentStepIndex < steps.length &&
+      steps[active.currentStepIndex].shouldSkip?.(this.buildContext(active))
+    ) {
+      active.currentStepIndex += direction;
     }
   }
 

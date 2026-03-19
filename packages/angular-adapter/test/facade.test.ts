@@ -253,6 +253,23 @@ describe("WizardFacade — sub-wizard", () => {
 });
 
 // ---------------------------------------------------------------------------
+// goToStep
+// ---------------------------------------------------------------------------
+
+describe("WizardFacade — goToStep", () => {
+  it("jumps to the target step by ID", () => {
+    const facade = new WizardFacade();
+    facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    facade.goToStep("c");
+    expect(facade.snapshot()?.stepId).toBe("c");
+  });
+
+  it("throws when no wizard is active", () => {
+    expect(() => new WizardFacade().goToStep("any")).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cleanup
 // ---------------------------------------------------------------------------
 

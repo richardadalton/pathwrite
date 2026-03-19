@@ -511,6 +511,279 @@ describe("WizardEngine — subscriptions", () => {
 });
 
 // ---------------------------------------------------------------------------
+// shouldSkip
+// ---------------------------------------------------------------------------
+
+describe("WizardEngine — shouldSkip", () => {
+  it("skips a step during start when shouldSkip returns true", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
+    });
+    expect(engine.getSnapshot()?.stepId).toBe("step2");
+  });
+
+  it("skips a step when navigating forward", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
+    });
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepId).toBe("step3");
+  });
+
+  it("skips a step when navigating backward", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
+    });
+    engine.moveNext(); // lands on step3 (step2 skipped)
+    engine.movePrevious(); // should skip step2 again and land on step1
+    expect(engine.getSnapshot()?.stepId).toBe("step1");
+  });
+
+  it("skips multiple consecutive steps", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "skip-a", shouldSkip: () => true },
+        { id: "skip-b", shouldSkip: () => true },
+        { id: "step4" }
+      ]
+    });
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepId).toBe("step4");
+  });
+
+  it("completes the wizard when all remaining steps are skipped on moveNext", () => {
+    const engine = new WizardEngine();
+    const events = collectEvents(engine);
+    engine.start({
+      id: "w",
+      steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => true }]
+    });
+    engine.moveNext();
+    expect(engine.getSnapshot()).toBeNull();
+    expect(events.some((e) => e.type === "completed")).toBe(true);
+  });
+
+  it("completes the wizard when all steps are skipped on start", () => {
+    const engine = new WizardEngine();
+    const events = collectEvents(engine);
+    engine.start({
+      id: "w",
+      steps: [{ id: "skip-only", shouldSkip: () => true }]
+    });
+    expect(engine.getSnapshot()).toBeNull();
+    expect(events.some((e) => e.type === "completed")).toBe(true);
+  });
+
+  it("cancels the wizard when all steps before current are skipped on movePrevious", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
+    });
+    // We're on step2 because step1 was skipped at start
+    engine.movePrevious();
+    expect(engine.getSnapshot()).toBeNull();
+  });
+
+  it("evaluates shouldSkip with the current wizard args", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "conditional", shouldSkip: (ctx) => ctx.args.skipMiddle === true },
+        { id: "step3" }
+      ]
+    }, { skipMiddle: true });
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepId).toBe("step3");
+
+    // Change args so the step is no longer skipped
+    engine.movePrevious(); // back to step1
+    engine.setArg("skipMiddle", false);
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepId).toBe("conditional");
+  });
+
+  it("does not call onVisit for skipped steps", () => {
+    const onVisit = vi.fn();
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "skip-me", shouldSkip: () => true, onVisit },
+        { id: "step3" }
+      ]
+    });
+    engine.moveNext();
+    expect(onVisit).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stepTitle in snapshot
+// ---------------------------------------------------------------------------
+
+describe("WizardEngine — stepTitle", () => {
+  it("includes the step title in the snapshot when defined", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "step1", title: "Welcome" }] });
+    expect(engine.getSnapshot()?.stepTitle).toBe("Welcome");
+  });
+
+  it("is undefined when the step has no title", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "step1" }] });
+    expect(engine.getSnapshot()?.stepTitle).toBeUndefined();
+  });
+
+  it("updates as navigation progresses through titled steps", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", title: "First" },
+        { id: "step2", title: "Second" }
+      ]
+    });
+    expect(engine.getSnapshot()?.stepTitle).toBe("First");
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepTitle).toBe("Second");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// goToStep — direct navigation
+// ---------------------------------------------------------------------------
+
+describe("WizardEngine — goToStep", () => {
+  it("jumps forward to a step by ID", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.goToStep("c");
+    expect(engine.getSnapshot()?.stepId).toBe("c");
+    expect(engine.getSnapshot()?.stepIndex).toBe(2);
+  });
+
+  it("jumps backward to a step by ID", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.moveNext();
+    engine.moveNext();
+    engine.goToStep("a");
+    expect(engine.getSnapshot()?.stepId).toBe("a");
+    expect(engine.getSnapshot()?.stepIndex).toBe(0);
+  });
+
+  it("calls onLeavingStep on the current step", () => {
+    const onLeavingStep = vi.fn();
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a", onLeavingStep }, { id: "b" }] });
+    engine.goToStep("b");
+    expect(onLeavingStep).toHaveBeenCalledOnce();
+  });
+
+  it("calls onVisit on the target step", () => {
+    const onVisit = vi.fn();
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b", onVisit }] });
+    engine.goToStep("b");
+    expect(onVisit).toHaveBeenCalledOnce();
+  });
+
+  it("applies patches from both onLeavingStep and onVisit", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onLeavingStep: () => ({ leftA: true }) },
+        { id: "b", onVisit: () => ({ visitedB: true }) }
+      ]
+    });
+    engine.goToStep("b");
+    expect(engine.getSnapshot()?.args).toMatchObject({ leftA: true, visitedB: true });
+  });
+
+  it("emits stateChanged after jumping", () => {
+    const engine = new WizardEngine();
+    const events = collectEvents(engine);
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
+    const before = events.filter((e) => e.type === "stateChanged").length;
+    engine.goToStep("b");
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
+  });
+
+  it("throws when the step ID does not exist", () => {
+    const engine = new WizardEngine();
+    engine.start(twoStepWizard());
+    expect(() => engine.goToStep("nonexistent")).toThrow('Step "nonexistent" not found');
+  });
+
+  it("throws when no wizard is active", () => {
+    expect(() => new WizardEngine().goToStep("any")).toThrow();
+  });
+
+  it("updates isFirstStep and isLastStep correctly", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.getSnapshot()?.isFirstStep).toBe(true);
+
+    engine.goToStep("c");
+    expect(engine.getSnapshot()?.isFirstStep).toBe(false);
+    expect(engine.getSnapshot()?.isLastStep).toBe(true);
+
+    engine.goToStep("b");
+    expect(engine.getSnapshot()?.isFirstStep).toBe(false);
+    expect(engine.getSnapshot()?.isLastStep).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stepMeta in snapshot
+// ---------------------------------------------------------------------------
+
+describe("WizardEngine — stepMeta", () => {
+  it("includes step meta in the snapshot when defined", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [{ id: "step1", meta: { icon: "star", group: "intro" } }]
+    });
+    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "star", group: "intro" });
+  });
+
+  it("is undefined when the step has no meta", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "step1" }] });
+    expect(engine.getSnapshot()?.stepMeta).toBeUndefined();
+  });
+
+  it("updates as navigation progresses through steps with different meta", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", meta: { icon: "edit" } },
+        { id: "step2", meta: { icon: "check" } }
+      ]
+    });
+    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "edit" });
+    engine.moveNext();
+    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "check" });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Error cases
 // ---------------------------------------------------------------------------
 
