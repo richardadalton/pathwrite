@@ -784,6 +784,99 @@ describe("WizardEngine — stepMeta", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Progress indicator
+// ---------------------------------------------------------------------------
+
+describe("WizardEngine — progress indicator", () => {
+  it("progress is 0 on the first step of a multi-step wizard", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.getSnapshot()?.progress).toBe(0);
+  });
+
+  it("progress is 1 on the last step of a multi-step wizard", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.moveNext();
+    engine.moveNext();
+    expect(engine.getSnapshot()?.progress).toBe(1);
+  });
+
+  it("progress is the correct fraction in the middle of a wizard", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.moveNext();
+    expect(engine.getSnapshot()?.progress).toBe(0.5);
+  });
+
+  it("progress is 1 for a single-step wizard", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "only" }] });
+    expect(engine.getSnapshot()?.progress).toBe(1);
+  });
+
+  it("steps array contains a summary for every step in the wizard", () => {
+    const engine = new WizardEngine();
+    engine.start({
+      id: "w",
+      steps: [
+        { id: "a", title: "Alpha", meta: { icon: "star" } },
+        { id: "b" },
+        { id: "c", title: "Charlie" }
+      ]
+    });
+    const snap = engine.getSnapshot()!;
+    expect(snap.steps).toHaveLength(3);
+    expect(snap.steps[0]).toMatchObject({ id: "a", title: "Alpha", meta: { icon: "star" } });
+    expect(snap.steps[1]).toMatchObject({ id: "b" });
+    expect(snap.steps[1].title).toBeUndefined();
+    expect(snap.steps[2]).toMatchObject({ id: "c", title: "Charlie" });
+  });
+
+  it("marks the current step as 'current', earlier as 'completed', later as 'upcoming'", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.moveNext(); // on step b (index 1)
+    const statuses = engine.getSnapshot()!.steps.map((s) => s.status);
+    expect(statuses).toEqual(["completed", "current", "upcoming"]);
+  });
+
+  it("step statuses update as navigation progresses", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+
+    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
+      "current", "upcoming", "upcoming"
+    ]);
+
+    engine.moveNext();
+    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
+      "completed", "current", "upcoming"
+    ]);
+
+    engine.moveNext();
+    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
+      "completed", "completed", "current"
+    ]);
+
+    engine.movePrevious();
+    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
+      "completed", "current", "upcoming"
+    ]);
+  });
+
+  it("step statuses revert to 'upcoming' when navigating backward", () => {
+    const engine = new WizardEngine();
+    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    engine.moveNext();
+    engine.moveNext(); // on c
+    engine.goToStep("a");
+    const statuses = engine.getSnapshot()!.steps.map((s) => s.status);
+    expect(statuses).toEqual(["current", "upcoming", "upcoming"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Error cases
 // ---------------------------------------------------------------------------
 

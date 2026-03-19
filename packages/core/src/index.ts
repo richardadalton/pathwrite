@@ -28,6 +28,15 @@ export interface WizardDefinition<TArgs extends WizardArgs = WizardArgs> {
   steps: WizardStepDefinition<TArgs>[];
 }
 
+export type StepStatus = "completed" | "current" | "upcoming";
+
+export interface StepSummary {
+  id: string;
+  title?: string;
+  meta?: Record<string, unknown>;
+  status: StepStatus;
+}
+
 export interface WizardSnapshot<TArgs extends WizardArgs = WizardArgs> {
   wizardId: string;
   stepId: string;
@@ -35,6 +44,8 @@ export interface WizardSnapshot<TArgs extends WizardArgs = WizardArgs> {
   stepMeta?: Record<string, unknown>;
   stepIndex: number;
   stepCount: number;
+  progress: number;
+  steps: StepSummary[];
   isFirstStep: boolean;
   isLastStep: boolean;
   stackDepth: number;
@@ -180,16 +191,28 @@ export class WizardEngine {
 
     const active = this.activeWizard;
     const step = this.getCurrentStepDefinition(active);
+    const { steps } = active.definition;
+    const stepCount = steps.length;
+
     return {
       wizardId: active.definition.id,
       stepId: step.id,
       stepTitle: step.title,
       stepMeta: step.meta,
       stepIndex: active.currentStepIndex,
-      stepCount: active.definition.steps.length,
+      stepCount,
+      progress: stepCount <= 1 ? 1 : active.currentStepIndex / (stepCount - 1),
+      steps: steps.map((s, i) => ({
+        id: s.id,
+        title: s.title,
+        meta: s.meta,
+        status: i < active.currentStepIndex ? "completed" as const
+          : i === active.currentStepIndex ? "current" as const
+          : "upcoming" as const
+      })),
       isFirstStep: active.currentStepIndex === 0,
       isLastStep:
-        active.currentStepIndex === active.definition.steps.length - 1 &&
+        active.currentStepIndex === stepCount - 1 &&
         this.wizardStack.length === 0,
       stackDepth: this.wizardStack.length,
       args: { ...active.args }

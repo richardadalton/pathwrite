@@ -39,7 +39,7 @@ npm run demo:angular:course  # course wizard demo (localhost:4200)
 
 ## Test coverage
 
-131 tests across three packages:
+139 tests across three packages:
 
 | Suite | Tests |
 |-------|-------|
@@ -54,6 +54,7 @@ npm run demo:angular:course  # course wizard demo (localhost:4200)
 | `WizardEngine` — stepTitle | 3 |
 | `WizardEngine` — goToStep | 9 |
 | `WizardEngine` — stepMeta | 3 |
+| `WizardEngine` — progress indicator | 8 |
 | `WizardEngine` — errors | 4 |
 | `WizardFacade` — state$ | 8 |
 | `WizardFacade` — snapshot() | 3 |

@@ -8,6 +8,27 @@
     <button type="button" (click)="cancel()" [disabled]="!snapshot()">Cancel</button>
   </section>
 
+  <section class="panel progress-panel" *ngIf="snapshot() as s">
+    <div class="progress-steps">
+      <div
+        *ngFor="let step of s.steps; let i = index"
+        class="progress-step"
+        [class.completed]="step.status === 'completed'"
+        [class.current]="step.status === 'current'"
+        [class.upcoming]="step.status === 'upcoming'"
+      >
+        <div class="step-dot">
+          <span class="dot-inner" *ngIf="step.status === 'completed'">✓</span>
+          <span class="dot-inner" *ngIf="step.status !== 'completed'">{{ i + 1 }}</span>
+        </div>
+        <span class="step-label">{{ step.title ?? step.id }}</span>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="s.progress * 100"></div>
+    </div>
+  </section>
+
   <section class="panel" *ngIf="snapshot() as s; else emptyState">
     <h2>Current Step: {{ s.stepId }}</h2>
 
