@@ -3,7 +3,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { defineComponent, h, nextTick } from "vue";
 import { mount, flushPromises, VueWrapper } from "@vue/test-utils";
 import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathStep, PathShellActions, usePathContext } from "../src/index";
+import { PathShell, PathStep, PathShellActions, usePathContext, usePath, resolveStepContent } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -334,6 +334,59 @@ describe("PathShell (Vue) — context sharing", () => {
     await wrapper.find("[data-testid='inner-next']").trigger("click");
     await settled();
     expect(wrapper.text()).toContain("Content B");
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveStepContent — using PathStep in a custom shell
+// ---------------------------------------------------------------------------
+
+describe("resolveStepContent (Vue) — custom shell usage", () => {
+  it("resolves the matching PathStep slot content for the current step", async () => {
+    const CustomShell = defineComponent({
+      setup(_props, { slots }) {
+        const { snapshot, start, next } = usePath();
+        return () => {
+          const snap = snapshot.value;
+          if (!snap) {
+            return h("button", {
+              "data-testid": "start",
+              onClick: () => start(threeStepPath())
+            }, "Start");
+          }
+          const content = resolveStepContent(slots, snap);
+          return h("div", [
+            h("div", { "data-testid": "content" }, content ?? []),
+            h("button", { "data-testid": "next", onClick: next }, "Next")
+          ]);
+        };
+      }
+    });
+
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(CustomShell, null, {
+            default: () => [
+              h(PathStep, { id: "step-a" }, { default: () => h("div", "Custom A") }),
+              h(PathStep, { id: "step-b" }, { default: () => h("div", "Custom B") }),
+              h(PathStep, { id: "step-c" }, { default: () => h("div", "Custom C") })
+            ]
+          });
+      }
+    });
+
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    await wrapper.find("[data-testid='start']").trigger("click");
+    await settled();
+    expect(wrapper.text()).toContain("Custom A");
+
+    await wrapper.find("[data-testid='next']").trigger("click");
+    await settled();
+    expect(wrapper.text()).toContain("Custom B");
+    expect(wrapper.text()).not.toContain("Custom A");
     wrapper.unmount();
   });
 });

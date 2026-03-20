@@ -80,6 +80,19 @@ const { snapshot, setData } = usePathContext();
 
 `usePathContext()` throws if called outside a `<PathShell>`.
 
+## `resolveStepContent` — custom shells with `PathStep`
+
+`PathStep` is a metadata marker — it never renders anything itself. `PathShell` uses the exported `resolveStepContent()` utility internally to find the matching step content. You can use the same utility in a custom shell:
+
+```ts
+import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-vue";
+
+// In a custom shell's render function:
+const content = resolveStepContent(slots, snapshot.value!);
+```
+
+See the [Developer Guide](../../DEVELOPER_GUIDE.md) for a full custom shell example.
+
 ## Peer dependencies
 
 | Package | Version |

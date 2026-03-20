@@ -139,3 +139,24 @@ function DetailsForm() {
 - **Ref-based callback** — `onEvent` is stored in a ref so that a new closure on every render does not cause a re-subscription.
 - **No RxJS** — unlike the Angular adapter, there is no RxJS dependency. The hook is pure React.
 
+## `resolveStepContent` — custom shells with `PathStep`
+
+`PathStep` is a metadata marker — it never renders anything itself. `PathShell` uses the exported `resolveStepContent()` utility internally to find the matching step content. You can use the same utility in a custom shell:
+
+```tsx
+import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-react";
+
+function CustomShell({ children }: { children: React.ReactNode }) {
+  const { snapshot, next, previous } = usePath();
+  if (!snapshot) return null;
+  const content = resolveStepContent(children, snapshot);
+  return (
+    <div>
+      <div>{content}</div>
+      <button onClick={previous}>Back</button>
+      <button onClick={next}>Next</button>
+    </div>
+  );
+}
+```
+

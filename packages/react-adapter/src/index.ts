@@ -154,12 +154,15 @@ export interface PathStepProps {
 }
 
 /**
- * Wraps step content. Only renders its children when the current step matches `id`.
- * Must be used inside a `<PathShell>`.
+ * Metadata-only marker component that associates step content with a step ID.
+ * `PathStep` **never renders anything itself** — it always returns `null`.
+ *
+ * Inside `<PathShell>`, the shell inspects `PathStep` children to determine
+ * which content to display for the current step. Outside of `<PathShell>`,
+ * use the exported `resolveStepContent()` utility to resolve step content
+ * in a custom shell.
  */
 export function PathStep(_props: PathStepProps): ReactElement | null {
-  // Rendering is handled by PathShell — PathStep is never rendered directly.
-  // It exists purely as a typed container so PathShell can inspect its props.
   return null;
 }
 
@@ -370,7 +373,23 @@ function defaultFooter(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function resolveStepContent(children: ReactNode, snapshot: PathSnapshot | null): ReactNode {
+/**
+ * Scans an array of `<PathStep>` React children and returns the `children`
+ * of the one whose `id` matches `snapshot.stepId`. Returns `null` if no
+ * match is found or if `snapshot` is `null`.
+ *
+ * `PathShell` uses this internally. Export it so custom shells can reuse the
+ * same `<PathStep>` marker pattern without copying internal logic:
+ *
+ * ```tsx
+ * function CustomShell({ children }: { children: ReactNode }) {
+ *   const { snapshot } = usePath();
+ *   const content = resolveStepContent(children, snapshot);
+ *   return <div>{content}</div>;
+ * }
+ * ```
+ */
+export function resolveStepContent(children: ReactNode, snapshot: PathSnapshot | null): ReactNode {
   if (!snapshot || !children) return null;
 
   const arr = Array.isArray(children) ? children : [children];

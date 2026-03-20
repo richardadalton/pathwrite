@@ -895,6 +895,91 @@ All shell components use BEM-style `pw-shell__*` classes:
 
 The shell and the headless API are not mutually exclusive. You can start with `<PathShell>` and migrate individual sections (or the entire component) to custom markup whenever you need more control.
 
+### `PathStep` is a metadata marker
+
+`PathStep` (React and Vue) is **not** a rendering component. It always returns `null`. Its sole purpose is to associate a step `id` with a block of content so that `PathShell` — or your own custom shell — can look up the right content for the current step.
+
+```tsx
+// PathStep never renders on its own:
+<PathStep id="details"><DetailsForm /></PathStep>  // ← renders nothing if used standalone
+```
+
+This is a deliberate design choice: `PathStep` is a data-carrying marker, similar to React's `<Route>` in older versions of React Router. The rendering decision belongs to the shell, not to the marker.
+
+### `resolveStepContent` — building a custom shell with `PathStep`
+
+Both the React and Vue adapters export a `resolveStepContent` utility. This is the same function that `PathShell` uses internally to find the matching `PathStep` child. By exporting it, you can build a fully custom shell that still uses `<PathStep>` children to define per-step content — no need to copy internal code.
+
+#### React
+
+```tsx
+import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-react";
+import type { ReactNode } from "react";
+
+function CustomShell({ children }: { children: ReactNode }) {
+  const { snapshot, start, next, previous } = usePath();
+
+  if (!snapshot) {
+    return <button onClick={() => start(myPath)}>Start</button>;
+  }
+
+  // resolveStepContent scans children for the <PathStep> whose id matches
+  // snapshot.stepId and returns that PathStep's children.
+  const content = resolveStepContent(children, snapshot);
+
+  return (
+    <div>
+      <h2>{snapshot.stepTitle ?? snapshot.stepId}</h2>
+      <div>{content}</div>
+      <button onClick={previous}>Back</button>
+      <button onClick={next}>{snapshot.isLastStep ? "Finish" : "Next"}</button>
+    </div>
+  );
+}
+
+// Usage — same <PathStep> pattern as PathShell:
+<CustomShell>
+  <PathStep id="details"><DetailsForm /></PathStep>
+  <PathStep id="review"><ReviewPanel /></PathStep>
+</CustomShell>
+```
+
+#### Vue
+
+```vue
+<script setup lang="ts">
+import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-vue";
+</script>
+```
+
+In a Vue custom shell's render function:
+
+```ts
+setup(props, { slots }) {
+  const { snapshot, start, next, previous } = usePath();
+
+  return () => {
+    const snap = snapshot.value;
+    if (!snap) return h("button", { onClick: () => start(myPath) }, "Start");
+
+    // resolveStepContent checks for a named slot matching the stepId,
+    // then falls back to scanning default slot children for a <PathStep> match.
+    const content = resolveStepContent(slots, snap);
+
+    return h("div", [
+      h("h2", snap.stepTitle ?? snap.stepId),
+      h("div", content ?? []),
+      h("button", { onClick: previous }, "Back"),
+      h("button", { onClick: next }, snap.isLastStep ? "Finish" : "Next")
+    ]);
+  };
+}
+```
+
+#### Why not make `PathStep` render its own children?
+
+If `PathStep` rendered conditionally based on the current step, it would need access to the engine's snapshot. That creates a hard dependency on either context (React) or inject (Vue), and it would break when used outside a provider. By keeping `PathStep` as a pure metadata marker and `resolveStepContent` as a standalone function, both work in any context — inside `PathShell`, inside a custom shell, or in any other wrapper.
+
 ---
 
 ## 14. Using the Core Engine Directly

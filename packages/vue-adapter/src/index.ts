@@ -122,10 +122,14 @@ export interface PathShellActions {
 }
 
 /**
- * `<PathStep>` — slot wrapper that only renders its default slot content
- * when the current step matches the given `id`.
+ * `<PathStep>` — metadata-only marker component that associates slot content
+ * with a step ID. `PathStep` **never renders anything itself** — it always
+ * returns `null`.
  *
- * Used inside `<PathShell>`.
+ * Inside `<PathShell>`, the shell inspects `PathStep` children to determine
+ * which content to display for the current step. Outside of `<PathShell>`,
+ * use the exported `resolveStepContent()` utility to resolve step content
+ * in a custom shell.
  */
 export const PathStep = defineComponent({
   name: "PathStep",
@@ -207,7 +211,7 @@ export const PathShell = defineComponent({
       }
 
       // Resolve step content from default slot children
-      const stepContent = resolveVueStepContent(slots, snap);
+      const stepContent = resolveStepContent(slots, snap);
 
       return h("div", { class: "pw-shell" }, [
         // Header — progress
@@ -300,7 +304,25 @@ function renderVueFooter(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function resolveVueStepContent(
+/**
+ * Scans the default slot children for a `<PathStep>` whose `id` matches
+ * `snapshot.stepId` and returns its slot content. Also checks for a named
+ * slot matching the step ID as a shorthand. Returns `null` if no match.
+ *
+ * `PathShell` uses this internally. Export it so custom shells can reuse the
+ * same `<PathStep>` marker pattern without copying internal logic:
+ *
+ * ```ts
+ * setup(props, { slots }) {
+ *   const { snapshot } = usePath();
+ *   return () => {
+ *     const content = resolveStepContent(slots, snapshot.value!);
+ *     return h("div", content ?? []);
+ *   };
+ * }
+ * ```
+ */
+export function resolveStepContent(
   slots: Record<string, ((...args: any[]) => any) | undefined>,
   snapshot: PathSnapshot
 ): VNode[] | null {

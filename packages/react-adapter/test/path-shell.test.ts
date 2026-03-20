@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { createElement } from "react";
+import React, { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathStep, PathShellActions, usePathContext } from "../src/index";
+import { PathShell, PathStep, PathShellActions, usePathContext, usePath, resolveStepContent } from "../src/index";
 
 afterEach(() => cleanup());
 
@@ -267,6 +267,56 @@ describe("PathShell — context sharing", () => {
     );
     await act(async () => screen.getByTestId("inner-next").click());
     expect(screen.getByText("Content B")).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveStepContent — using PathStep in a custom shell
+// ---------------------------------------------------------------------------
+
+describe("resolveStepContent — custom shell usage", () => {
+  it("resolves the matching PathStep children for the current step", async () => {
+    function CustomShell({ children }: { children: React.ReactNode }) {
+      const { snapshot, start, next } = usePath();
+
+      return createElement("div", null,
+        !snapshot
+          ? createElement("button", { "data-testid": "start", onClick: () => start(threeStepPath()) }, "Start")
+          : createElement("div", null,
+              createElement("div", { "data-testid": "content" }, resolveStepContent(children, snapshot)),
+              createElement("button", { "data-testid": "next", onClick: next }, "Next")
+            )
+      );
+    }
+
+    await act(async () =>
+      render(
+        createElement(CustomShell, null,
+          createElement(PathStep, { id: "step-a", key: "a" }, createElement("div", null, "Custom A")),
+          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "Custom B")),
+          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "Custom C"))
+        )
+      )
+    );
+
+    await act(async () => screen.getByTestId("start").click());
+    expect(screen.getByText("Custom A")).toBeTruthy();
+
+    await act(async () => screen.getByTestId("next").click());
+    expect(screen.getByText("Custom B")).toBeTruthy();
+    expect(screen.queryByText("Custom A")).toBeNull();
+  });
+
+  it("returns null when snapshot is null", () => {
+    const children = createElement(PathStep, { id: "step-a" }, createElement("div", null, "A"));
+    expect(resolveStepContent(children, null)).toBeNull();
+  });
+
+  it("returns null when no PathStep matches the current step ID", async () => {
+    // Build a fake snapshot-like object with a stepId that doesn't match
+    const fakeSnapshot = { stepId: "nonexistent" } as any;
+    const children = createElement(PathStep, { id: "step-a" }, createElement("div", null, "A"));
+    expect(resolveStepContent(children, fakeSnapshot)).toBeNull();
   });
 });
 
