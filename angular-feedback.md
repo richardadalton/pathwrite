@@ -90,6 +90,13 @@ field had to manually call `facade.setData(key, value)` on each change event:
 
 ### 4. No generic typing on `PathFacade`
 
+> ✅ **Fixed.** `PathFacade` is now generic: `PathFacade<TData extends PathData = PathData>`.
+> `state$`, `stateSignal`, `snapshot()`, and `setData()` are all typed against `TData`.
+> `setData<K extends keyof TData>(key, value)` enforces that both the key and value
+> match the declared data shape at compile time. The default remains `PathFacade` (untyped)
+> for consumers who don't need stricter typing; typed usage requires only a cast at the
+> injection site: `inject(PathFacade) as PathFacade<MyData>`.
+
 `PathFacade` is not generic. `state$` is typed as
 `Observable<PathSnapshot | null>`, where `PathSnapshot.data` is `PathData`
 (`Record<string, unknown>`). Type-safe access to step data requires explicit
@@ -138,6 +145,16 @@ explicitly.
 ---
 
 ### 7. `goToStep()` bypasses all guards and `shouldSkip`
+
+> ✅ **Fixed.** `goToStepChecked(stepId)` has been added to both `PathEngine` and
+> `PathFacade`. It checks the direction-appropriate guard on the current step before
+> jumping: going forward evaluates `canMoveNext`; going backward evaluates
+> `canMovePrevious`. If the guard blocks, navigation does not occur and `stateChanged`
+> is still emitted so the UI can react (e.g. re-disable the button). `onLeave` /
+> `onEnter` hooks are called only when the guard permits. `shouldSkip` is intentionally
+> not evaluated — the caller is explicitly requesting a direct jump. `goToStep` (the
+> original bypass) remains available for administrative/programmatic use cases that
+> genuinely need to skip guards.
 
 Documented as intentional, but worth highlighting for workflow use-cases. In an
 approval flow, `goToStep('decide')` would let a reviewer skip the review step

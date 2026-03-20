@@ -147,6 +147,26 @@ export class PathEngine {
     return this._goToStepAsync(active, targetIndex);
   }
 
+  /**
+   * Jumps directly to the step with the given ID, but first checks the
+   * direction-appropriate guard on the current step:
+   * - Going forward  → checks `canMoveNext`
+   * - Going backward → checks `canMovePrevious`
+   *
+   * If the guard blocks, navigation does not occur and `stateChanged` is still
+   * emitted (so the UI can react). `shouldSkip` is not evaluated.
+   * Throws if the target step ID does not exist.
+   */
+  public goToStepChecked(stepId: string): Promise<void> {
+    const active = this.requireActivePath();
+    const targetIndex = active.definition.steps.findIndex((s) => s.id === stepId);
+    if (targetIndex === -1) {
+      return Promise.reject(new Error(`Step "${stepId}" not found in path "${active.definition.id}".`));
+    }
+    if (targetIndex === active.currentStepIndex) return Promise.resolve();
+    return this._goToStepCheckedAsync(active, targetIndex);
+  }
+
   public snapshot(): PathSnapshot | null {
     if (this.activePath === null) {
       return null;
@@ -302,6 +322,34 @@ export class PathEngine {
       active.currentStepIndex = targetIndex;
 
       this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
+    }
+  }
+
+  private async _goToStepCheckedAsync(active: ActivePath, targetIndex: number): Promise<void> {
+    if (this._isNavigating) return;
+
+    this._isNavigating = true;
+    this.emitStateChanged();
+
+    try {
+      const currentStep = this.getCurrentStep(active);
+      const goingForward = targetIndex > active.currentStepIndex;
+      const allowed = goingForward
+        ? await this.canMoveNext(active, currentStep)
+        : await this.canMovePrevious(active, currentStep);
+
+      if (allowed) {
+        this.applyPatch(await this.leaveCurrentStep(active, currentStep));
+        active.currentStepIndex = targetIndex;
+        this.applyPatch(await this.enterCurrentStep());
+      }
+
       this._isNavigating = false;
       this.emitStateChanged();
     } catch (err) {

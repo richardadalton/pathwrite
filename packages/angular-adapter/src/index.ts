@@ -8,25 +8,39 @@ import {
   PathSnapshot
 } from "@daltonr/pathwrite-core";
 
+/**
+ * Angular facade over PathEngine. Provide at component level for an isolated
+ * instance per component; Angular handles cleanup via ngOnDestroy.
+ *
+ * The optional generic `TData` narrows `state$`, `stateSignal`, `snapshot()`,
+ * and `setData()` to your data shape. It is a **type-level assertion** — no
+ * runtime validation is performed. Inject as `PathFacade` (untyped default)
+ * then cast:
+ *
+ * ```typescript
+ * const facade = inject(PathFacade) as PathFacade<MyData>;
+ * facade.snapshot()?.data.name; // typed as string (or whatever MyData defines)
+ * ```
+ */
 @Injectable()
-export class PathFacade implements OnDestroy {
+export class PathFacade<TData extends PathData = PathData> implements OnDestroy {
   private readonly engine = new PathEngine();
-  private readonly _state$ = new BehaviorSubject<PathSnapshot | null>(null);
+  private readonly _state$ = new BehaviorSubject<PathSnapshot<TData> | null>(null);
   private readonly _events$ = new Subject<PathEvent>();
   private readonly unsubscribeFromEngine: () => void;
-  private readonly _stateSignal = signal<PathSnapshot | null>(null);
+  private readonly _stateSignal = signal<PathSnapshot<TData> | null>(null);
 
-  public readonly state$: Observable<PathSnapshot | null> = this._state$.asObservable();
+  public readonly state$: Observable<PathSnapshot<TData> | null> = this._state$.asObservable();
   public readonly events$: Observable<PathEvent> = this._events$.asObservable();
   /** Signal version of state$. Updates on every path state change. Requires Angular 16+. */
-  public readonly stateSignal: Signal<PathSnapshot | null> = this._stateSignal.asReadonly();
+  public readonly stateSignal: Signal<PathSnapshot<TData> | null> = this._stateSignal.asReadonly();
 
   public constructor() {
     this.unsubscribeFromEngine = this.engine.subscribe((event) => {
       this._events$.next(event);
       if (event.type === "stateChanged" || event.type === "resumed") {
-        this._state$.next(event.snapshot);
-        this._stateSignal.set(event.snapshot);
+        this._state$.next(event.snapshot as PathSnapshot<TData>);
+        this._stateSignal.set(event.snapshot as PathSnapshot<TData>);
       } else if (event.type === "completed" || event.type === "cancelled") {
         this._state$.next(null);
         this._stateSignal.set(null);
@@ -60,15 +74,22 @@ export class PathFacade implements OnDestroy {
     return this.engine.cancel();
   }
 
-  public setData(key: string, value: unknown): Promise<void> {
-    return this.engine.setData(key, value);
+  public setData<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> {
+    return this.engine.setData(key, value as unknown);
   }
 
   public goToStep(stepId: string): Promise<void> {
     return this.engine.goToStep(stepId);
   }
 
-  public snapshot(): PathSnapshot | null {
+  /** Jump to a step by ID, checking the current step's canMoveNext (forward) or
+   *  canMovePrevious (backward) guard first. Navigation is blocked if the guard
+   *  returns false. Throws if the step ID does not exist. */
+  public goToStepChecked(stepId: string): Promise<void> {
+    return this.engine.goToStepChecked(stepId);
+  }
+
+  public snapshot(): PathSnapshot<TData> | null {
     return this._state$.getValue();
   }
 }
@@ -106,7 +127,7 @@ export interface FormGroupLike {
  * @example
  * ```typescript
  * export class MyStepComponent implements OnInit {
- *   private readonly facade = inject(PathFacade);
+ *   private readonly facade = inject(PathFacade) as PathFacade<MyData>;
  *   protected readonly form = new FormGroup({
  *     name:  new FormControl('', Validators.required),
  *     email: new FormControl(''),
@@ -118,15 +139,17 @@ export interface FormGroupLike {
  * }
  * ```
  */
-export function syncFormGroup(
-  facade: PathFacade,
+export function syncFormGroup<TData extends PathData = PathData>(
+  facade: PathFacade<TData>,
   formGroup: FormGroupLike,
   destroyRef?: DestroyRef
 ): () => void {
+  const baseFacade = facade as PathFacade<PathData>;
+
   function applyValues(): void {
-    if (facade.snapshot() === null) return; // no active path — nothing to sync
+    if (baseFacade.snapshot() === null) return; // no active path — nothing to sync
     for (const [key, value] of Object.entries(formGroup.getRawValue())) {
-      void facade.setData(key, value);
+      void baseFacade.setData(key, value);
     }
   }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Subject } from "rxjs";
-import { PathDefinition } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition } from "@daltonr/pathwrite-core";
 import { PathFacade, syncFormGroup, FormGroupLike } from "../src/index";
 
 // ---------------------------------------------------------------------------
@@ -264,6 +264,124 @@ describe("PathFacade — goToStep", () => {
 
   it("throws when no path is active", () => {
     expect(() => new PathFacade().goToStep("any")).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// goToStepChecked
+// ---------------------------------------------------------------------------
+
+describe("PathFacade — goToStepChecked", () => {
+  it("navigates forward to the target step when canMoveNext allows", async () => {
+    const facade = new PathFacade();
+    await facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await facade.goToStepChecked("c");
+    expect(facade.snapshot()?.stepId).toBe("c");
+  });
+
+  it("navigates backward to the target step when canMovePrevious allows", async () => {
+    const facade = new PathFacade();
+    await facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await facade.goToStep("c");
+    await facade.goToStepChecked("a");
+    expect(facade.snapshot()?.stepId).toBe("a");
+  });
+
+  it("blocks forward navigation when canMoveNext returns false", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+    });
+    await facade.goToStepChecked("b");
+    expect(facade.snapshot()?.stepId).toBe("a");
+  });
+
+  it("blocks backward navigation when canMovePrevious returns false", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [{ id: "a" }, { id: "b", canMovePrevious: () => false }]
+    });
+    await facade.goToStep("b");
+    await facade.goToStepChecked("a");
+    expect(facade.snapshot()?.stepId).toBe("b");
+  });
+
+  it("is a no-op when already on the target step", async () => {
+    const facade = new PathFacade();
+    await facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
+    await facade.goToStepChecked("a");
+    expect(facade.snapshot()?.stepId).toBe("a");
+  });
+
+  it("rejects for unknown step IDs", async () => {
+    const facade = new PathFacade();
+    await facade.start({ id: "w", steps: [{ id: "a" }] });
+    await expect(facade.goToStepChecked("unknown")).rejects.toThrow();
+  });
+
+  it("throws when no path is active", () => {
+    expect(() => new PathFacade().goToStepChecked("any")).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Generic typing PathFacade<TData>
+// ---------------------------------------------------------------------------
+
+interface StepData extends PathData {
+  name: string;
+  count: number;
+}
+
+describe("PathFacade — generic typing <TData>", () => {
+  it("snapshot() data is typed correctly when using PathFacade<TData>", async () => {
+    const facade = new PathFacade<StepData>();
+    await facade.start(twoStepPath(), { name: "Alice", count: 42 });
+    const snap = facade.snapshot();
+    expect(snap?.data.name).toBe("Alice");
+    expect(snap?.data.count).toBe(42);
+  });
+
+  it("state$ emits snapshots with the typed data shape", async () => {
+    const facade = new PathFacade<StepData>();
+    let latest: StepData | undefined;
+    facade.state$.subscribe((s) => { if (s) latest = s.data; });
+
+    await facade.start(twoStepPath(), { name: "Bob", count: 7 });
+    expect(latest?.name).toBe("Bob");
+    expect(latest?.count).toBe(7);
+  });
+
+  it("stateSignal reflects the typed data shape", async () => {
+    const facade = new PathFacade<StepData>();
+    await facade.start(twoStepPath(), { name: "Carol", count: 3 });
+    expect(facade.stateSignal()?.data.name).toBe("Carol");
+    expect(facade.stateSignal()?.data.count).toBe(3);
+  });
+
+  it("setData accepts typed keys and updates state correctly", async () => {
+    const facade = new PathFacade<StepData>();
+    await facade.start(twoStepPath(), { name: "Dave", count: 0 });
+    await facade.setData("count", 99);
+    expect(facade.snapshot()?.data.count).toBe(99);
+  });
+
+  it("canMoveNext guard receives typed data via state$ snapshot", async () => {
+    const facade = new PathFacade<StepData>();
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "s1", canMoveNext: (ctx) => (ctx.data as StepData).count > 0 },
+        { id: "s2" }
+      ]
+    };
+    await facade.start(path, { name: "", count: 0 });
+    expect(facade.snapshot()?.canMoveNext).toBe(false);
+
+    await facade.setData("count", 1);
+    expect(facade.snapshot()?.canMoveNext).toBe(true);
   });
 });
 

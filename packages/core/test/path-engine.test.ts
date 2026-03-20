@@ -837,6 +837,99 @@ describe("PathEngine — goToStep", () => {
 });
 
 // ---------------------------------------------------------------------------
+// goToStepChecked
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — goToStepChecked", () => {
+  it("navigates forward when canMoveNext allows", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.goToStepChecked("c");
+    expect(engine.snapshot()?.stepId).toBe("c");
+  });
+
+  it("navigates backward when canMovePrevious allows", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.goToStep("c");
+    await engine.goToStepChecked("a");
+    expect(engine.snapshot()?.stepId).toBe("a");
+  });
+
+  it("blocks forward navigation when canMoveNext returns false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", canMoveNext: () => false },
+        { id: "b" }
+      ]
+    });
+    await engine.goToStepChecked("b");
+    expect(engine.snapshot()?.stepId).toBe("a");
+  });
+
+  it("blocks backward navigation when canMovePrevious returns false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a" },
+        { id: "b", canMovePrevious: () => false }
+      ]
+    });
+    await engine.goToStep("b");
+    await engine.goToStepChecked("a");
+    expect(engine.snapshot()?.stepId).toBe("b");
+  });
+
+  it("still calls onLeave and onEnter when navigation is allowed", async () => {
+    const log: string[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onLeave: () => { log.push("leave-a"); } },
+        { id: "b", onEnter: () => { log.push("enter-b"); } }
+      ]
+    });
+    await engine.goToStepChecked("b");
+    expect(log).toEqual(["leave-a", "enter-b"]);
+  });
+
+  it("does not call onLeave when the guard blocks", async () => {
+    const log: string[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", canMoveNext: () => false, onLeave: () => { log.push("leave-a"); } },
+        { id: "b" }
+      ]
+    });
+    await engine.goToStepChecked("b");
+    expect(log).toEqual([]);
+  });
+
+  it("is a no-op when already on the target step", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
+    await engine.goToStepChecked("a");
+    expect(engine.snapshot()?.stepId).toBe("a");
+  });
+
+  it("throws for unknown step IDs", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }] });
+    await expect(engine.goToStepChecked("unknown")).rejects.toThrow();
+  });
+
+  it("throws when no path is active", () => {
+    expect(() => new PathEngine().goToStepChecked("any")).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // stepMeta in snapshot
 // ---------------------------------------------------------------------------
 
