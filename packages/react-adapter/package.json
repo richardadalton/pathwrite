@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-react",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "license": "MIT",
   "description": "React adapter for @daltonr/pathwrite-core — hooks, context provider, and optional <PathShell> default UI.",
@@ -41,7 +41,7 @@
     "react": ">=18.0.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.1.1"
+    "@daltonr/pathwrite-core": "^0.1.2"
   },
   "devDependencies": {
     "react": "^18.3.1",
