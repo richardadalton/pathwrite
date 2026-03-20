@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-vue",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "license": "MIT",
   "description": "Vue 3 adapter for @daltonr/pathwrite-core — composables with reactive refs, and optional <PathShell> default UI.",
@@ -43,7 +43,7 @@
     "vue": ">=3.3.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.1.2"
+    "@daltonr/pathwrite-core": "^0.1.3"
   },
   "devDependencies": {
     "@vue/test-utils": "^2.4.6",
