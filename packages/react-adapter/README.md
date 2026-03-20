@@ -179,4 +179,3 @@ All visual values are CSS custom properties (`--pw-*`), so you can theme without
 - **`useSyncExternalStore`** — the hook subscribes to the core `PathEngine` using React 18's `useSyncExternalStore`, giving tear-free reads with no `useEffect` timing gaps.
 - **Ref-based callback** — `onEvent` is stored in a ref so that a new closure on every render does not cause a re-subscription.
 - **No RxJS** — unlike the Angular adapter, there is no RxJS dependency. The hook is pure React.
-

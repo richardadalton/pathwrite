@@ -181,4 +181,3 @@ Override any `--pw-*` variable to customise the appearance:
   --pw-shell-radius: 12px;
 }
 ```
-
