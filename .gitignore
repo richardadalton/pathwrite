@@ -32,5 +32,6 @@ npm-debug.log*
 coverage/
 
 # Local feedback / scratch documents
+feedback.md
 *-feedback.md
 
