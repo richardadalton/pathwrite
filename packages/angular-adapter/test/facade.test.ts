@@ -290,6 +290,45 @@ describe("PathFacade — ngOnDestroy", () => {
 });
 
 // ---------------------------------------------------------------------------
+// stateSignal
+// ---------------------------------------------------------------------------
+
+describe("PathFacade — stateSignal", () => {
+  it("starts as null before any path is launched", () => {
+    expect(new PathFacade().stateSignal()).toBeNull();
+  });
+
+  it("reflects the current snapshot after a path starts", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    expect(facade.stateSignal()).toMatchObject({ pathId: "main", stepId: "step1" });
+  });
+
+  it("updates in sync with state$ on each navigation", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
+    expect(facade.stateSignal()?.stepId).toBe("step2");
+    expect(facade.stateSignal()).toBe(facade.snapshot());
+  });
+
+  it("returns null after the path completes", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
+    await facade.next();
+    expect(facade.stateSignal()).toBeNull();
+  });
+
+  it("returns null after the path is cancelled", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.cancel();
+    expect(facade.stateSignal()).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // syncFormGroup helpers
 // ---------------------------------------------------------------------------
 

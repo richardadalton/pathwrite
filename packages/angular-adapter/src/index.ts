@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, DestroyRef } from "@angular/core";
+import { Injectable, OnDestroy, DestroyRef, signal, Signal } from "@angular/core";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import {
   PathData,
@@ -14,17 +14,22 @@ export class PathFacade implements OnDestroy {
   private readonly _state$ = new BehaviorSubject<PathSnapshot | null>(null);
   private readonly _events$ = new Subject<PathEvent>();
   private readonly unsubscribeFromEngine: () => void;
+  private readonly _stateSignal = signal<PathSnapshot | null>(null);
 
   public readonly state$: Observable<PathSnapshot | null> = this._state$.asObservable();
   public readonly events$: Observable<PathEvent> = this._events$.asObservable();
+  /** Signal version of state$. Updates on every path state change. Requires Angular 16+. */
+  public readonly stateSignal: Signal<PathSnapshot | null> = this._stateSignal.asReadonly();
 
   public constructor() {
     this.unsubscribeFromEngine = this.engine.subscribe((event) => {
       this._events$.next(event);
       if (event.type === "stateChanged" || event.type === "resumed") {
         this._state$.next(event.snapshot);
+        this._stateSignal.set(event.snapshot);
       } else if (event.type === "completed" || event.type === "cancelled") {
         this._state$.next(null);
+        this._stateSignal.set(null);
       }
     });
   }

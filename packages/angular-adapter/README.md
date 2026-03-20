@@ -28,11 +28,12 @@ export class MyComponent {
 
 ## PathFacade API
 
-### Observables
+### Observables and signals
 
 | Member | Type | Description |
 |--------|------|-------------|
 | `state$` | `Observable<PathSnapshot \| null>` | Current snapshot. `null` when no path is active. Backed by a `BehaviorSubject` — late subscribers receive the current value immediately. |
+| `stateSignal` | `Signal<PathSnapshot \| null>` | Signal version of `state$`. Same value, updated synchronously. Use directly in signal-based components without `toSignal()`. |
 | `events$` | `Observable<PathEvent>` | All engine events: `stateChanged`, `completed`, `cancelled`, `resumed`. |
 
 ### Methods
@@ -142,12 +143,28 @@ function syncFormGroup(
 
 ## Using with signals (Angular 16+)
 
+`PathFacade` ships a pre-wired `stateSignal` so no manual `toSignal()` call is
+needed:
+
+```typescript
+@Component({ providers: [PathFacade] })
+export class MyComponent {
+  protected readonly facade = inject(PathFacade);
+
+  // Use stateSignal directly — no toSignal() required
+  protected readonly snapshot = this.facade.stateSignal;
+
+  // Derive computed values
+  public readonly isActive    = computed(() => this.snapshot() !== null);
+  public readonly currentStep = computed(() => this.snapshot()?.stepId ?? null);
+  public readonly canAdvance  = computed(() => this.snapshot()?.canMoveNext ?? false);
+}
+```
+
+If you prefer the Observable-based approach, `toSignal()` still works as before:
+
 ```typescript
 public readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
-
-// Derive computed values from the snapshot signal
-public readonly isActive    = computed(() => this.snapshot() !== null);
-public readonly currentStep = computed(() => this.snapshot()?.stepId ?? null);
 ```
 
 ## Using with the async pipe
@@ -199,31 +216,13 @@ Each `<ng-template pwStep="<stepId>">` is rendered when the active step matches 
 
 ### Context sharing
 
-`PathShellComponent` provides a `PathFacade` instance at the component level.
-Step templates are **declared in the parent** component and rendered via
-`*ngTemplateOutlet`. Angular resolves DI for embedded views from the *declaring*
-component's injector, not the shell's. The recommended pattern is to provide
-`PathFacade` in the **parent** that hosts `<pw-shell>`:
+`PathShellComponent` provides a `PathFacade` instance in its own `providers` array
+and passes its component-level `Injector` to every step template via
+`ngTemplateOutletInjector`. Step components can therefore resolve the shell's
+`PathFacade` directly via `inject()` — no extra provider setup required:
 
 ```typescript
-// Parent component — owns the pw-shell and provides the facade
-@Component({
-  imports: [PathShellComponent, PathStepDirective],
-  providers: [PathFacade],
-  template: `
-    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
-      <ng-template pwStep="details"><app-details-form /></ng-template>
-      <ng-template pwStep="review"><app-review-panel /></ng-template>
-    </pw-shell>
-  `
-})
-export class MyComponent {
-  protected readonly facade = inject(PathFacade);
-  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
-  protected onDone(data: PathData) { console.log("Done!", data); }
-}
-
-// Step component — injects from the same parent provider
+// Step component — inject(PathFacade) resolves the shell's instance automatically
 @Component({
   template: `
     <input [value]="snapshot()?.data?.['name'] ?? ''"
@@ -231,15 +230,28 @@ export class MyComponent {
   `
 })
 export class DetailsFormComponent {
-  protected readonly facade = inject(PathFacade);
-  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
+  protected readonly facade   = inject(PathFacade);
+  protected readonly snapshot = this.facade.stateSignal;
 }
 ```
 
-> **Note:** Do not add a separate `providers: [PathFacade]` inside the parent
-> alongside the `<pw-shell>` — the shell creates its own internal instance.
-> Provide `PathFacade` once at the parent level and let both the parent and step
-> components inject from that single provider.
+The parent component hosting `<pw-shell>` does **not** need its own
+`PathFacade` provider. To access the facade from the parent, use `@ViewChild`:
+
+```typescript
+@Component({
+  imports: [PathShellComponent, PathStepDirective],
+  template: `
+    <pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent {
+  @ViewChild('shell', { read: PathShellComponent }) shell!: PathShellComponent;
+  protected onDone(data: PathData) { console.log('done', data); }
+}
+```
 
 ### Inputs
 

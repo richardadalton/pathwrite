@@ -10,6 +10,7 @@ import {
   OnInit,
   OnDestroy,
   inject,
+  Injector,
   ChangeDetectionStrategy
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -96,7 +97,7 @@ export class PathStepDirective {
       <div class="pw-shell__body">
         <ng-container *ngFor="let stepDir of stepDirectives">
           <ng-container *ngIf="stepDir.stepId === s.stepId">
-            <ng-container *ngTemplateOutlet="stepDir.templateRef"></ng-container>
+            <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector"></ng-container>
           </ng-container>
         </ng-container>
       </div>
@@ -134,6 +135,7 @@ export class PathStepDirective {
 export class PathShellComponent implements OnInit, OnDestroy {
   @Input({ required: true }) path!: PathDefinition;
   @Input() initialData: PathData = {};
+  /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */
   @Input() autoStart = true;
   @Input() backLabel = "Back";
   @Input() nextLabel = "Next";
@@ -149,6 +151,9 @@ export class PathShellComponent implements OnInit, OnDestroy {
   @ContentChildren(PathStepDirective) stepDirectives!: QueryList<PathStepDirective>;
 
   public readonly facade = inject(PathFacade);
+  /** The shell's own component-level injector. Passed to ngTemplateOutlet so that
+   *  step components can resolve PathFacade (provided by this shell) via inject(). */
+  protected readonly shellInjector = inject(Injector);
   public started = false;
 
   private readonly destroy$ = new Subject<void>();

@@ -52,39 +52,16 @@ These local wrappers delegate all engine logic to `@daltonr/pathwrite-core`
 
 ### 2. `inject(PathFacade)` from step components does not work as documented
 
-The README's "Context sharing" section explicitly shows step components calling
-`inject(PathFacade)` to access the shell's facade instance:
+> ✅ **Fixed.** `PathShellComponent` now injects `Injector` from Angular's DI and
+> passes it to every step template outlet via `ngTemplateOutletInjector`. This
+> inserts the shell's component-level injector into the embedded view's injector
+> chain, so `inject(PathFacade)` inside a step component correctly resolves the
+> shell's own `PathFacade` instance. The README and developer guide have been
+> updated to reflect the now-correct direct-injection pattern. The parent-provider
+> workaround is no longer needed.
 
-```typescript
-// From the README — presented as working out of the box
-export class DetailsFormComponent {
-  protected readonly facade = inject(PathFacade);
-}
-```
-
-This **does not work**. `PwShellComponent` provides `PathFacade` in its own
-`providers` array (component-level scope). Step templates are declared in the
-*parent* component and are rendered by the shell via `*ngTemplateOutlet`. Angular
-resolves DI for embedded views using the **declaring** component's injector, not
-the rendering component's injector. The shell's `PathFacade` instance is therefore
-invisible to step components.
-
-The result is either a `NullInjectorError` (if `PathFacade` is not provided
-anywhere else) or a silently different instance (if the parent also happens to
-provide `PathFacade`).
-
-**Workaround applied here:** Access the facade via `@ViewChild(PwShellComponent)`
-from the parent component and pass data down through `facade.setData()` calls
-triggered by form `(ngModelChange)` events.
-
-**Fix options:**
-- Pass the shell's injector to `ngTemplateOutlet` via the `ngTemplateOutletInjector`
-  input (available since Angular 14):
-  ```html
-  <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector">
-  ```
-- Or document the `@ViewChild` pattern as the intended approach and remove the
-  misleading example from the README.
+The README's "Context sharing" section showed step components calling
+`inject(PathFacade)` to access the shell's facade instance, but this did not work.
 
 ---
 
@@ -132,11 +109,14 @@ callbacks.
 
 ### 5. No signal-native API for Angular 16+
 
-`state$` is an RxJS Observable (backed by a `BehaviorSubject`). The README
-mentions `toSignal()` as an optional wrapper but doesn't ship it. In Angular 21,
-signals are the primary reactive primitive. Providing a `stateSignal` alongside
-`state$` — or even as a replacement — would align with the platform direction and
-remove one manual wiring step for most consumers.
+> ✅ **Fixed.** `PathFacade` now ships a `stateSignal: Signal<PathSnapshot | null>`
+> field that is updated synchronously alongside `state$`. No `toSignal()` call or
+> injection context is required — consumers can use `this.facade.stateSignal`
+> directly as a template-bound signal or as the source for `computed()` values.
+> `state$` is still available for RxJS-based workflows.
+
+`state$` was an RxJS Observable only. In Angular 16+ with signals as the primary
+reactive primitive, consumers had to manually call `toSignal()` to bridge the gap.
 
 ---
 

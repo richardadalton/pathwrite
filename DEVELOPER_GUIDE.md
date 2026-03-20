@@ -392,11 +392,26 @@ export class MyComponent {
 
 ### Reactive state with signals (recommended)
 
+`PathFacade` ships a pre-wired `stateSignal` — no `toSignal()` call required:
+
+```typescript
+@Component({ providers: [PathFacade] })
+export class MyComponent {
+  protected readonly facade = inject(PathFacade);
+
+  // Ready to use — updated synchronously alongside state$
+  protected readonly snapshot = this.facade.stateSignal;
+
+  public readonly isActive    = computed(() => this.snapshot() !== null);
+  public readonly currentStep = computed(() => this.snapshot()?.stepId ?? null);
+  public readonly canAdvance  = computed(() => this.snapshot()?.canMoveNext ?? false);
+}
+```
+
+`toSignal()` still works if you prefer the Observable approach:
+
 ```typescript
 public readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
-
-public readonly isActive    = computed(() => this.snapshot() !== null);
-public readonly currentStep = computed(() => this.snapshot()?.stepId ?? null);
 ```
 
 ### Reactive state with the async pipe
@@ -425,6 +440,7 @@ public constructor() {
 | Member | Description |
 |---|---|
 | `state$` | `Observable<PathSnapshot \| null>` — backed by a `BehaviorSubject` |
+| `stateSignal` | `Signal<PathSnapshot \| null>` — pre-wired signal, updated in sync with `state$` |
 | `events$` | `Observable<PathEvent>` — all engine events |
 | `start(def, data?)` | Start or restart a path |
 | `startSubPath(def, data?)` | Push a sub-path |
@@ -708,39 +724,13 @@ All shell components automatically provide their engine instance to child compon
 
 - **React**: `PathShell` wraps its children in a `PathContext.Provider`. Step children can call `usePathContext()`.
 - **Vue**: `PathShell` calls `provide()` internally. Step children can call `usePathContext()`.
-- **Angular**: `PathShellComponent` provides `PathFacade` in its own `providers` array.
-  However, step templates are **declared in the parent component** and rendered
-  via `*ngTemplateOutlet`. Angular resolves DI for embedded views using the
-  *declaring* component's injector, not the shell's — so `inject(PathFacade)`
-  inside a step component resolves from the parent, not the shell.
+- **Angular**: `PathShellComponent` provides `PathFacade` in its own `providers` array
+  and passes its component-level `Injector` to every step template via
+  `ngTemplateOutletInjector`. Step components can therefore call
+  `inject(PathFacade)` directly and receive the same instance the shell uses —
+  no additional provider setup needed.
 
-  The recommended pattern is to provide `PathFacade` in the **parent** component
-  (the one that hosts `<pw-shell>`) and inject it from there:
-
-  ```typescript
-  // ✅ Works — PathFacade is provided by the parent that owns <pw-shell>
-  @Component({
-    providers: [PathFacade],       // parent provides the facade
-    template: `
-      <pw-shell [path]="myPath">
-        <ng-template pwStep="details"><app-details-form /></ng-template>
-      </pw-shell>
-    `
-  })
-  export class MyComponent {
-    protected readonly facade = inject(PathFacade);
-  }
-
-  // Step component can also inject it — it resolves from the same parent provider
-  @Component({ ... })
-  export class DetailsFormComponent {
-    protected readonly facade = inject(PathFacade);
-  }
-  ```
-
-  Do **not** add `providers: [PathFacade]` inside `<pw-shell>` via a separate
-  entry — the shell creates its own internal instance and a second provider in
-  the parent would shadow it. Provide it once at the parent level.
+This means step content components can read `snapshot.data`, call `setData()`, or trigger navigation without prop drilling.
 
 ### Architecture
 
