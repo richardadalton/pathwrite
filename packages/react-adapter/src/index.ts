@@ -41,7 +41,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. */
   goToStep: (stepId: string) => void;
   /** Update a single data value; triggers a re-render via stateChanged. */
-  setData: (key: string, value: unknown) => void;
+  setData: <K extends keyof TData>(key: K, value: TData[K]) => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{

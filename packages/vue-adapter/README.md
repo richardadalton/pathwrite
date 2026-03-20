@@ -53,7 +53,7 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 | `previous()` | `function` | Go back one step. Cancels the path from the first step. |
 | `cancel()` | `function` | Cancel the active path (or sub-path). |
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
-| `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. |
+| `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
 
 ### Typed snapshot data
 
@@ -73,6 +73,14 @@ snapshot.value?.data.age;   // number
 ```
 
 The generic is a **type-level assertion** — it narrows `snapshot.data` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<FormData>` and the types will stay consistent throughout.
+
+`setData` is also typed against `TData` — passing a wrong key or mismatched value type is a compile-time error:
+
+```ts
+setData("name", 42);      // ✗ TS error: number is not assignable to string
+setData("typo", "x");     // ✗ TS error: "typo" is not a key of FormData
+setData("name", "Alice");  // ✓
+```
 
 ## Design notes
 
