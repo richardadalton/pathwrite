@@ -32,9 +32,9 @@ export interface UsePathOptions {
   onEvent?: (event: PathEvent) => void;
 }
 
-export interface UsePathReturn {
+export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Reactive — triggers Vue re-renders on change. */
-  snapshot: DeepReadonly<Ref<PathSnapshot | null>>;
+  snapshot: DeepReadonly<Ref<PathSnapshot<TData> | null>>;
   /** Start (or restart) a path. */
   start: (path: PathDefinition, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. */
@@ -55,13 +55,13 @@ export interface UsePathReturn {
 // usePath composable
 // ---------------------------------------------------------------------------
 
-export function usePath(options?: UsePathOptions): UsePathReturn {
+export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
   const engine = new PathEngine();
-  const _snapshot = shallowRef<PathSnapshot | null>(null);
+  const _snapshot = shallowRef<PathSnapshot<TData> | null>(null);
 
   const unsubscribe = engine.subscribe((event: PathEvent) => {
     if (event.type === "stateChanged" || event.type === "resumed") {
-      _snapshot.value = event.snapshot;
+      _snapshot.value = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
       _snapshot.value = null;
     }
@@ -70,7 +70,7 @@ export function usePath(options?: UsePathOptions): UsePathReturn {
 
   onScopeDispose(unsubscribe);
 
-  const snapshot = readonly(_snapshot) as DeepReadonly<Ref<PathSnapshot | null>>;
+  const snapshot = readonly(_snapshot) as DeepReadonly<Ref<PathSnapshot<TData> | null>>;
 
   const start = (path: PathDefinition, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
@@ -100,17 +100,20 @@ const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
 /**
  * Access the nearest `PathShell`'s path instance via Vue `inject`.
  * Throws if used outside of a `<PathShell>`.
+ *
+ * The optional generic narrows `snapshot.data` for convenience — it is a
+ * **type-level assertion**, not a runtime guarantee.
  */
-export function usePathContext(): UsePathReturn {
+export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
   const ctx = inject(PathInjectionKey, null);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathShell>.");
   }
-  return ctx;
+  return ctx as UsePathReturn<TData>;
 }
 
 // ---------------------------------------------------------------------------
-// Default UI — PathShell + PathStep
+// Default UI — PathShell
 // ---------------------------------------------------------------------------
 
 export interface PathShellActions {
@@ -122,35 +125,14 @@ export interface PathShellActions {
 }
 
 /**
- * `<PathStep>` — metadata-only marker component that associates slot content
- * with a step ID. `PathStep` **never renders anything itself** — it always
- * returns `null`.
- *
- * Inside `<PathShell>`, the shell inspects `PathStep` children to determine
- * which content to display for the current step. Outside of `<PathShell>`,
- * use the exported `resolveStepContent()` utility to resolve step content
- * in a custom shell.
- */
-export const PathStep = defineComponent({
-  name: "PathStep",
-  props: {
-    id: { type: String, required: true }
-  },
-  setup(_props, { slots }) {
-    // PathStep never renders itself — PathShell reads its props and
-    // decides which slot to display. If rendered standalone it shows nothing.
-    return () => null;
-  }
-});
-
-/**
  * `<PathShell>` — default UI shell that renders a progress indicator,
- * step content, and navigation buttons.
+ * step content, and navigation buttons. Step content is provided via
+ * **named slots** matching each step's `id`.
  *
  * ```vue
  * <PathShell :path="myPath" :initial-data="{ name: '' }" @complete="handleDone">
- *   <PathStep id="details"><DetailsForm /></PathStep>
- *   <PathStep id="review"><ReviewPanel /></PathStep>
+ *   <template #details><DetailsForm /></template>
+ *   <template #review><ReviewPanel /></template>
  * </PathShell>
  * ```
  */
@@ -210,8 +192,9 @@ export const PathShell = defineComponent({
         );
       }
 
-      // Resolve step content from default slot children
-      const stepContent = resolveStepContent(slots, snap);
+      // Resolve step content from named slot matching the current step ID
+      const stepSlot = slots[snap.stepId];
+      const stepContent = stepSlot ? stepSlot({ snapshot: snap }) : null;
 
       return h("div", { class: "pw-shell" }, [
         // Header — progress
@@ -300,54 +283,3 @@ function renderVueFooter(
   ]);
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Scans the default slot children for a `<PathStep>` whose `id` matches
- * `snapshot.stepId` and returns its slot content. Also checks for a named
- * slot matching the step ID as a shorthand. Returns `null` if no match.
- *
- * `PathShell` uses this internally. Export it so custom shells can reuse the
- * same `<PathStep>` marker pattern without copying internal logic:
- *
- * ```ts
- * setup(props, { slots }) {
- *   const { snapshot } = usePath();
- *   return () => {
- *     const content = resolveStepContent(slots, snapshot.value!);
- *     return h("div", content ?? []);
- *   };
- * }
- * ```
- */
-export function resolveStepContent(
-  slots: Record<string, ((...args: any[]) => any) | undefined>,
-  snapshot: PathSnapshot
-): VNode[] | null {
-  // Look for a named slot matching the stepId
-  const namedSlot = slots[snapshot.stepId];
-  if (namedSlot) return namedSlot({ snapshot });
-
-  // Fall back to scanning default slot children for <PathStep> with matching id
-  const defaultChildren = slots.default?.();
-  if (!defaultChildren) return null;
-
-  for (const child of defaultChildren) {
-    if (
-      child &&
-      typeof child === "object" &&
-      "type" in child &&
-      child.type === PathStep &&
-      child.props?.id === snapshot.stepId
-    ) {
-      // Return the PathStep's own children (its default slot)
-      const stepSlots = (child.children as any)?.default;
-      if (typeof stepSlots === "function") return stepSlots();
-      if (Array.isArray(child.children)) return child.children as VNode[];
-      return null;
-    }
-  }
-  return null;
-}

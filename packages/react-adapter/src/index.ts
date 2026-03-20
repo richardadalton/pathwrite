@@ -25,9 +25,9 @@ export interface UsePathOptions {
   onEvent?: (event: PathEvent) => void;
 }
 
-export interface UsePathReturn {
+export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Triggers a React re-render on change. */
-  snapshot: PathSnapshot | null;
+  snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
   start: (path: PathDefinition, initialData?: PathData) => void;
   /** Push a sub-path onto the stack. Requires an active path. */
@@ -53,7 +53,7 @@ export type PathProviderProps = PropsWithChildren<{
 // usePath hook
 // ---------------------------------------------------------------------------
 
-export function usePath(options?: UsePathOptions): UsePathReturn {
+export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
   // Stable engine instance for the lifetime of the hook
   const engineRef = useRef<PathEngine | null>(null);
   if (engineRef.current === null) {
@@ -66,13 +66,13 @@ export function usePath(options?: UsePathOptions): UsePathReturn {
   onEventRef.current = options?.onEvent;
 
   // Cached snapshot — updated only inside the subscribe callback
-  const snapshotRef = useRef<PathSnapshot | null>(null);
+  const snapshotRef = useRef<PathSnapshot<TData> | null>(null);
 
   const subscribe = useCallback(
     (callback: () => void) =>
       engine.subscribe((event: PathEvent) => {
         if (event.type === "stateChanged" || event.type === "resumed") {
-          snapshotRef.current = event.snapshot;
+          snapshotRef.current = event.snapshot as PathSnapshot<TData>;
         } else if (event.type === "completed" || event.type === "cancelled") {
           snapshotRef.current = null;
         }
@@ -134,41 +134,27 @@ export function PathProvider({ children, onEvent }: PathProviderProps): ReactEle
 /**
  * Access the nearest `PathProvider`'s path instance.
  * Throws if used outside of a `<PathProvider>`.
+ *
+ * The optional generic narrows `snapshot.data` for convenience — it is a
+ * **type-level assertion**, not a runtime guarantee.
  */
-export function usePathContext(): UsePathReturn {
+export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  return ctx;
+  return ctx as UsePathReturn<TData>;
 }
 
 // ---------------------------------------------------------------------------
-// Default UI — PathShell + PathStep
+// Default UI — PathShell
 // ---------------------------------------------------------------------------
-
-export interface PathStepProps {
-  /** Must match a step `id` in the path definition. */
-  id: string;
-  children: ReactNode;
-}
-
-/**
- * Metadata-only marker component that associates step content with a step ID.
- * `PathStep` **never renders anything itself** — it always returns `null`.
- *
- * Inside `<PathShell>`, the shell inspects `PathStep` children to determine
- * which content to display for the current step. Outside of `<PathShell>`,
- * use the exported `resolveStepContent()` utility to resolve step content
- * in a custom shell.
- */
-export function PathStep(_props: PathStepProps): ReactElement | null {
-  return null;
-}
 
 export interface PathShellProps {
   /** The path definition to drive. */
   path: PathDefinition;
+  /** Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. */
+  steps: Record<string, ReactNode>;
   /** Initial data passed to `engine.start()`. */
   initialData?: PathData;
   /** If true, the path is started automatically on mount. Defaults to `true`. */
@@ -197,8 +183,6 @@ export interface PathShellProps {
   renderHeader?: (snapshot: PathSnapshot) => ReactNode;
   /** Render prop to replace the entire footer (navigation area). Receives the snapshot and actions. */
   renderFooter?: (snapshot: PathSnapshot, actions: PathShellActions) => ReactNode;
-  /** `<PathStep>` children. */
-  children: ReactNode;
 }
 
 export interface PathShellActions {
@@ -211,17 +195,23 @@ export interface PathShellActions {
 
 /**
  * Default UI shell that renders a progress indicator, step content, and navigation
- * buttons. Wrap `<PathStep>` children inside to define per-step content.
+ * buttons. Pass a `steps` map to define per-step content.
  *
  * ```tsx
- * <PathShell path={myPath} initialData={{ name: "" }} onComplete={handleDone}>
- *   <PathStep id="details"><DetailsForm /></PathStep>
- *   <PathStep id="review"><ReviewPanel /></PathStep>
- * </PathShell>
+ * <PathShell
+ *   path={myPath}
+ *   initialData={{ name: "" }}
+ *   onComplete={handleDone}
+ *   steps={{
+ *     details: <DetailsForm />,
+ *     review: <ReviewPanel />,
+ *   }}
+ * />
  * ```
  */
 export function PathShell({
   path: pathDef,
+  steps,
   initialData = {},
   autoStart = true,
   onComplete,
@@ -236,7 +226,6 @@ export function PathShell({
   className,
   renderHeader,
   renderFooter,
-  children
 }: PathShellProps): ReactElement {
   const pathReturn = usePath({
     onEvent(event) {
@@ -258,8 +247,8 @@ export function PathShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Resolve which <PathStep> children to display
-  const stepContent = resolveStepContent(children, snapshot);
+  // Look up step content from the steps map
+  const stepContent = snapshot ? (steps[snapshot.stepId] ?? null) : null;
 
   if (!snapshot) {
     return createElement(PathContext.Provider, { value: pathReturn },
@@ -373,39 +362,6 @@ function defaultFooter(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Scans an array of `<PathStep>` React children and returns the `children`
- * of the one whose `id` matches `snapshot.stepId`. Returns `null` if no
- * match is found or if `snapshot` is `null`.
- *
- * `PathShell` uses this internally. Export it so custom shells can reuse the
- * same `<PathStep>` marker pattern without copying internal logic:
- *
- * ```tsx
- * function CustomShell({ children }: { children: ReactNode }) {
- *   const { snapshot } = usePath();
- *   const content = resolveStepContent(children, snapshot);
- *   return <div>{content}</div>;
- * }
- * ```
- */
-export function resolveStepContent(children: ReactNode, snapshot: PathSnapshot | null): ReactNode {
-  if (!snapshot || !children) return null;
-
-  const arr = Array.isArray(children) ? children : [children];
-  for (const child of arr) {
-    if (
-      child &&
-      typeof child === "object" &&
-      "type" in child &&
-      child.type === PathStep &&
-      child.props?.id === snapshot.stepId
-    ) {
-      return child.props.children ?? null;
-    }
-  }
-  return null;
-}
 
 function cls(...parts: (string | undefined | false | null)[]): string {
   return parts.filter(Boolean).join(" ");

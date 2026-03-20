@@ -55,6 +55,25 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
 | `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. |
 
+### Typed snapshot data
+
+`usePath` and `usePathContext` accept an optional generic so that `snapshot.data` is typed:
+
+```ts
+import type { PathData } from "@daltonr/pathwrite-core";
+
+interface FormData extends PathData {
+  name: string;
+  age: number;
+}
+
+const { snapshot } = usePath<FormData>();
+snapshot.value?.data.name;  // string
+snapshot.value?.data.age;   // number
+```
+
+The generic is a **type-level assertion** — it narrows `snapshot.data` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<FormData>` and the types will stay consistent throughout.
+
 ## Design notes
 
 - **`shallowRef`** — the snapshot is stored in a `shallowRef` for performance. The engine produces a new snapshot object on every change, so shallow reactivity is sufficient.
@@ -79,19 +98,6 @@ const { snapshot, setData } = usePathContext();
 ```
 
 `usePathContext()` throws if called outside a `<PathShell>`.
-
-## `resolveStepContent` — custom shells with `PathStep`
-
-`PathStep` is a metadata marker — it never renders anything itself. `PathShell` uses the exported `resolveStepContent()` utility internally to find the matching step content. You can use the same utility in a custom shell:
-
-```ts
-import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-vue";
-
-// In a custom shell's render function:
-const content = resolveStepContent(slots, snapshot.value!);
-```
-
-See the [Developer Guide](../../DEVELOPER_GUIDE.md) for a full custom shell example.
 
 ## Peer dependencies
 

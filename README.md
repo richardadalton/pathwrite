@@ -51,25 +51,30 @@ Every adapter includes an optional shell component that renders a complete wizar
 ### React
 
 ```tsx
-import { PathShell, PathStep } from "@daltonr/pathwrite-react";
+import { PathShell } from "@daltonr/pathwrite-react";
 
-<PathShell path={myPath} initialData={{ name: "" }} onComplete={handleDone}>
-  <PathStep id="details"><DetailsForm /></PathStep>
-  <PathStep id="review"><ReviewPanel /></PathStep>
-</PathShell>
+<PathShell
+  path={myPath}
+  initialData={{ name: "" }}
+  onComplete={handleDone}
+  steps={{
+    details: <DetailsForm />,
+    review: <ReviewPanel />,
+  }}
+/>
 ```
 
 ### Vue
 
 ```vue
 <script setup>
-import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
+import { PathShell } from "@daltonr/pathwrite-vue";
 </script>
 
 <template>
   <PathShell :path="myPath" :initial-data="{ name: '' }" @complete="handleDone">
-    <PathStep id="details"><DetailsForm /></PathStep>
-    <PathStep id="review"><ReviewPanel /></PathStep>
+    <template #details><DetailsForm /></template>
+    <template #review><ReviewPanel /></template>
   </PathShell>
 </template>
 ```
@@ -101,7 +106,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-239 tests across six test files:
+235 tests across six test files:
 
 | Suite | Tests |
 |-------|-------|
@@ -135,7 +140,6 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (React) — render props | 2 |
 | `PathShell` (React) — autoStart false | 2 |
 | `PathShell` (React) — context sharing | 2 |
-| `resolveStepContent` (React) — custom shell usage | 3 |
 | `usePath` (React) — snapshot | 8 |
 | `usePath` (React) — events | 5 |
 | `usePath` (React) — navigation | 5 |
@@ -149,7 +153,6 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (Vue) — progress | 3 |
 | `PathShell` (Vue) — autoStart false | 2 |
 | `PathShell` (Vue) — context sharing | 2 |
-| `resolveStepContent` (Vue) — custom shell usage | 1 |
 | `usePath` (Vue) — snapshot | 8 |
 | `usePath` (Vue) — events | 4 |
 | `usePath` (Vue) — navigation | 4 |

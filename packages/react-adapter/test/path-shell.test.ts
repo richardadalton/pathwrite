@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import React, { createElement } from "react";
+import { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathStep, PathShellActions, usePathContext, usePath, resolveStepContent } from "../src/index";
+import { PathShell, PathShellActions, usePathContext } from "../src/index";
 
 afterEach(() => cleanup());
 
@@ -22,14 +22,16 @@ function threeStepPath(id = "test"): PathDefinition {
   };
 }
 
+const defaultSteps = {
+  "step-a": createElement("div", null, "Content A"),
+  "step-b": createElement("div", null, "Content B"),
+  "step-c": createElement("div", null, "Content C")
+};
+
 function renderShell(props: Partial<Parameters<typeof PathShell>[0]> = {}) {
   const defaults = {
     path: threeStepPath(),
-    children: [
-      createElement(PathStep, { id: "step-a", key: "a" }, createElement("div", null, "Content A")),
-      createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "Content B")),
-      createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "Content C"))
-    ]
+    steps: defaultSteps
   };
   return render(createElement(PathShell, { ...defaults, ...props } as any));
 }
@@ -232,7 +234,7 @@ describe("PathShell — autoStart false", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathShell — context sharing", () => {
-  it("usePathContext returns snapshot inside a PathShell step child", async () => {
+  it("usePathContext returns snapshot inside a PathShell step component", async () => {
     function StepChild() {
       const { snapshot } = usePathContext();
       return createElement("span", { "data-testid": "ctx-step" }, snapshot?.stepId ?? "none");
@@ -240,17 +242,20 @@ describe("PathShell — context sharing", () => {
 
     await act(async () =>
       render(
-        createElement(PathShell, { path: threeStepPath() },
-          createElement(PathStep, { id: "step-a", key: "a" }, createElement(StepChild)),
-          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "B")),
-          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "C"))
-        )
+        createElement(PathShell, {
+          path: threeStepPath(),
+          steps: {
+            "step-a": createElement(StepChild),
+            "step-b": createElement("div", null, "B"),
+            "step-c": createElement("div", null, "C")
+          }
+        })
       )
     );
     expect(screen.getByTestId("ctx-step").textContent).toBe("step-a");
   });
 
-  it("usePathContext actions drive navigation from inside a step child", async () => {
+  it("usePathContext actions drive navigation from inside a step component", async () => {
     function StepChild() {
       const { next } = usePathContext();
       return createElement("button", { "data-testid": "inner-next", onClick: next }, "Inner Next");
@@ -258,65 +263,17 @@ describe("PathShell — context sharing", () => {
 
     await act(async () =>
       render(
-        createElement(PathShell, { path: threeStepPath() },
-          createElement(PathStep, { id: "step-a", key: "a" }, createElement(StepChild)),
-          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "Content B")),
-          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "C"))
-        )
+        createElement(PathShell, {
+          path: threeStepPath(),
+          steps: {
+            "step-a": createElement(StepChild),
+            "step-b": createElement("div", null, "Content B"),
+            "step-c": createElement("div", null, "C")
+          }
+        })
       )
     );
     await act(async () => screen.getByTestId("inner-next").click());
     expect(screen.getByText("Content B")).toBeTruthy();
   });
 });
-
-// ---------------------------------------------------------------------------
-// resolveStepContent — using PathStep in a custom shell
-// ---------------------------------------------------------------------------
-
-describe("resolveStepContent — custom shell usage", () => {
-  it("resolves the matching PathStep children for the current step", async () => {
-    function CustomShell({ children }: { children: React.ReactNode }) {
-      const { snapshot, start, next } = usePath();
-
-      return createElement("div", null,
-        !snapshot
-          ? createElement("button", { "data-testid": "start", onClick: () => start(threeStepPath()) }, "Start")
-          : createElement("div", null,
-              createElement("div", { "data-testid": "content" }, resolveStepContent(children, snapshot)),
-              createElement("button", { "data-testid": "next", onClick: next }, "Next")
-            )
-      );
-    }
-
-    await act(async () =>
-      render(
-        createElement(CustomShell, null,
-          createElement(PathStep, { id: "step-a", key: "a" }, createElement("div", null, "Custom A")),
-          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "Custom B")),
-          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "Custom C"))
-        )
-      )
-    );
-
-    await act(async () => screen.getByTestId("start").click());
-    expect(screen.getByText("Custom A")).toBeTruthy();
-
-    await act(async () => screen.getByTestId("next").click());
-    expect(screen.getByText("Custom B")).toBeTruthy();
-    expect(screen.queryByText("Custom A")).toBeNull();
-  });
-
-  it("returns null when snapshot is null", () => {
-    const children = createElement(PathStep, { id: "step-a" }, createElement("div", null, "A"));
-    expect(resolveStepContent(children, null)).toBeNull();
-  });
-
-  it("returns null when no PathStep matches the current step ID", async () => {
-    // Build a fake snapshot-like object with a stepId that doesn't match
-    const fakeSnapshot = { stepId: "nonexistent" } as any;
-    const children = createElement(PathStep, { id: "step-a" }, createElement("div", null, "A"));
-    expect(resolveStepContent(children, fakeSnapshot)).toBeNull();
-  });
-});
-

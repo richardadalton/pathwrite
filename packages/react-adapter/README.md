@@ -95,6 +95,23 @@ function NavButtons() {
 
 All action callbacks are **referentially stable** — safe to pass as props or include in dependency arrays without causing unnecessary re-renders.
 
+### Typed snapshot data
+
+`usePath` and `usePathContext` accept an optional generic so that `snapshot.data` is typed:
+
+```tsx
+interface FormData extends PathData {
+  name: string;
+  age: number;
+}
+
+const { snapshot } = usePath<FormData>();
+snapshot?.data.name;  // string
+snapshot?.data.age;   // number
+```
+
+The generic is a **type-level assertion** — it narrows `snapshot.data` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<FormData>` and the types will stay consistent throughout.
+
 ### Snapshot guard booleans
 
 The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated results of the current step's navigation guards. Use them to proactively disable buttons:
@@ -114,7 +131,7 @@ Wrap a subtree in `<PathProvider>` so multiple components share the same engine 
 
 ### `PathShell` context
 
-`<PathShell>` also provides context automatically. Step children rendered inside `<PathShell>` can call `usePathContext()` without a separate `<PathProvider>`:
+`<PathShell>` also provides context automatically. Step components rendered inside `<PathShell>` can call `usePathContext()` without a separate `<PathProvider>`:
 
 ```tsx
 function DetailsForm() {
@@ -127,10 +144,15 @@ function DetailsForm() {
   );
 }
 
-<PathShell path={myPath} initialData={{ name: "" }} onComplete={handleDone}>
-  <PathStep id="details"><DetailsForm /></PathStep>
-  <PathStep id="review"><ReviewPanel /></PathStep>
-</PathShell>
+<PathShell
+  path={myPath}
+  initialData={{ name: "" }}
+  onComplete={handleDone}
+  steps={{
+    details: <DetailsForm />,
+    review: <ReviewPanel />,
+  }}
+/>
 ```
 
 ## Design notes
@@ -138,25 +160,4 @@ function DetailsForm() {
 - **`useSyncExternalStore`** — the hook subscribes to the core `PathEngine` using React 18's `useSyncExternalStore`, giving tear-free reads with no `useEffect` timing gaps.
 - **Ref-based callback** — `onEvent` is stored in a ref so that a new closure on every render does not cause a re-subscription.
 - **No RxJS** — unlike the Angular adapter, there is no RxJS dependency. The hook is pure React.
-
-## `resolveStepContent` — custom shells with `PathStep`
-
-`PathStep` is a metadata marker — it never renders anything itself. `PathShell` uses the exported `resolveStepContent()` utility internally to find the matching step content. You can use the same utility in a custom shell:
-
-```tsx
-import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-react";
-
-function CustomShell({ children }: { children: React.ReactNode }) {
-  const { snapshot, next, previous } = usePath();
-  if (!snapshot) return null;
-  const content = resolveStepContent(children, snapshot);
-  return (
-    <div>
-      <div>{content}</div>
-      <button onClick={previous}>Back</button>
-      <button onClick={next}>Next</button>
-    </div>
-  );
-}
-```
 

@@ -47,8 +47,8 @@ pathwrite/
 ├── packages/
 │   ├── core/                   # @daltonr/pathwrite-core
 │   ├── angular-adapter/        # @daltonr/pathwrite-angular (+ shell entry point)
-│   ├── react-adapter/          # @daltonr/pathwrite-react (+ PathShell / PathStep)
-│   ├── vue-adapter/            # @daltonr/pathwrite-vue (+ PathShell / PathStep)
+│   ├── react-adapter/          # @daltonr/pathwrite-react (+ PathShell)
+│   ├── vue-adapter/            # @daltonr/pathwrite-vue (+ PathShell)
 │   └── shell.css               # Optional shared stylesheet for shell components
 ├── apps/
 │   ├── demo-angular-course/    # Angular demo (multi-step course path, manual UI)
@@ -657,17 +657,17 @@ This means step content components can read `snapshot.data`, call `setData()`, o
 │  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← progress bar
 ├─────────────────────────────────────┤
 │                                     │
-│  [your step content goes here]      │  ← body (from <PathStep> / pwStep)
+│  [your step content goes here]      │  ← body (from steps map / named slots / pwStep)
 │                                     │
 ├─────────────────────────────────────┤
 │  ‹ Back          Cancel    Next ›   │  ← navigation footer
 └─────────────────────────────────────┘
 ```
 
-### React — `<PathShell>` + `<PathStep>`
+### React — `<PathShell>`
 
 ```tsx
-import { PathShell, PathStep } from "@daltonr/pathwrite-react";
+import { PathShell } from "@daltonr/pathwrite-react";
 
 function CoursePath() {
   return (
@@ -675,10 +675,11 @@ function CoursePath() {
       path={coursePath}
       initialData={{ name: "" }}
       onComplete={(data) => console.log("Done!", data)}
-    >
-      <PathStep id="details"><DetailsForm /></PathStep>
-      <PathStep id="review"><ReviewPanel /></PathStep>
-    </PathShell>
+      steps={{
+        details: <DetailsForm />,
+        review: <ReviewPanel />,
+      }}
+    />
   );
 }
 ```
@@ -688,6 +689,7 @@ function CoursePath() {
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `path` | `PathDefinition` | *required* | The path definition to drive. |
+| `steps` | `Record<string, ReactNode>` | *required* | Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
 | `autoStart` | `boolean` | `true` | If true, the path starts on mount. |
 | `onComplete` | `(data) => void` | — | Called when the path completes. |
@@ -710,6 +712,7 @@ Use `renderHeader` or `renderFooter` to override just one section while keeping 
 ```tsx
 <PathShell
   path={myPath}
+  steps={{ a: <StepA />, b: <StepB /> }}
   renderFooter={(snap, { next, previous }) => (
     <div className="my-nav">
       <button onClick={previous}>← Back</button>
@@ -717,26 +720,26 @@ Use `renderHeader` or `renderFooter` to override just one section while keeping 
       <button onClick={next}>{snap.isLastStep ? "Done" : "→ Next"}</button>
     </div>
   )}
->
-  <PathStep id="a">...</PathStep>
-</PathShell>
+/>
 ```
 
-### Vue — `<PathShell>` + `<PathStep>`
+### Vue — `<PathShell>`
 
 ```vue
 <script setup>
-import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
+import { PathShell } from "@daltonr/pathwrite-vue";
 import { coursePath } from "./paths";
 </script>
 
 <template>
   <PathShell :path="coursePath" :initial-data="{ name: '' }" @complete="onDone">
-    <PathStep id="details"><DetailsForm /></PathStep>
-    <PathStep id="review"><ReviewPanel /></PathStep>
+    <template #details><DetailsForm /></template>
+    <template #review><ReviewPanel /></template>
   </PathShell>
 </template>
 ```
+
+Step content is provided via **named slots** matching each step's `id`.
 
 #### Vue props
 
@@ -762,7 +765,7 @@ import { coursePath } from "./paths";
 
 #### Vue slots
 
-The Vue shell also supports named `header` and `footer` scoped slots for customisation:
+Step content slots are named after the step `id`. The shell also supports `header` and `footer` scoped slots for customisation:
 
 ```vue
 <PathShell :path="myPath">
@@ -770,8 +773,8 @@ The Vue shell also supports named `header` and `footer` scoped slots for customi
     <MyCustomProgress :steps="snapshot.steps" />
   </template>
 
-  <PathStep id="a"><StepA /></PathStep>
-  <PathStep id="b"><StepB /></PathStep>
+  <template #a><StepA /></template>
+  <template #b><StepB /></template>
 
   <template #footer="{ snapshot, actions }">
     <button @click="actions.previous">Back</button>
@@ -895,90 +898,6 @@ All shell components use BEM-style `pw-shell__*` classes:
 
 The shell and the headless API are not mutually exclusive. You can start with `<PathShell>` and migrate individual sections (or the entire component) to custom markup whenever you need more control.
 
-### `PathStep` is a metadata marker
-
-`PathStep` (React and Vue) is **not** a rendering component. It always returns `null`. Its sole purpose is to associate a step `id` with a block of content so that `PathShell` — or your own custom shell — can look up the right content for the current step.
-
-```tsx
-// PathStep never renders on its own:
-<PathStep id="details"><DetailsForm /></PathStep>  // ← renders nothing if used standalone
-```
-
-This is a deliberate design choice: `PathStep` is a data-carrying marker, similar to React's `<Route>` in older versions of React Router. The rendering decision belongs to the shell, not to the marker.
-
-### `resolveStepContent` — building a custom shell with `PathStep`
-
-Both the React and Vue adapters export a `resolveStepContent` utility. This is the same function that `PathShell` uses internally to find the matching `PathStep` child. By exporting it, you can build a fully custom shell that still uses `<PathStep>` children to define per-step content — no need to copy internal code.
-
-#### React
-
-```tsx
-import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-react";
-import type { ReactNode } from "react";
-
-function CustomShell({ children }: { children: ReactNode }) {
-  const { snapshot, start, next, previous } = usePath();
-
-  if (!snapshot) {
-    return <button onClick={() => start(myPath)}>Start</button>;
-  }
-
-  // resolveStepContent scans children for the <PathStep> whose id matches
-  // snapshot.stepId and returns that PathStep's children.
-  const content = resolveStepContent(children, snapshot);
-
-  return (
-    <div>
-      <h2>{snapshot.stepTitle ?? snapshot.stepId}</h2>
-      <div>{content}</div>
-      <button onClick={previous}>Back</button>
-      <button onClick={next}>{snapshot.isLastStep ? "Finish" : "Next"}</button>
-    </div>
-  );
-}
-
-// Usage — same <PathStep> pattern as PathShell:
-<CustomShell>
-  <PathStep id="details"><DetailsForm /></PathStep>
-  <PathStep id="review"><ReviewPanel /></PathStep>
-</CustomShell>
-```
-
-#### Vue
-
-```vue
-<script setup lang="ts">
-import { usePath, PathStep, resolveStepContent } from "@daltonr/pathwrite-vue";
-</script>
-```
-
-In a Vue custom shell's render function:
-
-```ts
-setup(props, { slots }) {
-  const { snapshot, start, next, previous } = usePath();
-
-  return () => {
-    const snap = snapshot.value;
-    if (!snap) return h("button", { onClick: () => start(myPath) }, "Start");
-
-    // resolveStepContent checks for a named slot matching the stepId,
-    // then falls back to scanning default slot children for a <PathStep> match.
-    const content = resolveStepContent(slots, snap);
-
-    return h("div", [
-      h("h2", snap.stepTitle ?? snap.stepId),
-      h("div", content ?? []),
-      h("button", { onClick: previous }, "Back"),
-      h("button", { onClick: next }, snap.isLastStep ? "Finish" : "Next")
-    ]);
-  };
-}
-```
-
-#### Why not make `PathStep` render its own children?
-
-If `PathStep` rendered conditionally based on the current step, it would need access to the engine's snapshot. That creates a hard dependency on either context (React) or inject (Vue), and it would break when used outside a provider. By keeping `PathStep` as a pure metadata marker and `resolveStepContent` as a standalone function, both work in any context — inside `PathShell`, inside a custom shell, or in any other wrapper.
 
 ---
 
@@ -1054,6 +973,22 @@ const path: PathDefinition<CourseData> = {
 ```
 
 Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`), which still works but requires manual type assertions for individual values.
+
+### Adapter-level generics
+
+The React and Vue adapters also accept an optional generic on `usePath` and `usePathContext`. This narrows `snapshot.data` so you can read typed values without manual assertions:
+
+```tsx
+// React
+const { snapshot } = usePath<CourseData>();
+snapshot?.data.courseName; // string
+
+// Vue
+const { snapshot } = usePath<CourseData>();
+snapshot.value?.data.courseName; // string
+```
+
+The generic is a **type-level assertion** — it narrows `snapshot.data` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<TData>` and use the same generic at the adapter level to keep the types consistent throughout.
 
 ---
 
@@ -1304,17 +1239,18 @@ it("blocks leaving draft when required fields are missing", async () => {
 ```tsx
 import { createElement } from "react";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { PathShell, PathStep } from "@daltonr/pathwrite-react";
+import { PathShell } from "@daltonr/pathwrite-react";
 
 afterEach(() => cleanup());
 
 it("renders step content and navigates", async () => {
   const path = { id: "test", steps: [{ id: "a", title: "A" }, { id: "b", title: "B" }] };
+  const steps = {
+    a: createElement("div", null, "Content A"),
+    b: createElement("div", null, "Content B"),
+  };
   await act(async () =>
-    render(createElement(PathShell, { path }, [
-      createElement(PathStep, { id: "a", key: "a" }, createElement("div", null, "Content A")),
-      createElement(PathStep, { id: "b", key: "b" }, createElement("div", null, "Content B")),
-    ]))
+    render(createElement(PathShell, { path, steps }))
   );
   expect(screen.getByText("Content A")).toBeTruthy();
   await act(async () => screen.getByText("Next").click());
@@ -1327,17 +1263,15 @@ it("renders step content and navigates", async () => {
 ```typescript
 import { defineComponent, h, nextTick } from "vue";
 import { mount, flushPromises } from "@vue/test-utils";
-import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
+import { PathShell } from "@daltonr/pathwrite-vue";
 
 it("renders step content and navigates", async () => {
   const path = { id: "test", steps: [{ id: "a", title: "A" }, { id: "b", title: "B" }] };
   const Host = defineComponent({
     setup: () => () =>
       h(PathShell, { path }, {
-        default: () => [
-          h(PathStep, { id: "a" }, { default: () => h("div", "Content A") }),
-          h(PathStep, { id: "b" }, { default: () => h("div", "Content B") }),
-        ]
+        a: () => h("div", "Content A"),
+        b: () => h("div", "Content B"),
       })
   });
   const wrapper = mount(Host, { attachTo: document.body });
