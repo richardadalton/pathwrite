@@ -17,7 +17,7 @@
     "multi-step",
     "workflow"
   ],
-  "sideEffects": false,
+  "sideEffects": ["**/*.css"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -26,7 +26,8 @@
     "./shell": {
       "types": "./dist/shell.d.ts",
       "import": "./dist/shell.js"
-    }
+    },
+    "./styles.css": "./dist/index.css"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +37,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "npm run clean && npm run build"
   },

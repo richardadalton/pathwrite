@@ -1,11 +1,217 @@
 # Pathwrite Package Feedback
 
-Feedback based on building a six-step document review workflow using
-`@daltonr/pathwrite-react@0.1.1` and `@daltonr/pathwrite-core@0.1.1`.
+Feedback based on building a six-step document review workflow.
+Testing was done across two versions:
+
+- **v0.1.1** — `@daltonr/pathwrite-react` + `@daltonr/pathwrite-core` (first attempt)
+- **v0.1.2** — `@daltonr/pathwrite-react` only (v0.1.2 bundles core as a dependency)
 
 ---
 
-## 1. The Main Problem: `PathShell` Cannot Share Context with Step Children
+## Fixed in v0.1.2 ✅
+
+### 1. `PathShell` now shares context with step components
+
+In v0.1.1, `PathShell` did not wrap step content in a `PathContext.Provider`,
+so step components could not call `usePathContext()`. This made `PathShell`
+unusable for any real data-driven workflow and forced a full custom shell
+to be written from scratch.
+
+In v0.1.2, `PathShell` wraps everything in `PathContext.Provider`, so
+`usePathContext()` works correctly inside step components. This was the single
+most impactful fix.
+
+### 2. `canMoveNext` / `canMovePrevious` now exposed on the snapshot
+
+In v0.1.1, guard results were not surfaced on the snapshot, so the Next button
+could not be reactively disabled. In v0.1.2 both `snapshot.canMoveNext` and
+`snapshot.canMovePrevious` are available and the default `PathShell` footer
+uses them correctly. Guards now give immediate visual feedback with no extra
+code from the consumer.
+
+---
+
+## Breaking change in v0.1.2 — `PathStep` removed, `steps` object prop added
+
+In v0.1.1 the API used `<PathStep>` children inside `<PathShell>`:
+
+```jsx
+<PathShell path={myPath}>
+  <PathStep id="details"><DetailsForm /></PathStep>
+  <PathStep id="review"><ReviewPanel /></PathStep>
+</PathShell>
+```
+
+In v0.1.2, `PathStep` is **not exported**. `PathShell` now accepts a `steps`
+prop — a plain object mapping step ID to JSX:
+
+```jsx
+<PathShell
+  path={myPath}
+  steps={{
+    details: <DetailsForm />,
+    review: <ReviewPanel />,
+  }}
+/>
+```
+
+The new API is cleaner and easier to work with. However:
+
+- The `PathStep` type still appears in `index.d.ts`, but the component is never
+  exported from `index.js` — this will cause a runtime `undefined` component
+  error if a consumer follows the old README examples or the type declarations.
+- The README still shows the old `<PathStep>` syntax. It needs updating to
+  match the v0.1.2 `steps` object prop.
+
+---
+
+## Remaining Issues
+
+### 3. 🔴 `PathShell` ships with no CSS — consumers must style all `pw-shell__*` classes themselves
+
+The package distributes only `dist/index.js` and `dist/index.d.ts`. There is
+no bundled stylesheet. `PathShell` renders a full component tree of `pw-shell__*`
+class names that are **completely unstyled** out of the box:
+
+```
+pw-shell
+pw-shell__header
+pw-shell__steps / pw-shell__step / pw-shell__step-dot / pw-shell__step-label
+pw-shell__step--current / pw-shell__step--completed / pw-shell__step--upcoming
+pw-shell__track / pw-shell__track-fill
+pw-shell__body
+pw-shell__footer / pw-shell__footer-left / pw-shell__footer-right
+pw-shell__btn / pw-shell__btn--back / pw-shell__btn--cancel / pw-shell__btn--next
+pw-shell__empty / pw-shell__start-btn
+```
+
+This means the shell renders as an unstyled block — no visible buttons, no
+progress indicator, no layout. A consumer cannot tell if the library is working
+at all until they have written ~150 lines of CSS for classes they shouldn't
+have to know about.
+
+This was the first problem encountered, before any logic issues surfaced. It
+creates a very poor first-run experience.
+
+#### Workaround used in this project
+
+All `pw-shell__*` styles were written manually in `workflow.css` with a comment
+marking them as a workaround. This should not be required of the consumer.
+
+#### Suggested fix
+
+Bundle a default stylesheet and document a single import line:
+
+```
+dist/
+  index.js
+  index.d.ts
+  index.css      ← add this
+```
+
+```js
+// Consumer adds one line:
+import "@daltonr/pathwrite-react/dist/index.css";
+```
+
+Alternatively, inject a `<style>` tag at runtime. Either approach eliminates
+the blank-screen problem on first use and is the standard approach taken by
+component libraries (React Select, React DatePicker, etc.).
+
+---
+
+### 4. README still shows old `<PathStep>` API (stale after v0.1.2)
+
+The README `PathShell` example still uses `<PathStep>` children, which no
+longer works. A new user following the docs will immediately see:
+
+> Element type is invalid: expected a string (for built-in components)
+> or a class/function but got: undefined.
+
+The README must be updated to show the `steps` object prop.
+
+---
+
+### 5. README table formatting is broken
+
+The markdown tables (usePath API, lifecycle hooks, events) are missing the
+header-separator row (`|---|---|`), so they render as plain paragraphs on npm
+and GitHub rather than as formatted tables.
+
+#### Suggested fix
+
+```markdown
+| Property | Type | Description |
+|---|---|---|
+| `snapshot` | `PathSnapshot \| null` | … |
+```
+
+---
+
+### 6. No data-binding example in the docs
+
+Both README examples show structural/navigation usage but neither shows how a
+step component reads and writes data (`snapshot.data` / `setData`). This is
+the most important pattern to document for a form wizard library.
+
+#### Suggested addition
+
+```jsx
+function DetailsStep() {
+  const { snapshot, setData } = usePathContext();
+  return (
+    <input
+      value={snapshot?.data.name ?? ""}
+      onChange={e => setData("name", e.target.value)}
+    />
+  );
+}
+
+const myPath = {
+  id: "example",
+  steps: [{ id: "details", canMoveNext: ctx => ctx.data.name?.trim().length > 0 }],
+};
+
+<PathShell path={myPath} initialData={{ name: "" }} steps={{ details: <DetailsStep /> }} />
+```
+
+---
+
+### 7. `setData` not typed against `TData` in the React adapter
+
+`setData(key, value)` accepts `key: string` and `value: unknown`. The generic
+`PathDefinition<TData>` exists on the core but doesn't flow through to `setData`
+in `UsePathReturn`, so TypeScript users get no autocomplete or type-checking on
+data keys.
+
+#### Suggested fix
+
+```ts
+interface UsePathReturn<TData extends PathData = PathData> {
+  snapshot: PathSnapshot<TData> | null;
+  setData: <K extends keyof TData>(key: K, value: TData[K]) => void;
+}
+```
+
+---
+
+## Summary
+
+| # | Issue | Status | Severity |
+|---|---|---|---|
+| 1 | `PathShell` didn't expose context to step children | ✅ Fixed in v0.1.2 | Was 🔴 critical |
+| 2 | `canMoveNext` result not in snapshot | ✅ Fixed in v0.1.2 | Was 🟠 medium |
+| 3 | No CSS bundled — shell completely unstyled on first use | 🔴 Open | High |
+| 4 | README still shows removed `<PathStep>` API | 🔴 Open | High |
+| 5 | README table formatting broken | 🟡 Open | Low |
+| 6 | No data-binding example in docs | 🟠 Open | Medium |
+| 7 | `setData` not typed against `TData` | 🟢 Open | Minor |
+
+The core engine design and the v0.1.2 context fix are both solid. The two most
+impactful remaining changes are **bundling a default stylesheet** (issue 3) and
+**updating the README** to match the new `steps` prop API (issue 4). Both are
+low-effort and would significantly reduce friction for new users.
+
 
 This was the single biggest obstacle. `PathShell` creates its own internal
 `usePath()` engine instance and **does not** wrap step content in a

@@ -91,10 +91,16 @@ import { PathShell } from "@daltonr/pathwrite-vue";
 
 ### Styling
 
-Import the optional stylesheet for sensible defaults. All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
+Import the optional stylesheet from whichever adapter you are using. All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
 
 ```css
-@import "@daltonr/pathwrite-shell.css";
+/* React / Vue — import in your entry file or global stylesheet */
+@import "@daltonr/pathwrite-react/styles.css";
+/* or */
+@import "@daltonr/pathwrite-vue/styles.css";
+
+/* Angular — add to the styles array in angular.json */
+/* "node_modules/@daltonr/pathwrite-angular/dist/index.css" */
 
 :root {
   --pw-color-primary: #8b5cf6;

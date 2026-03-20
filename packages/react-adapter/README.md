@@ -155,6 +155,25 @@ function DetailsForm() {
 />
 ```
 
+## Styling
+
+`<PathShell>` renders structural HTML with BEM-style `pw-shell__*` CSS classes but ships with no embedded styles. Import the optional stylesheet for sensible defaults:
+
+```ts
+import "@daltonr/pathwrite-react/styles.css";
+```
+
+All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
+
+```css
+:root {
+  --pw-color-primary: #8b5cf6;
+  --pw-shell-radius: 12px;
+}
+```
+
+---
+
 ## Design notes
 
 - **`useSyncExternalStore`** — the hook subscribes to the core `PathEngine` using React 18's `useSyncExternalStore`, giving tear-free reads with no `useEffect` timing gaps.

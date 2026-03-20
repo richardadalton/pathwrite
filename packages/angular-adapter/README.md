@@ -78,3 +78,107 @@ public readonly currentStep = computed(() => this.snapshot()?.stepId ?? null);
 |---------|---------|
 | `@angular/core` | `>=16.0.0` |
 | `rxjs` | `>=7.0.0` |
+
+---
+
+## Default UI — `<pw-shell>`
+
+The Angular adapter ships an optional shell component that renders a complete progress indicator, step content area, and navigation buttons out of the box. You only need to define the per-step content.
+
+The shell lives in a separate entry point so that headless-only usage does not pull in the Angular compiler:
+
+```typescript
+import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
+```
+
+### Usage
+
+```typescript
+@Component({
+  imports: [PathShellComponent, PathStepDirective],
+  template: `
+    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+      <ng-template pwStep="review"><app-review-panel /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent {
+  protected myPath = coursePath;
+  protected onDone(data: PathData) { console.log("Done!", data); }
+}
+```
+
+Each `<ng-template pwStep="<stepId>">` is rendered when the active step matches `stepId`. The shell handles all navigation internally.
+
+### Context sharing
+
+`PathShellComponent` provides a `PathFacade` instance at the component level. Step content components can inject it directly without a separate provider:
+
+```typescript
+@Component({
+  template: `
+    <input [value]="snapshot()?.data?.name ?? ''"
+           (input)="facade.setData('name', $event.target.value)" />
+  `
+})
+export class DetailsFormComponent {
+  protected readonly facade = inject(PathFacade);
+  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
+}
+```
+
+### Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `path` | `PathDefinition` | *required* | The path definition to drive. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+
+### Outputs
+
+| Output | Payload | Description |
+|--------|---------|-------------|
+| `(completed)` | `PathData` | Emitted when the path finishes naturally. |
+| `(cancelled)` | `PathData` | Emitted when the path is cancelled. |
+| `(pathEvent)` | `PathEvent` | Emitted for every engine event. |
+
+---
+
+## Styling
+
+Import the optional stylesheet for sensible default styles. All visual values are CSS custom properties (`--pw-*`) so you can theme without overriding selectors.
+
+### In `angular.json` (recommended)
+
+```json
+"styles": [
+  "src/styles.css",
+  "node_modules/@daltonr/pathwrite-angular/dist/index.css"
+]
+```
+
+### In a global stylesheet
+
+```css
+@import "@daltonr/pathwrite-angular/styles.css";
+```
+
+### Theming
+
+Override any `--pw-*` variable to customise the appearance:
+
+```css
+:root {
+  --pw-color-primary: #8b5cf6;
+  --pw-shell-radius: 12px;
+}
+```
+

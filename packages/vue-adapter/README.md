@@ -99,6 +99,25 @@ const { snapshot, setData } = usePathContext();
 
 `usePathContext()` throws if called outside a `<PathShell>`.
 
+## Styling
+
+`<PathShell>` renders structural HTML with BEM-style `pw-shell__*` CSS classes but ships with no embedded styles. Import the optional stylesheet for sensible defaults:
+
+```ts
+import "@daltonr/pathwrite-vue/styles.css";
+```
+
+All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
+
+```css
+:root {
+  --pw-color-primary: #8b5cf6;
+  --pw-shell-radius: 12px;
+}
+```
+
+---
+
 ## Peer dependencies
 
 | Package | Version |

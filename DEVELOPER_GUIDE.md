@@ -826,11 +826,25 @@ export class MyComponent { ... }
 
 ### Styling with CSS custom properties
 
-Import the optional stylesheet `packages/shell.css` for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
+Import the optional stylesheet from your adapter package for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
 
+**React / Vue** — import in your entry file or global stylesheet:
 ```css
-@import "@daltonr/pathwrite-shell.css";
+@import "@daltonr/pathwrite-react/styles.css";
+/* or */
+@import "@daltonr/pathwrite-vue/styles.css";
+```
 
+**Angular** — add to the `styles` array in `angular.json`:
+```json
+"styles": [
+  "src/styles.css",
+  "node_modules/@daltonr/pathwrite-angular/dist/index.css"
+]
+```
+
+**Theming:**
+```css
 :root {
   --pw-color-primary: #8b5cf6;       /* purple instead of blue */
   --pw-shell-radius: 12px;           /* rounder corners */
