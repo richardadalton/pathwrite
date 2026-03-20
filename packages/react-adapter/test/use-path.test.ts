@@ -3,7 +3,7 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { PathDefinition, PathEvent } from "@pathwrite/core";
+import { PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 

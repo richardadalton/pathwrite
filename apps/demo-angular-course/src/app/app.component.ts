@@ -6,8 +6,8 @@ import {
   PathDefinition,
   PathEvent,
   PathStepContext
-} from "@pathwrite/core";
-import { PathFacade } from "@pathwrite/angular-adapter";
+} from "@daltonr/pathwrite-core";
+import { PathFacade } from "@daltonr/pathwrite-angular";
 
 interface SubjectEntry {
   name: string;

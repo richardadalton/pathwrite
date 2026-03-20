@@ -1,7 +1,7 @@
 /**
  * demo-lifecycle
  *
- * Uses @pathwrite/core as a pure backend state machine to model a document
+ * Uses @daltonr/pathwrite-core as a pure backend state machine to model a document
  * lifecycle — no UI, no framework adapters, just data transitions with guards,
  * hooks, sub-paths, and conditional skipping.
  *
@@ -13,7 +13,7 @@
  *   3. Auto-skip      — an internal memo skips Review entirely.
  */
 
-import { PathData, PathDefinition, PathEngine, PathEvent } from "@pathwrite/core";
+import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -337,7 +337,7 @@ async function scenario3_autoSkip() {
 
 async function main() {
   console.log("Pathwrite — Document Lifecycle Demo (no UI)\n");
-  console.log("This demo uses @pathwrite/core as a backend state machine.");
+  console.log("This demo uses @daltonr/pathwrite-core as a backend state machine.");
   console.log("Each step is a lifecycle state; guards enforce business rules.");
 
   await scenario1_happyPath();

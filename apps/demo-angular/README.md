@@ -1,6 +1,6 @@
 # demo-angular
 
-Minimal Angular app demonstrating `@pathwrite/angular-adapter`. Shows how to wire `PathFacade` into a standalone component using Angular DI and signals.
+Minimal Angular app demonstrating `@daltonr/pathwrite-angular`. Shows how to wire `PathFacade` into a standalone component using Angular DI and signals.
 
 ## What it demonstrates
 
@@ -27,11 +27,11 @@ npm run demo:angular
 Or directly:
 
 ```bash
-npm run -w @pathwrite/demo-angular start
+npm run -w @daltonr/pathwrite-demo-angular start
 ```
 
 ## Build
 
 ```bash
-npm run -w @pathwrite/demo-angular build
+npm run -w @daltonr/pathwrite-demo-angular build
 ```

@@ -1,6 +1,6 @@
 # demo-console
 
-Node script demonstrating the `@pathwrite/core` engine directly — no UI framework required.
+Node script demonstrating the `@daltonr/pathwrite-core` engine directly — no UI framework required.
 
 ## What it demonstrates
 

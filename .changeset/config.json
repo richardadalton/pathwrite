@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.3/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [["@daltonr/pathwrite-core", "@daltonr/pathwrite-angular", "@daltonr/pathwrite-react", "@daltonr/pathwrite-vue"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@daltonr/pathwrite-demo-console",
+    "@daltonr/pathwrite-demo-angular",
+    "@daltonr/pathwrite-demo-angular-course",
+    "@daltonr/pathwrite-demo-angular-shell",
+    "@daltonr/pathwrite-demo-lifecycle"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@pathwrite/demo-lifecycle",
+  "name": "@daltonr/pathwrite-demo-lifecycle",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -7,7 +7,7 @@
     "demo": "tsx src/main.ts"
   },
   "dependencies": {
-    "@pathwrite/core": "0.1.0"
+    "@daltonr/pathwrite-core": "0.1.0"
   }
 }
 

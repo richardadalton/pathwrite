@@ -18,7 +18,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot
-} from "@pathwrite/core";
+} from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -164,7 +164,7 @@ export const PathShell = defineComponent({
     const actions: PathShellActions = { next, previous, cancel, goToStep, setData };
 
     return () => {
-      const snap = snapshot.value;
+      const snap = snapshot.value as PathSnapshot | null;
 
       if (!snap) {
         return h("div", { class: "pw-shell" },
@@ -192,7 +192,7 @@ export const PathShell = defineComponent({
             : renderVueHeader(snap)
         ),
         // Body — step content
-        h("div", { class: "pw-shell__body" }, stepContent),
+        h("div", { class: "pw-shell__body" }, stepContent ?? []),
         // Footer — navigation
         slots.footer
           ? slots.footer({ snapshot: snap, actions })
@@ -242,7 +242,7 @@ function renderVueFooter(
   props: { backLabel: string; nextLabel: string; finishLabel: string; cancelLabel: string; hideCancel: boolean }
 ): VNode {
   return h("div", { class: "pw-shell__footer" }, [
-    h("div", { class: "pw-shell__footer-left" },
+    h("div", { class: "pw-shell__footer-left" }, [
       !snapshot.isFirstStep
         ? h("button", {
             type: "button",
@@ -251,7 +251,7 @@ function renderVueFooter(
             onClick: actions.previous
           }, props.backLabel)
         : null
-    ),
+    ]),
     h("div", { class: "pw-shell__footer-right" }, [
       !props.hideCancel
         ? h("button", {

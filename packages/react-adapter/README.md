@@ -1,6 +1,6 @@
-# @pathwrite/react-adapter
+# @daltonr/pathwrite-react
 
-React hooks over `@pathwrite/core`. Exposes path state as reactive React state via `useSyncExternalStore`, with stable action callbacks and an optional context provider.
+React hooks over `@daltonr/pathwrite-core`. Exposes path state as reactive React state via `useSyncExternalStore`, with stable action callbacks and an optional context provider.
 
 ## Setup
 
@@ -9,7 +9,7 @@ React hooks over `@pathwrite/core`. Exposes path state as reactive React state v
 Each call to `usePath` creates an isolated path engine instance.
 
 ```tsx
-import { usePath } from "@pathwrite/react-adapter";
+import { usePath } from "@daltonr/pathwrite-react";
 
 function MyPathHost() {
   const { snapshot, start, next, previous, cancel, setData } = usePath({
@@ -43,7 +43,7 @@ function MyPathHost() {
 Wrap a subtree so that multiple components can read and drive the same path instance.
 
 ```tsx
-import { PathProvider, usePathContext } from "@pathwrite/react-adapter";
+import { PathProvider, usePathContext } from "@daltonr/pathwrite-react";
 
 function App() {
   return (

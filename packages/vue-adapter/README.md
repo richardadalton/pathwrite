@@ -1,12 +1,12 @@
-# @pathwrite/vue-adapter
+# @daltonr/pathwrite-vue
 
-Vue 3 composable over `@pathwrite/core`. Exposes path state as a reactive `shallowRef` that integrates seamlessly with Vue's reactivity system, templates, and `computed()`.
+Vue 3 composable over `@daltonr/pathwrite-core`. Exposes path state as a reactive `shallowRef` that integrates seamlessly with Vue's reactivity system, templates, and `computed()`.
 
 ## Setup
 
 ```vue
 <script setup lang="ts">
-import { usePath } from "@pathwrite/vue-adapter";
+import { usePath } from "@daltonr/pathwrite-vue";
 import { computed } from "vue";
 
 const { snapshot, start, next, previous, cancel, setData } = usePath({

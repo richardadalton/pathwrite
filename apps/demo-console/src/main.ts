@@ -1,4 +1,4 @@
-import { PathDefinition, PathEngine } from "@pathwrite/core";
+import { PathDefinition, PathEngine } from "@daltonr/pathwrite-core";
 
 const engine = new PathEngine();
 

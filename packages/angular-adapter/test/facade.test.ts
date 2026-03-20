@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PathDefinition } from "@pathwrite/core";
+import { PathDefinition } from "@daltonr/pathwrite-core";
 import { PathFacade } from "../src/index";
 
 // ---------------------------------------------------------------------------

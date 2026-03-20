@@ -7,7 +7,7 @@
  * theme the shell without overriding selectors.
  *
  * Usage:
- *   import "@pathwrite/shell.css";            // bundler import
+ *   import "@daltonr/pathwrite-shell.css";            // bundler import
  *   <link href="pathwrite/shell.css" ...>     // HTML link
  */
 

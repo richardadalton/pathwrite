@@ -11,8 +11,8 @@
     "emitDecoratorMetadata": false,
     "baseUrl": ".",
     "paths": {
-      "@pathwrite/core": ["../../packages/core/src/index.ts"],
-      "@pathwrite/angular-adapter": ["../../packages/angular-adapter/src/index.ts"]
+      "@daltonr/pathwrite-core": ["../../packages/core/src/index.ts"],
+      "@daltonr/pathwrite-angular": ["../../packages/angular-adapter/src/index.ts"]
     }
   },
   "files": [],

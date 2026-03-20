@@ -31,10 +31,10 @@ UI frameworks are supported through thin adapters:
 
 | Package | For |
 |---|---|
-| `@pathwrite/core` | Framework-agnostic engine (zero deps) |
-| `@pathwrite/angular-adapter` | Angular — exposes state as RxJS observables |
-| `@pathwrite/react-adapter` | React — exposes state via `useSyncExternalStore` |
-| `@pathwrite/vue-adapter` | Vue 3 — exposes state as a reactive `shallowRef` |
+| `@daltonr/pathwrite-core` | Framework-agnostic engine (zero deps) |
+| `@daltonr/pathwrite-angular` | Angular — exposes state as RxJS observables |
+| `@daltonr/pathwrite-react` | React — exposes state via `useSyncExternalStore` |
+| `@daltonr/pathwrite-vue` | Vue 3 — exposes state as a reactive `shallowRef` |
 
 **Headless** means Pathwrite owns no HTML. You write all the markup; Pathwrite tells you which step you're on, whether navigation is allowed, and what data the user has entered so far.
 
@@ -45,10 +45,10 @@ UI frameworks are supported through thin adapters:
 ```
 pathwrite/
 ├── packages/
-│   ├── core/                   # @pathwrite/core
-│   ├── angular-adapter/        # @pathwrite/angular-adapter (+ shell entry point)
-│   ├── react-adapter/          # @pathwrite/react-adapter (+ PathShell / PathStep)
-│   ├── vue-adapter/            # @pathwrite/vue-adapter (+ PathShell / PathStep)
+│   ├── core/                   # @daltonr/pathwrite-core
+│   ├── angular-adapter/        # @daltonr/pathwrite-angular (+ shell entry point)
+│   ├── react-adapter/          # @daltonr/pathwrite-react (+ PathShell / PathStep)
+│   ├── vue-adapter/            # @daltonr/pathwrite-vue (+ PathShell / PathStep)
 │   └── shell.css               # Optional shared stylesheet for shell components
 ├── apps/
 │   ├── demo-angular-course/    # Angular demo (multi-step course path, manual UI)
@@ -103,7 +103,7 @@ The engine emits an event every time something meaningful happens (`stateChanged
 ## 4. Defining a Path
 
 ```typescript
-import { PathDefinition } from "@pathwrite/core";
+import { PathDefinition } from "@daltonr/pathwrite-core";
 
 const myPath: PathDefinition = {
   id: "my-path",        // must be unique within your app
@@ -427,7 +427,7 @@ Both `pathId` and `stepId` are checked to unambiguously distinguish sub-path ste
 ### Option A — `usePath` (component-scoped)
 
 ```tsx
-import { usePath } from "@pathwrite/react-adapter";
+import { usePath } from "@daltonr/pathwrite-react";
 
 function CoursePathHost() {
   const { snapshot, start, next, previous, cancel, setData } = usePath({
@@ -464,7 +464,7 @@ function CoursePathHost() {
 ### Option B — `PathProvider` + `usePathContext` (shared across components)
 
 ```tsx
-import { PathProvider, usePathContext } from "@pathwrite/react-adapter";
+import { PathProvider, usePathContext } from "@daltonr/pathwrite-react";
 
 function App() {
   return (
@@ -520,7 +520,7 @@ Call the `usePath` composable inside `<script setup>` or any Vue 3 `setup()` fun
 
 ```vue
 <script setup lang="ts">
-import { usePath } from "@pathwrite/vue-adapter";
+import { usePath } from "@daltonr/pathwrite-vue";
 import { computed } from "vue";
 
 const { snapshot, start, next, previous, cancel, setData } = usePath({
@@ -615,7 +615,7 @@ The shell is a convenience layer on top of the headless API. It uses the same `u
 ### React — `<PathShell>` + `<PathStep>`
 
 ```tsx
-import { PathShell, PathStep } from "@pathwrite/react-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-react";
 
 function CoursePath() {
   return (
@@ -674,7 +674,7 @@ Use `renderHeader` or `renderFooter` to override just one section while keeping 
 
 ```vue
 <script setup>
-import { PathShell, PathStep } from "@pathwrite/vue-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
 import { coursePath } from "./paths";
 </script>
 
@@ -733,7 +733,7 @@ The Vue shell also supports named `header` and `footer` scoped slots for customi
 The Angular shell is in a separate entry point to avoid pulling the Angular compiler into headless-only usage:
 
 ```typescript
-import { PathShellComponent, PathStepDirective } from "@pathwrite/angular-adapter/shell";
+import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
 
 @Component({
   imports: [PathShellComponent, PathStepDirective],
@@ -774,7 +774,7 @@ export class MyComponent { ... }
 Import the optional stylesheet `packages/shell.css` for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
 
 ```css
-@import "@pathwrite/shell.css";
+@import "@daltonr/pathwrite-shell.css";
 
 :root {
   --pw-color-primary: #8b5cf6;       /* purple instead of blue */
@@ -848,7 +848,7 @@ The shell and the headless API are not mutually exclusive. You can start with `<
 ## 14. Using the Core Engine Directly
 
 ```typescript
-import { PathEngine, PathDefinition } from "@pathwrite/core";
+import { PathEngine, PathDefinition } from "@daltonr/pathwrite-core";
 
 const engine = new PathEngine();
 
@@ -922,7 +922,7 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 
 ## 16. Backend Lifecycle Patterns
 
-`@pathwrite/core` is not limited to UI wizards. Because the engine is headless, it can model any ordered state transition — document lifecycles, approval workflows, onboarding pipelines — with no UI at all.
+`@daltonr/pathwrite-core` is not limited to UI wizards. Because the engine is headless, it can model any ordered state transition — document lifecycles, approval workflows, onboarding pipelines — with no UI at all.
 
 ### Mapping concepts
 
@@ -940,7 +940,7 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 ### Example — document lifecycle
 
 ```typescript
-import { PathData, PathDefinition, PathEngine } from "@pathwrite/core";
+import { PathData, PathDefinition, PathEngine } from "@daltonr/pathwrite-core";
 
 interface DocData extends PathData {
   title: string;
@@ -1073,7 +1073,7 @@ npm run test:watch  # run in watch mode
 ### Testing a path definition
 
 ```typescript
-import { PathEngine } from "@pathwrite/core";
+import { PathEngine } from "@daltonr/pathwrite-core";
 
 it("skips payment step for free accounts", async () => {
   const engine = new PathEngine();
@@ -1087,7 +1087,7 @@ it("skips payment step for free accounts", async () => {
 
 ```tsx
 import { renderHook, act } from "@testing-library/react";
-import { usePath } from "@pathwrite/react-adapter";
+import { usePath } from "@daltonr/pathwrite-react";
 
 it("advances to the next step", async () => {
   const { result } = renderHook(() => usePath());
@@ -1118,7 +1118,7 @@ it("emits completed after the last step", async () => {
 
 ```typescript
 import { effectScope } from "vue";
-import { usePath } from "@pathwrite/vue-adapter";
+import { usePath } from "@daltonr/pathwrite-vue";
 
 it("advances to the next step", async () => {
   const scope = effectScope();
@@ -1139,7 +1139,7 @@ The Vue adapter tests use `effectScope()` to provide the disposal context that `
 The same `PathEngine` can test backend workflows. No UI framework or adapter is needed:
 
 ```typescript
-import { PathEngine } from "@pathwrite/core";
+import { PathEngine } from "@daltonr/pathwrite-core";
 
 it("skips review for memos", async () => {
   const engine = new PathEngine();
@@ -1167,7 +1167,7 @@ it("blocks leaving draft when required fields are missing", async () => {
 ```tsx
 import { createElement } from "react";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { PathShell, PathStep } from "@pathwrite/react-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-react";
 
 afterEach(() => cleanup());
 
@@ -1190,7 +1190,7 @@ it("renders step content and navigates", async () => {
 ```typescript
 import { defineComponent, h, nextTick } from "vue";
 import { mount, flushPromises } from "@vue/test-utils";
-import { PathShell, PathStep } from "@pathwrite/vue-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
 
 it("renders step content and navigates", async () => {
   const path = { id: "test", steps: [{ id: "a", title: "A" }, { id: "b", title: "B" }] };
@@ -1236,10 +1236,10 @@ All navigation methods return `Promise<void>` even when synchronous. Concurrent 
 There is no special "sub-path" type. `startSubPath` pushes the current path onto a stack and starts the provided definition as the new active path. The stack can be arbitrarily deep.
 
 ### No RxJS in core
-`@pathwrite/core` has zero dependencies. The Angular adapter introduces RxJS because Angular apps already depend on it. The React adapter uses only React's built-in `useSyncExternalStore`. The Vue adapter uses only Vue's built-in `shallowRef` and `onScopeDispose`. Each adapter is a thin translation layer from `subscribe` + `snapshot()` into the framework's native reactivity model.
+`@daltonr/pathwrite-core` has zero dependencies. The Angular adapter introduces RxJS because Angular apps already depend on it. The React adapter uses only React's built-in `useSyncExternalStore`. The Vue adapter uses only Vue's built-in `shallowRef` and `onScopeDispose`. Each adapter is a thin translation layer from `subscribe` + `snapshot()` into the framework's native reactivity model.
 
 ### Shell as an optional layer, not a core feature
-The default UI shell components (`<PathShell>` / `<pw-shell>`) are an optional convenience layer exported alongside the headless adapter API. They use the exact same `usePath` / `PathFacade` that you would use to build custom UI. This ensures there is no hidden API — everything the shell does, you can do yourself. The Angular shell is in a separate entry point (`@pathwrite/angular-adapter/shell`) to avoid pulling the Angular compiler into headless-only imports.
+The default UI shell components (`<PathShell>` / `<pw-shell>`) are an optional convenience layer exported alongside the headless adapter API. They use the exact same `usePath` / `PathFacade` that you would use to build custom UI. This ensures there is no hidden API — everything the shell does, you can do yourself. The Angular shell is in a separate entry point (`@daltonr/pathwrite-angular/shell`) to avoid pulling the Angular compiler into headless-only imports.
 
 ### Unstyled by default, themeable by convention
 Shell components render structural HTML with BEM-style `pw-shell__*` CSS classes but include no embedded styles. The optional `shell.css` stylesheet provides sensible defaults using CSS custom properties (`--pw-*`). This means the shell works in any design system — override a few variables to re-theme, or ignore the stylesheet entirely and write your own CSS targeting the same classes.

@@ -2,19 +2,31 @@
   "name": "pathwrite",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Headless path engine with Angular, React, and Vue adapters",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richardadalton/pathwrite.git"
+  },
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "build": "npm run -ws build",
+    "build": "tsc -b packages/core packages/angular-adapter packages/react-adapter packages/vue-adapter",
+    "clean": "npm run clean -ws --if-present && rm -rf packages/*/dist packages/*/*.tsbuildinfo",
     "test": "vitest run",
     "test:watch": "vitest",
-    "demo": "npm run -w @pathwrite/demo-console demo",
-    "demo:angular": "npm run -w @pathwrite/demo-angular start",
-    "demo:angular:course": "npm run -w @pathwrite/demo-angular-course start",
-    "demo:angular:shell": "npm run -w @pathwrite/demo-angular-shell start",
-    "demo:lifecycle": "npm run -w @pathwrite/demo-lifecycle demo"
+    "prepublish:check": "npm run clean && npm run build && npm test",
+    "release": "npm run prepublish:check && changeset publish",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "publish:dry": "npm run prepublish:check && npm publish --dry-run -w packages/core && npm publish --dry-run -w packages/angular-adapter && npm publish --dry-run -w packages/react-adapter && npm publish --dry-run -w packages/vue-adapter",
+    "demo": "npm run -w @daltonr/pathwrite-demo-console demo",
+    "demo:angular": "npm run -w @daltonr/pathwrite-demo-angular start",
+    "demo:angular:course": "npm run -w @daltonr/pathwrite-demo-angular-course start",
+    "demo:angular:shell": "npm run -w @daltonr/pathwrite-demo-angular-shell start",
+    "demo:lifecycle": "npm run -w @daltonr/pathwrite-demo-lifecycle demo"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.0",
     "@types/node": "^22.13.14",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",

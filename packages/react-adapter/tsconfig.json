@@ -7,7 +7,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@pathwrite/core": ["../core/src/index.ts"]
+      "@daltonr/pathwrite-core": ["../core/src/index.ts"]
     },
     "typeRoots": ["../../node_modules/@types"]
   },

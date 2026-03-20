@@ -6,7 +6,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot
-} from "@pathwrite/core";
+} from "@daltonr/pathwrite-core";
 
 @Injectable()
 export class PathFacade implements OnDestroy {

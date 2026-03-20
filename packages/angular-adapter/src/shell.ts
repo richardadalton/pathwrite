@@ -19,7 +19,7 @@ import {
   PathData,
   PathDefinition,
   PathEvent
-} from "@pathwrite/core";
+} from "@daltonr/pathwrite-core";
 import { PathFacade } from "./index";
 
 // ---------------------------------------------------------------------------

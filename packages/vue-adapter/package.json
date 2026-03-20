@@ -1,23 +1,41 @@
 {
-  "name": "@pathwrite/vue-adapter",
+  "name": "@daltonr/pathwrite-vue",
   "version": "0.1.0",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
+  "license": "MIT",
+  "description": "Vue 3 adapter for @daltonr/pathwrite-core — composables with reactive refs, and optional <PathShell> default UI.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richardadalton/pathwrite.git",
+    "directory": "packages/vue-adapter"
   },
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "keywords": ["wizard", "stepper", "path", "vue", "vue3", "composable", "multi-step", "workflow"],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "peerDependencies": {
     "vue": ">=3.3.0"
   },
   "dependencies": {
-    "@pathwrite/core": "0.1.0"
+    "@daltonr/pathwrite-core": "^0.1.0"
   },
   "devDependencies": {
     "@vue/test-utils": "^2.4.6",
     "vue": "^3.5.13"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

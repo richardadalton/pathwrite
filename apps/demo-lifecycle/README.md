@@ -1,6 +1,6 @@
 # demo-lifecycle
 
-Node script demonstrating `@pathwrite/core` as a **backend state machine** for document lifecycle management — no UI, no framework adapters.
+Node script demonstrating `@daltonr/pathwrite-core` as a **backend state machine** for document lifecycle management — no UI, no framework adapters.
 
 ## What it demonstrates
 
@@ -52,5 +52,5 @@ npm run demo:lifecycle
 
 ## Key takeaway
 
-`@pathwrite/core` is not UI-specific. Steps are states, guards are business rules, sub-paths are side processes, and `shouldSkip` handles conditional routing. The same engine that drives a multi-step form can drive a backend document workflow, approval pipeline, or any ordered state transition with restrictions.
+`@daltonr/pathwrite-core` is not UI-specific. Steps are states, guards are business rules, sub-paths are side processes, and `shouldSkip` handles conditional routing. The same engine that drives a multi-step form can drive a backend document workflow, approval pipeline, or any ordered state transition with restrictions.
 

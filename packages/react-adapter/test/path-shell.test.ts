@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { PathDefinition, PathSnapshot } from "@pathwrite/core";
+import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
 import { PathShell, PathStep, PathShellActions } from "../src/index";
 
 afterEach(() => cleanup());

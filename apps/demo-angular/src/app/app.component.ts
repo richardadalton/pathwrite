@@ -4,8 +4,8 @@ import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import {
   PathDefinition,
   PathEvent
-} from "@pathwrite/core";
-import { PathFacade } from "@pathwrite/angular-adapter";
+} from "@daltonr/pathwrite-core";
+import { PathFacade } from "@daltonr/pathwrite-angular";
 
 @Component({
   selector: "app-root",

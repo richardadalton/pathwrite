@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { effectScope } from "vue";
-import { PathDefinition, PathEvent } from "@pathwrite/core";
+import { PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 

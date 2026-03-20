@@ -1,6 +1,6 @@
 # demo-angular-course
 
-Angular app demonstrating a 3-step **Course Path** with a nested **Subject Entry Sub-path**, built with `@pathwrite/core` and `@pathwrite/angular-adapter`.
+Angular app demonstrating a 3-step **Course Path** with a nested **Subject Entry Sub-path**, built with `@daltonr/pathwrite-core` and `@daltonr/pathwrite-angular`.
 
 ## What it demonstrates
 
@@ -65,11 +65,11 @@ npm run demo:angular:course
 Or directly:
 
 ```bash
-npm run -w @pathwrite/demo-angular-course start
+npm run -w @daltonr/pathwrite-demo-angular-course start
 ```
 
 ## Build
 
 ```bash
-npm run -w @pathwrite/demo-angular-course build
+npm run -w @daltonr/pathwrite-demo-angular-course build
 ```

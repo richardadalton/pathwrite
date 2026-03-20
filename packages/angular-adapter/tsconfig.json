@@ -6,7 +6,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@pathwrite/core": ["../core/src/index.ts"]
+      "@daltonr/pathwrite-core": ["../core/src/index.ts"]
     }
   },
   "references": [{ "path": "../core" }],

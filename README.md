@@ -6,10 +6,10 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 
 | Package | Description |
 |---------|-------------|
-| [`@pathwrite/core`](packages/core) | Deterministic path state machine with stack-based sub-path orchestration. Zero dependencies, no UI framework required. |
-| [`@pathwrite/angular-adapter`](packages/angular-adapter) | Angular `@Injectable` facade over the core engine. Exposes state and events as RxJS observables; integrates with signals via `toSignal`. Includes optional `<pw-shell>` component. |
-| [`@pathwrite/react-adapter`](packages/react-adapter) | React hooks over the core engine. Exposes state via `useSyncExternalStore` with stable action callbacks, an optional context provider, and an optional `<PathShell>` component. |
-| [`@pathwrite/vue-adapter`](packages/vue-adapter) | Vue 3 composable over the core engine. Exposes state as a reactive `shallowRef` with automatic cleanup via `onScopeDispose`. Includes optional `<PathShell>` component. |
+| [`@daltonr/pathwrite-core`](packages/core) | Deterministic path state machine with stack-based sub-path orchestration. Zero dependencies, no UI framework required. |
+| [`@daltonr/pathwrite-angular`](packages/angular-adapter) | Angular `@Injectable` facade over the core engine. Exposes state and events as RxJS observables; integrates with signals via `toSignal`. Includes optional `<pw-shell>` component. |
+| [`@daltonr/pathwrite-react`](packages/react-adapter) | React hooks over the core engine. Exposes state via `useSyncExternalStore` with stable action callbacks, an optional context provider, and an optional `<PathShell>` component. |
+| [`@daltonr/pathwrite-vue`](packages/vue-adapter) | Vue 3 composable over the core engine. Exposes state as a reactive `shallowRef` with automatic cleanup via `onScopeDispose`. Includes optional `<PathShell>` component. |
 
 ## Apps
 
@@ -51,7 +51,7 @@ Every adapter includes an optional shell component that renders a complete wizar
 ### React
 
 ```tsx
-import { PathShell, PathStep } from "@pathwrite/react-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-react";
 
 <PathShell path={myPath} initialData={{ name: "" }} onComplete={handleDone}>
   <PathStep id="details"><DetailsForm /></PathStep>
@@ -63,7 +63,7 @@ import { PathShell, PathStep } from "@pathwrite/react-adapter";
 
 ```vue
 <script setup>
-import { PathShell, PathStep } from "@pathwrite/vue-adapter";
+import { PathShell, PathStep } from "@daltonr/pathwrite-vue";
 </script>
 
 <template>
@@ -77,7 +77,7 @@ import { PathShell, PathStep } from "@pathwrite/vue-adapter";
 ### Angular
 
 ```html
-<!-- Import PathShellComponent and PathStepDirective from @pathwrite/angular-adapter/shell -->
+<!-- Import PathShellComponent and PathStepDirective from @daltonr/pathwrite-angular/shell -->
 <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
   <ng-template pwStep="details"><app-details-form /></ng-template>
   <ng-template pwStep="review"><app-review-panel /></ng-template>
@@ -89,7 +89,7 @@ import { PathShell, PathStep } from "@pathwrite/vue-adapter";
 Import the optional stylesheet for sensible defaults. All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
 
 ```css
-@import "@pathwrite/shell.css";
+@import "@daltonr/pathwrite-shell.css";
 
 :root {
   --pw-color-primary: #8b5cf6;

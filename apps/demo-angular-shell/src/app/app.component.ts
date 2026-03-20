@@ -1,8 +1,8 @@
 import { Component } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
-import { PathDefinition, PathData, PathEvent } from "@pathwrite/core";
-import { PathShellComponent, PathStepDirective } from "@pathwrite/angular-adapter/shell";
+import { PathDefinition, PathData, PathEvent } from "@daltonr/pathwrite-core";
+import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
 
 @Component({
   selector: "app-root",

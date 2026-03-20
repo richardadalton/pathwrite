@@ -14,7 +14,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot
-} from "@pathwrite/core";
+} from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Types

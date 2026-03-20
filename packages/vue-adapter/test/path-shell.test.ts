@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { defineComponent, h, nextTick } from "vue";
 import { mount, flushPromises, VueWrapper } from "@vue/test-utils";
-import { PathDefinition, PathSnapshot } from "@pathwrite/core";
+import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
 import { PathShell, PathStep, PathShellActions } from "../src/index";
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-# @pathwrite/angular-adapter
+# @daltonr/pathwrite-angular
 
-Angular `@Injectable` facade over `@pathwrite/core`. Exposes path state and events as RxJS observables that work seamlessly with Angular signals, the `async` pipe, and `takeUntilDestroyed`.
+Angular `@Injectable` facade over `@daltonr/pathwrite-core`. Exposes path state and events as RxJS observables that work seamlessly with Angular signals, the `async` pipe, and `takeUntilDestroyed`.
 
 ## Setup
 

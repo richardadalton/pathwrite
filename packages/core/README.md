@@ -1,4 +1,4 @@
-# @pathwrite/core
+# @daltonr/pathwrite-core
 
 Headless path engine with zero dependencies. Manages step navigation, navigation guards, lifecycle hooks, and stack-based sub-path orchestration. Works equally well driving a UI wizard or a backend document lifecycle — no framework required.
 

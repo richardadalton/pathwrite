@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PathData, PathDefinition, PathEngine, PathEvent } from "@pathwrite/core";
+import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
