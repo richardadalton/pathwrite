@@ -47,8 +47,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   cancel: () => Promise<void>;
   /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. */
   goToStep: (stepId: string) => Promise<void>;
-  /** Update a single data value; triggers a re-render via stateChanged. */
-  setData: <K extends keyof TData>(key: K, value: TData[K]) => Promise<void>;
+  /** Update a single data value; triggers a re-render via stateChanged. When `TData` is specified, `key` and `value` are type-checked against your data shape. */
+  setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,8 +84,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const goToStep = (stepId: string): Promise<void> => engine.goToStep(stepId);
 
-  const setData = (key: string, value: unknown): Promise<void> =>
-    engine.setData(key, value);
+  const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
+    engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
 
   return { snapshot, start, startSubPath, next, previous, cancel, goToStep, setData };
 }
