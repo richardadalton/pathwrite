@@ -290,6 +290,11 @@ export class PathEngine {
   private async _previousAsync(active: ActivePath): Promise<void> {
     if (this._isNavigating) return;
 
+    // No-op when already on the first step of a top-level path.
+    // Sub-paths still cancel/pop back to the parent when previous() is called
+    // on their first step (the currentStepIndex < 0 branch below handles that).
+    if (active.currentStepIndex === 0 && this.pathStack.length === 0) return;
+
     this._isNavigating = true;
     this.emitStateChanged();
 

@@ -52,11 +52,27 @@ describe("PathEngine — navigation", () => {
     expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("cancels the path when moving previous from the first step", async () => {
+  it("is a no-op when called on the first step of a top-level path", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
     await engine.previous();
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.stepId).toBe("step1");
+  });
+
+  it("does not emit a cancelled event when previous() is called on the first step", async () => {
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+    await engine.start(twoStepPath());
+    await engine.previous();
+    expect(events.some((e) => e.type === "cancelled")).toBe(false);
+  });
+
+  it("pops back to the parent path when previous() is called on the first step of a sub-path", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.previous(); // step 0 of sub → pop back to parent
+    expect(engine.snapshot()?.pathId).toBe("parent");
   });
 
   it("stays on the current step when canMoveNext returns false", async () => {
