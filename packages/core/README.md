@@ -6,18 +6,18 @@ Headless path engine with zero dependencies. Manages step navigation, navigation
 
 ```typescript
 // Define your path's data shape once
-interface CourseArgs extends PathData {
+interface CourseData extends PathData {
   courseName: string;
   subjects: SubjectEntry[];
 }
 
-const path: PathDefinition<CourseArgs> = {
+const path: PathDefinition<CourseData> = {
   id: "course-path",
   steps: [
     {
       id: "details",
-      canMoveNext: (ctx) => ctx.args.courseName.length > 0,
-      onLeave: (ctx) => ({ courseName: ctx.args.courseName.trim() })
+      canMoveNext: (ctx) => ctx.data.courseName.length > 0,
+      onLeave: (ctx) => ({ courseName: ctx.data.courseName.trim() })
     },
     { id: "review" }
   ]
@@ -26,10 +26,10 @@ const path: PathDefinition<CourseArgs> = {
 
 | Type | Description |
 |------|-------------|
-| `PathDefinition<TArgs>` | A path's ID, title, and ordered list of step definitions. |
-| `PathStep<TArgs>` | A single step: guards, lifecycle hooks. |
-| `PathStepContext<TArgs>` | Passed to every hook and guard. `args` is a **readonly snapshot copy** — return a patch to update state. |
-| `PathSnapshot<TArgs>` | Point-in-time read of the engine: step ID, index, count, flags, and a copy of data. |
+| `PathDefinition<TData>` | A path's ID, title, and ordered list of step definitions. |
+| `PathStep<TData>` | A single step: guards, lifecycle hooks. |
+| `PathStepContext<TData>` | Passed to every hook and guard. `data` is a **readonly snapshot copy** — return a patch to update state. |
+| `PathSnapshot<TData>` | Point-in-time read of the engine: step ID, index, count, flags, and a copy of data. |
 | `PathEvent` | Union of `stateChanged`, `completed`, `cancelled`, and `resumed`. |
 
 ## PathEngine API
@@ -42,7 +42,7 @@ engine.startSubPath(definition, data?);    // push sub-path onto the stack (requ
 engine.next();
 engine.previous();
 engine.cancel();
-engine.setArg(key, value);                 // update a single data value; emits stateChanged
+engine.setData(key, value);                // update a single data value; emits stateChanged
 engine.snapshot();                         // returns PathSnapshot | null
 
 const unsubscribe = engine.subscribe((event) => { ... });
@@ -51,7 +51,7 @@ unsubscribe(); // remove the listener
 
 ## Lifecycle hooks
 
-All hooks are optional. Hooks that want to update data **return a partial patch** — the engine applies it automatically. Direct mutation of `ctx.args` is a no-op; the context receives a copy.
+All hooks are optional. Hooks that want to update data **return a partial patch** — the engine applies it automatically. Direct mutation of `ctx.data` is a no-op; the context receives a copy.
 
 | Hook | When called | Can return patch |
 |------|-------------|-----------------|
@@ -67,7 +67,7 @@ All hooks are optional. Hooks that want to update data **return a partial patch*
 {
   id: "subjects-list",
   onSubPathComplete: (_id, subData, ctx) => ({
-    subjects: [...(ctx.args.subjects ?? []), { name: subData.name, teacher: subData.teacher }]
+    subjects: [...(ctx.data.subjects ?? []), { name: subData.name, teacher: subData.teacher }]
   })
 }
 ```
@@ -90,8 +90,8 @@ Cancelling a sub-path pops it off the stack silently — `onSubPathComplete` is 
 engine.subscribe((event) => {
   switch (event.type) {
     case "stateChanged": // event.snapshot
-    case "completed":    // event.pathId, event.args
-    case "cancelled":    // event.pathId, event.args
+    case "completed":    // event.pathId, event.data
+    case "cancelled":    // event.pathId, event.data
     case "resumed":      // event.resumedPathId, event.fromSubPathId, event.snapshot
   }
 });

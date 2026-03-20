@@ -1,31 +1,31 @@
 export type PathData = Record<string, unknown>;
 
-export interface PathStepContext<TArgs extends PathData = PathData> {
+export interface PathStepContext<TData extends PathData = PathData> {
   readonly pathId: string;
   readonly stepId: string;
-  readonly args: Readonly<TArgs>;
+  readonly data: Readonly<TData>;
 }
 
-export interface PathStep<TArgs extends PathData = PathData> {
+export interface PathStep<TData extends PathData = PathData> {
   id: string;
   title?: string;
   meta?: Record<string, unknown>;
-  shouldSkip?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
-  canMoveNext?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
-  canMovePrevious?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
-  onEnter?: (ctx: PathStepContext<TArgs>) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
-  onLeave?: (ctx: PathStepContext<TArgs>) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
+  shouldSkip?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+  canMoveNext?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+  canMovePrevious?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+  onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onSubPathComplete?: (
     subPathId: string,
     subPathData: PathData,
-    ctx: PathStepContext<TArgs>
-  ) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
+    ctx: PathStepContext<TData>
+  ) => Partial<TData> | void | Promise<Partial<TData> | void>;
 }
 
-export interface PathDefinition<TArgs extends PathData = PathData> {
+export interface PathDefinition<TData extends PathData = PathData> {
   id: string;
   title?: string;
-  steps: PathStep<TArgs>[];
+  steps: PathStep<TData>[];
 }
 
 export type StepStatus = "completed" | "current" | "upcoming";
@@ -37,7 +37,7 @@ export interface StepSummary {
   status: StepStatus;
 }
 
-export interface PathSnapshot<TArgs extends PathData = PathData> {
+export interface PathSnapshot<TData extends PathData = PathData> {
   pathId: string;
   stepId: string;
   stepTitle?: string;
@@ -51,13 +51,13 @@ export interface PathSnapshot<TArgs extends PathData = PathData> {
   nestingLevel: number;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
-  args: TArgs;
+  data: TData;
 }
 
 export type PathEvent =
   | { type: "stateChanged"; snapshot: PathSnapshot }
-  | { type: "completed"; pathId: string; args: PathData }
-  | { type: "cancelled"; pathId: string; args: PathData }
+  | { type: "completed"; pathId: string; data: PathData }
+  | { type: "cancelled"; pathId: string; data: PathData }
   | {
       type: "resumed";
       resumedPathId: string;
@@ -68,7 +68,7 @@ export type PathEvent =
 interface ActivePath {
   definition: PathDefinition;
   currentStepIndex: number;
-  args: PathData;
+  data: PathData;
 }
 
 export class PathEngine {
@@ -113,7 +113,7 @@ export class PathEngine {
     if (this._isNavigating) return Promise.resolve();
 
     const cancelledPathId = active.definition.id;
-    const cancelledData = { ...active.args };
+    const cancelledData = { ...active.data };
 
     if (this.pathStack.length > 0) {
       this.activePath = this.pathStack.pop() ?? null;
@@ -122,13 +122,13 @@ export class PathEngine {
     }
 
     this.activePath = null;
-    this.emit({ type: "cancelled", pathId: cancelledPathId, args: cancelledData });
+    this.emit({ type: "cancelled", pathId: cancelledPathId, data: cancelledData });
     return Promise.resolve();
   }
 
-  public setArg(key: string, value: unknown): Promise<void> {
+  public setData(key: string, value: unknown): Promise<void> {
     const active = this.requireActivePath();
-    active.args[key] = value;
+    active.data[key] = value;
     this.emitStateChanged();
     return Promise.resolve();
   }
@@ -175,7 +175,7 @@ export class PathEngine {
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       isNavigating: this._isNavigating,
-      args: { ...active.args }
+      data: { ...active.data }
     };
   }
 
@@ -193,7 +193,7 @@ export class PathEngine {
     this.activePath = {
       definition: path,
       currentStepIndex: 0,
-      args: { ...initialData }
+      data: { ...initialData }
     };
 
     this._isNavigating = true;
@@ -306,7 +306,7 @@ export class PathEngine {
   private async finishActivePath(): Promise<void> {
     const finished = this.requireActivePath();
     const finishedPathId = finished.definition.id;
-    const finishedData = { ...finished.args };
+    const finishedData = { ...finished.data };
 
     if (this.pathStack.length > 0) {
       this.activePath = this.pathStack.pop()!;
@@ -317,7 +317,7 @@ export class PathEngine {
         const ctx: PathStepContext = {
           pathId: parent.definition.id,
           stepId: parentStep.id,
-          args: { ...parent.args }
+          data: { ...parent.data }
         };
         this.applyPatch(
           await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx)
@@ -332,7 +332,7 @@ export class PathEngine {
       });
     } else {
       this.activePath = null;
-      this.emit({ type: "completed", pathId: finishedPathId, args: finishedData });
+      this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
     }
   }
 
@@ -371,7 +371,7 @@ export class PathEngine {
     if (patch && typeof patch === "object") {
       const active = this.activePath;
       if (active) {
-        Object.assign(active.args, patch);
+        Object.assign(active.data, patch);
       }
     }
   }
@@ -389,7 +389,7 @@ export class PathEngine {
       const ctx: PathStepContext = {
         pathId: active.definition.id,
         stepId: step.id,
-        args: { ...active.args }
+        data: { ...active.data }
       };
       const skip = await step.shouldSkip(ctx);
       if (!skip) break;
@@ -405,7 +405,7 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      args: { ...active.args }
+      data: { ...active.data }
     };
     return step.onEnter(ctx);
   }
@@ -418,7 +418,7 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      args: { ...active.args }
+      data: { ...active.data }
     };
     return step.onLeave(ctx);
   }
@@ -431,7 +431,7 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      args: { ...active.args }
+      data: { ...active.data }
     };
     return step.canMoveNext(ctx);
   }
@@ -444,7 +444,7 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      args: { ...active.args }
+      data: { ...active.data }
     };
     return step.canMovePrevious(ctx);
   }

@@ -17,7 +17,7 @@
     <p><strong>Path:</strong> {{ s.pathId }}</p>
     <p><strong>Step:</strong> {{ s.stepId }} ({{ s.stepIndex + 1 }} / {{ s.stepCount }})</p>
     <p><strong>Nesting level:</strong> {{ s.nestingLevel }}</p>
-    <p><strong>Args:</strong> {{ s.args | json }}</p>
+    <p><strong>Data:</strong> {{ s.data | json }}</p>
   </section>
 
   <ng-template #noPath>

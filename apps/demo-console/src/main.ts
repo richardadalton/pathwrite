@@ -1,9 +1,8 @@
-import { PathFacade } from "@pathwrite/angular-adapter";
-import { PathDefinition } from "@pathwrite/core";
+import { PathDefinition, PathEngine } from "@pathwrite/core";
 
-const facade = new PathFacade();
+const engine = new PathEngine();
 
-facade.events$.subscribe((event) => {
+engine.subscribe((event) => {
   if (event.type === "stateChanged") {
     console.log(`stateChanged -> ${event.snapshot.pathId}/${event.snapshot.stepId}`);
   }
@@ -11,10 +10,10 @@ facade.events$.subscribe((event) => {
     console.log(`resumed -> ${event.resumedPathId} from ${event.fromSubPathId}`);
   }
   if (event.type === "completed") {
-    console.log(`completed -> ${event.pathId}`, event.args);
+    console.log(`completed -> ${event.pathId}`, event.data);
   }
   if (event.type === "cancelled") {
-    console.log(`cancelled -> ${event.pathId}`, event.args);
+    console.log(`cancelled -> ${event.pathId}`, event.data);
   }
 });
 
@@ -44,9 +43,13 @@ const subPath: PathDefinition = {
   ]
 };
 
-facade.start(mainPath, { owner: "demo" });
-facade.next();
-facade.startSubPath(subPath);
-facade.next();
-facade.next();
-facade.next();
+async function main() {
+  await engine.start(mainPath, { owner: "demo" });
+  await engine.next();                // course-details → lesson-details
+  await engine.startSubPath(subPath); // push sub-path
+  await engine.next();                // sub-path completes → resume parent at lesson-details
+  await engine.next();                // lesson-details → review
+  await engine.next();                // review → path completes
+}
+
+main();

@@ -79,7 +79,7 @@ describe("usePath — snapshot", () => {
   it("includes initial data passed to start", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath(), { owner: "test", value: 42 }));
-    expect(result.current.snapshot?.args).toMatchObject({ owner: "test", value: 42 });
+    expect(result.current.snapshot?.data).toMatchObject({ owner: "test", value: 42 });
   });
 });
 
@@ -192,11 +192,11 @@ describe("usePath — navigation", () => {
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("setArg() updates the arg and is visible in the snapshot", async () => {
+  it("setData() updates the value and is visible in the snapshot", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath(), { label: "old" }));
-    await act(() => result.current.setArg("label", "new"));
-    expect(result.current.snapshot?.args.label).toBe("new");
+    await act(() => result.current.setData("label", "new"));
+    expect(result.current.snapshot?.data.label).toBe("new");
   });
 
   it("action callbacks are referentially stable across re-renders", async () => {
@@ -210,7 +210,7 @@ describe("usePath — navigation", () => {
     expect(second.next).toBe(first.next);
     expect(second.previous).toBe(first.previous);
     expect(second.cancel).toBe(first.cancel);
-    expect(second.setArg).toBe(first.setArg);
+    expect(second.setData).toBe(first.setData);
   });
 });
 

@@ -1,22 +1,22 @@
 # demo-angular
 
-Minimal Angular app demonstrating `@pathwrite/angular-adapter`. Shows how to wire `WizardFacade` into a standalone component using Angular DI and signals.
+Minimal Angular app demonstrating `@pathwrite/angular-adapter`. Shows how to wire `PathFacade` into a standalone component using Angular DI and signals.
 
 ## What it demonstrates
 
-- `WizardFacade` provided at the component level (`providers: [WizardFacade]`) so Angular manages its lifecycle.
+- `PathFacade` provided at the component level (`providers: [PathFacade]`) so Angular manages its lifecycle.
 - `toSignal(facade.state$)` converts the observable snapshot into a signal consumed directly in the template.
 - `takeUntilDestroyed()` used for the event log subscription — no manual unsubscribe needed.
-- A one-step sub-wizard launched from within the main wizard, resuming it on completion.
+- A one-step sub-path launched from within the main path, resuming it on completion.
 
-## Wizard flow
+## Path flow
 
-| Wizard | Steps |
-|--------|-------|
+| Path | Steps |
+|------|-------|
 | `create-course` | `course-details` → `lesson-details` → `review` |
 | `new-lesson` (sub) | `lesson-name` |
 
-`new-lesson` sets a `lesson` arg via `onVisit`. On completion, `lesson-details` receives it via `onResumeFromSubWizard` and merges it into the parent args.
+`new-lesson` sets a `lesson` arg via `onEnter`. On completion, `lesson-details` receives it via `onSubPathComplete` and merges it into the parent data.
 
 ## Run
 

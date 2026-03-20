@@ -16,7 +16,7 @@ function collectEvents(engine: PathEngine): PathEvent[] {
 }
 
 // NOTE: All navigation methods (start, next, previous, cancel,
-// goToStep, setArg) return Promise<void> to support async hooks/guards.
+// goToStep, setData) return Promise<void> to support async hooks/guards.
 
 // ---------------------------------------------------------------------------
 // Navigation
@@ -142,18 +142,18 @@ describe("PathEngine — snapshot", () => {
     expect(engine.snapshot()?.nestingLevel).toBe(2);
   });
 
-  it("snapshot args are a copy — mutating the returned object does not affect internal state", async () => {
+  it("snapshot data is a copy — mutating the returned object does not affect internal state", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath(), { count: 1 });
     const snap = engine.snapshot()!;
-    (snap.args as PathData).count = 99;
-    expect(engine.snapshot()?.args.count).toBe(1);
+    (snap.data as PathData).count = 99;
+    expect(engine.snapshot()?.data.count).toBe(1);
   });
 
   it("includes initial data passed to start", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath(), { owner: "test", value: 42 });
-    expect(engine.snapshot()?.args).toMatchObject({ owner: "test", value: 42 });
+    expect(engine.snapshot()?.data).toMatchObject({ owner: "test", value: 42 });
   });
 
   it("isNavigating is false in a stable snapshot between navigations", async () => {
@@ -166,36 +166,36 @@ describe("PathEngine — snapshot", () => {
 });
 
 // ---------------------------------------------------------------------------
-// setArg
+// setData
 // ---------------------------------------------------------------------------
 
-describe("PathEngine — setArg", () => {
+describe("PathEngine — setData", () => {
   it("updates a value and reflects it in the next snapshot", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath(), { name: "original" });
-    await engine.setArg("name", "updated");
-    expect(engine.snapshot()?.args.name).toBe("updated");
+    await engine.setData("name", "updated");
+    expect(engine.snapshot()?.data.name).toBe("updated");
   });
 
   it("adds a new key that was not in the initial data", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
-    await engine.setArg("extra", true);
-    expect(engine.snapshot()?.args.extra).toBe(true);
+    await engine.setData("extra", true);
+    expect(engine.snapshot()?.data.extra).toBe(true);
   });
 
-  it("emits stateChanged after setArg", async () => {
+  it("emits stateChanged after setData", async () => {
     const engine = new PathEngine();
     const events = collectEvents(engine);
     await engine.start(twoStepPath());
     const before = events.filter((e) => e.type === "stateChanged").length;
-    await engine.setArg("x", 1);
-    // setArg is synchronous — emits exactly 1 event
+    await engine.setData("x", 1);
+    // setData is synchronous — emits exactly 1 event
     expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
   });
 
   it("throws when no path is active", () => {
-    expect(() => new PathEngine().setArg("x", 1)).toThrow();
+    expect(() => new PathEngine().setData("x", 1)).toThrow();
   });
 });
 
@@ -238,7 +238,7 @@ describe("PathEngine — events", () => {
     await engine.next();
     await engine.next();
     const completed = events.find((e) => e.type === "completed");
-    expect(completed).toMatchObject({ type: "completed", pathId: "main", args: { result: "done" } });
+    expect(completed).toMatchObject({ type: "completed", pathId: "main", data: { result: "done" } });
   });
 
   it("emits cancelled with data when cancel is called on a top-level path", async () => {
@@ -247,7 +247,7 @@ describe("PathEngine — events", () => {
     await engine.start(twoStepPath(), { owner: "test" });
     await engine.cancel();
     const cancelled = events.find((e) => e.type === "cancelled");
-    expect(cancelled).toMatchObject({ type: "cancelled", pathId: "main", args: { owner: "test" } });
+    expect(cancelled).toMatchObject({ type: "cancelled", pathId: "main", data: { owner: "test" } });
   });
 
   it("emits resumed with correct path IDs when a sub-path completes", async () => {
@@ -317,7 +317,7 @@ describe("PathEngine — lifecycle hooks", () => {
   it("applies the patch returned by onEnter to the path data", async () => {
     const engine = new PathEngine();
     await engine.start({ id: "w", steps: [{ id: "step1", onEnter: () => ({ visited: true }) }] });
-    expect(engine.snapshot()?.args.visited).toBe(true);
+    expect(engine.snapshot()?.data.visited).toBe(true);
   });
 
   it("calls onLeave when navigating forward", async () => {
@@ -344,7 +344,7 @@ describe("PathEngine — lifecycle hooks", () => {
       steps: [{ id: "step1", onLeave: () => ({ left: true }) }, { id: "step2" }]
     });
     await engine.next();
-    expect(engine.snapshot()?.args.left).toBe(true);
+    expect(engine.snapshot()?.data.left).toBe(true);
   });
 
   it("does not call onLeave when canMoveNext blocks navigation", async () => {
@@ -395,21 +395,21 @@ describe("PathEngine — lifecycle hooks", () => {
       steps: [{ id: "s1", onEnter: () => ({ value: "hello" }) }]
     });
     await engine.next();
-    expect(engine.snapshot()?.args.collected).toBe("hello");
+    expect(engine.snapshot()?.data.collected).toBe("hello");
   });
 
-  it("context args are a snapshot copy — direct mutation has no effect on path state", async () => {
+  it("context data is a snapshot copy — direct mutation has no effect on path state", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
       steps: [{
         id: "step1",
         onEnter: (ctx) => {
-          (ctx.args as PathData).sneaky = "mutation";
+          (ctx.data as PathData).sneaky = "mutation";
         }
       }]
     });
-    expect(engine.snapshot()?.args.sneaky).toBeUndefined();
+    expect(engine.snapshot()?.data.sneaky).toBeUndefined();
   });
 
   it("passes the correct pathId and stepId in the hook context", async () => {
@@ -612,7 +612,7 @@ describe("PathEngine — shouldSkip", () => {
       id: "w",
       steps: [
         { id: "step1" },
-        { id: "conditional", shouldSkip: (ctx) => ctx.args.skipMiddle === true },
+        { id: "conditional", shouldSkip: (ctx) => ctx.data.skipMiddle === true },
         { id: "step3" }
       ]
     }, { skipMiddle: true });
@@ -620,7 +620,7 @@ describe("PathEngine — shouldSkip", () => {
     expect(engine.snapshot()?.stepId).toBe("step3");
 
     await engine.previous(); // back to step1
-    await engine.setArg("skipMiddle", false);
+    await engine.setData("skipMiddle", false);
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("conditional");
   });
@@ -719,7 +719,7 @@ describe("PathEngine — goToStep", () => {
       ]
     });
     await engine.goToStep("b");
-    expect(engine.snapshot()?.args).toMatchObject({ leftA: true, visitedB: true });
+    expect(engine.snapshot()?.data).toMatchObject({ leftA: true, visitedB: true });
   });
 
   it("emits stateChanged after jumping", async () => {
@@ -944,7 +944,7 @@ describe("PathEngine — async hooks and guards", () => {
       id: "w",
       steps: [{ id: "step1", onEnter: () => Promise.resolve({ asyncVisit: true }) }]
     });
-    expect(engine.snapshot()?.args.asyncVisit).toBe(true);
+    expect(engine.snapshot()?.data.asyncVisit).toBe(true);
   });
 
   it("applies a patch returned by an async onLeave hook", async () => {
@@ -957,7 +957,7 @@ describe("PathEngine — async hooks and guards", () => {
       ]
     });
     await engine.next();
-    expect(engine.snapshot()?.args.asyncLeft).toBe(true);
+    expect(engine.snapshot()?.data.asyncLeft).toBe(true);
   });
 
   it("applies a patch returned by an async onSubPathComplete hook", async () => {
@@ -975,7 +975,7 @@ describe("PathEngine — async hooks and guards", () => {
       steps: [{ id: "s1", onEnter: () => ({ value: "async-result" }) }]
     });
     await engine.next();
-    expect(engine.snapshot()?.args.collected).toBe("async-result");
+    expect(engine.snapshot()?.data.collected).toBe("async-result");
   });
 
   it("skips a step when an async shouldSkip guard returns true", async () => {

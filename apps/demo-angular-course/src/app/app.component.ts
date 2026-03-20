@@ -33,7 +33,7 @@ export class AppComponent {
   protected readonly facade = inject(PathFacade);
   public readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
   public readonly subjects = computed((): SubjectEntry[] =>
-    this.extractSubjects(this.snapshot()?.args.subjects)
+    this.extractSubjects(this.snapshot()?.data.subjects)
   );
 
   private readonly mainPath: PathDefinition = {
@@ -42,7 +42,7 @@ export class AppComponent {
       {
         id: "course-details",
         title: "Course Details",
-        canMoveNext: (ctx) => this.nonEmptyString(ctx.args.courseName)
+        canMoveNext: (ctx) => this.nonEmptyString(ctx.data.courseName)
       },
       {
         id: "subjects-list",
@@ -74,7 +74,7 @@ export class AppComponent {
         id: "subject-entry",
         title: "Add Subject",
         canMoveNext: (ctx) =>
-          this.nonEmptyString(ctx.args.subjectName) && this.nonEmptyString(ctx.args.subjectTeacher)
+          this.nonEmptyString(ctx.data.subjectName) && this.nonEmptyString(ctx.data.subjectTeacher)
       }
     ]
   };
@@ -113,17 +113,17 @@ export class AppComponent {
 
   public updateCourseName(value: string): void {
     this.courseName = value;
-    this.facade.setArg("courseName", value.trim());
+    this.facade.setData("courseName", value.trim());
   }
 
   public updateSubjectName(value: string): void {
     this.subjectName = value;
-    this.facade.setArg("subjectName", value.trim());
+    this.facade.setData("subjectName", value.trim());
   }
 
   public updateSubjectTeacher(value: string): void {
     this.subjectTeacher = value;
-    this.facade.setArg("subjectTeacher", value.trim());
+    this.facade.setData("subjectTeacher", value.trim());
   }
 
   private extractSubjects(raw: unknown): SubjectEntry[] {
@@ -137,7 +137,7 @@ export class AppComponent {
   }
 
   private getSubjects(ctx: PathStepContext): SubjectEntry[] {
-    return this.extractSubjects(ctx.args.subjects);
+    return this.extractSubjects(ctx.data.subjects);
   }
 
   private formatEvent(event: PathEvent): string {

@@ -1,72 +1,81 @@
 # Pathwrite
 
-A headless, framework-agnostic wizard engine for the web, with first-class Angular and React adapters.
+A headless, framework-agnostic path engine for the web, with first-class Angular, React, and Vue adapters.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| [`@pathwrite/core`](packages/core) | Deterministic wizard state machine with stack-based sub-wizard orchestration. Zero dependencies, no UI framework required. |
+| [`@pathwrite/core`](packages/core) | Deterministic path state machine with stack-based sub-path orchestration. Zero dependencies, no UI framework required. |
 | [`@pathwrite/angular-adapter`](packages/angular-adapter) | Angular `@Injectable` facade over the core engine. Exposes state and events as RxJS observables; integrates with signals via `toSignal`. |
 | [`@pathwrite/react-adapter`](packages/react-adapter) | React hooks over the core engine. Exposes state via `useSyncExternalStore` with stable action callbacks and an optional context provider. |
+| [`@pathwrite/vue-adapter`](packages/vue-adapter) | Vue 3 composable over the core engine. Exposes state as a reactive `shallowRef` with automatic cleanup via `onScopeDispose`. |
 
 ## Apps
 
 | App | Description |
 |-----|-------------|
-| [`demo-console`](apps/demo-console) | Node script showing parent wizard + sub-wizard resume in a terminal. |
-| [`demo-angular`](apps/demo-angular) | Minimal Angular host rendering wizard state and events. |
-| [`demo-angular-course`](apps/demo-angular-course) | Full Angular course-wizard demo with a subject-entry sub-wizard. |
+| [`demo-console`](apps/demo-console) | Node script showing parent path + sub-path resume in a terminal. |
+| [`demo-angular`](apps/demo-angular) | Minimal Angular host rendering path state and events. |
+| [`demo-angular-course`](apps/demo-angular-course) | Full Angular course-path demo with a subject-entry sub-path. |
 
 ## Design principles
 
 - **Headless** — the core engine has no DOM or framework dependency; UI is entirely the host's responsibility.
-- **Immutable context** — lifecycle hooks receive a snapshot copy of `args` and return a patch object; they cannot mutate internal state directly.
-- **Type-safe args** — `WizardDefinition<TArgs>`, `WizardStepContext<TArgs>`, and `WizardSnapshot<TArgs>` are all generic; define your args shape once and get full inference through every hook and guard.
-- **Stack-based sub-wizards** — calling `startSubWizard()` pushes the current wizard onto a stack; completion or cancellation automatically restores the parent.
+- **Immutable context** — lifecycle hooks receive a snapshot copy of `data` and return a patch object; they cannot mutate internal state directly.
+- **Type-safe data** — `PathDefinition<TData>`, `PathStepContext<TData>`, and `PathSnapshot<TData>` are all generic; define your data shape once and get full inference through every hook and guard.
+- **Stack-based sub-paths** — calling `startSubPath()` pushes the current path onto a stack; completion or cancellation automatically restores the parent.
 - **Observable + signal friendly** — the Angular adapter exposes `state$` and `events$` as `Observable`, compatible with both the `async` pipe and `toSignal`.
 - **Hook friendly** — the React adapter uses `useSyncExternalStore` for tear-free reads and provides referentially stable action callbacks.
+- **Composable friendly** — the Vue adapter uses `shallowRef` + `onScopeDispose` for clean, idiomatic Vue 3 integration.
 
 ## Quick start
 
 ```bash
 npm install
 npm test
-npm run demo               # console demo
-npm run demo:angular       # Angular demo (localhost:4200)
-npm run demo:angular:course  # course wizard demo (localhost:4200)
+npm run demo                 # console demo
+npm run demo:angular         # Angular demo (localhost:4200)
+npm run demo:angular:course  # course path demo (localhost:4200)
 ```
 
 ## Test coverage
 
-139 tests across three packages:
+172 tests across four packages:
 
 | Suite | Tests |
 |-------|-------|
-| `WizardEngine` — navigation | 8 |
-| `WizardEngine` — snapshot | 8 |
-| `WizardEngine` — setArg | 4 |
-| `WizardEngine` — events | 8 |
-| `WizardEngine` — lifecycle hooks | 11 |
-| `WizardEngine` — sub-wizards | 5 |
-| `WizardEngine` — subscriptions | 3 |
-| `WizardEngine` — shouldSkip | 9 |
-| `WizardEngine` — stepTitle | 3 |
-| `WizardEngine` — goToStep | 9 |
-| `WizardEngine` — stepMeta | 3 |
-| `WizardEngine` — progress indicator | 8 |
-| `WizardEngine` — errors | 4 |
-| `WizardFacade` — state$ | 8 |
-| `WizardFacade` — snapshot() | 3 |
-| `WizardFacade` — events$ | 5 |
-| `WizardFacade` — navigation methods | 5 |
-| `WizardFacade` — sub-wizard | 2 |
-| `WizardFacade` — goToStep | 2 |
-| `WizardFacade` — ngOnDestroy | 2 |
-| `useWizard` — snapshot | 8 |
-| `useWizard` — events | 5 |
-| `useWizard` — navigation | 5 |
-| `useWizard` — sub-wizard | 2 |
-| `useWizard` — goToStep | 2 |
-| `WizardProvider + useWizardContext` | 4 |
-| `useWizard` — cleanup | 1 |
+| `PathEngine` — navigation | 8 |
+| `PathEngine` — snapshot | 8 |
+| `PathEngine` — setData | 4 |
+| `PathEngine` — events | 8 |
+| `PathEngine` — lifecycle hooks | 11 |
+| `PathEngine` — sub-paths | 5 |
+| `PathEngine` — subscriptions | 3 |
+| `PathEngine` — shouldSkip | 9 |
+| `PathEngine` — stepTitle | 3 |
+| `PathEngine` — goToStep | 9 |
+| `PathEngine` — stepMeta | 3 |
+| `PathEngine` — progress indicator | 8 |
+| `PathEngine` — async hooks and guards | 11 |
+| `PathEngine` — errors | 4 |
+| `PathFacade` — state$ | 8 |
+| `PathFacade` — snapshot() | 3 |
+| `PathFacade` — events$ | 5 |
+| `PathFacade` — navigation methods | 5 |
+| `PathFacade` — sub-path | 2 |
+| `PathFacade` — goToStep | 2 |
+| `PathFacade` — ngOnDestroy | 2 |
+| `usePath` (React) — snapshot | 8 |
+| `usePath` (React) — events | 5 |
+| `usePath` (React) — navigation | 5 |
+| `usePath` (React) — sub-path | 2 |
+| `usePath` (React) — goToStep | 2 |
+| `PathProvider + usePathContext` | 4 |
+| `usePath` (React) — cleanup | 1 |
+| `usePath` (Vue) — snapshot | 8 |
+| `usePath` (Vue) — events | 4 |
+| `usePath` (Vue) — navigation | 4 |
+| `usePath` (Vue) — sub-path | 2 |
+| `usePath` (Vue) — goToStep | 1 |
+| `usePath` (Vue) — scope disposal | 2 |

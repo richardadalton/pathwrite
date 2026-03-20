@@ -55,8 +55,8 @@ export class PathFacade implements OnDestroy {
     return this.engine.cancel();
   }
 
-  public setArg(key: string, value: unknown): Promise<void> {
-    return this.engine.setArg(key, value);
+  public setData(key: string, value: unknown): Promise<void> {
+    return this.engine.setData(key, value);
   }
 
   public goToStep(stepId: string): Promise<void> {

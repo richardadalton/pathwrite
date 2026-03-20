@@ -12,7 +12,7 @@ Each call to `usePath` creates an isolated path engine instance.
 import { usePath } from "@pathwrite/react-adapter";
 
 function MyPathHost() {
-  const { snapshot, start, next, previous, cancel, setArg } = usePath({
+  const { snapshot, start, next, previous, cancel, setData } = usePath({
     onEvent(event) {
       console.log(event);
     }
@@ -91,7 +91,7 @@ function NavButtons() {
 | `previous()` | `function` | Go back one step. Cancels the path from the first step. |
 | `cancel()` | `function` | Cancel the active path (or sub-path). |
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
-| `setArg(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. |
+| `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. |
 
 All action callbacks are **referentially stable** — safe to pass as props or include in dependency arrays without causing unnecessary re-renders.
 

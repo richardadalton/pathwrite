@@ -39,8 +39,8 @@ export interface UsePathReturn {
   cancel: () => void;
   /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. */
   goToStep: (stepId: string) => void;
-  /** Update a single arg; triggers a re-render via stateChanged. */
-  setArg: (key: string, value: unknown) => void;
+  /** Update a single data value; triggers a re-render via stateChanged. */
+  setData: (key: string, value: unknown) => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
@@ -107,12 +107,12 @@ export function usePath(options?: UsePathOptions): UsePathReturn {
     [engine]
   );
 
-  const setArg = useCallback(
-    (key: string, value: unknown) => engine.setArg(key, value),
+  const setData = useCallback(
+    (key: string, value: unknown) => engine.setData(key, value),
     [engine]
   );
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, setArg };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, setData };
 }
 
 // ---------------------------------------------------------------------------

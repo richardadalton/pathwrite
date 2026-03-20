@@ -105,7 +105,7 @@ describe("PathFacade — snapshot()", () => {
     const facade = new PathFacade();
     await facade.start(twoStepPath(), { owner: "test" });
     const snap = facade.snapshot();
-    expect(snap).toMatchObject({ pathId: "main", stepId: "step1", args: { owner: "test" } });
+    expect(snap).toMatchObject({ pathId: "main", stepId: "step1", data: { owner: "test" } });
   });
 
   it("is consistent with state$ after navigation", async () => {
@@ -213,20 +213,20 @@ describe("PathFacade — navigation methods", () => {
     expect(facade.snapshot()).toBeNull();
   });
 
-  it("setArg() updates the arg and is visible in the next snapshot", async () => {
+  it("setData() updates the value and is visible in the next snapshot", async () => {
     const facade = new PathFacade();
     await facade.start(twoStepPath(), { label: "old" });
-    await facade.setArg("label", "new");
-    expect(facade.snapshot()?.args.label).toBe("new");
+    await facade.setData("label", "new");
+    expect(facade.snapshot()?.data.label).toBe("new");
   });
 
-  it("setArg() update is reflected in state$", async () => {
+  it("setData() update is reflected in state$", async () => {
     const facade = new PathFacade();
     let latest: unknown;
-    facade.state$.subscribe((s) => { latest = s?.args.label; });
+    facade.state$.subscribe((s) => { latest = s?.data.label; });
 
     await facade.start(twoStepPath(), { label: "old" });
-    await facade.setArg("label", "new");
+    await facade.setData("label", "new");
 
     expect(latest).toBe("new");
   });

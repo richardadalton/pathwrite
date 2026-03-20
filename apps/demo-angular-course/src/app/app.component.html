@@ -48,7 +48,7 @@
 
     <div *ngIf="s.pathId === 'course-path' && s.stepId === 'subjects-list'" class="step-block">
       <h3>Step 2: Subjects List</h3>
-      <p><strong>Course:</strong> {{ s.args.courseName }}</p>
+      <p><strong>Course:</strong> {{ s.data.courseName }}</p>
 
       <button type="button" (click)="addSubjectViaSubPath()">Add Subject (Sub-path)</button>
 
@@ -96,7 +96,7 @@
 
     <div *ngIf="s.pathId === 'course-path' && s.stepId === 'review'" class="step-block">
       <h3>Step 3: Review</h3>
-      <p><strong>Course:</strong> {{ s.args.courseName }}</p>
+      <p><strong>Course:</strong> {{ s.data.courseName }}</p>
       <ul>
         <li *ngFor="let item of subjects()">{{ item.name }} - {{ item.teacher }}</li>
       </ul>

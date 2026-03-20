@@ -1,26 +1,26 @@
 # demo-angular-course
 
-Angular app demonstrating a 3-step **Course Wizard** with a nested **Subject Entry Sub-wizard**, built with `@pathwrite/core` and `@pathwrite/angular-adapter`.
+Angular app demonstrating a 3-step **Course Path** with a nested **Subject Entry Sub-path**, built with `@pathwrite/core` and `@pathwrite/angular-adapter`.
 
 ## What it demonstrates
 
-- `WizardFacade` provided at the component level for isolated, auto-cleaned-up wizard state.
+- `PathFacade` provided at the component level for isolated, auto-cleaned-up path state.
 - `toSignal(facade.state$)` for a reactive snapshot signal consumed directly in the template.
 - `computed()` to derive the subjects list from the snapshot signal — no imperative getters.
 - `takeUntilDestroyed()` for the event log subscription.
-- `onResumeFromSubWizard` returning a patch object to merge sub-wizard results into parent args.
+- `onSubPathComplete` returning a patch object to merge sub-path results into parent data.
 
-## Wizard flow
+## Path flow
 
-### Main wizard: `course-wizard`
+### Main path: `course-path`
 
 | Step | ID | Guard |
 |------|----|-------|
 | 1 | `course-details` | Course name must be non-empty |
 | 2 | `subjects-list` | At least one subject must have been added |
-| 3 | `review` | None — Next completes the wizard |
+| 3 | `review` | None — Next completes the path |
 
-### Sub-wizard: `subject-subwizard`
+### Sub-path: `subject-subpath`
 
 Launched from **Step 2** via the *Add Subject* button.
 
@@ -28,33 +28,33 @@ Launched from **Step 2** via the *Add Subject* button.
 |------|----|-------|
 | 1 | `subject-entry` | Subject name and teacher must both be non-empty |
 
-When the sub-wizard completes, `onResumeFromSubWizard` on `subjects-list` **returns a patch**:
+When the sub-path completes, `onSubPathComplete` on `subjects-list` **returns a patch**:
 
 ```typescript
-onResumeFromSubWizard: (_id, subArgs, ctx) => ({
-  subjects: [...getSubjects(ctx), { name: subArgs.subjectName, teacher: subArgs.subjectTeacher }]
+onSubPathComplete: (_id, subData, ctx) => ({
+  subjects: [...getSubjects(ctx), { name: subData.subjectName, teacher: subData.subjectTeacher }]
 })
 ```
 
-Cancelling the sub-wizard discards the entry and returns to `subjects-list` unchanged.
+Cancelling the sub-path discards the entry and returns to `subjects-list` unchanged.
 
 ## Navigation
 
 | Button | Behaviour |
 |--------|-----------|
-| **Start Course Wizard** | Resets state and begins the wizard |
-| **Previous** | Moves back one step (disabled when no wizard is active) |
-| **Next** | Advances if the guard passes; completes the wizard on the last step |
-| **Cancel** | Cancels the active wizard or sub-wizard and clears state |
+| **Start Course Path** | Resets state and begins the path |
+| **Previous** | Moves back one step (disabled when no path is active) |
+| **Next** | Advances if the guard passes; completes the path on the last step |
+| **Cancel** | Cancels the active path or sub-path and clears state |
 
 ## Event log
 
-Every `WizardEngineEvent` from `facade.events$` is prepended to an on-screen log (max 20 entries):
+Every `PathEvent` from `facade.events$` is prepended to an on-screen log (max 20 entries):
 
-- `stateChanged → <wizardId>/<stepId>`
-- `resumed → <resumedWizardId> from <subWizardId>`
-- `completed → <wizardId>`
-- `cancelled → <wizardId>`
+- `stateChanged → <pathId>/<stepId>`
+- `resumed → <resumedPathId> from <subPathId>`
+- `completed → <pathId>`
+- `cancelled → <pathId>`
 
 ## Run
 

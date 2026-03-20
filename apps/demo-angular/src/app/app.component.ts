@@ -86,8 +86,8 @@ export class AppComponent {
       return `resumed -> ${event.resumedPathId} from ${event.fromSubPathId}`;
     }
     if (event.type === "completed") {
-      return `completed -> ${event.pathId} ${JSON.stringify(event.args)}`;
+      return `completed -> ${event.pathId} ${JSON.stringify(event.data)}`;
     }
-    return `cancelled -> ${event.pathId} ${JSON.stringify(event.args)}`;
+    return `cancelled -> ${event.pathId} ${JSON.stringify(event.data)}`;
   }
 }

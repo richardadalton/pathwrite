@@ -2,7 +2,7 @@
   "name": "pathwrite",
   "private": true,
   "version": "0.1.0",
-  "description": "Headless Pathwrite engine with Angular-friendly adapter",
+  "description": "Headless path engine with Angular, React, and Vue adapters",
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "build": "npm run -ws build",

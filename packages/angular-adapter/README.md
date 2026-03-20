@@ -44,7 +44,7 @@ export class MyComponent {
 | `next()` | Advance one step. Completes the path on the last step. |
 | `previous()` | Go back one step. Cancels the path from the first step. |
 | `cancel()` | Cancel the active path (or sub-path). |
-| `setArg(key, value)` | Update a single data value; emits `stateChanged`. |
+| `setData(key, value)` | Update a single data value; emits `stateChanged`. |
 | `goToStep(stepId)` | Jump directly to a step by ID. |
 | `snapshot()` | Synchronous read of the current `PathSnapshot \| null`. |
 
