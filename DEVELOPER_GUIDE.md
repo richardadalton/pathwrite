@@ -14,11 +14,12 @@
 10. [Angular Adapter](#10-angular-adapter)
 11. [React Adapter](#11-react-adapter)
 12. [Vue Adapter](#12-vue-adapter)
-13. [Using the Core Engine Directly](#13-using-the-core-engine-directly)
-14. [TypeScript Generics](#14-typescript-generics)
-15. [Backend Lifecycle Patterns](#15-backend-lifecycle-patterns)
-16. [Testing](#16-testing)
-17. [Design Decisions](#17-design-decisions)
+13. [Default UI Shell](#13-default-ui-shell)
+14. [Using the Core Engine Directly](#14-using-the-core-engine-directly)
+15. [TypeScript Generics](#15-typescript-generics)
+16. [Backend Lifecycle Patterns](#16-backend-lifecycle-patterns)
+17. [Testing](#17-testing)
+18. [Design Decisions](#18-design-decisions)
 
 ---
 
@@ -45,11 +46,13 @@ UI frameworks are supported through thin adapters:
 pathwrite/
 ├── packages/
 │   ├── core/                   # @pathwrite/core
-│   ├── angular-adapter/        # @pathwrite/angular-adapter
-│   ├── react-adapter/          # @pathwrite/react-adapter
-│   └── vue-adapter/            # @pathwrite/vue-adapter
+│   ├── angular-adapter/        # @pathwrite/angular-adapter (+ shell entry point)
+│   ├── react-adapter/          # @pathwrite/react-adapter (+ PathShell / PathStep)
+│   ├── vue-adapter/            # @pathwrite/vue-adapter (+ PathShell / PathStep)
+│   └── shell.css               # Optional shared stylesheet for shell components
 ├── apps/
-│   ├── demo-angular-course/    # Angular demo (multi-step course path)
+│   ├── demo-angular-course/    # Angular demo (multi-step course path, manual UI)
+│   ├── demo-angular-shell/     # Angular demo using <pw-shell> default UI
 │   ├── demo-angular/           # Angular demo (simple)
 │   ├── demo-console/           # Console demo
 │   └── demo-lifecycle/         # Backend lifecycle state machine (no UI)
@@ -588,7 +591,261 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 
 ---
 
-## 13. Using the Core Engine Directly
+## 13. Default UI Shell
+
+Every adapter ships an optional **shell component** that renders a complete wizard UI — progress indicator, step content area, and navigation buttons — out of the box. You define only the per-step content; the shell handles the chrome.
+
+The shell is a convenience layer on top of the headless API. It uses the same `usePath` / `PathFacade` internally, so you can start with the shell and switch to fully custom UI at any time.
+
+### Architecture
+
+```
+┌─────────────────────────────────────┐
+│  ● Step 1  ─── ○ Step 2  ─── ○ Step 3  │  ← progress header
+│  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← progress bar
+├─────────────────────────────────────┤
+│                                     │
+│  [your step content goes here]      │  ← body (from <PathStep> / pwStep)
+│                                     │
+├─────────────────────────────────────┤
+│  ‹ Back          Cancel    Next ›   │  ← navigation footer
+└─────────────────────────────────────┘
+```
+
+### React — `<PathShell>` + `<PathStep>`
+
+```tsx
+import { PathShell, PathStep } from "@pathwrite/react-adapter";
+
+function CoursePath() {
+  return (
+    <PathShell
+      path={coursePath}
+      initialData={{ name: "" }}
+      onComplete={(data) => console.log("Done!", data)}
+    >
+      <PathStep id="details"><DetailsForm /></PathStep>
+      <PathStep id="review"><ReviewPanel /></PathStep>
+    </PathShell>
+  );
+}
+```
+
+#### `PathShellProps`
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `path` | `PathDefinition` | *required* | The path definition to drive. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `autoStart` | `boolean` | `true` | If true, the path starts on mount. |
+| `onComplete` | `(data) => void` | — | Called when the path completes. |
+| `onCancel` | `(data) => void` | — | Called when the path is cancelled. |
+| `onEvent` | `(event) => void` | — | Called for every engine event. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `className` | `string` | — | Extra CSS class on the root element. |
+| `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header. |
+| `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation footer. |
+
+#### Replacing the header or footer
+
+Use `renderHeader` or `renderFooter` to override just one section while keeping the rest:
+
+```tsx
+<PathShell
+  path={myPath}
+  renderFooter={(snap, { next, previous }) => (
+    <div className="my-nav">
+      <button onClick={previous}>← Back</button>
+      <span>{snap.stepIndex + 1} / {snap.stepCount}</span>
+      <button onClick={next}>{snap.isLastStep ? "Done" : "→ Next"}</button>
+    </div>
+  )}
+>
+  <PathStep id="a">...</PathStep>
+</PathShell>
+```
+
+### Vue — `<PathShell>` + `<PathStep>`
+
+```vue
+<script setup>
+import { PathShell, PathStep } from "@pathwrite/vue-adapter";
+import { coursePath } from "./paths";
+</script>
+
+<template>
+  <PathShell :path="coursePath" :initial-data="{ name: '' }" @complete="onDone">
+    <PathStep id="details"><DetailsForm /></PathStep>
+    <PathStep id="review"><ReviewPanel /></PathStep>
+  </PathShell>
+</template>
+```
+
+#### Vue props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `path` | `PathDefinition` | *required* | The path definition. |
+| `initialData` | `PathData` | `{}` | Initial data. |
+| `autoStart` | `boolean` | `true` | Auto-start on mount. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+
+#### Vue events
+
+| Event | Payload | Description |
+|---|---|---|
+| `@complete` | `PathData` | Path completed. |
+| `@cancel` | `PathData` | Path cancelled. |
+| `@event` | `PathEvent` | Every engine event. |
+
+#### Vue slots
+
+The Vue shell also supports named `header` and `footer` scoped slots for customisation:
+
+```vue
+<PathShell :path="myPath">
+  <template #header="{ snapshot }">
+    <MyCustomProgress :steps="snapshot.steps" />
+  </template>
+
+  <PathStep id="a"><StepA /></PathStep>
+  <PathStep id="b"><StepB /></PathStep>
+
+  <template #footer="{ snapshot, actions }">
+    <button @click="actions.previous">Back</button>
+    <button @click="actions.next">{{ snapshot.isLastStep ? 'Done' : 'Next' }}</button>
+  </template>
+</PathShell>
+```
+
+### Angular — `<pw-shell>` + `pwStep`
+
+The Angular shell is in a separate entry point to avoid pulling the Angular compiler into headless-only usage:
+
+```typescript
+import { PathShellComponent, PathStepDirective } from "@pathwrite/angular-adapter/shell";
+
+@Component({
+  imports: [PathShellComponent, PathStepDirective],
+  template: `
+    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+      <ng-template pwStep="review"><app-review-panel /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent { ... }
+```
+
+#### Angular inputs
+
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `path` | `PathDefinition` | *required* | The path definition. |
+| `initialData` | `PathData` | `{}` | Initial data. |
+| `autoStart` | `boolean` | `true` | Auto-start on init. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+
+#### Angular outputs
+
+| Output | Payload | Description |
+|---|---|---|
+| `(completed)` | `PathData` | Path completed. |
+| `(cancelled)` | `PathData` | Path cancelled. |
+| `(pathEvent)` | `PathEvent` | Every engine event. |
+
+### Styling with CSS custom properties
+
+Import the optional stylesheet `packages/shell.css` for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
+
+```css
+@import "@pathwrite/shell.css";
+
+:root {
+  --pw-color-primary: #8b5cf6;       /* purple instead of blue */
+  --pw-shell-radius: 12px;           /* rounder corners */
+  --pw-dot-size: 28px;               /* smaller step dots */
+}
+```
+
+#### Full list of CSS custom properties
+
+| Variable | Default | Description |
+|---|---|---|
+| `--pw-shell-max-width` | `720px` | Max width of the shell. |
+| `--pw-shell-padding` | `24px` | Inner padding. |
+| `--pw-shell-gap` | `20px` | Gap between header, body, footer. |
+| `--pw-shell-radius` | `10px` | Border radius of panels. |
+| `--pw-color-bg` | `#ffffff` | Background colour. |
+| `--pw-color-border` | `#dbe4f0` | Border colour. |
+| `--pw-color-text` | `#1f2937` | Text colour. |
+| `--pw-color-muted` | `#5b677a` | Muted / secondary text. |
+| `--pw-color-primary` | `#2563eb` | Primary accent colour. |
+| `--pw-color-primary-light` | `rgba(37,99,235,0.12)` | Light primary for hover states. |
+| `--pw-color-btn-bg` | `#f8fbff` | Button background. |
+| `--pw-color-btn-border` | `#c2d0e5` | Button border. |
+| `--pw-dot-size` | `32px` | Step indicator dot size. |
+| `--pw-dot-font-size` | `13px` | Step indicator dot font size. |
+| `--pw-track-height` | `4px` | Progress track height. |
+| `--pw-btn-padding` | `8px 16px` | Button padding. |
+| `--pw-btn-radius` | `6px` | Button border radius. |
+
+### CSS classes reference
+
+All shell components use BEM-style `pw-shell__*` classes:
+
+| Class | Element |
+|---|---|
+| `.pw-shell` | Root container. |
+| `.pw-shell__empty` | Empty state (no active path). |
+| `.pw-shell__start-btn` | Start button (when `autoStart` is false). |
+| `.pw-shell__header` | Progress indicator wrapper. |
+| `.pw-shell__steps` | Step dot container. |
+| `.pw-shell__step` | Individual step wrapper. |
+| `.pw-shell__step--current` | Current step modifier. |
+| `.pw-shell__step--completed` | Completed step modifier. |
+| `.pw-shell__step--upcoming` | Upcoming step modifier. |
+| `.pw-shell__step-dot` | Step dot circle. |
+| `.pw-shell__step-label` | Step label text. |
+| `.pw-shell__track` | Progress bar track. |
+| `.pw-shell__track-fill` | Progress bar fill. |
+| `.pw-shell__body` | Step content area. |
+| `.pw-shell__footer` | Navigation button bar. |
+| `.pw-shell__footer-left` | Left side of footer (Back). |
+| `.pw-shell__footer-right` | Right side of footer (Cancel, Next). |
+| `.pw-shell__btn` | Base button class. |
+| `.pw-shell__btn--back` | Back button. |
+| `.pw-shell__btn--next` | Next / Finish button. |
+| `.pw-shell__btn--cancel` | Cancel button. |
+
+### When to use the shell vs. going headless
+
+| Scenario | Use |
+|---|---|
+| Quick prototype, internal tool, standard wizard layout | Default shell — define steps and go. |
+| Custom design system, non-linear layout, complex animations | Headless API — build your own UI from the snapshot. |
+| Need to override just the header or footer | Shell with `renderHeader` / `renderFooter` (React) or scoped slots (Vue). |
+
+The shell and the headless API are not mutually exclusive. You can start with `<PathShell>` and migrate individual sections (or the entire component) to custom markup whenever you need more control.
+
+---
+
+## 14. Using the Core Engine Directly
 
 ```typescript
 import { PathEngine, PathDefinition } from "@pathwrite/core";
@@ -635,7 +892,7 @@ All navigation methods return a `Promise`. If `isNavigating` is `true` when a na
 
 ---
 
-## 14. TypeScript Generics
+## 15. TypeScript Generics
 
 All core types accept an optional generic `TData` for full type safety in hooks and guards:
 
@@ -663,7 +920,7 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 
 ---
 
-## 15. Backend Lifecycle Patterns
+## 16. Backend Lifecycle Patterns
 
 `@pathwrite/core` is not limited to UI wizards. Because the engine is headless, it can model any ordered state transition — document lifecycles, approval workflows, onboarding pipelines — with no UI at all.
 
@@ -806,7 +1063,7 @@ npm run demo:lifecycle
 
 ---
 
-## 16. Testing
+## 17. Testing
 
 ```bash
 npm test            # run all tests once
@@ -905,12 +1162,63 @@ it("blocks leaving draft when required fields are missing", async () => {
 });
 ```
 
+### Testing the React shell
+
+```tsx
+import { createElement } from "react";
+import { render, screen, act, cleanup } from "@testing-library/react";
+import { PathShell, PathStep } from "@pathwrite/react-adapter";
+
+afterEach(() => cleanup());
+
+it("renders step content and navigates", async () => {
+  const path = { id: "test", steps: [{ id: "a", title: "A" }, { id: "b", title: "B" }] };
+  await act(async () =>
+    render(createElement(PathShell, { path }, [
+      createElement(PathStep, { id: "a", key: "a" }, createElement("div", null, "Content A")),
+      createElement(PathStep, { id: "b", key: "b" }, createElement("div", null, "Content B")),
+    ]))
+  );
+  expect(screen.getByText("Content A")).toBeTruthy();
+  await act(async () => screen.getByText("Next").click());
+  expect(screen.getByText("Content B")).toBeTruthy();
+});
+```
+
+### Testing the Vue shell
+
+```typescript
+import { defineComponent, h, nextTick } from "vue";
+import { mount, flushPromises } from "@vue/test-utils";
+import { PathShell, PathStep } from "@pathwrite/vue-adapter";
+
+it("renders step content and navigates", async () => {
+  const path = { id: "test", steps: [{ id: "a", title: "A" }, { id: "b", title: "B" }] };
+  const Host = defineComponent({
+    setup: () => () =>
+      h(PathShell, { path }, {
+        default: () => [
+          h(PathStep, { id: "a" }, { default: () => h("div", "Content A") }),
+          h(PathStep, { id: "b" }, { default: () => h("div", "Content B") }),
+        ]
+      })
+  });
+  const wrapper = mount(Host, { attachTo: document.body });
+  await flushPromises(); await nextTick(); await flushPromises(); await nextTick();
+  expect(wrapper.text()).toContain("Content A");
+  await wrapper.find(".pw-shell__btn--next").trigger("click");
+  await flushPromises(); await nextTick(); await flushPromises(); await nextTick();
+  expect(wrapper.text()).toContain("Content B");
+  wrapper.unmount();
+});
+```
+
 ---
 
-## 17. Design Decisions
+## 18. Design Decisions
 
-### Headless by design
-Pathwrite owns no HTML or CSS. The snapshot gives you everything you need to render a path; how you render it is entirely up to you. The engine works equally well driving a UI wizard, a backend document lifecycle, or any ordered state transition with constraints.
+### Headless first, shells optional
+Pathwrite owns no HTML or CSS at its core. The snapshot gives you everything you need to render a path; how you render it is entirely up to you. The engine works equally well driving a UI wizard, a backend document lifecycle, or any ordered state transition with constraints. The optional shell components are a convenience layer — they use the same public API you would use to build custom UI.
 
 ### Steps are states
 A "step" is just an ordered state with optional guards and hooks. This abstraction maps naturally to UI wizard steps, but also to lifecycle states (Draft → Review → Approved → Published), pipeline stages, or onboarding phases. `goToStep` enables non-linear transitions (e.g. rejection), and `shouldSkip` handles conditional routing.
@@ -929,4 +1237,10 @@ There is no special "sub-path" type. `startSubPath` pushes the current path onto
 
 ### No RxJS in core
 `@pathwrite/core` has zero dependencies. The Angular adapter introduces RxJS because Angular apps already depend on it. The React adapter uses only React's built-in `useSyncExternalStore`. The Vue adapter uses only Vue's built-in `shallowRef` and `onScopeDispose`. Each adapter is a thin translation layer from `subscribe` + `snapshot()` into the framework's native reactivity model.
+
+### Shell as an optional layer, not a core feature
+The default UI shell components (`<PathShell>` / `<pw-shell>`) are an optional convenience layer exported alongside the headless adapter API. They use the exact same `usePath` / `PathFacade` that you would use to build custom UI. This ensures there is no hidden API — everything the shell does, you can do yourself. The Angular shell is in a separate entry point (`@pathwrite/angular-adapter/shell`) to avoid pulling the Angular compiler into headless-only imports.
+
+### Unstyled by default, themeable by convention
+Shell components render structural HTML with BEM-style `pw-shell__*` CSS classes but include no embedded styles. The optional `shell.css` stylesheet provides sensible defaults using CSS custom properties (`--pw-*`). This means the shell works in any design system — override a few variables to re-theme, or ignore the stylesheet entirely and write your own CSS targeting the same classes.
 

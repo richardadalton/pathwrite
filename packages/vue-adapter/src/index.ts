@@ -3,8 +3,14 @@ import {
   shallowRef,
   readonly,
   onScopeDispose,
+  defineComponent,
+  h,
+  computed,
+  onMounted,
   type Ref,
-  type DeepReadonly
+  type DeepReadonly,
+  type PropType,
+  type VNode
 } from "vue";
 import {
   PathData,
@@ -79,4 +85,222 @@ export function usePath(options?: UsePathOptions): UsePathReturn {
     engine.setData(key, value);
 
   return { snapshot, start, startSubPath, next, previous, cancel, goToStep, setData };
+}
+
+// ---------------------------------------------------------------------------
+// Default UI — PathShell + PathStep
+// ---------------------------------------------------------------------------
+
+export interface PathShellActions {
+  next: () => Promise<void>;
+  previous: () => Promise<void>;
+  cancel: () => Promise<void>;
+  goToStep: (stepId: string) => Promise<void>;
+  setData: (key: string, value: unknown) => Promise<void>;
+}
+
+/**
+ * `<PathStep>` — slot wrapper that only renders its default slot content
+ * when the current step matches the given `id`.
+ *
+ * Used inside `<PathShell>`.
+ */
+export const PathStep = defineComponent({
+  name: "PathStep",
+  props: {
+    id: { type: String, required: true }
+  },
+  setup(_props, { slots }) {
+    // PathStep never renders itself — PathShell reads its props and
+    // decides which slot to display. If rendered standalone it shows nothing.
+    return () => null;
+  }
+});
+
+/**
+ * `<PathShell>` — default UI shell that renders a progress indicator,
+ * step content, and navigation buttons.
+ *
+ * ```vue
+ * <PathShell :path="myPath" :initial-data="{ name: '' }" @complete="handleDone">
+ *   <PathStep id="details"><DetailsForm /></PathStep>
+ *   <PathStep id="review"><ReviewPanel /></PathStep>
+ * </PathShell>
+ * ```
+ */
+export const PathShell = defineComponent({
+  name: "PathShell",
+  props: {
+    path: { type: Object as PropType<PathDefinition>, required: true },
+    initialData: { type: Object as PropType<PathData>, default: () => ({}) },
+    autoStart: { type: Boolean, default: true },
+    backLabel: { type: String, default: "Back" },
+    nextLabel: { type: String, default: "Next" },
+    finishLabel: { type: String, default: "Finish" },
+    cancelLabel: { type: String, default: "Cancel" },
+    hideCancel: { type: Boolean, default: false },
+    hideProgress: { type: Boolean, default: false }
+  },
+  emits: ["complete", "cancel", "event"],
+  setup(props, { slots, emit }) {
+    const pathReturn = usePath({
+      onEvent(event) {
+        emit("event", event);
+        if (event.type === "completed") emit("complete", event.data);
+        if (event.type === "cancelled") emit("cancel", event.data);
+      }
+    });
+
+    const { snapshot, start, next, previous, cancel, goToStep, setData } = pathReturn;
+
+    const started = ref(false);
+    onMounted(() => {
+      if (props.autoStart && !started.value) {
+        started.value = true;
+        start(props.path, props.initialData);
+      }
+    });
+
+    const actions: PathShellActions = { next, previous, cancel, goToStep, setData };
+
+    return () => {
+      const snap = snapshot.value;
+
+      if (!snap) {
+        return h("div", { class: "pw-shell" },
+          h("div", { class: "pw-shell__empty" }, [
+            h("p", "No active path."),
+            !props.autoStart
+              ? h("button", {
+                  type: "button",
+                  class: "pw-shell__start-btn",
+                  onClick: () => start(props.path, props.initialData)
+                }, "Start")
+              : null
+          ])
+        );
+      }
+
+      // Resolve step content from default slot children
+      const stepContent = resolveVueStepContent(slots, snap);
+
+      return h("div", { class: "pw-shell" }, [
+        // Header — progress
+        !props.hideProgress && (
+          slots.header
+            ? slots.header({ snapshot: snap })
+            : renderVueHeader(snap)
+        ),
+        // Body — step content
+        h("div", { class: "pw-shell__body" }, stepContent),
+        // Footer — navigation
+        slots.footer
+          ? slots.footer({ snapshot: snap, actions })
+          : renderVueFooter(snap, actions, props)
+      ]);
+    };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Default header (progress indicator)
+// ---------------------------------------------------------------------------
+
+function renderVueHeader(snapshot: PathSnapshot): VNode {
+  return h("div", { class: "pw-shell__header" }, [
+    h("div", { class: "pw-shell__steps" },
+      snapshot.steps.map((step, i) =>
+        h("div", {
+          key: step.id,
+          class: ["pw-shell__step", `pw-shell__step--${step.status}`]
+        }, [
+          h("span", { class: "pw-shell__step-dot" },
+            step.status === "completed" ? "✓" : String(i + 1)
+          ),
+          h("span", { class: "pw-shell__step-label" },
+            step.title ?? step.id
+          )
+        ])
+      )
+    ),
+    h("div", { class: "pw-shell__track" },
+      h("div", {
+        class: "pw-shell__track-fill",
+        style: { width: `${snapshot.progress * 100}%` }
+      })
+    )
+  ]);
+}
+
+// ---------------------------------------------------------------------------
+// Default footer (navigation buttons)
+// ---------------------------------------------------------------------------
+
+function renderVueFooter(
+  snapshot: PathSnapshot,
+  actions: PathShellActions,
+  props: { backLabel: string; nextLabel: string; finishLabel: string; cancelLabel: string; hideCancel: boolean }
+): VNode {
+  return h("div", { class: "pw-shell__footer" }, [
+    h("div", { class: "pw-shell__footer-left" },
+      !snapshot.isFirstStep
+        ? h("button", {
+            type: "button",
+            class: "pw-shell__btn pw-shell__btn--back",
+            disabled: snapshot.isNavigating,
+            onClick: actions.previous
+          }, props.backLabel)
+        : null
+    ),
+    h("div", { class: "pw-shell__footer-right" }, [
+      !props.hideCancel
+        ? h("button", {
+            type: "button",
+            class: "pw-shell__btn pw-shell__btn--cancel",
+            disabled: snapshot.isNavigating,
+            onClick: actions.cancel
+          }, props.cancelLabel)
+        : null,
+      h("button", {
+        type: "button",
+        class: "pw-shell__btn pw-shell__btn--next",
+        disabled: snapshot.isNavigating,
+        onClick: actions.next
+      }, snapshot.isLastStep ? props.finishLabel : props.nextLabel)
+    ])
+  ]);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function resolveVueStepContent(
+  slots: Record<string, ((...args: any[]) => any) | undefined>,
+  snapshot: PathSnapshot
+): VNode[] | null {
+  // Look for a named slot matching the stepId
+  const namedSlot = slots[snapshot.stepId];
+  if (namedSlot) return namedSlot({ snapshot });
+
+  // Fall back to scanning default slot children for <PathStep> with matching id
+  const defaultChildren = slots.default?.();
+  if (!defaultChildren) return null;
+
+  for (const child of defaultChildren) {
+    if (
+      child &&
+      typeof child === "object" &&
+      "type" in child &&
+      child.type === PathStep &&
+      child.props?.id === snapshot.stepId
+    ) {
+      // Return the PathStep's own children (its default slot)
+      const stepSlots = (child.children as any)?.default;
+      if (typeof stepSlots === "function") return stepSlots();
+      if (Array.isArray(child.children)) return child.children as VNode[];
+      return null;
+    }
+  }
+  return null;
 }

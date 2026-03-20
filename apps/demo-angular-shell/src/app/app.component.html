@@ -1,0 +1,89 @@
+<main class="page">
+  <h1>Pathwrite Shell Demo</h1>
+  <p class="subtitle">
+    Same sign-up wizard — zero manual progress bar, navigation, or step switching code.
+  </p>
+
+  <!-- ===== Completed state ===== -->
+  <section class="completed-banner" *ngIf="completedData">
+    <h2>🎉 Sign-up complete!</h2>
+    <p>Welcome, {{ completedData['name'] }}.</p>
+    <button type="button" (click)="restart()">Start Again</button>
+  </section>
+
+  <!-- ===== The entire wizard is just <pw-shell> + <ng-template pwStep> ===== -->
+  <pw-shell
+    #shell
+    *ngIf="!completedData"
+    [path]="signupPath"
+    [initialData]="{ name: '', email: '', bio: '' }"
+    finishLabel="Sign Up"
+    (completed)="onComplete($event)"
+    (pathEvent)="onPathEvent($event)"
+  >
+
+    <!-- Step 1: Your Details -->
+    <ng-template pwStep="basics">
+      <div class="step-content">
+        <h3>Your Details</h3>
+        <label>
+          Name
+          <input
+            type="text"
+            [ngModel]="name"
+            (ngModelChange)="name = $event; shell.facade.setData('name', $event.trim())"
+            placeholder="Jane Smith"
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            [ngModel]="email"
+            (ngModelChange)="email = $event; shell.facade.setData('email', $event.trim())"
+            placeholder="jane@example.com"
+          />
+        </label>
+        <p class="hint">Both fields are required to continue.</p>
+      </div>
+    </ng-template>
+
+    <!-- Step 2: About You -->
+    <ng-template pwStep="bio">
+      <div class="step-content">
+        <h3>About You</h3>
+        <label>
+          Short bio
+          <textarea
+            [ngModel]="bio"
+            (ngModelChange)="bio = $event; shell.facade.setData('bio', $event.trim())"
+            placeholder="Tell us about yourself…"
+          ></textarea>
+        </label>
+        <p class="hint">Write at least a sentence to continue.</p>
+      </div>
+    </ng-template>
+
+    <!-- Step 3: Review -->
+    <ng-template pwStep="review">
+      <div class="step-content">
+        <h3>Review Your Details</h3>
+        <div class="review-item"><strong>Name:</strong> {{ name }}</div>
+        <div class="review-item"><strong>Email:</strong> {{ email }}</div>
+        <div class="review-item"><strong>Bio:</strong> {{ bio }}</div>
+        <p class="hint">Click "Sign Up" to complete.</p>
+      </div>
+    </ng-template>
+
+  </pw-shell>
+
+  <!-- ===== Event log ===== -->
+  <section class="event-log">
+    <h2>Event Log</h2>
+    <ul>
+      <li *ngFor="let event of eventLog">{{ event }}</li>
+      <li *ngIf="eventLog.length === 0">No events yet.</li>
+    </ul>
+  </section>
+</main>
+
