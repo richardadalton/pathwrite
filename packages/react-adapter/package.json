@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
   "description": "React adapter for @daltonr/pathwrite-core — hooks, context provider, and optional <PathShell> default UI.",
@@ -9,7 +9,15 @@
     "url": "git+https://github.com/richardadalton/pathwrite.git",
     "directory": "packages/react-adapter"
   },
-  "keywords": ["wizard", "stepper", "path", "react", "hooks", "multi-step", "workflow"],
+  "keywords": [
+    "wizard",
+    "stepper",
+    "path",
+    "react",
+    "hooks",
+    "multi-step",
+    "workflow"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -19,7 +27,11 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
@@ -29,7 +41,7 @@
     "react": ">=18.0.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.1.0"
+    "@daltonr/pathwrite-core": "^0.1.1"
   },
   "devDependencies": {
     "react": "^18.3.1",
