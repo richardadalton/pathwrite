@@ -332,3 +332,76 @@ describe("PathShell (Vue) — context sharing", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// validationMessages
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — validationMessages", () => {
+  it("renders the validation list when the current step has messages", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", validationMessages: () => ["Name is required", "Email is required"] },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(PathShell, { path }, {
+            "step-a": () => h("div", "A"),
+            "step-b": () => h("div", "B")
+          });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.text()).toContain("Name is required");
+    expect(wrapper.text()).toContain("Email is required");
+    wrapper.unmount();
+  });
+
+  it("does not render the validation list when messages is empty", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [{ id: "step-a", title: "Step A", validationMessages: () => [] }]
+    };
+    const TestHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path }, { "step-a": () => h("div", "A") });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("clears messages when navigating to a step with no hook", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", validationMessages: () => ["Fill this in"] },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(PathShell, { path }, {
+            "step-a": () => h("div", "A"),
+            "step-b": () => h("div", "B")
+          });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.text()).toContain("Fill this in");
+
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
+    await settled();
+    expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
+    wrapper.unmount();
+  });
+});
+

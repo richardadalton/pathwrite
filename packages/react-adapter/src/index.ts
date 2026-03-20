@@ -282,6 +282,12 @@ export function PathShell({
         : defaultHeader(snapshot)),
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
+      // Validation messages
+      snapshot.validationMessages.length > 0 && createElement("ul", { className: "pw-shell__validation" },
+        ...snapshot.validationMessages.map((msg, i) =>
+          createElement("li", { key: i, className: "pw-shell__validation-item" }, msg)
+        )
+      ),
       // Footer — navigation buttons
       renderFooter
         ? renderFooter(snapshot, actions)

@@ -277,3 +277,62 @@ describe("PathShell — context sharing", () => {
     expect(screen.getByText("Content B")).toBeTruthy();
   });
 });
+
+// ---------------------------------------------------------------------------
+// validationMessages
+// ---------------------------------------------------------------------------
+
+describe("PathShell — validationMessages", () => {
+  it("renders the validation list when the current step has messages", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", validationMessages: () => ["Name is required", "Email is required"] },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(screen.getByText("Name is required")).toBeTruthy();
+    expect(screen.getByText("Email is required")).toBeTruthy();
+  });
+
+  it("does not render the validation list when messages is empty", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [{ id: "step-a", title: "Step A", validationMessages: () => [] }]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: { "step-a": createElement("div", null, "A") }
+      }))
+    );
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
+  });
+
+  it("clears messages when navigating to a step with no hook", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", validationMessages: () => ["Fill this in"] },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(screen.getByText("Fill this in")).toBeTruthy();
+
+    await act(async () => screen.getByText("Next").click());
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
+  });
+});
+

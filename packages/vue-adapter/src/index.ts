@@ -208,6 +208,14 @@ export const PathShell = defineComponent({
         ),
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
+        // Validation messages
+        snap.validationMessages.length > 0
+          ? h("ul", { class: "pw-shell__validation" },
+              snap.validationMessages.map((msg, i) =>
+                h("li", { key: i, class: "pw-shell__validation-item" }, msg)
+              )
+            )
+          : null,
         // Footer — navigation
         slots.footer
           ? slots.footer({ snapshot: snap, actions })
