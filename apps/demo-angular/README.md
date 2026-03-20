@@ -16,7 +16,7 @@ Minimal Angular app demonstrating `@pathwrite/angular-adapter`. Shows how to wir
 | `create-course` | `course-details` → `lesson-details` → `review` |
 | `new-lesson` (sub) | `lesson-name` |
 
-`new-lesson` sets a `lesson` arg via `onEnter`. On completion, `lesson-details` receives it via `onSubPathComplete` and merges it into the parent data.
+`new-lesson` sets a `lesson` data value via `onEnter`. On completion, `lesson-details` receives it via `onSubPathComplete` and merges it into the parent data.
 
 ## Run
 

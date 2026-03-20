@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "demo": "npm run -w @pathwrite/demo-console demo",
     "demo:angular": "npm run -w @pathwrite/demo-angular start",
-    "demo:angular:course": "npm run -w @pathwrite/demo-angular-course start"
+    "demo:angular:course": "npm run -w @pathwrite/demo-angular-course start",
+    "demo:lifecycle": "npm run -w @pathwrite/demo-lifecycle demo"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",

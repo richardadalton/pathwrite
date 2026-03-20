@@ -1043,3 +1043,244 @@ describe("PathEngine — async hooks and guards", () => {
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Lifecycle / state-machine patterns
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — lifecycle patterns", () => {
+  // Reusable lifecycle definition: Draft → Review → Approved → Published
+  function docLifecycle(): PathDefinition {
+    return {
+      id: "doc-lifecycle",
+      steps: [
+        {
+          id: "draft",
+          meta: { allowedRoles: ["author"] },
+          canMoveNext: (ctx) => {
+            const title = ctx.data.title as string | undefined;
+            const body = ctx.data.body as string | undefined;
+            return !!title && title.length > 0 && !!body && body.length > 0;
+          },
+          onLeave: (ctx) => ({
+            auditLog: [...(ctx.data.auditLog as string[]), `submitted: ${ctx.data.title}`],
+          }),
+        },
+        {
+          id: "review",
+          meta: { allowedRoles: ["reviewer"], slaHours: 48 },
+          shouldSkip: (ctx) => ctx.data.docType === "memo",
+          canMoveNext: (ctx) => ctx.data.reviewOutcome === "approved",
+          onEnter: (ctx) => ({
+            auditLog: [...(ctx.data.auditLog as string[]), "entered review"],
+          }),
+          onSubPathComplete: (subPathId, subData, ctx) => {
+            if (subPathId !== "review-process") return;
+            return {
+              reviewOutcome: subData.decision,
+              auditLog: [...(ctx.data.auditLog as string[]), `review: ${subData.decision}`],
+            };
+          },
+        },
+        {
+          id: "approved",
+          meta: { allowedRoles: ["approver"] },
+          onEnter: (ctx) => ({
+            approvedBy: "manager",
+            auditLog: [...(ctx.data.auditLog as string[]), "approved"],
+          }),
+        },
+        {
+          id: "published",
+          meta: { allowedRoles: ["publisher"] },
+          onEnter: (ctx) => ({
+            auditLog: [...(ctx.data.auditLog as string[]), "published"],
+          }),
+        },
+      ],
+    };
+  }
+
+  const reviewSubPath: PathDefinition = {
+    id: "review-process",
+    steps: [
+      { id: "assign-reviewer", onEnter: () => ({ assignedReviewer: "alice" }) },
+      { id: "collect-feedback" },
+      { id: "record-decision" },
+    ],
+  };
+
+  function freshData(overrides: Record<string, unknown> = {}): PathData {
+    return {
+      title: "",
+      body: "",
+      docType: "standard",
+      reviewOutcome: "pending",
+      auditLog: [],
+      ...overrides,
+    };
+  }
+
+  it("blocks leaving draft when required fields are missing", async () => {
+    const engine = new PathEngine();
+    await engine.start(docLifecycle(), freshData());
+    await engine.next(); // blocked — no title/body
+    expect(engine.snapshot()?.stepId).toBe("draft");
+  });
+
+  it("allows leaving draft once required fields are populated", async () => {
+    const engine = new PathEngine();
+    await engine.start(docLifecycle(), freshData({ title: "Report", body: "Content" }));
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("review");
+  });
+
+  it("skips review for memos via shouldSkip", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Memo", body: "Lunch at noon", docType: "memo" }),
+    );
+    await engine.next(); // draft → approved (review skipped)
+    expect(engine.snapshot()?.stepId).toBe("approved");
+  });
+
+  it("completes the full lifecycle: draft → review → approved → published", async () => {
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Q3 Report", body: "Revenue up 15%", reviewOutcome: "approved" }),
+    );
+    await engine.next(); // draft → review
+    await engine.next(); // review → approved
+    await engine.next(); // approved → published
+    await engine.next(); // published → complete
+
+    expect(engine.snapshot()).toBeNull();
+    const completed = events.find((e) => e.type === "completed");
+    expect(completed).toBeDefined();
+    if (completed?.type === "completed") {
+      expect(completed.pathId).toBe("doc-lifecycle");
+    }
+  });
+
+  it("blocks review → approved when reviewOutcome is not approved", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Draft", body: "Content", reviewOutcome: "pending" }),
+    );
+    await engine.next(); // draft → review
+    await engine.next(); // blocked by guard
+    expect(engine.snapshot()?.stepId).toBe("review");
+  });
+
+  it("uses goToStep to model rejection (review → draft)", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Policy", body: "Content", reviewOutcome: "rejected" }),
+    );
+    await engine.next(); // draft → review
+    await engine.goToStep("draft");
+    expect(engine.snapshot()?.stepId).toBe("draft");
+  });
+
+  it("uses a review sub-path and merges the result into parent data", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Plan", body: "Details" }),
+    );
+    await engine.next(); // draft → review
+
+    // Launch sub-path with an "approved" decision
+    await engine.startSubPath(reviewSubPath, { decision: "approved" });
+    expect(engine.snapshot()?.pathId).toBe("review-process");
+
+    await engine.next(); // assign → collect
+    await engine.next(); // collect → record
+    await engine.next(); // record → sub-path completes
+
+    // Back on parent, outcome merged
+    expect(engine.snapshot()?.pathId).toBe("doc-lifecycle");
+    expect(engine.snapshot()?.stepId).toBe("review");
+    expect(engine.snapshot()?.data.reviewOutcome).toBe("approved");
+  });
+
+  it("builds an audit log through lifecycle hooks", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Spec", body: "Details", reviewOutcome: "approved" }),
+    );
+    await engine.next(); // draft → review
+    await engine.next(); // review → approved
+    await engine.next(); // approved → published
+
+    const log = engine.snapshot()?.data.auditLog as string[];
+    expect(log).toContain("submitted: Spec");
+    expect(log).toContain("entered review");
+    expect(log).toContain("approved");
+    expect(log).toContain("published");
+  });
+
+  it("exposes per-state metadata via stepMeta", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Doc", body: "Body", reviewOutcome: "approved" }),
+    );
+    expect(engine.snapshot()?.stepMeta).toEqual({ allowedRoles: ["author"] });
+
+    await engine.next(); // → review
+    expect(engine.snapshot()?.stepMeta).toEqual({ allowedRoles: ["reviewer"], slaHours: 48 });
+
+    await engine.next(); // → approved
+    expect(engine.snapshot()?.stepMeta).toEqual({ allowedRoles: ["approver"] });
+  });
+
+  it("rejection + re-review cycle completes the lifecycle", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      docLifecycle(),
+      freshData({ title: "Policy", body: "v1" }),
+    );
+
+    // Draft → Review
+    await engine.next();
+
+    // First review — rejected
+    await engine.startSubPath(reviewSubPath, { decision: "rejected" });
+    await engine.next();
+    await engine.next();
+    await engine.next(); // sub-path completes → resumes review
+    expect(engine.snapshot()?.data.reviewOutcome).toBe("rejected");
+
+    // Review guard blocks next — go back to draft
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("review");
+    await engine.goToStep("draft");
+    expect(engine.snapshot()?.stepId).toBe("draft");
+
+    // Revise and re-submit
+    await engine.setData("body", "v2");
+    await engine.next(); // draft → review
+
+    // Second review — approved
+    await engine.startSubPath(reviewSubPath, { decision: "approved" });
+    await engine.next();
+    await engine.next();
+    await engine.next(); // sub-path completes
+    expect(engine.snapshot()?.data.reviewOutcome).toBe("approved");
+
+    // Review → Approved → Published → complete
+    await engine.next();
+    await engine.next();
+    await engine.next();
+    expect(engine.snapshot()).toBeNull();
+  });
+});
+

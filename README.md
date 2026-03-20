@@ -18,6 +18,7 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 | [`demo-console`](apps/demo-console) | Node script showing parent path + sub-path resume in a terminal. |
 | [`demo-angular`](apps/demo-angular) | Minimal Angular host rendering path state and events. |
 | [`demo-angular-course`](apps/demo-angular-course) | Full Angular course-path demo with a subject-entry sub-path. |
+| [`demo-lifecycle`](apps/demo-lifecycle) | Backend document lifecycle (Draft → Review → Approved → Published) with guards, sub-paths, and conditional skipping — no UI. |
 
 ## Design principles
 
@@ -35,21 +36,22 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 npm install
 npm test
 npm run demo                 # console demo
+npm run demo:lifecycle       # lifecycle state-machine demo (no UI)
 npm run demo:angular         # Angular demo (localhost:4200)
 npm run demo:angular:course  # course path demo (localhost:4200)
 ```
 
 ## Test coverage
 
-172 tests across four packages:
+182 tests across four packages:
 
 | Suite | Tests |
 |-------|-------|
 | `PathEngine` — navigation | 8 |
-| `PathEngine` — snapshot | 8 |
+| `PathEngine` — snapshot | 9 |
 | `PathEngine` — setData | 4 |
 | `PathEngine` — events | 8 |
-| `PathEngine` — lifecycle hooks | 11 |
+| `PathEngine` — lifecycle hooks | 13 |
 | `PathEngine` — sub-paths | 5 |
 | `PathEngine` — subscriptions | 3 |
 | `PathEngine` — shouldSkip | 9 |
@@ -59,6 +61,7 @@ npm run demo:angular:course  # course path demo (localhost:4200)
 | `PathEngine` — progress indicator | 8 |
 | `PathEngine` — async hooks and guards | 11 |
 | `PathEngine` — errors | 4 |
+| `PathEngine` — lifecycle patterns | 10 |
 | `PathFacade` — state$ | 8 |
 | `PathFacade` — snapshot() | 3 |
 | `PathFacade` — events$ | 5 |

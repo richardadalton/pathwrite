@@ -16,8 +16,9 @@
 12. [Vue Adapter](#12-vue-adapter)
 13. [Using the Core Engine Directly](#13-using-the-core-engine-directly)
 14. [TypeScript Generics](#14-typescript-generics)
-15. [Testing](#15-testing)
-16. [Design Decisions](#16-design-decisions)
+15. [Backend Lifecycle Patterns](#15-backend-lifecycle-patterns)
+16. [Testing](#16-testing)
+17. [Design Decisions](#17-design-decisions)
 
 ---
 
@@ -50,7 +51,8 @@ pathwrite/
 ├── apps/
 │   ├── demo-angular-course/    # Angular demo (multi-step course path)
 │   ├── demo-angular/           # Angular demo (simple)
-│   └── demo-console/           # Console demo
+│   ├── demo-console/           # Console demo
+│   └── demo-lifecycle/         # Backend lifecycle state machine (no UI)
 ├── vitest.config.ts            # Root test config (runs all packages)
 └── package.json                # npm workspaces root
 ```
@@ -661,7 +663,150 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 
 ---
 
-## 15. Testing
+## 15. Backend Lifecycle Patterns
+
+`@pathwrite/core` is not limited to UI wizards. Because the engine is headless, it can model any ordered state transition — document lifecycles, approval workflows, onboarding pipelines — with no UI at all.
+
+### Mapping concepts
+
+| Path concept | Lifecycle equivalent |
+|---|---|
+| Steps | States (Draft, Review, Approved, Published) |
+| `canMoveNext` | Business rules ("document must have a title and body") |
+| `shouldSkip` | Conditional routing (memos skip review) |
+| Sub-paths | Side processes (multi-step review with assign → feedback → decision) |
+| `goToStep` | Non-linear transitions (rejection sends back to Draft) |
+| `onEnter` / `onLeave` | State entry/exit actions (record timestamps, log audit entries) |
+| `meta` | Per-state metadata (allowed roles, SLA durations) |
+| `subscribe` | Audit logging, notifications, external integrations |
+
+### Example — document lifecycle
+
+```typescript
+import { PathData, PathDefinition, PathEngine } from "@pathwrite/core";
+
+interface DocData extends PathData {
+  title: string;
+  body: string;
+  docType: "standard" | "memo";
+  reviewOutcome: "pending" | "approved" | "rejected";
+  auditLog: string[];
+}
+
+const lifecycle: PathDefinition<DocData> = {
+  id: "doc-lifecycle",
+  steps: [
+    {
+      id: "draft",
+      meta: { allowedRoles: ["author"] },
+      canMoveNext: (ctx) => ctx.data.title.length > 0 && ctx.data.body.length > 0,
+      onLeave: (ctx) => ({
+        auditLog: [...ctx.data.auditLog, `Submitted: "${ctx.data.title}"`],
+      }),
+    },
+    {
+      id: "review",
+      meta: { allowedRoles: ["reviewer"], slaHours: 48 },
+      shouldSkip: (ctx) => ctx.data.docType === "memo",
+      canMoveNext: (ctx) => ctx.data.reviewOutcome === "approved",
+      onEnter: (ctx) => ({
+        auditLog: [...ctx.data.auditLog, "Entered review"],
+      }),
+    },
+    {
+      id: "approved",
+      meta: { allowedRoles: ["approver"] },
+      onEnter: (ctx) => ({
+        auditLog: [...ctx.data.auditLog, "Approved"],
+      }),
+    },
+    {
+      id: "published",
+      meta: { allowedRoles: ["publisher"] },
+      onEnter: (ctx) => ({
+        auditLog: [...ctx.data.auditLog, `Published at ${new Date().toISOString()}`],
+      }),
+    },
+  ],
+};
+```
+
+### Driving the lifecycle
+
+```typescript
+const engine = new PathEngine();
+
+// Audit trail via subscribe — no UI needed
+engine.subscribe((event) => {
+  if (event.type === "completed") {
+    console.log("Document published:", event.data);
+  }
+});
+
+// Start in Draft
+await engine.start(lifecycle, {
+  title: "Q3 Report",
+  body: "Revenue up 15%",
+  docType: "standard",
+  reviewOutcome: "pending",
+  auditLog: [],
+});
+
+// Simulate external approval
+await engine.setData("reviewOutcome", "approved");
+
+// Advance through the lifecycle
+await engine.next(); // draft → review
+await engine.next(); // review → approved
+await engine.next(); // approved → published
+await engine.next(); // published → complete
+```
+
+### Modelling rejection with `goToStep`
+
+```typescript
+// Reviewer rejects — jump back to Draft for revision
+await engine.goToStep("draft");
+
+// Author revises, then re-submits
+await engine.setData("body", "Revised content v2");
+await engine.setData("reviewOutcome", "pending");
+await engine.next(); // draft → review
+```
+
+### Review sub-path
+
+A review can itself be a multi-step process. Push it as a sub-path from the `review` step:
+
+```typescript
+const reviewProcess: PathDefinition = {
+  id: "review-process",
+  steps: [
+    { id: "assign-reviewer", onEnter: () => ({ assignedReviewer: "alice" }) },
+    { id: "collect-feedback" },
+    { id: "record-decision" },
+  ],
+};
+
+// On the review step:
+{
+  id: "review",
+  onSubPathComplete: (subPathId, subData, ctx) => ({
+    reviewOutcome: subData.decision,
+    auditLog: [...ctx.data.auditLog, `Review: ${subData.decision}`],
+  }),
+}
+```
+
+The `demo-lifecycle` app demonstrates all three patterns (happy path, rejection, and auto-skip) in a runnable Node script:
+
+```bash
+npm run demo:lifecycle
+```
+
+---
+
+## 16. Testing
 
 ```bash
 npm test            # run all tests once
@@ -732,12 +877,43 @@ it("advances to the next step", async () => {
 
 The Vue adapter tests use `effectScope()` to provide the disposal context that `onScopeDispose` requires. Call `scope.stop()` at the end of each test to simulate component unmount.
 
+### Testing lifecycle patterns
+
+The same `PathEngine` can test backend workflows. No UI framework or adapter is needed:
+
+```typescript
+import { PathEngine } from "@pathwrite/core";
+
+it("skips review for memos", async () => {
+  const engine = new PathEngine();
+  await engine.start(docLifecycle, {
+    title: "Memo", body: "Lunch at noon", docType: "memo",
+    reviewOutcome: "pending", auditLog: [],
+  });
+  await engine.next(); // draft → approved (review skipped)
+  expect(engine.snapshot()?.stepId).toBe("approved");
+});
+
+it("blocks leaving draft when required fields are missing", async () => {
+  const engine = new PathEngine();
+  await engine.start(docLifecycle, {
+    title: "", body: "", docType: "standard",
+    reviewOutcome: "pending", auditLog: [],
+  });
+  await engine.next(); // blocked by guard
+  expect(engine.snapshot()?.stepId).toBe("draft");
+});
+```
+
 ---
 
-## 16. Design Decisions
+## 17. Design Decisions
 
 ### Headless by design
-Pathwrite owns no HTML or CSS. The snapshot gives you everything you need to render a path; how you render it is entirely up to you.
+Pathwrite owns no HTML or CSS. The snapshot gives you everything you need to render a path; how you render it is entirely up to you. The engine works equally well driving a UI wizard, a backend document lifecycle, or any ordered state transition with constraints.
+
+### Steps are states
+A "step" is just an ordered state with optional guards and hooks. This abstraction maps naturally to UI wizard steps, but also to lifecycle states (Draft → Review → Approved → Published), pipeline stages, or onboarding phases. `goToStep` enables non-linear transitions (e.g. rejection), and `shouldSkip` handles conditional routing.
 
 ### Data is the source of truth
 All path data lives in `data`. There is no separate "form model" — `data` is the form model. Guards and hooks read from `data` and return patches to update it. Data flow is unidirectional and auditable.
