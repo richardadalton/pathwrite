@@ -92,17 +92,22 @@ triggered by form `(ngModelChange)` events.
 
 ### 3. No Angular Forms integration
 
-There is no bridge between Angular's `ReactiveFormsModule` / `FormsModule` and
+> ✅ **Fixed.** `syncFormGroup(facade, formGroup, destroyRef?)` has been added to
+> `@daltonr/pathwrite-angular`. Call it once after `facade.start()` and every
+> `FormGroup` value change is automatically propagated to the engine via `setData`,
+> keeping `canMoveNext` guards reactive with no manual event binding. Uses
+> `getRawValue()` internally so disabled controls are always included. `@angular/forms`
+> is listed as an optional peer dependency; the function accepts any object
+> satisfying the `FormGroupLike` duck interface.
+
+There was no bridge between Angular's `ReactiveFormsModule` / `FormsModule` and
 the engine's `setData()` API. To keep `canMoveNext` guards reactive, every form
-field must manually call `facade.setData(key, value)` on each change event:
+field had to manually call `facade.setData(key, value)` on each change event:
 
 ```html
 <input [(ngModel)]="form.title" (ngModelChange)="sync('title', $event)" />
 ```
 
-This is verbose and error-prone at scale. A `ControlValueAccessor`-based helper
-or a utility like `syncFormGroup(facade, formGroup)` would remove most of this
-boilerplate.
 
 ---
 

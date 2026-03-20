@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from "@angular/core";
+import { Injectable, OnDestroy, DestroyRef } from "@angular/core";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import {
   PathData,
@@ -68,5 +68,69 @@ export class PathFacade implements OnDestroy {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Forms integration
+// ---------------------------------------------------------------------------
 
+/**
+ * Minimal interface describing what syncFormGroup needs from an Angular
+ * FormGroup. Typed as a duck interface so that @angular/forms is not a
+ * required import — any object with getRawValue() and valueChanges works.
+ *
+ * Angular's FormGroup satisfies this interface automatically.
+ */
+export interface FormGroupLike {
+  /** Returns all control values including disabled ones (FormGroup.getRawValue()). */
+  getRawValue(): Record<string, unknown>;
+  /** Observable that emits whenever any control value changes. */
+  readonly valueChanges: Observable<unknown>;
+}
 
+/**
+ * Syncs every key of an Angular FormGroup to the path engine via setData.
+ *
+ * - Immediately writes getRawValue() to the facade so canMoveNext guards
+ *   evaluate against the current form state on the very first snapshot.
+ * - Subscribes to valueChanges and re-applies getRawValue() on every emission
+ *   so disabled controls are always included.
+ * - Guards against calling setData when no path is active, so it is safe to
+ *   call syncFormGroup before or after facade.start().
+ * - Returns a cleanup function that unsubscribes from the observable.
+ *   Pass a DestroyRef to wire cleanup automatically to the component lifecycle.
+ *
+ * @example
+ * ```typescript
+ * export class MyStepComponent implements OnInit {
+ *   private readonly facade = inject(PathFacade);
+ *   protected readonly form = new FormGroup({
+ *     name:  new FormControl('', Validators.required),
+ *     email: new FormControl(''),
+ *   });
+ *
+ *   ngOnInit() {
+ *     syncFormGroup(this.facade, this.form, inject(DestroyRef));
+ *   }
+ * }
+ * ```
+ */
+export function syncFormGroup(
+  facade: PathFacade,
+  formGroup: FormGroupLike,
+  destroyRef?: DestroyRef
+): () => void {
+  function applyValues(): void {
+    if (facade.snapshot() === null) return; // no active path — nothing to sync
+    for (const [key, value] of Object.entries(formGroup.getRawValue())) {
+      void facade.setData(key, value);
+    }
+  }
+
+  // Write current form values immediately so guards see the initial state.
+  applyValues();
+
+  const subscription = formGroup.valueChanges.subscribe(() => applyValues());
+
+  const cleanup = () => subscription.unsubscribe();
+  destroyRef?.onDestroy(cleanup);
+  return cleanup;
+}

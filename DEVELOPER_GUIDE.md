@@ -435,6 +435,61 @@ public constructor() {
 | `goToStep(stepId)` | Jump directly to a step by ID |
 | `snapshot()` | Synchronous read of the current snapshot |
 
+### Angular Forms integration — `syncFormGroup`
+
+`syncFormGroup` eliminates the boilerplate of manually wiring an Angular
+`FormGroup` to the engine. Call it once and every form value change is
+automatically propagated via `setData`, keeping `canMoveNext` guards reactive
+without any manual event binding in the template.
+
+```typescript
+import { PathFacade, syncFormGroup } from "@daltonr/pathwrite-angular";
+
+@Component({ providers: [PathFacade] })
+export class DetailsStepComponent implements OnInit {
+  protected readonly facade   = inject(PathFacade);
+  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
+
+  protected readonly form = new FormGroup({
+    name:  new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
+  });
+
+  async ngOnInit() {
+    await this.facade.start(myPath, { name: '', email: '' });
+    // All current and future form values flow to the engine automatically.
+    syncFormGroup(this.facade, this.form, inject(DestroyRef));
+  }
+}
+```
+
+The path definition's guard is now pure — no sync logic in the template:
+
+```typescript
+{
+  id: 'details',
+  canMoveNext: (ctx) =>
+    (ctx.data.name  as string).trim().length > 0 &&
+    (ctx.data.email as string).includes('@'),
+}
+```
+
+**`syncFormGroup` signature:**
+
+```typescript
+function syncFormGroup(
+  facade:      PathFacade,
+  formGroup:   FormGroupLike,  // satisfies Angular's FormGroup automatically
+  destroyRef?: DestroyRef      // pass inject(DestroyRef) for auto-cleanup
+): () => void                  // or call the returned function to clean up manually
+```
+
+Key behaviours:
+- **Immediate sync** — writes current `getRawValue()` on first call so guards are correct from the start.
+- **Disabled controls included** — uses `getRawValue()`, not `formGroup.value`.
+- **Safe before `start()`** — silently no-ops if no path is active when a change fires.
+- **Duck-typed** — `@angular/forms` is an optional peer dep; any object with `getRawValue()` and `valueChanges` satisfies `FormGroupLike`.
+
 ### Linking steps to UI
 
 ```html

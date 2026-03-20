@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { Subject } from "rxjs";
 import { PathDefinition } from "@daltonr/pathwrite-core";
-import { PathFacade } from "../src/index";
+import { PathFacade, syncFormGroup, FormGroupLike } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -287,3 +288,116 @@ describe("PathFacade — ngOnDestroy", () => {
     expect(eventsCompleted).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// syncFormGroup helpers
+// ---------------------------------------------------------------------------
+
+function createMockFormGroup(initialValues: Record<string, unknown>): FormGroupLike & {
+  emit(values: Record<string, unknown>): void;
+} {
+  const subject = new Subject<unknown>();
+  const current: Record<string, unknown> = { ...initialValues };
+  return {
+    getRawValue: () => ({ ...current }),
+    valueChanges: subject.asObservable(),
+    emit(values: Record<string, unknown>) {
+      Object.assign(current, values);
+      subject.next({ ...current });
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// syncFormGroup
+// ---------------------------------------------------------------------------
+
+describe("syncFormGroup", () => {
+  it("immediately syncs the current form values to facade data", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), {});
+    const form = createMockFormGroup({ name: "Alice", age: 30 });
+
+    syncFormGroup(facade, form);
+
+    expect(facade.snapshot()?.data).toMatchObject({ name: "Alice", age: 30 });
+  });
+
+  it("syncs form value changes to facade data", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), {});
+    const form = createMockFormGroup({ name: "" });
+    syncFormGroup(facade, form);
+
+    form.emit({ name: "Bob" });
+    await Promise.resolve(); // let setData promises settle
+
+    expect(facade.snapshot()?.data.name).toBe("Bob");
+  });
+
+  it("makes canMoveNext guards reactive to form changes", async () => {
+    const facade = new PathFacade();
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "s1", canMoveNext: (ctx) => typeof ctx.data.name === "string" && (ctx.data.name as string).length > 0 },
+        { id: "s2" },
+      ],
+    };
+    await facade.start(path, { name: "" });
+    const form = createMockFormGroup({ name: "" });
+    syncFormGroup(facade, form);
+
+    expect(facade.snapshot()?.canMoveNext).toBe(false);
+
+    form.emit({ name: "Alice" });
+    await Promise.resolve();
+
+    expect(facade.snapshot()?.canMoveNext).toBe(true);
+  });
+
+  it("does nothing when no path is active (no throw)", () => {
+    const facade = new PathFacade();
+    const form = createMockFormGroup({ name: "Alice" });
+    expect(() => syncFormGroup(facade, form)).not.toThrow();
+  });
+
+  it("stops syncing after the returned cleanup function is called", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), { name: "initial" });
+    const form = createMockFormGroup({ name: "initial" });
+    const cleanup = syncFormGroup(facade, form);
+
+    cleanup();
+    form.emit({ name: "should-not-sync" });
+    await Promise.resolve();
+
+    expect(facade.snapshot()?.data.name).toBe("initial");
+  });
+
+  it("calls destroyRef.onDestroy with the cleanup function if provided", () => {
+    const facade = new PathFacade();
+    const form = createMockFormGroup({});
+    const destroyRef = { onDestroy: vi.fn() };
+
+    syncFormGroup(facade, form, destroyRef as never);
+
+    expect(destroyRef.onDestroy).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it("does not sync after the path completes", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), { name: "" });
+    const form = createMockFormGroup({ name: "" });
+    syncFormGroup(facade, form);
+
+    await facade.next();
+    await facade.next(); // complete path — facade.snapshot() is now null
+
+    form.emit({ name: "post-complete" });
+    await Promise.resolve();
+
+    expect(facade.snapshot()).toBeNull();
+  });
+});
+

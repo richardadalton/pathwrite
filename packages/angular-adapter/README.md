@@ -48,6 +48,92 @@ export class MyComponent {
 | `goToStep(stepId)` | Jump directly to a step by ID. |
 | `snapshot()` | Synchronous read of the current `PathSnapshot \| null`. |
 
+---
+
+## Angular Forms integration — `syncFormGroup`
+
+`syncFormGroup` eliminates the boilerplate of manually wiring an Angular
+`FormGroup` to the path engine. Call it once (typically in `ngOnInit`) and every
+form value change is automatically propagated to the engine via `setData`, keeping
+`canMoveNext` guards reactive without any manual plumbing.
+
+```typescript
+import { PathFacade, syncFormGroup } from "@daltonr/pathwrite-angular";
+
+@Component({
+  providers: [PathFacade],
+  template: `
+    <form [formGroup]="form">
+      <input formControlName="name" />
+      <input formControlName="email" />
+    </form>
+    <button [disabled]="!(snapshot()?.canMoveNext)" (click)="facade.next()">Next</button>
+  `
+})
+export class DetailsStepComponent implements OnInit {
+  protected readonly facade  = inject(PathFacade);
+  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
+
+  protected readonly form = new FormGroup({
+    name:  new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
+  });
+
+  async ngOnInit() {
+    await this.facade.start(myPath, { name: '', email: '' });
+    // Immediately syncs current form values and keeps them in sync on every change.
+    // Cleanup is automatic when the component is destroyed.
+    syncFormGroup(this.facade, this.form, inject(DestroyRef));
+  }
+}
+```
+
+The corresponding path definition can now use a clean `canMoveNext` guard with no
+manual sync code in the template:
+
+```typescript
+const myPath: PathDefinition = {
+  id: 'registration',
+  steps: [
+    {
+      id: 'details',
+      canMoveNext: (ctx) =>
+        typeof ctx.data.name  === 'string' && ctx.data.name.trim().length > 0 &&
+        typeof ctx.data.email === 'string' && ctx.data.email.includes('@'),
+    },
+    { id: 'review' },
+  ],
+};
+```
+
+### `syncFormGroup` signature
+
+```typescript
+function syncFormGroup(
+  facade:     PathFacade,
+  formGroup:  FormGroupLike,
+  destroyRef?: DestroyRef
+): () => void
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `facade` | `PathFacade` | The facade to write values into. |
+| `formGroup` | `FormGroupLike` | Any Angular `FormGroup` (or any object satisfying the duck interface). |
+| `destroyRef` | `DestroyRef` *(optional)* | Pass `inject(DestroyRef)` to auto-unsubscribe on component destroy. |
+| **returns** | `() => void` | Cleanup function — call manually if not using `DestroyRef`. |
+
+#### Behaviour details
+
+- **Immediate sync** — current `getRawValue()` is written on the first call, so
+  guards evaluate against the real form state from the first snapshot.
+- **Disabled controls included** — uses `getRawValue()` (not `formGroup.value`)
+  so disabled controls are always synced.
+- **Safe before `start()`** — if no path is active when a change fires, the call
+  is silently ignored (no error).
+- **`FormGroupLike` duck interface** — `@angular/forms` is not a required import;
+  any object with `getRawValue()` and `valueChanges` works.
+
 ### Lifecycle
 
 `PathFacade` implements `OnDestroy`. When Angular destroys the providing component, `ngOnDestroy` is called automatically, which:
