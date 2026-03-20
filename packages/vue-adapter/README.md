@@ -22,8 +22,8 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
   <div v-if="snapshot">
     <h2>{{ snapshot.stepTitle ?? snapshot.stepId }}</h2>
     <p>Step {{ snapshot.stepIndex + 1 }} of {{ snapshot.stepCount }}</p>
-    <button @click="previous" :disabled="snapshot.isNavigating">Back</button>
-    <button @click="next" :disabled="snapshot.isNavigating">
+    <button @click="previous" :disabled="snapshot.isNavigating || !snapshot.canMovePrevious">Back</button>
+    <button @click="next" :disabled="snapshot.isNavigating || !snapshot.canMoveNext">
       {{ snapshot.isLastStep ? "Finish" : "Next" }}
     </button>
     <button @click="cancel">Cancel</button>
@@ -61,6 +61,24 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 - **`readonly`** — the returned ref is wrapped with `readonly()` to prevent accidental external mutation.
 - **`onScopeDispose`** — the composable automatically unsubscribes from the engine when the calling component's effect scope is disposed (i.e. on unmount).
 - **No RxJS** — unlike the Angular adapter, there is no RxJS dependency. The composable is pure Vue.
+
+## Snapshot guard booleans
+
+The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated results of the current step's navigation guards. Use them to proactively disable buttons. These update automatically when data changes (e.g. after `setData`). Async guards default to `true` optimistically.
+
+## `usePathContext` — context sharing
+
+`<PathShell>` automatically provides its engine instance to child components via Vue's `provide` / `inject`. Step children can call `usePathContext()` to access the snapshot and actions without prop drilling:
+
+```vue
+<script setup>
+import { usePathContext } from "@daltonr/pathwrite-vue";
+
+const { snapshot, setData } = usePathContext();
+</script>
+```
+
+`usePathContext()` throws if called outside a `<PathShell>`.
 
 ## Peer dependencies
 

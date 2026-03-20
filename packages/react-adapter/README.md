@@ -95,6 +95,44 @@ function NavButtons() {
 
 All action callbacks are **referentially stable** — safe to pass as props or include in dependency arrays without causing unnecessary re-renders.
 
+### Snapshot guard booleans
+
+The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated results of the current step's navigation guards. Use them to proactively disable buttons:
+
+```tsx
+<button onClick={previous} disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
+<button onClick={next}     disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
+```
+
+These update automatically when data changes (e.g. after `setData`). Async guards default to `true` optimistically.
+
+## Context sharing
+
+### `PathProvider` + `usePathContext`
+
+Wrap a subtree in `<PathProvider>` so multiple components share the same engine instance. Consume with `usePathContext()`.
+
+### `PathShell` context
+
+`<PathShell>` also provides context automatically. Step children rendered inside `<PathShell>` can call `usePathContext()` without a separate `<PathProvider>`:
+
+```tsx
+function DetailsForm() {
+  const { snapshot, setData } = usePathContext();
+  return (
+    <input
+      value={String(snapshot?.data.name ?? "")}
+      onChange={(e) => setData("name", e.target.value)}
+    />
+  );
+}
+
+<PathShell path={myPath} initialData={{ name: "" }} onComplete={handleDone}>
+  <PathStep id="details"><DetailsForm /></PathStep>
+  <PathStep id="review"><ReviewPanel /></PathStep>
+</PathShell>
+```
+
 ## Design notes
 
 - **`useSyncExternalStore`** — the hook subscribes to the core `PathEngine` using React 18's `useSyncExternalStore`, giving tear-free reads with no `useEffect` timing gaps.

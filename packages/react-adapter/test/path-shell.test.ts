@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathStep, PathShellActions } from "../src/index";
+import { PathShell, PathStep, PathShellActions, usePathContext } from "../src/index";
 
 afterEach(() => cleanup());
 
@@ -224,6 +224,49 @@ describe("PathShell — autoStart false", () => {
     await act(async () => renderShell({ autoStart: false }));
     await act(async () => screen.getByText("Start").click());
     expect(screen.getByText("Content A")).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Context sharing — usePathContext inside PathShell
+// ---------------------------------------------------------------------------
+
+describe("PathShell — context sharing", () => {
+  it("usePathContext returns snapshot inside a PathShell step child", async () => {
+    function StepChild() {
+      const { snapshot } = usePathContext();
+      return createElement("span", { "data-testid": "ctx-step" }, snapshot?.stepId ?? "none");
+    }
+
+    await act(async () =>
+      render(
+        createElement(PathShell, { path: threeStepPath() },
+          createElement(PathStep, { id: "step-a", key: "a" }, createElement(StepChild)),
+          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "B")),
+          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "C"))
+        )
+      )
+    );
+    expect(screen.getByTestId("ctx-step").textContent).toBe("step-a");
+  });
+
+  it("usePathContext actions drive navigation from inside a step child", async () => {
+    function StepChild() {
+      const { next } = usePathContext();
+      return createElement("button", { "data-testid": "inner-next", onClick: next }, "Inner Next");
+    }
+
+    await act(async () =>
+      render(
+        createElement(PathShell, { path: threeStepPath() },
+          createElement(PathStep, { id: "step-a", key: "a" }, createElement(StepChild)),
+          createElement(PathStep, { id: "step-b", key: "b" }, createElement("div", null, "Content B")),
+          createElement(PathStep, { id: "step-c", key: "c" }, createElement("div", null, "C"))
+        )
+      )
+    );
+    await act(async () => screen.getByTestId("inner-next").click());
+    expect(screen.getByText("Content B")).toBeTruthy();
   });
 });
 

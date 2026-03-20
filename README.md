@@ -101,12 +101,13 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-224 tests across six test files:
+235 tests across six test files:
 
 | Suite | Tests |
 |-------|-------|
 | `PathEngine` — navigation | 8 |
 | `PathEngine` — snapshot | 9 |
+| `PathEngine` — snapshot canMoveNext / canMovePrevious | 7 |
 | `PathEngine` — setData | 4 |
 | `PathEngine` — events | 8 |
 | `PathEngine` — lifecycle hooks | 13 |
@@ -133,6 +134,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (React) — progress | 3 |
 | `PathShell` (React) — render props | 2 |
 | `PathShell` (React) — autoStart false | 2 |
+| `PathShell` (React) — context sharing | 2 |
 | `usePath` (React) — snapshot | 8 |
 | `usePath` (React) — events | 5 |
 | `usePath` (React) — navigation | 5 |
@@ -145,6 +147,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (Vue) — custom labels | 2 |
 | `PathShell` (Vue) — progress | 3 |
 | `PathShell` (Vue) — autoStart false | 2 |
+| `PathShell` (Vue) — context sharing | 2 |
 | `usePath` (Vue) — snapshot | 8 |
 | `usePath` (Vue) — events | 4 |
 | `usePath` (Vue) — navigation | 4 |

@@ -61,6 +61,10 @@ All hooks are optional. Hooks that want to update data **return a partial patch*
 | `canMoveNext` | Before advancing — return `false` to block | — |
 | `canMovePrevious` | Before going back — return `false` to block | — |
 
+### Snapshot guard booleans
+
+The snapshot includes `canMoveNext` and `canMovePrevious` booleans — the evaluated results of the current step's guards. Use them to proactively disable navigation buttons. Sync guards reflect their real value; async guards default to `true` (optimistic). Both update automatically when data changes via `setData`.
+
 ### Example — sub-path result merged into parent data
 
 ```typescript

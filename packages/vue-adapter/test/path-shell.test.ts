@@ -3,7 +3,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { defineComponent, h, nextTick } from "vue";
 import { mount, flushPromises, VueWrapper } from "@vue/test-utils";
 import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathStep, PathShellActions } from "../src/index";
+import { PathShell, PathStep, PathShellActions, usePathContext } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -264,6 +264,76 @@ describe("PathShell (Vue) — autoStart false", () => {
     await wrapper.find(".pw-shell__start-btn").trigger("click");
     await settled();
     expect(wrapper.text()).toContain("Content A");
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Context sharing — usePathContext inside PathShell
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — context sharing", () => {
+  it("usePathContext returns snapshot inside a PathShell step child", async () => {
+    const StepChild = defineComponent({
+      setup() {
+        const { snapshot } = usePathContext();
+        return () => h("span", { "data-testid": "ctx-step" }, snapshot.value?.stepId ?? "none");
+      }
+    });
+
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(
+            PathShell,
+            { path: threeStepPath() },
+            {
+              default: () => [
+                h(PathStep, { id: "step-a" }, { default: () => h(StepChild) }),
+                h(PathStep, { id: "step-b" }, { default: () => h("div", "B") }),
+                h(PathStep, { id: "step-c" }, { default: () => h("div", "C") })
+              ]
+            }
+          );
+      }
+    });
+
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find("[data-testid='ctx-step']").text()).toBe("step-a");
+    wrapper.unmount();
+  });
+
+  it("usePathContext actions drive navigation from inside a step child", async () => {
+    const StepChild = defineComponent({
+      setup() {
+        const { next } = usePathContext();
+        return () => h("button", { "data-testid": "inner-next", onClick: next }, "Inner Next");
+      }
+    });
+
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(
+            PathShell,
+            { path: threeStepPath() },
+            {
+              default: () => [
+                h(PathStep, { id: "step-a" }, { default: () => h(StepChild) }),
+                h(PathStep, { id: "step-b" }, { default: () => h("div", "Content B") }),
+                h(PathStep, { id: "step-c" }, { default: () => h("div", "C") })
+              ]
+            }
+          );
+      }
+    });
+
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    await wrapper.find("[data-testid='inner-next']").trigger("click");
+    await settled();
+    expect(wrapper.text()).toContain("Content B");
     wrapper.unmount();
   });
 });

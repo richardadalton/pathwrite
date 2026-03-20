@@ -259,33 +259,37 @@ export function PathShell({
   const stepContent = resolveStepContent(children, snapshot);
 
   if (!snapshot) {
-    return createElement("div", { className: cls("pw-shell", className) },
-      createElement("div", { className: "pw-shell__empty" },
-        createElement("p", null, "No active path."),
-        !autoStart && createElement("button", {
-          type: "button",
-          className: "pw-shell__start-btn",
-          onClick: () => start(pathDef, initialData)
-        }, "Start")
+    return createElement(PathContext.Provider, { value: pathReturn },
+      createElement("div", { className: cls("pw-shell", className) },
+        createElement("div", { className: "pw-shell__empty" },
+          createElement("p", null, "No active path."),
+          !autoStart && createElement("button", {
+            type: "button",
+            className: "pw-shell__start-btn",
+            onClick: () => start(pathDef, initialData)
+          }, "Start")
+        )
       )
     );
   }
 
   const actions: PathShellActions = { next, previous, cancel, goToStep, setData };
 
-  return createElement("div", { className: cls("pw-shell", className) },
-    // Header — progress indicator
-    !hideProgress && (renderHeader
-      ? renderHeader(snapshot)
-      : defaultHeader(snapshot)),
-    // Body — step content
-    createElement("div", { className: "pw-shell__body" }, stepContent),
-    // Footer — navigation buttons
-    renderFooter
-      ? renderFooter(snapshot, actions)
-      : defaultFooter(snapshot, actions, {
-          backLabel, nextLabel, finishLabel, cancelLabel, hideCancel
-        })
+  return createElement(PathContext.Provider, { value: pathReturn },
+    createElement("div", { className: cls("pw-shell", className) },
+      // Header — progress indicator
+      !hideProgress && (renderHeader
+        ? renderHeader(snapshot)
+        : defaultHeader(snapshot)),
+      // Body — step content
+      createElement("div", { className: "pw-shell__body" }, stepContent),
+      // Footer — navigation buttons
+      renderFooter
+        ? renderFooter(snapshot, actions)
+        : defaultFooter(snapshot, actions, {
+            backLabel, nextLabel, finishLabel, cancelLabel, hideCancel
+          })
+    )
   );
 }
 

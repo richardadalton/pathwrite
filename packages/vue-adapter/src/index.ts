@@ -7,9 +7,12 @@ import {
   h,
   computed,
   onMounted,
+  provide,
+  inject,
   type Ref,
   type DeepReadonly,
   type PropType,
+  type InjectionKey,
   type VNode
 } from "vue";
 import {
@@ -88,6 +91,25 @@ export function usePath(options?: UsePathOptions): UsePathReturn {
 }
 
 // ---------------------------------------------------------------------------
+// Context — provide / inject
+// ---------------------------------------------------------------------------
+
+/** Injection key used by PathShell and usePathContext. */
+const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
+
+/**
+ * Access the nearest `PathShell`'s path instance via Vue `inject`.
+ * Throws if used outside of a `<PathShell>`.
+ */
+export function usePathContext(): UsePathReturn {
+  const ctx = inject(PathInjectionKey, null);
+  if (ctx === null) {
+    throw new Error("usePathContext must be used within a <PathShell>.");
+  }
+  return ctx;
+}
+
+// ---------------------------------------------------------------------------
 // Default UI — PathShell + PathStep
 // ---------------------------------------------------------------------------
 
@@ -152,6 +174,9 @@ export const PathShell = defineComponent({
     });
 
     const { snapshot, start, next, previous, cancel, goToStep, setData } = pathReturn;
+
+    // Provide context so child components can use usePathContext()
+    provide(PathInjectionKey, pathReturn);
 
     const started = ref(false);
     onMounted(() => {

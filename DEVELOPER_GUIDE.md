@@ -202,7 +202,20 @@ Guards (`canMoveNext`, `canMovePrevious`) block navigation without altering data
 }
 ```
 
-When a guard returns `false`, the engine still emits two `stateChanged` events (one with `isNavigating: true` at the start, one with `isNavigating: false` at the end) so the UI can show and clear a loading state even on a synchronous block.
+When a guard returns `false`, the engine stays on the current step. It emits two `stateChanged` events (one with `isNavigating: true` at the start, one with `isNavigating: false` at the end) so the UI can show and clear a loading state even on a synchronous block. Importantly, `onEnter` is **not** re-run on the current step when a guard blocks — the step's state is left undisturbed.
+
+### Proactive guard feedback via the snapshot
+
+The snapshot includes `canMoveNext` and `canMovePrevious` booleans, which are the **evaluated results** of the current step's guards at the time the snapshot was built. This lets the UI proactively disable navigation buttons *before* the user clicks, rather than silently blocking after the fact.
+
+```typescript
+// Disable the Next button when the guard would block
+<button disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
+```
+
+The values update automatically whenever the snapshot is rebuilt (e.g. after `setData`), so a guard like `canMoveNext: (ctx) => ctx.data.name.length > 0` will flip from `false` to `true` as soon as the user types a name.
+
+**Async guards**: If a guard returns a `Promise`, the snapshot defaults to `true` (optimistic). The engine still enforces the real result when navigation is attempted.
 
 ### `shouldSkip`
 
@@ -225,19 +238,21 @@ If all remaining steps are skipped going forward, the path **completes**. If all
 
 ```typescript
 interface PathSnapshot<TData> {
-  pathId:       string;               // ID of the active path
-  stepId:       string;               // ID of the current step
-  stepTitle?:   string;               // step.title, if defined
-  stepMeta?:    Record<string, unknown>; // step.meta, if defined
-  stepIndex:    number;               // 0-based index of the current step
-  stepCount:    number;               // total number of steps
-  progress:     number;               // 0.0 → 1.0 (stepIndex / (stepCount - 1))
-  steps:        StepSummary[];        // summary of every step with its status
-  isFirstStep:  boolean;
-  isLastStep:   boolean;              // false if a sub-path is active
-  nestingLevel: number;               // 0 for top-level, +1 per nested sub-path
-  isNavigating: boolean;              // true while an async hook/guard is running
-  data:         TData;                // copy of current path data
+  pathId:         string;               // ID of the active path
+  stepId:         string;               // ID of the current step
+  stepTitle?:     string;               // step.title, if defined
+  stepMeta?:      Record<string, unknown>; // step.meta, if defined
+  stepIndex:      number;               // 0-based index of the current step
+  stepCount:      number;               // total number of steps
+  progress:       number;               // 0.0 → 1.0 (stepIndex / (stepCount - 1))
+  steps:          StepSummary[];        // summary of every step with its status
+  isFirstStep:    boolean;
+  isLastStep:     boolean;              // false if a sub-path is active
+  nestingLevel:   number;               // 0 for top-level, +1 per nested sub-path
+  isNavigating:   boolean;              // true while an async hook/guard is running
+  canMoveNext:    boolean;              // result of the current step's canMoveNext guard
+  canMovePrevious: boolean;             // result of the current step's canMovePrevious guard
+  data:           TData;                // copy of current path data
 }
 ```
 
@@ -259,6 +274,17 @@ Steps before the current index are `"completed"`, the current step is `"current"
 ### `isNavigating` — disabling controls
 
 While an async hook or guard is running, `isNavigating` is `true` in all `stateChanged` events emitted during that operation. The final event always has `isNavigating: false`. Bind your navigation button `disabled` state to this flag.
+
+### `canMoveNext` / `canMovePrevious` — proactive guard feedback
+
+The snapshot evaluates the current step's `canMoveNext` and `canMovePrevious` guards synchronously whenever it is built (on every `stateChanged`, `setData`, etc.). Use these to proactively disable buttons:
+
+```typescript
+<button disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
+<button disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
+```
+
+If no guard is defined, the value defaults to `true`. If the guard is async (returns a `Promise`), the snapshot defaults to `true` optimistically — the engine still enforces the real result on navigation.
 
 ---
 
@@ -452,8 +478,8 @@ function CoursePathHost() {
         />
       )}
 
-      <button onClick={previous} disabled={snapshot.isNavigating}>Back</button>
-      <button onClick={next}     disabled={snapshot.isNavigating}>
+      <button onClick={previous} disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
+      <button onClick={next}     disabled={snapshot.isNavigating || !snapshot.canMoveNext}>
         {snapshot.isLastStep ? "Finish" : "Next"}
       </button>
     </div>
@@ -486,14 +512,16 @@ function NavBar() {
   if (!snapshot) return <button onClick={() => start(myPath)}>Start</button>;
   return (
     <>
-      <button onClick={previous} disabled={snapshot.isNavigating}>Back</button>
-      <button onClick={next}     disabled={snapshot.isNavigating}>Next</button>
+      <button onClick={previous} disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
+      <button onClick={next}     disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
     </>
   );
 }
 ```
 
 `usePathContext()` throws if called outside a `<PathProvider>`.
+
+> **Tip:** `<PathShell>` (see [§13](#13-default-ui-shell)) also provides context automatically — step children rendered inside `<PathShell>` can call `usePathContext()` to access the same engine instance without a separate `<PathProvider>`.
 
 ### `usePath` return value
 
@@ -547,8 +575,8 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
       <input :value="snapshot.data.name" @input="setData('name', ($event.target as HTMLInputElement).value)" />
     </div>
 
-    <button @click="previous" :disabled="snapshot.isNavigating">Back</button>
-    <button @click="next"     :disabled="snapshot.isNavigating">
+    <button @click="previous" :disabled="snapshot.isNavigating || !snapshot.canMovePrevious">Back</button>
+    <button @click="next"     :disabled="snapshot.isNavigating || !snapshot.canMoveNext">
       {{ snapshot.isLastStep ? "Finish" : "Next" }}
     </button>
     <button @click="cancel">Cancel</button>
@@ -589,6 +617,20 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 - **`onScopeDispose`** — the composable unsubscribes from the engine when the component's effect scope is disposed (on unmount). No manual cleanup needed.
 - **No RxJS, no `useSyncExternalStore`** — the adapter is pure Vue 3 reactivity.
 
+### `usePathContext` — accessing the engine from child components
+
+When using `<PathShell>` (see [§13](#13-default-ui-shell)), step child components can call `usePathContext()` to access the same engine instance. This is powered by Vue's `provide` / `inject`:
+
+```vue
+<script setup>
+import { usePathContext } from "@daltonr/pathwrite-vue";
+
+const { snapshot, setData, next } = usePathContext();
+</script>
+```
+
+`usePathContext()` throws if called outside a `<PathShell>`.
+
 ---
 
 ## 13. Default UI Shell
@@ -596,6 +638,16 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 Every adapter ships an optional **shell component** that renders a complete wizard UI — progress indicator, step content area, and navigation buttons — out of the box. You define only the per-step content; the shell handles the chrome.
 
 The shell is a convenience layer on top of the headless API. It uses the same `usePath` / `PathFacade` internally, so you can start with the shell and switch to fully custom UI at any time.
+
+### Context sharing
+
+All shell components automatically provide their engine instance to child components:
+
+- **React**: `PathShell` wraps its children in a `PathContext.Provider`. Step children can call `usePathContext()`.
+- **Vue**: `PathShell` calls `provide()` internally. Step children can call `usePathContext()`.
+- **Angular**: `PathShellComponent` provides `PathFacade` at the component level. Step children can `inject(PathFacade)`.
+
+This means step content components can read `snapshot.data`, call `setData()`, or trigger navigation without prop drilling.
 
 ### Architecture
 
