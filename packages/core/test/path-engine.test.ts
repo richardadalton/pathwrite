@@ -752,6 +752,80 @@ describe("PathEngine — stepTitle", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validationMessages
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — validationMessages", () => {
+  it("is an empty array when the step has no validationMessages hook", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("returns the messages from the hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", validationMessages: () => ["Name is required", "Email is required"] }]
+    });
+    expect(engine.snapshot()?.validationMessages).toEqual(["Name is required", "Email is required"]);
+  });
+
+  it("returns an empty array when the hook returns []", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", validationMessages: () => [] }]
+    });
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("re-evaluates messages reactively when setData changes data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          canMoveNext: (ctx) => !!(ctx.data as PathData).name,
+          validationMessages: (ctx) =>
+            (ctx.data as PathData).name ? [] : ["Name is required"]
+        }
+      ]
+    });
+    expect(engine.snapshot()?.validationMessages).toEqual(["Name is required"]);
+
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("returns [] for an async validationMessages hook (not supported synchronously)", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", validationMessages: () => Promise.resolve(["async message"]) }]
+    });
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("updates as navigation moves to a different step", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", validationMessages: () => ["Fill in step 1"] },
+        { id: "step2", validationMessages: () => [] }
+      ]
+    });
+    expect(engine.snapshot()?.validationMessages).toEqual(["Fill in step 1"]);
+
+    // bypass canMoveNext to force navigation to step2
+    await engine.goToStep("step2");
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // goToStep — direct navigation
 // ---------------------------------------------------------------------------
 

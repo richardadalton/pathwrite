@@ -13,6 +13,13 @@ export interface PathStep<TData extends PathData = PathData> {
   shouldSkip?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
   canMoveNext?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
   canMovePrevious?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+  /**
+   * Returns a list of human-readable messages explaining why the step is not
+   * yet valid. The shell displays these messages below the step content so
+   * consumers do not need to duplicate guard logic in the template.
+   * Evaluated synchronously on every snapshot; async functions default to `[]`.
+   */
+  validationMessages?: (ctx: PathStepContext<TData>) => string[] | Promise<string[]>;
   onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onSubPathComplete?: (
@@ -55,6 +62,8 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   canMoveNext: boolean;
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
   canMovePrevious: boolean;
+  /** Messages from the current step's `validationMessages` hook. Empty array when there are none. */
+  validationMessages: string[];
   data: TData;
 }
 
@@ -201,6 +210,7 @@ export class PathEngine {
       isNavigating: this._isNavigating,
       canMoveNext: this.evaluateGuardSync(step.canMoveNext, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
+      validationMessages: this.evaluateValidationMessagesSync(step.validationMessages, active),
       data: { ...active.data }
     };
   }
@@ -524,6 +534,27 @@ export class PathEngine {
     if (typeof result === "boolean") return result;
     // Async guard — default to true (optimistic); the engine will enforce the real result on navigation.
     return true;
+  }
+
+  /**
+   * Evaluates a validationMessages function synchronously for inclusion in the snapshot.
+   * If the hook is absent, returns `[]`.
+   * If the hook returns a `Promise`, returns `[]` (async hooks are not supported in snapshots).
+   */
+  private evaluateValidationMessagesSync(
+    fn: ((ctx: PathStepContext) => string[] | Promise<string[]>) | undefined,
+    active: ActivePath
+  ): string[] {
+    if (!fn) return [];
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: this.getCurrentStep(active).id,
+      data: { ...active.data }
+    };
+    const result = fn(ctx);
+    if (Array.isArray(result)) return result;
+    // Async hook — default to empty; consumers should keep validationMessages synchronous.
+    return [];
   }
 }
 

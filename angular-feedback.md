@@ -187,6 +187,15 @@ documents it in the inputs table, but there is no warning in the code or a visib
 
 ### 9. No inline validation messaging for `canMoveNext` failures
 
+> ✅ **Fixed.** `validationMessages?: (ctx) => string[]` has been added to `PathStep`
+> in `@daltonr/pathwrite-core`. The engine evaluates the hook synchronously on every
+> snapshot and exposes the result as `validationMessages: string[]` on `PathSnapshot`.
+> The default shell renders a styled list below the step body whenever the array is
+> non-empty — no extra wiring needed. Consumers whose `canMoveNext` guard already
+> reads `ctx.data` can add a co-located `validationMessages` function with no
+> duplication. Async hooks are not supported in snapshots and default to `[]`; keep
+> the function synchronous.
+
 When a `canMoveNext` guard returns `false`, the Next button is disabled — but
 there is no mechanism to surface *why*. Consumers must build their own validation
 message logic in parallel with the guard. A `validationMessages?: (ctx) => string[]`

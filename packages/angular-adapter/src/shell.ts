@@ -102,6 +102,11 @@ export class PathStepDirective {
         </ng-container>
       </div>
 
+      <!-- Validation messages -->
+      <ul class="pw-shell__validation" *ngIf="s.validationMessages.length > 0">
+        <li *ngFor="let msg of s.validationMessages" class="pw-shell__validation-item">{{ msg }}</li>
+      </ul>
+
       <!-- Footer — navigation buttons -->
       <div class="pw-shell__footer">
         <div class="pw-shell__footer-left">

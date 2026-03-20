@@ -386,6 +386,57 @@ describe("PathFacade — generic typing <TData>", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validationMessages
+// ---------------------------------------------------------------------------
+
+describe("PathFacade — validationMessages", () => {
+  it("is an empty array when the step has no validationMessages hook", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    expect(facade.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("returns messages from the hook", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [{ id: "step1", validationMessages: () => ["Field is required"] }]
+    });
+    expect(facade.snapshot()?.validationMessages).toEqual(["Field is required"]);
+  });
+
+  it("updates reactively when setData changes data", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          validationMessages: (ctx) =>
+            (ctx.data as PathData).name ? [] : ["Name is required"]
+        }
+      ]
+    });
+    expect(facade.snapshot()?.validationMessages).toEqual(["Name is required"]);
+
+    await facade.setData("name", "Alice");
+    expect(facade.snapshot()?.validationMessages).toEqual([]);
+  });
+
+  it("is reflected in state$", async () => {
+    const facade = new PathFacade();
+    let latest: string[] | undefined;
+    facade.state$.subscribe((s) => { if (s) latest = s.validationMessages; });
+
+    await facade.start({
+      id: "w",
+      steps: [{ id: "step1", validationMessages: () => ["Required"] }]
+    });
+    expect(latest).toEqual(["Required"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cleanup
 // ---------------------------------------------------------------------------
 

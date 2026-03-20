@@ -171,6 +171,40 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Validation messages                                                */
+/* ------------------------------------------------------------------ */
+:root {
+  --pw-color-error: #dc2626;
+  --pw-color-error-bg: #fef2f2;
+  --pw-color-error-border: #fecaca;
+}
+
+.pw-shell__validation {
+  list-style: none;
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--pw-color-error-bg);
+  border: 1px solid var(--pw-color-error-border);
+  border-radius: var(--pw-shell-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pw-shell__validation-item {
+  font-size: 13px;
+  color: var(--pw-color-error);
+  padding-left: 16px;
+  position: relative;
+}
+
+.pw-shell__validation-item::before {
+  content: "•";
+  position: absolute;
+  left: 4px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Footer — navigation buttons                                        */
 /* ------------------------------------------------------------------ */
 .pw-shell__footer {
