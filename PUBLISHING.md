@@ -7,7 +7,7 @@ This document describes how to version and publish the Pathwrite packages to npm
 All four public packages are published under the `@daltonr` scope:
 
 | Package | npm |
-|---|---|
+|---------|-----|
 | `@daltonr/pathwrite-core` | [npmjs.com/package/@daltonr/pathwrite-core](https://www.npmjs.com/package/@daltonr/pathwrite-core) |
 | `@daltonr/pathwrite-angular` | [npmjs.com/package/@daltonr/pathwrite-angular](https://www.npmjs.com/package/@daltonr/pathwrite-angular) |
 | `@daltonr/pathwrite-react` | [npmjs.com/package/@daltonr/pathwrite-react](https://www.npmjs.com/package/@daltonr/pathwrite-react) |
@@ -113,7 +113,7 @@ Repeat for any other packages that need updating. Remember to keep versions in s
 ## Troubleshooting
 
 | Problem | Fix |
-|---|---|
+|---------|-----|
 | `npm ERR! 403` | You're not logged in or don't have publish access to `@daltonr`. Run `npm login`. |
 | `npm ERR! 402` | The package is scoped but not configured for public access. All packages already set `"access": "public"` in `publishConfig`. |
 | Tests fail during `release` | The `prepublish:check` script runs `clean`, `build`, and `test` before publishing. Fix the failing tests first. |
