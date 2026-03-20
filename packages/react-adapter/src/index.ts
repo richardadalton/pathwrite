@@ -8,55 +8,55 @@ import {
 } from "react";
 import type { PropsWithChildren, ReactElement } from "react";
 import {
-  WizardArgs,
-  WizardDefinition,
-  WizardEngine,
-  WizardEngineEvent,
-  WizardSnapshot
+  PathData,
+  PathDefinition,
+  PathEngine,
+  PathEvent,
+  PathSnapshot
 } from "@pathwrite/core";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UseWizardOptions {
+export interface UsePathOptions {
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
-  onEvent?: (event: WizardEngineEvent) => void;
+  onEvent?: (event: PathEvent) => void;
 }
 
-export interface UseWizardReturn {
-  /** Current wizard snapshot, or `null` when no wizard is active. Triggers a React re-render on change. */
-  snapshot: WizardSnapshot | null;
-  /** Start (or restart) a wizard. */
-  start: (wizard: WizardDefinition, initialArgs?: WizardArgs) => void;
-  /** Push a sub-wizard onto the stack. Requires an active wizard. */
-  startSubWizard: (wizard: WizardDefinition, initialArgs?: WizardArgs) => void;
-  /** Advance one step. Completes the wizard on the last step. */
+export interface UsePathReturn {
+  /** Current path snapshot, or `null` when no path is active. Triggers a React re-render on change. */
+  snapshot: PathSnapshot | null;
+  /** Start (or restart) a path. */
+  start: (path: PathDefinition, initialData?: PathData) => void;
+  /** Push a sub-path onto the stack. Requires an active path. */
+  startSubPath: (path: PathDefinition, initialData?: PathData) => void;
+  /** Advance one step. Completes the path on the last step. */
   next: () => void;
-  /** Go back one step. Cancels the wizard from the first step. */
+  /** Go back one step. Cancels the path from the first step. */
   previous: () => void;
-  /** Cancel the active wizard (or sub-wizard). */
+  /** Cancel the active path (or sub-path). */
   cancel: () => void;
-  /** Jump directly to a step by ID. Calls onLeavingStep / onVisit but bypasses guards and shouldSkip. */
+  /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. */
   goToStep: (stepId: string) => void;
   /** Update a single arg; triggers a re-render via stateChanged. */
   setArg: (key: string, value: unknown) => void;
 }
 
-export type WizardProviderProps = PropsWithChildren<{
-  /** Forwarded to the internal useWizard hook. */
-  onEvent?: (event: WizardEngineEvent) => void;
+export type PathProviderProps = PropsWithChildren<{
+  /** Forwarded to the internal usePath hook. */
+  onEvent?: (event: PathEvent) => void;
 }>;
 
 // ---------------------------------------------------------------------------
-// useWizard hook
+// usePath hook
 // ---------------------------------------------------------------------------
 
-export function useWizard(options?: UseWizardOptions): UseWizardReturn {
+export function usePath(options?: UsePathOptions): UsePathReturn {
   // Stable engine instance for the lifetime of the hook
-  const engineRef = useRef<WizardEngine | null>(null);
+  const engineRef = useRef<PathEngine | null>(null);
   if (engineRef.current === null) {
-    engineRef.current = new WizardEngine();
+    engineRef.current = new PathEngine();
   }
   const engine = engineRef.current;
 
@@ -65,11 +65,11 @@ export function useWizard(options?: UseWizardOptions): UseWizardReturn {
   onEventRef.current = options?.onEvent;
 
   // Cached snapshot — updated only inside the subscribe callback
-  const snapshotRef = useRef<WizardSnapshot | null>(null);
+  const snapshotRef = useRef<PathSnapshot | null>(null);
 
   const subscribe = useCallback(
     (callback: () => void) =>
-      engine.subscribe((event: WizardEngineEvent) => {
+      engine.subscribe((event: PathEvent) => {
         if (event.type === "stateChanged" || event.type === "resumed") {
           snapshotRef.current = event.snapshot;
         } else if (event.type === "completed" || event.type === "cancelled") {
@@ -87,19 +87,19 @@ export function useWizard(options?: UseWizardOptions): UseWizardReturn {
 
   // Stable action callbacks
   const start = useCallback(
-    (wizard: WizardDefinition, initialArgs: WizardArgs = {}) =>
-      engine.start(wizard, initialArgs),
+    (path: PathDefinition, initialData: PathData = {}) =>
+      engine.start(path, initialData),
     [engine]
   );
 
-  const startSubWizard = useCallback(
-    (wizard: WizardDefinition, initialArgs: WizardArgs = {}) =>
-      engine.startSubWizard(wizard, initialArgs),
+  const startSubPath = useCallback(
+    (path: PathDefinition, initialData: PathData = {}) =>
+      engine.startSubPath(path, initialData),
     [engine]
   );
 
-  const next = useCallback(() => engine.moveNext(), [engine]);
-  const previous = useCallback(() => engine.movePrevious(), [engine]);
+  const next = useCallback(() => engine.next(), [engine]);
+  const previous = useCallback(() => engine.previous(), [engine]);
   const cancel = useCallback(() => engine.cancel(), [engine]);
 
   const goToStep = useCallback(
@@ -112,33 +112,32 @@ export function useWizard(options?: UseWizardOptions): UseWizardReturn {
     [engine]
   );
 
-  return { snapshot, start, startSubWizard, next, previous, cancel, goToStep, setArg };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, setArg };
 }
 
 // ---------------------------------------------------------------------------
 // Context + Provider
 // ---------------------------------------------------------------------------
 
-const WizardContext = createContext<UseWizardReturn | null>(null);
+const PathContext = createContext<UsePathReturn | null>(null);
 
 /**
- * Provides a single `useWizard` instance to all descendants.
- * Consume with `useWizardContext()`.
+ * Provides a single `usePath` instance to all descendants.
+ * Consume with `usePathContext()`.
  */
-export function WizardProvider({ children, onEvent }: WizardProviderProps): ReactElement {
-  const wizard = useWizard({ onEvent });
-  return createElement(WizardContext.Provider, { value: wizard }, children);
+export function PathProvider({ children, onEvent }: PathProviderProps): ReactElement {
+  const path = usePath({ onEvent });
+  return createElement(PathContext.Provider, { value: path }, children);
 }
 
 /**
- * Access the nearest `WizardProvider`'s wizard instance.
- * Throws if used outside of a `<WizardProvider>`.
+ * Access the nearest `PathProvider`'s path instance.
+ * Throws if used outside of a `<PathProvider>`.
  */
-export function useWizardContext(): UseWizardReturn {
-  const ctx = useContext(WizardContext);
+export function usePathContext(): UsePathReturn {
+  const ctx = useContext(PathContext);
   if (ctx === null) {
-    throw new Error("useWizardContext must be used within a <WizardProvider>.");
+    throw new Error("usePathContext must be used within a <PathProvider>.");
   }
   return ctx;
 }
-

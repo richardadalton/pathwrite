@@ -2,10 +2,10 @@ import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import {
-  WizardDefinition,
-  WizardEngineEvent
+  PathDefinition,
+  PathEvent
 } from "@pathwrite/core";
-import { WizardFacade } from "@pathwrite/angular-adapter";
+import { PathFacade } from "@pathwrite/angular-adapter";
 
 @Component({
   selector: "app-root",
@@ -13,26 +13,26 @@ import { WizardFacade } from "@pathwrite/angular-adapter";
   imports: [CommonModule],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
-  providers: [WizardFacade]
+  providers: [PathFacade]
 })
 export class AppComponent {
   public readonly title = "Pathwrite Angular Demo";
   public readonly eventLog: string[] = [];
 
-  protected readonly facade = inject(WizardFacade);
+  protected readonly facade = inject(PathFacade);
   public readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
 
-  private readonly mainWizard: WizardDefinition = {
+  private readonly mainPath: PathDefinition = {
     id: "create-course",
     steps: [
       { id: "course-details", title: "Course Details" },
       {
         id: "lesson-details",
         title: "Lesson Details",
-        onResumeFromSubWizard: (subWizardId, args) => {
-          if (subWizardId === "new-lesson") {
-            this.eventLog.unshift(`sub result copied: lesson=${String(args.lesson)}`);
-            return { lesson: args.lesson };
+        onSubPathComplete: (subPathId, data) => {
+          if (subPathId === "new-lesson") {
+            this.eventLog.unshift(`sub result copied: lesson=${String(data.lesson)}`);
+            return { lesson: data.lesson };
           }
         }
       },
@@ -40,13 +40,13 @@ export class AppComponent {
     ]
   };
 
-  private readonly subWizard: WizardDefinition = {
+  private readonly subPath: PathDefinition = {
     id: "new-lesson",
     steps: [
       {
         id: "lesson-name",
         title: "Lesson Name",
-        onVisit: () => ({ lesson: "Intro" })
+        onEnter: () => ({ lesson: "Intro" })
       }
     ]
   };
@@ -59,11 +59,11 @@ export class AppComponent {
   }
 
   public startMain(): void {
-    this.facade.start(this.mainWizard, { owner: "angular-demo" });
+    this.facade.start(this.mainPath, { owner: "angular-demo" });
   }
 
   public startSub(): void {
-    this.facade.startSubWizard(this.subWizard);
+    this.facade.startSubPath(this.subPath);
   }
 
   public next(): void {
@@ -78,16 +78,16 @@ export class AppComponent {
     this.facade.cancel();
   }
 
-  private formatEvent(event: WizardEngineEvent): string {
+  private formatEvent(event: PathEvent): string {
     if (event.type === "stateChanged") {
-      return `stateChanged -> ${event.snapshot.wizardId}/${event.snapshot.stepId}`;
+      return `stateChanged -> ${event.snapshot.pathId}/${event.snapshot.stepId}`;
     }
     if (event.type === "resumed") {
-      return `resumed -> ${event.resumedWizardId} from ${event.fromSubWizardId}`;
+      return `resumed -> ${event.resumedPathId} from ${event.fromSubPathId}`;
     }
     if (event.type === "completed") {
-      return `completed -> ${event.wizardId} ${JSON.stringify(event.args)}`;
+      return `completed -> ${event.pathId} ${JSON.stringify(event.args)}`;
     }
-    return `cancelled -> ${event.wizardId} ${JSON.stringify(event.args)}`;
+    return `cancelled -> ${event.pathId} ${JSON.stringify(event.args)}`;
   }
 }

@@ -2,7 +2,7 @@
   <h1>{{ title }}</h1>
 
   <section class="panel controls">
-    <button type="button" (click)="startWizard()">Start Course Wizard</button>
+    <button type="button" (click)="startPath()">Start Course Path</button>
     <button type="button" (click)="previous()" [disabled]="!snapshot()">Previous</button>
     <button type="button" (click)="next()" [disabled]="!snapshot()">Next</button>
     <button type="button" (click)="cancel()" [disabled]="!snapshot()">Cancel</button>
@@ -32,7 +32,7 @@
   <section class="panel" *ngIf="snapshot() as s; else emptyState">
     <h2>Current Step: {{ s.stepId }}</h2>
 
-    <div *ngIf="s.wizardId === 'course-wizard' && s.stepId === 'course-details'" class="step-block">
+    <div *ngIf="s.pathId === 'course-path' && s.stepId === 'course-details'" class="step-block">
       <h3>Step 1: Course Details</h3>
       <label>
         Course Name
@@ -46,11 +46,11 @@
       <p class="hint">Enter a course name to continue.</p>
     </div>
 
-    <div *ngIf="s.wizardId === 'course-wizard' && s.stepId === 'subjects-list'" class="step-block">
+    <div *ngIf="s.pathId === 'course-path' && s.stepId === 'subjects-list'" class="step-block">
       <h3>Step 2: Subjects List</h3>
       <p><strong>Course:</strong> {{ s.args.courseName }}</p>
 
-      <button type="button" (click)="addSubjectViaSubWizard()">Add Subject (Subwizard)</button>
+      <button type="button" (click)="addSubjectViaSubPath()">Add Subject (Sub-path)</button>
 
       <table *ngIf="subjects().length > 0; else noSubjects">
         <thead>
@@ -71,8 +71,8 @@
       </ng-template>
     </div>
 
-    <div *ngIf="s.wizardId === 'subject-subwizard' && s.stepId === 'subject-entry'" class="step-block">
-      <h3>Subwizard: Add Subject</h3>
+    <div *ngIf="s.pathId === 'subject-subpath' && s.stepId === 'subject-entry'" class="step-block">
+      <h3>Sub-path: Add Subject</h3>
       <label>
         Subject Name
         <input
@@ -91,22 +91,22 @@
           placeholder="Mr. Jones"
         />
       </label>
-      <p class="hint">Use Next to finish the subwizard and return to Subjects List.</p>
+      <p class="hint">Use Next to finish the sub-path and return to Subjects List.</p>
     </div>
 
-    <div *ngIf="s.wizardId === 'course-wizard' && s.stepId === 'review'" class="step-block">
+    <div *ngIf="s.pathId === 'course-path' && s.stepId === 'review'" class="step-block">
       <h3>Step 3: Review</h3>
       <p><strong>Course:</strong> {{ s.args.courseName }}</p>
       <ul>
         <li *ngFor="let item of subjects()">{{ item.name }} - {{ item.teacher }}</li>
       </ul>
-      <p class="hint">Use Next to complete the wizard.</p>
+      <p class="hint">Use Next to complete the path.</p>
     </div>
   </section>
 
   <ng-template #emptyState>
     <section class="panel">
-      <p>No active wizard. Click "Start Course Wizard".</p>
+      <p>No active path. Click "Start Course Path".</p>
     </section>
   </ng-template>
 

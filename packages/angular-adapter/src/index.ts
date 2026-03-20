@@ -1,22 +1,22 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import {
-  WizardArgs,
-  WizardDefinition,
-  WizardEngine,
-  WizardEngineEvent,
-  WizardSnapshot
+  PathData,
+  PathDefinition,
+  PathEngine,
+  PathEvent,
+  PathSnapshot
 } from "@pathwrite/core";
 
 @Injectable()
-export class WizardFacade implements OnDestroy {
-  private readonly engine = new WizardEngine();
-  private readonly _state$ = new BehaviorSubject<WizardSnapshot | null>(null);
-  private readonly _events$ = new Subject<WizardEngineEvent>();
+export class PathFacade implements OnDestroy {
+  private readonly engine = new PathEngine();
+  private readonly _state$ = new BehaviorSubject<PathSnapshot | null>(null);
+  private readonly _events$ = new Subject<PathEvent>();
   private readonly unsubscribeFromEngine: () => void;
 
-  public readonly state$: Observable<WizardSnapshot | null> = this._state$.asObservable();
-  public readonly events$: Observable<WizardEngineEvent> = this._events$.asObservable();
+  public readonly state$: Observable<PathSnapshot | null> = this._state$.asObservable();
+  public readonly events$: Observable<PathEvent> = this._events$.asObservable();
 
   public constructor() {
     this.unsubscribeFromEngine = this.engine.subscribe((event) => {
@@ -35,35 +35,35 @@ export class WizardFacade implements OnDestroy {
     this._state$.complete();
   }
 
-  public start(wizard: WizardDefinition, initialArgs: WizardArgs = {}): void {
-    this.engine.start(wizard, initialArgs);
+  public start(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+    return this.engine.start(path, initialData);
   }
 
-  public startSubWizard(wizard: WizardDefinition, initialArgs: WizardArgs = {}): void {
-    this.engine.startSubWizard(wizard, initialArgs);
+  public startSubPath(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+    return this.engine.startSubPath(path, initialData);
   }
 
-  public next(): void {
-    this.engine.moveNext();
+  public next(): Promise<void> {
+    return this.engine.next();
   }
 
-  public previous(): void {
-    this.engine.movePrevious();
+  public previous(): Promise<void> {
+    return this.engine.previous();
   }
 
-  public cancel(): void {
-    this.engine.cancel();
+  public cancel(): Promise<void> {
+    return this.engine.cancel();
   }
 
-  public setArg(key: string, value: unknown): void {
-    this.engine.setArg(key, value);
+  public setArg(key: string, value: unknown): Promise<void> {
+    return this.engine.setArg(key, value);
   }
 
-  public goToStep(stepId: string): void {
-    this.engine.goToStep(stepId);
+  public goToStep(stepId: string): Promise<void> {
+    return this.engine.goToStep(stepId);
   }
 
-  public snapshot(): WizardSnapshot | null {
+  public snapshot(): PathSnapshot | null {
     return this._state$.getValue();
   }
 }

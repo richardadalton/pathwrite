@@ -1,31 +1,31 @@
-export type WizardArgs = Record<string, unknown>;
+export type PathData = Record<string, unknown>;
 
-export interface WizardStepContext<TArgs extends WizardArgs = WizardArgs> {
-  readonly wizardId: string;
+export interface PathStepContext<TArgs extends PathData = PathData> {
+  readonly pathId: string;
   readonly stepId: string;
   readonly args: Readonly<TArgs>;
 }
 
-export interface WizardStepDefinition<TArgs extends WizardArgs = WizardArgs> {
+export interface PathStep<TArgs extends PathData = PathData> {
   id: string;
   title?: string;
   meta?: Record<string, unknown>;
-  shouldSkip?: (ctx: WizardStepContext<TArgs>) => boolean;
-  okToMoveNext?: (ctx: WizardStepContext<TArgs>) => boolean;
-  okToMovePrevious?: (ctx: WizardStepContext<TArgs>) => boolean;
-  onVisit?: (ctx: WizardStepContext<TArgs>) => Partial<TArgs> | void;
-  onLeavingStep?: (ctx: WizardStepContext<TArgs>) => Partial<TArgs> | void;
-  onResumeFromSubWizard?: (
-    subWizardId: string,
-    subWizardArgs: WizardArgs,
-    ctx: WizardStepContext<TArgs>
-  ) => Partial<TArgs> | void;
+  shouldSkip?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
+  canMoveNext?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
+  canMovePrevious?: (ctx: PathStepContext<TArgs>) => boolean | Promise<boolean>;
+  onEnter?: (ctx: PathStepContext<TArgs>) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
+  onLeave?: (ctx: PathStepContext<TArgs>) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
+  onSubPathComplete?: (
+    subPathId: string,
+    subPathData: PathData,
+    ctx: PathStepContext<TArgs>
+  ) => Partial<TArgs> | void | Promise<Partial<TArgs> | void>;
 }
 
-export interface WizardDefinition<TArgs extends WizardArgs = WizardArgs> {
+export interface PathDefinition<TArgs extends PathData = PathData> {
   id: string;
   title?: string;
-  steps: WizardStepDefinition<TArgs>[];
+  steps: PathStep<TArgs>[];
 }
 
 export type StepStatus = "completed" | "current" | "upcoming";
@@ -37,8 +37,8 @@ export interface StepSummary {
   status: StepStatus;
 }
 
-export interface WizardSnapshot<TArgs extends WizardArgs = WizardArgs> {
-  wizardId: string;
+export interface PathSnapshot<TArgs extends PathData = PathData> {
+  pathId: string;
   stepId: string;
   stepTitle?: string;
   stepMeta?: Record<string, unknown>;
@@ -48,154 +48,113 @@ export interface WizardSnapshot<TArgs extends WizardArgs = WizardArgs> {
   steps: StepSummary[];
   isFirstStep: boolean;
   isLastStep: boolean;
-  stackDepth: number;
+  nestingLevel: number;
+  /** True while an async guard or hook is executing. Use to disable navigation controls. */
+  isNavigating: boolean;
   args: TArgs;
 }
 
-export type WizardEngineEvent =
-  | { type: "stateChanged"; snapshot: WizardSnapshot }
-  | { type: "completed"; wizardId: string; args: WizardArgs }
-  | { type: "cancelled"; wizardId: string; args: WizardArgs }
+export type PathEvent =
+  | { type: "stateChanged"; snapshot: PathSnapshot }
+  | { type: "completed"; pathId: string; args: PathData }
+  | { type: "cancelled"; pathId: string; args: PathData }
   | {
       type: "resumed";
-      resumedWizardId: string;
-      fromSubWizardId: string;
-      snapshot: WizardSnapshot;
+      resumedPathId: string;
+      fromSubPathId: string;
+      snapshot: PathSnapshot;
     };
 
-interface ActiveWizard {
-  definition: WizardDefinition;
+interface ActivePath {
+  definition: PathDefinition;
   currentStepIndex: number;
-  args: WizardArgs;
+  args: PathData;
 }
 
-export class WizardEngine {
-  private activeWizard: ActiveWizard | null = null;
-  private readonly wizardStack: ActiveWizard[] = [];
-  private readonly listeners = new Set<(event: WizardEngineEvent) => void>();
+export class PathEngine {
+  private activePath: ActivePath | null = null;
+  private readonly pathStack: ActivePath[] = [];
+  private readonly listeners = new Set<(event: PathEvent) => void>();
+  private _isNavigating = false;
 
-  public subscribe(listener: (event: WizardEngineEvent) => void): () => void {
+  public subscribe(listener: (event: PathEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  public start(wizard: WizardDefinition, initialArgs: WizardArgs = {}): void {
-    this.assertWizardHasSteps(wizard);
-    if (this.activeWizard !== null) {
-      this.wizardStack.push(this.activeWizard);
-    }
+  // ---------------------------------------------------------------------------
+  // Public API
+  // ---------------------------------------------------------------------------
 
-    this.activeWizard = {
-      definition: wizard,
-      currentStepIndex: 0,
-      args: { ...initialArgs }
-    };
-
-    this.skipSteps(1);
-
-    if (this.activeWizard.currentStepIndex >= wizard.steps.length) {
-      this.finishActiveWizard();
-      return;
-    }
-
-    this.applyHookResult(this.visitCurrentStep());
-    this.emitStateChanged();
+  public start(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+    this.assertPathHasSteps(path);
+    return this._startAsync(path, initialData);
   }
 
-  /** Starts a sub-wizard on top of the currently active wizard. Throws if no wizard is running. */
-  public startSubWizard(wizard: WizardDefinition, initialArgs: WizardArgs = {}): void {
-    this.requireActiveWizard();
-    this.start(wizard, initialArgs);
+  /** Starts a sub-path on top of the currently active path. Throws if no path is running. */
+  public startSubPath(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+    this.requireActivePath();
+    return this.start(path, initialData);
   }
 
-  public moveNext(): void {
-    const active = this.requireActiveWizard();
-    const step = this.getCurrentStepDefinition(active);
-
-    if (this.okToMoveNext(active, step)) {
-      this.applyHookResult(this.leavingStep(active, step));
-      active.currentStepIndex += 1;
-      this.skipSteps(1);
-    }
-
-    if (active.currentStepIndex >= active.definition.steps.length) {
-      this.finishActiveWizard();
-      return;
-    }
-
-    this.applyHookResult(this.visitCurrentStep());
-    this.emitStateChanged();
+  public next(): Promise<void> {
+    const active = this.requireActivePath();
+    return this._nextAsync(active);
   }
 
-  public movePrevious(): void {
-    const active = this.requireActiveWizard();
-    const step = this.getCurrentStepDefinition(active);
-
-    if (this.okToMovePrevious(active, step)) {
-      this.applyHookResult(this.leavingStep(active, step));
-      active.currentStepIndex -= 1;
-      this.skipSteps(-1);
-    }
-
-    if (active.currentStepIndex < 0) {
-      this.cancel();
-      return;
-    }
-
-    this.applyHookResult(this.visitCurrentStep());
-    this.emitStateChanged();
+  public previous(): Promise<void> {
+    const active = this.requireActivePath();
+    return this._previousAsync(active);
   }
 
-  public cancel(): void {
-    const active = this.requireActiveWizard();
-    const cancelledWizardId = active.definition.id;
-    const cancelledArgs = { ...active.args };
+  /** Cancel is synchronous (no hooks). Returns a resolved Promise for API consistency. */
+  public cancel(): Promise<void> {
+    const active = this.requireActivePath();
+    if (this._isNavigating) return Promise.resolve();
 
-    if (this.wizardStack.length > 0) {
-      this.activeWizard = this.wizardStack.pop() ?? null;
+    const cancelledPathId = active.definition.id;
+    const cancelledData = { ...active.args };
+
+    if (this.pathStack.length > 0) {
+      this.activePath = this.pathStack.pop() ?? null;
       this.emitStateChanged();
-      return;
+      return Promise.resolve();
     }
 
-    this.activeWizard = null;
-    this.emit({ type: "cancelled", wizardId: cancelledWizardId, args: cancelledArgs });
+    this.activePath = null;
+    this.emit({ type: "cancelled", pathId: cancelledPathId, args: cancelledData });
+    return Promise.resolve();
   }
 
-  public setArg(key: string, value: unknown): void {
-    const active = this.requireActiveWizard();
+  public setArg(key: string, value: unknown): Promise<void> {
+    const active = this.requireActivePath();
     active.args[key] = value;
     this.emitStateChanged();
+    return Promise.resolve();
   }
 
-  /** Jumps directly to the step with the given ID. Calls onLeavingStep on the current step and onVisit on the target. Does not check guards or shouldSkip. */
-  public goToStep(stepId: string): void {
-    const active = this.requireActiveWizard();
+  /** Jumps directly to the step with the given ID. Does not check guards or shouldSkip. */
+  public goToStep(stepId: string): Promise<void> {
+    const active = this.requireActivePath();
     const targetIndex = active.definition.steps.findIndex((s) => s.id === stepId);
     if (targetIndex === -1) {
-      throw new Error(`Step "${stepId}" not found in wizard "${active.definition.id}".`);
+      throw new Error(`Step "${stepId}" not found in path "${active.definition.id}".`);
     }
-
-    const currentStep = this.getCurrentStepDefinition(active);
-    this.applyHookResult(this.leavingStep(active, currentStep));
-
-    active.currentStepIndex = targetIndex;
-
-    this.applyHookResult(this.visitCurrentStep());
-    this.emitStateChanged();
+    return this._goToStepAsync(active, targetIndex);
   }
 
-  public getSnapshot(): WizardSnapshot | null {
-    if (this.activeWizard === null) {
+  public snapshot(): PathSnapshot | null {
+    if (this.activePath === null) {
       return null;
     }
 
-    const active = this.activeWizard;
-    const step = this.getCurrentStepDefinition(active);
+    const active = this.activePath;
+    const step = this.getCurrentStep(active);
     const { steps } = active.definition;
     const stepCount = steps.length;
 
     return {
-      wizardId: active.definition.id,
+      pathId: active.definition.id,
       stepId: step.id,
       stepTitle: step.title,
       stepMeta: step.meta,
@@ -213,124 +172,281 @@ export class WizardEngine {
       isFirstStep: active.currentStepIndex === 0,
       isLastStep:
         active.currentStepIndex === stepCount - 1 &&
-        this.wizardStack.length === 0,
-      stackDepth: this.wizardStack.length,
+        this.pathStack.length === 0,
+      nestingLevel: this.pathStack.length,
+      isNavigating: this._isNavigating,
       args: { ...active.args }
     };
   }
 
-  private finishActiveWizard(): void {
-    const finished = this.requireActiveWizard();
-    const finishedWizardId = finished.definition.id;
-    const finishedArgs = { ...finished.args };
+  // ---------------------------------------------------------------------------
+  // Private async helpers
+  // ---------------------------------------------------------------------------
 
-    if (this.wizardStack.length > 0) {
-      const parent = this.wizardStack.pop() as ActiveWizard;
-      this.activeWizard = parent;
-      const parentStep = this.getCurrentStepDefinition(parent);
-      const patch = parentStep.onResumeFromSubWizard?.(
-        finishedWizardId,
-        finishedArgs,
-        this.buildContext(parent)
-      );
-      this.applyHookResult(patch);
-      this.applyHookResult(this.visitCurrentStep());
-      this.emit({
-        type: "resumed",
-        resumedWizardId: parent.definition.id,
-        fromSubWizardId: finishedWizardId,
-        snapshot: this.getSnapshotOrThrow()
-      });
-      this.emitStateChanged();
+  private async _startAsync(path: PathDefinition, initialData: PathData): Promise<void> {
+    if (this._isNavigating) return;
+
+    if (this.activePath !== null) {
+      this.pathStack.push(this.activePath);
+    }
+
+    this.activePath = {
+      definition: path,
+      currentStepIndex: 0,
+      args: { ...initialData }
+    };
+
+    this._isNavigating = true;
+
+    await this.skipSteps(1);
+
+    if (this.activePath.currentStepIndex >= path.steps.length) {
+      this._isNavigating = false;
+      await this.finishActivePath();
       return;
     }
 
-    this.activeWizard = null;
-    this.emit({ type: "completed", wizardId: finishedWizardId, args: finishedArgs });
-  }
+    this.emitStateChanged();
 
-  private visitCurrentStep(): Partial<WizardArgs> | void {
-    const active = this.requireActiveWizard();
-    const step = this.getCurrentStepDefinition(active);
-    return step.onVisit?.(this.buildContext(active));
-  }
-
-  private leavingStep(active: ActiveWizard, step: WizardStepDefinition): Partial<WizardArgs> | void {
-    return step.onLeavingStep?.(this.buildContext(active));
-  }
-
-  private okToMoveNext(active: ActiveWizard, step: WizardStepDefinition): boolean {
-    return step.okToMoveNext?.(this.buildContext(active)) ?? true;
-  }
-
-  private okToMovePrevious(active: ActiveWizard, step: WizardStepDefinition): boolean {
-    return step.okToMovePrevious?.(this.buildContext(active)) ?? true;
-  }
-
-  /** Returns a context with a snapshot copy of args — hooks cannot mutate internal state directly. */
-  private buildContext(active: ActiveWizard): WizardStepContext {
-    return {
-      wizardId: active.definition.id,
-      stepId: this.getCurrentStepDefinition(active).id,
-      args: { ...active.args }
-    };
-  }
-
-  /** Merges a hook's returned patch into the active wizard's args. */
-  private applyHookResult(patch: Partial<WizardArgs> | void | undefined): void {
-    if (patch != null && this.activeWizard !== null) {
-      Object.assign(this.activeWizard.args, patch);
+    try {
+      this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
     }
   }
 
-  /** Advances (direction=1) or retreats (direction=-1) past steps where shouldSkip returns true. */
-  private skipSteps(direction: 1 | -1): void {
-    const active = this.activeWizard;
-    if (active === null) return;
-    const { steps } = active.definition;
-    while (
-      active.currentStepIndex >= 0 &&
-      active.currentStepIndex < steps.length &&
-      steps[active.currentStepIndex].shouldSkip?.(this.buildContext(active))
-    ) {
-      active.currentStepIndex += direction;
+  private async _nextAsync(active: ActivePath): Promise<void> {
+    if (this._isNavigating) return;
+
+    this._isNavigating = true;
+    this.emitStateChanged();
+
+    try {
+      const step = this.getCurrentStep(active);
+
+      if (await this.canMoveNext(active, step)) {
+        this.applyPatch(await this.leaveCurrentStep(active, step));
+        active.currentStepIndex += 1;
+        await this.skipSteps(1);
+      }
+
+      if (active.currentStepIndex >= active.definition.steps.length) {
+        this._isNavigating = false;
+        await this.finishActivePath();
+        return;
+      }
+
+      this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
     }
   }
 
-  private getCurrentStepDefinition(active: ActiveWizard): WizardStepDefinition {
-    return active.definition.steps[active.currentStepIndex];
-  }
+  private async _previousAsync(active: ActivePath): Promise<void> {
+    if (this._isNavigating) return;
 
-  private requireActiveWizard(): ActiveWizard {
-    if (this.activeWizard === null) {
-      throw new Error("No active wizard is running.");
+    this._isNavigating = true;
+    this.emitStateChanged();
+
+    try {
+      const step = this.getCurrentStep(active);
+
+      if (await this.canMovePrevious(active, step)) {
+        this.applyPatch(await this.leaveCurrentStep(active, step));
+        active.currentStepIndex -= 1;
+        await this.skipSteps(-1);
+      }
+
+      if (active.currentStepIndex < 0) {
+        this._isNavigating = false;
+        await this.cancel();
+        return;
+      }
+
+      this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
     }
-    return this.activeWizard;
   }
 
-  private getSnapshotOrThrow(): WizardSnapshot {
-    const snapshot = this.getSnapshot();
-    if (snapshot === null) {
-      throw new Error("No active wizard snapshot available.");
+  private async _goToStepAsync(active: ActivePath, targetIndex: number): Promise<void> {
+    if (this._isNavigating) return;
+
+    this._isNavigating = true;
+    this.emitStateChanged();
+
+    try {
+      const currentStep = this.getCurrentStep(active);
+      this.applyPatch(await this.leaveCurrentStep(active, currentStep));
+
+      active.currentStepIndex = targetIndex;
+
+      this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
     }
-    return snapshot;
   }
 
-  private assertWizardHasSteps(wizard: WizardDefinition): void {
-    if (wizard.steps.length === 0) {
-      throw new Error("Cannot start an empty wizard.");
+  private async finishActivePath(): Promise<void> {
+    const finished = this.requireActivePath();
+    const finishedPathId = finished.definition.id;
+    const finishedData = { ...finished.args };
+
+    if (this.pathStack.length > 0) {
+      this.activePath = this.pathStack.pop()!;
+      const parent = this.activePath;
+      const parentStep = this.getCurrentStep(parent);
+
+      if (parentStep.onSubPathComplete) {
+        const ctx: PathStepContext = {
+          pathId: parent.definition.id,
+          stepId: parentStep.id,
+          args: { ...parent.args }
+        };
+        this.applyPatch(
+          await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx)
+        );
+      }
+
+      this.emit({
+        type: "resumed",
+        resumedPathId: parent.definition.id,
+        fromSubPathId: finishedPathId,
+        snapshot: this.snapshot()!
+      });
+    } else {
+      this.activePath = null;
+      this.emit({ type: "completed", pathId: finishedPathId, args: finishedData });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private requireActivePath(): ActivePath {
+    if (this.activePath === null) {
+      throw new Error("No active path.");
+    }
+    return this.activePath;
+  }
+
+  private assertPathHasSteps(path: PathDefinition): void {
+    if (!path.steps || path.steps.length === 0) {
+      throw new Error(`Path "${path.id}" must have at least one step.`);
+    }
+  }
+
+  private emit(event: PathEvent): void {
+    for (const listener of this.listeners) {
+      listener(event);
     }
   }
 
   private emitStateChanged(): void {
-    if (this.activeWizard === null) {
-      return;
-    }
-    this.emit({ type: "stateChanged", snapshot: this.getSnapshotOrThrow() });
+    this.emit({ type: "stateChanged", snapshot: this.snapshot()! });
   }
 
-  private emit(event: WizardEngineEvent): void {
-    this.listeners.forEach((listener) => listener(event));
+  private getCurrentStep(active: ActivePath): PathStep {
+    return active.definition.steps[active.currentStepIndex];
+  }
+
+  private applyPatch(patch: Partial<PathData> | void | null | undefined): void {
+    if (patch && typeof patch === "object") {
+      const active = this.activePath;
+      if (active) {
+        Object.assign(active.args, patch);
+      }
+    }
+  }
+
+  private async skipSteps(direction: 1 | -1): Promise<void> {
+    const active = this.activePath;
+    if (!active) return;
+
+    while (
+      active.currentStepIndex >= 0 &&
+      active.currentStepIndex < active.definition.steps.length
+    ) {
+      const step = active.definition.steps[active.currentStepIndex];
+      if (!step.shouldSkip) break;
+      const ctx: PathStepContext = {
+        pathId: active.definition.id,
+        stepId: step.id,
+        args: { ...active.args }
+      };
+      const skip = await step.shouldSkip(ctx);
+      if (!skip) break;
+      active.currentStepIndex += direction;
+    }
+  }
+
+  private async enterCurrentStep(): Promise<Partial<PathData> | void> {
+    const active = this.activePath;
+    if (!active) return;
+    const step = this.getCurrentStep(active);
+    if (!step.onEnter) return;
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: step.id,
+      args: { ...active.args }
+    };
+    return step.onEnter(ctx);
+  }
+
+  private async leaveCurrentStep(
+    active: ActivePath,
+    step: PathStep
+  ): Promise<Partial<PathData> | void> {
+    if (!step.onLeave) return;
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: step.id,
+      args: { ...active.args }
+    };
+    return step.onLeave(ctx);
+  }
+
+  private async canMoveNext(
+    active: ActivePath,
+    step: PathStep
+  ): Promise<boolean> {
+    if (!step.canMoveNext) return true;
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: step.id,
+      args: { ...active.args }
+    };
+    return step.canMoveNext(ctx);
+  }
+
+  private async canMovePrevious(
+    active: ActivePath,
+    step: PathStep
+  ): Promise<boolean> {
+    if (!step.canMovePrevious) return true;
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: step.id,
+      args: { ...active.args }
+    };
+    return step.canMovePrevious(ctx);
   }
 }
 

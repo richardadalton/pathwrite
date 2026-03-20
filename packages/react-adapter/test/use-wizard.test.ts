@@ -3,15 +3,15 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { WizardDefinition, WizardEngineEvent } from "@pathwrite/core";
-import { useWizard, WizardProvider, useWizardContext } from "../src/index";
-import type { UseWizardOptions } from "../src/index";
+import { PathDefinition, PathEvent } from "@pathwrite/core";
+import { usePath, PathProvider, usePathContext } from "../src/index";
+import type { UsePathOptions } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function twoStepWizard(id = "main"): WizardDefinition {
+function twoStepPath(id = "main"): PathDefinition {
   return { id, steps: [{ id: "step1" }, { id: "step2" }] };
 }
 
@@ -19,66 +19,66 @@ function twoStepWizard(id = "main"): WizardDefinition {
 // snapshot
 // ---------------------------------------------------------------------------
 
-describe("useWizard — snapshot", () => {
-  it("starts as null before any wizard is launched", () => {
-    const { result } = renderHook(() => useWizard());
+describe("usePath — snapshot", () => {
+  it("starts as null before any path is launched", () => {
+    const { result } = renderHook(() => usePath());
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("returns the current step snapshot when a wizard starts", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    expect(result.current.snapshot).toMatchObject({ wizardId: "main", stepId: "step1" });
+  it("returns the current step snapshot when a path starts", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    expect(result.current.snapshot).toMatchObject({ pathId: "main", stepId: "step1" });
   });
 
-  it("updates as navigation progresses", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
+  it("updates as navigation progresses", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
     expect(result.current.snapshot?.stepId).toBe("step1");
-    act(() => result.current.next());
+    await act(() => result.current.next());
     expect(result.current.snapshot?.stepId).toBe("step2");
   });
 
-  it("returns null when the wizard completes", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.next());
-    act(() => result.current.next());
+  it("returns null when the path completes", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
+    await act(() => result.current.next());
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("returns null when the wizard is cancelled", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.cancel());
+  it("returns null when the path is cancelled", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.cancel());
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("reflects the parent wizard snapshot after a sub-wizard completes", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard("parent")));
-    act(() => result.current.next());
-    act(() => result.current.startSubWizard(twoStepWizard("sub")));
-    expect(result.current.snapshot?.wizardId).toBe("sub");
+  it("reflects the parent path snapshot after a sub-path completes", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath("parent")));
+    await act(() => result.current.next());
+    await act(() => result.current.startSubPath(twoStepPath("sub")));
+    expect(result.current.snapshot?.pathId).toBe("sub");
 
-    act(() => result.current.next());
-    act(() => result.current.next()); // complete sub → resume parent
+    await act(() => result.current.next());
+    await act(() => result.current.next()); // complete sub → resume parent
 
-    expect(result.current.snapshot).toMatchObject({ wizardId: "parent", stepId: "step2" });
+    expect(result.current.snapshot).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("reflects the parent wizard snapshot after a sub-wizard is cancelled", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard("parent")));
-    act(() => result.current.next());
-    act(() => result.current.startSubWizard(twoStepWizard("sub")));
-    act(() => result.current.cancel());
-    expect(result.current.snapshot).toMatchObject({ wizardId: "parent", stepId: "step2" });
+  it("reflects the parent path snapshot after a sub-path is cancelled", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath("parent")));
+    await act(() => result.current.next());
+    await act(() => result.current.startSubPath(twoStepPath("sub")));
+    await act(() => result.current.cancel());
+    expect(result.current.snapshot).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("includes initial args passed to start", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard(), { owner: "test", value: 42 }));
+  it("includes initial data passed to start", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath(), { owner: "test", value: 42 }));
     expect(result.current.snapshot?.args).toMatchObject({ owner: "test", value: 42 });
   });
 });
@@ -87,79 +87,79 @@ describe("useWizard — snapshot", () => {
 // events (onEvent callback)
 // ---------------------------------------------------------------------------
 
-describe("useWizard — events", () => {
-  it("calls onEvent for stateChanged on start and navigation", () => {
+describe("usePath — events", () => {
+  it("calls onEvent for stateChanged on start and navigation", async () => {
     const onEvent = vi.fn();
-    const { result } = renderHook(() => useWizard({ onEvent }));
+    const { result } = renderHook(() => usePath({ onEvent }));
 
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.next());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
 
     const stateChangedCount = onEvent.mock.calls.filter(
-      (args) => (args[0] as WizardEngineEvent).type === "stateChanged"
+      (args) => (args[0] as PathEvent).type === "stateChanged"
     ).length;
     expect(stateChangedCount).toBeGreaterThanOrEqual(2);
   });
 
-  it("calls onEvent with completed when the wizard finishes", () => {
+  it("calls onEvent with completed when the path finishes", async () => {
     const onEvent = vi.fn();
-    const { result } = renderHook(() => useWizard({ onEvent }));
+    const { result } = renderHook(() => usePath({ onEvent }));
 
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.next());
-    act(() => result.current.next());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
+    await act(() => result.current.next());
 
     expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completed", wizardId: "main" })
+      expect.objectContaining({ type: "completed", pathId: "main" })
     );
   });
 
-  it("calls onEvent with cancelled when cancel is called", () => {
+  it("calls onEvent with cancelled when cancel is called", async () => {
     const onEvent = vi.fn();
-    const { result } = renderHook(() => useWizard({ onEvent }));
+    const { result } = renderHook(() => usePath({ onEvent }));
 
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.cancel());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.cancel());
 
     expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "cancelled", wizardId: "main" })
+      expect.objectContaining({ type: "cancelled", pathId: "main" })
     );
   });
 
-  it("calls onEvent with resumed when a sub-wizard completes", () => {
+  it("calls onEvent with resumed when a sub-path completes", async () => {
     const onEvent = vi.fn();
-    const { result } = renderHook(() => useWizard({ onEvent }));
+    const { result } = renderHook(() => usePath({ onEvent }));
 
-    act(() => result.current.start(twoStepWizard("parent")));
-    act(() => result.current.startSubWizard(twoStepWizard("sub")));
-    act(() => result.current.next());
-    act(() => result.current.next());
+    await act(() => result.current.start(twoStepPath("parent")));
+    await act(() => result.current.startSubPath(twoStepPath("sub")));
+    await act(() => result.current.next());
+    await act(() => result.current.next());
 
     expect(onEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "resumed",
-        resumedWizardId: "parent",
-        fromSubWizardId: "sub"
+        resumedPathId: "parent",
+        fromSubPathId: "sub"
       })
     );
   });
 
-  it("uses the latest onEvent callback without re-subscribing", () => {
+  it("uses the latest onEvent callback without re-subscribing", async () => {
     const firstCallback = vi.fn();
     const secondCallback = vi.fn();
     const { result, rerender } = renderHook(
-      (props: UseWizardOptions) => useWizard(props),
+      (props: UsePathOptions) => usePath(props),
       { initialProps: { onEvent: firstCallback } }
     );
 
-    act(() => result.current.start(twoStepWizard()));
+    await act(() => result.current.start(twoStepPath()));
     expect(firstCallback).toHaveBeenCalled();
     expect(secondCallback).not.toHaveBeenCalled();
 
     firstCallback.mockClear();
     rerender({ onEvent: secondCallback });
 
-    act(() => result.current.next());
+    await act(() => result.current.next());
     expect(secondCallback).toHaveBeenCalled();
     expect(firstCallback).not.toHaveBeenCalled();
   });
@@ -169,44 +169,44 @@ describe("useWizard — events", () => {
 // navigation methods
 // ---------------------------------------------------------------------------
 
-describe("useWizard — navigation", () => {
-  it("next() advances the step", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.next());
+describe("usePath — navigation", () => {
+  it("next() advances the step", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
     expect(result.current.snapshot?.stepId).toBe("step2");
   });
 
-  it("previous() goes back a step", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.next());
-    act(() => result.current.previous());
+  it("previous() goes back a step", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
+    await act(() => result.current.previous());
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 
-  it("cancel() clears the active wizard", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
-    act(() => result.current.cancel());
+  it("cancel() clears the active path", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.cancel());
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("setArg() updates the arg and is visible in the snapshot", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard(), { label: "old" }));
-    act(() => result.current.setArg("label", "new"));
+  it("setArg() updates the arg and is visible in the snapshot", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath(), { label: "old" }));
+    await act(() => result.current.setArg("label", "new"));
     expect(result.current.snapshot?.args.label).toBe("new");
   });
 
-  it("action callbacks are referentially stable across re-renders", () => {
-    const { result, rerender } = renderHook(() => useWizard());
+  it("action callbacks are referentially stable across re-renders", async () => {
+    const { result, rerender } = renderHook(() => usePath());
     const first = result.current;
     rerender();
     const second = result.current;
 
     expect(second.start).toBe(first.start);
-    expect(second.startSubWizard).toBe(first.startSubWizard);
+    expect(second.startSubPath).toBe(first.startSubPath);
     expect(second.next).toBe(first.next);
     expect(second.previous).toBe(first.previous);
     expect(second.cancel).toBe(first.cancel);
@@ -215,20 +215,20 @@ describe("useWizard — navigation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// sub-wizard
+// sub-path
 // ---------------------------------------------------------------------------
 
-describe("useWizard — sub-wizard", () => {
-  it("throws when startSubWizard is called without an active wizard", () => {
-    const { result } = renderHook(() => useWizard());
-    expect(() => result.current.startSubWizard(twoStepWizard())).toThrow();
+describe("usePath — sub-path", () => {
+  it("throws when startSubPath is called without an active path", () => {
+    const { result } = renderHook(() => usePath());
+    expect(() => result.current.startSubPath(twoStepPath())).toThrow();
   });
 
-  it("sets the sub-wizard as the active snapshot", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard("parent")));
-    act(() => result.current.startSubWizard(twoStepWizard("sub")));
-    expect(result.current.snapshot?.wizardId).toBe("sub");
+  it("sets the sub-path as the active snapshot", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath("parent")));
+    await act(() => result.current.startSubPath(twoStepPath("sub")));
+    expect(result.current.snapshot?.pathId).toBe("sub");
   });
 });
 
@@ -236,16 +236,16 @@ describe("useWizard — sub-wizard", () => {
 // goToStep
 // ---------------------------------------------------------------------------
 
-describe("useWizard — goToStep", () => {
-  it("jumps to the target step by ID", () => {
-    const { result } = renderHook(() => useWizard());
-    act(() => result.current.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] }));
-    act(() => result.current.goToStep("c"));
+describe("usePath — goToStep", () => {
+  it("jumps to the target step by ID", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] }));
+    await act(() => result.current.goToStep("c"));
     expect(result.current.snapshot?.stepId).toBe("c");
   });
 
   it("goToStep callback is referentially stable across re-renders", () => {
-    const { result, rerender } = renderHook(() => useWizard());
+    const { result, rerender } = renderHook(() => usePath());
     const first = result.current.goToStep;
     rerender();
     expect(result.current.goToStep).toBe(first);
@@ -253,44 +253,44 @@ describe("useWizard — goToStep", () => {
 });
 
 // ---------------------------------------------------------------------------
-// WizardProvider + useWizardContext
+// PathProvider + usePathContext
 // ---------------------------------------------------------------------------
 
-describe("WizardProvider + useWizardContext", () => {
-  it("provides wizard state to child hooks", () => {
+describe("PathProvider + usePathContext", () => {
+  it("provides path state to child hooks", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(WizardProvider, null, children);
-    const { result } = renderHook(() => useWizardContext(), { wrapper });
+      createElement(PathProvider, null, children);
+    const { result } = renderHook(() => usePathContext(), { wrapper });
     expect(result.current.snapshot).toBeNull();
   });
 
-  it("allows navigation through the provided context", () => {
+  it("allows navigation through the provided context", async () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(WizardProvider, null, children);
-    const { result } = renderHook(() => useWizardContext(), { wrapper });
+      createElement(PathProvider, null, children);
+    const { result } = renderHook(() => usePathContext(), { wrapper });
 
-    act(() => result.current.start(twoStepWizard()));
+    await act(() => result.current.start(twoStepPath()));
     expect(result.current.snapshot?.stepId).toBe("step1");
 
-    act(() => result.current.next());
+    await act(() => result.current.next());
     expect(result.current.snapshot?.stepId).toBe("step2");
   });
 
-  it("throws when useWizardContext is used outside a WizardProvider", () => {
+  it("throws when usePathContext is used outside a PathProvider", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(() => renderHook(() => useWizardContext())).toThrow(
-      "useWizardContext must be used within a <WizardProvider>."
+    expect(() => renderHook(() => usePathContext())).toThrow(
+      "usePathContext must be used within a <PathProvider>."
     );
     spy.mockRestore();
   });
 
-  it("forwards onEvent from WizardProvider props", () => {
+  it("forwards onEvent from PathProvider props", async () => {
     const onEvent = vi.fn();
     const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(WizardProvider, { onEvent }, children);
-    const { result } = renderHook(() => useWizardContext(), { wrapper });
+      createElement(PathProvider, { onEvent }, children);
+    const { result } = renderHook(() => usePathContext(), { wrapper });
 
-    act(() => result.current.start(twoStepWizard()));
+    await act(() => result.current.start(twoStepPath()));
     expect(onEvent).toHaveBeenCalledWith(
       expect.objectContaining({ type: "stateChanged" })
     );
@@ -301,10 +301,10 @@ describe("WizardProvider + useWizardContext", () => {
 // cleanup on unmount
 // ---------------------------------------------------------------------------
 
-describe("useWizard — cleanup", () => {
-  it("does not throw when the component unmounts while a wizard is active", () => {
-    const { result, unmount } = renderHook(() => useWizard());
-    act(() => result.current.start(twoStepWizard()));
+describe("usePath — cleanup", () => {
+  it("does not throw when the component unmounts while a path is active", async () => {
+    const { result, unmount } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
     expect(result.current.snapshot?.stepId).toBe("step1");
     expect(() => unmount()).not.toThrow();
   });

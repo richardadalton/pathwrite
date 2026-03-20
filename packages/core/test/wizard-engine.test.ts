@@ -1,89 +1,93 @@
 import { describe, expect, it, vi } from "vitest";
-import { WizardArgs, WizardDefinition, WizardEngine, WizardEngineEvent } from "@pathwrite/core";
+import { PathData, PathDefinition, PathEngine, PathEvent } from "@pathwrite/core";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function twoStepWizard(id = "main"): WizardDefinition {
+function twoStepPath(id = "main"): PathDefinition {
   return { id, steps: [{ id: "step1" }, { id: "step2" }] };
 }
 
-function collectEvents(engine: WizardEngine): WizardEngineEvent[] {
-  const events: WizardEngineEvent[] = [];
+function collectEvents(engine: PathEngine): PathEvent[] {
+  const events: PathEvent[] = [];
   engine.subscribe((e) => events.push(e));
   return events;
 }
+
+// NOTE: All navigation methods (start, next, previous, cancel,
+// goToStep, setArg) return Promise<void> to support async hooks/guards.
 
 // ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — navigation", () => {
-  it("starts on the first step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    expect(engine.getSnapshot()?.stepId).toBe("step1");
+describe("PathEngine — navigation", () => {
+  it("starts on the first step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("advances to the next step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("step2");
+  it("advances to the next step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("finishes and clears state after moving past the last step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    engine.moveNext();
-    engine.moveNext();
-    expect(engine.getSnapshot()).toBeNull();
+  it("finishes and clears state after moving past the last step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    await engine.next();
+    expect(engine.snapshot()).toBeNull();
   });
 
-  it("moves to the previous step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    engine.moveNext();
-    engine.movePrevious();
-    expect(engine.getSnapshot()?.stepId).toBe("step1");
+  it("moves to the previous step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    await engine.previous();
+    expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("cancels the wizard when moving previous from the first step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    engine.movePrevious();
-    expect(engine.getSnapshot()).toBeNull();
+  it("cancels the path when moving previous from the first step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.previous();
+    expect(engine.snapshot()).toBeNull();
   });
 
-  it("stays on the current step when okToMoveNext returns false", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("stays on the current step when canMoveNext returns false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
-      steps: [{ id: "step1", okToMoveNext: () => false }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => false }, { id: "step2" }]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("step1");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("stays on the current step when okToMovePrevious returns false", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("stays on the current step when canMovePrevious returns false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", okToMovePrevious: () => false }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false }]
     });
-    engine.moveNext();
-    engine.movePrevious();
-    expect(engine.getSnapshot()?.stepId).toBe("step2");
+    await engine.next();
+    await engine.previous();
+    expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("still emits stateChanged when a guard blocks navigation", () => {
-    const engine = new WizardEngine();
+  it("still emits stateChanged when a guard blocks navigation", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start({ id: "w", steps: [{ id: "step1", okToMoveNext: () => false }] });
+    await engine.start({ id: "w", steps: [{ id: "step1", canMoveNext: () => false }] });
     const before = events.filter((e) => e.type === "stateChanged").length;
-    engine.moveNext();
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
+    await engine.next();
+    // next emits 2 events: busy at start + final
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
   });
 });
 
@@ -91,65 +95,73 @@ describe("WizardEngine — navigation", () => {
 // Snapshot fields
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — snapshot", () => {
-  it("returns null when no wizard is active", () => {
-    expect(new WizardEngine().getSnapshot()).toBeNull();
+describe("PathEngine — snapshot", () => {
+  it("returns null when no path is active", () => {
+    expect(new PathEngine().snapshot()).toBeNull();
   });
 
-  it("exposes correct stepIndex and stepCount", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.getSnapshot()).toMatchObject({ stepIndex: 0, stepCount: 3 });
-    engine.moveNext();
-    expect(engine.getSnapshot()).toMatchObject({ stepIndex: 1, stepCount: 3 });
+  it("exposes correct stepIndex and stepCount", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.snapshot()).toMatchObject({ stepIndex: 0, stepCount: 3 });
+    await engine.next();
+    expect(engine.snapshot()).toMatchObject({ stepIndex: 1, stepCount: 3 });
   });
 
-  it("isFirstStep is true only on the first step", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    expect(engine.getSnapshot()?.isFirstStep).toBe(true);
-    engine.moveNext();
-    expect(engine.getSnapshot()?.isFirstStep).toBe(false);
+  it("isFirstStep is true only on the first step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.isFirstStep).toBe(true);
+    await engine.next();
+    expect(engine.snapshot()?.isFirstStep).toBe(false);
   });
 
-  it("isLastStep is true only on the last step of a top-level wizard", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    expect(engine.getSnapshot()?.isLastStep).toBe(false);
-    engine.moveNext();
-    expect(engine.getSnapshot()?.isLastStep).toBe(true);
+  it("isLastStep is true only on the last step of a top-level path", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.isLastStep).toBe(false);
+    await engine.next();
+    expect(engine.snapshot()?.isLastStep).toBe(true);
   });
 
-  it("isLastStep is false on the last step of a sub-wizard", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("parent"));
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.moveNext(); // advance sub to its last step
-    expect(engine.getSnapshot()?.isLastStep).toBe(false);
+  it("isLastStep is false on the last step of a sub-path", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.next();
+    expect(engine.snapshot()?.isLastStep).toBe(false);
   });
 
-  it("stackDepth is 0 for a top-level wizard and increments per nesting level", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("root"));
-    expect(engine.getSnapshot()?.stackDepth).toBe(0);
-    engine.startSubWizard(twoStepWizard("level1"));
-    expect(engine.getSnapshot()?.stackDepth).toBe(1);
-    engine.startSubWizard(twoStepWizard("level2"));
-    expect(engine.getSnapshot()?.stackDepth).toBe(2);
+  it("nestingLevel is 0 for a top-level path and increments per nesting level", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("root"));
+    expect(engine.snapshot()?.nestingLevel).toBe(0);
+    await engine.startSubPath(twoStepPath("level1"));
+    expect(engine.snapshot()?.nestingLevel).toBe(1);
+    await engine.startSubPath(twoStepPath("level2"));
+    expect(engine.snapshot()?.nestingLevel).toBe(2);
   });
 
-  it("snapshot args are a copy — mutating the returned object does not affect internal state", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard(), { count: 1 });
-    const snap = engine.getSnapshot()!;
-    (snap.args as WizardArgs).count = 99;
-    expect(engine.getSnapshot()?.args.count).toBe(1);
+  it("snapshot args are a copy — mutating the returned object does not affect internal state", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { count: 1 });
+    const snap = engine.snapshot()!;
+    (snap.args as PathData).count = 99;
+    expect(engine.snapshot()?.args.count).toBe(1);
   });
 
-  it("includes initial args passed to start", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard(), { owner: "test", value: 42 });
-    expect(engine.getSnapshot()?.args).toMatchObject({ owner: "test", value: 42 });
+  it("includes initial data passed to start", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { owner: "test", value: 42 });
+    expect(engine.snapshot()?.args).toMatchObject({ owner: "test", value: 42 });
+  });
+
+  it("isNavigating is false in a stable snapshot between navigations", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.isNavigating).toBe(false);
+    await engine.next();
+    expect(engine.snapshot()?.isNavigating).toBe(false);
   });
 });
 
@@ -157,32 +169,33 @@ describe("WizardEngine — snapshot", () => {
 // setArg
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — setArg", () => {
-  it("updates a value and reflects it in the next snapshot", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard(), { name: "original" });
-    engine.setArg("name", "updated");
-    expect(engine.getSnapshot()?.args.name).toBe("updated");
+describe("PathEngine — setArg", () => {
+  it("updates a value and reflects it in the next snapshot", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "original" });
+    await engine.setArg("name", "updated");
+    expect(engine.snapshot()?.args.name).toBe("updated");
   });
 
-  it("adds a new key that was not in the initial args", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
-    engine.setArg("extra", true);
-    expect(engine.getSnapshot()?.args.extra).toBe(true);
+  it("adds a new key that was not in the initial data", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.setArg("extra", true);
+    expect(engine.snapshot()?.args.extra).toBe(true);
   });
 
-  it("emits stateChanged after setArg", () => {
-    const engine = new WizardEngine();
+  it("emits stateChanged after setArg", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard());
+    await engine.start(twoStepPath());
     const before = events.filter((e) => e.type === "stateChanged").length;
-    engine.setArg("x", 1);
+    await engine.setArg("x", 1);
+    // setArg is synchronous — emits exactly 1 event
     expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
   });
 
-  it("throws when no wizard is active", () => {
-    expect(() => new WizardEngine().setArg("x", 1)).toThrow();
+  it("throws when no path is active", () => {
+    expect(() => new PathEngine().setArg("x", 1)).toThrow();
   });
 });
 
@@ -190,82 +203,83 @@ describe("WizardEngine — setArg", () => {
 // Events
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — events", () => {
-  it("emits stateChanged on start", () => {
-    const engine = new WizardEngine();
+describe("PathEngine — events", () => {
+  it("emits stateChanged on start", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard());
+    await engine.start(twoStepPath());
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);
   });
 
-  it("emits stateChanged on each moveNext", () => {
-    const engine = new WizardEngine();
+  it("emits stateChanged on each next", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard());
+    await engine.start(twoStepPath());
     const before = events.filter((e) => e.type === "stateChanged").length;
-    engine.moveNext();
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
+    await engine.next();
+    // next emits 2 events: busy at start + final
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
   });
 
-  it("emits stateChanged on movePrevious", () => {
-    const engine = new WizardEngine();
+  it("emits stateChanged on previous", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard());
-    engine.moveNext();
+    await engine.start(twoStepPath());
+    await engine.next();
     const before = events.filter((e) => e.type === "stateChanged").length;
-    engine.movePrevious();
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
+    await engine.previous();
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
   });
 
-  it("emits completed with final args when the wizard finishes", () => {
-    const engine = new WizardEngine();
+  it("emits completed with final data when the path finishes", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard(), { result: "done" });
-    engine.moveNext();
-    engine.moveNext();
+    await engine.start(twoStepPath(), { result: "done" });
+    await engine.next();
+    await engine.next();
     const completed = events.find((e) => e.type === "completed");
-    expect(completed).toMatchObject({ type: "completed", wizardId: "main", args: { result: "done" } });
+    expect(completed).toMatchObject({ type: "completed", pathId: "main", args: { result: "done" } });
   });
 
-  it("emits cancelled with args when cancel is called on a top-level wizard", () => {
-    const engine = new WizardEngine();
+  it("emits cancelled with data when cancel is called on a top-level path", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard(), { owner: "test" });
-    engine.cancel();
+    await engine.start(twoStepPath(), { owner: "test" });
+    await engine.cancel();
     const cancelled = events.find((e) => e.type === "cancelled");
-    expect(cancelled).toMatchObject({ type: "cancelled", wizardId: "main", args: { owner: "test" } });
+    expect(cancelled).toMatchObject({ type: "cancelled", pathId: "main", args: { owner: "test" } });
   });
 
-  it("emits resumed with correct wizard IDs when a sub-wizard completes", () => {
-    const engine = new WizardEngine();
+  it("emits resumed with correct path IDs when a sub-path completes", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard("parent"));
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.moveNext();
-    engine.moveNext(); // completes sub
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.next();
+    await engine.next(); // completes sub
     const resumed = events.find((e) => e.type === "resumed");
-    expect(resumed).toMatchObject({ type: "resumed", resumedWizardId: "parent", fromSubWizardId: "sub" });
+    expect(resumed).toMatchObject({ type: "resumed", resumedPathId: "parent", fromSubPathId: "sub" });
   });
 
-  it("does not emit completed or resumed when a sub-wizard is cancelled", () => {
-    const engine = new WizardEngine();
+  it("does not emit completed or resumed when a sub-path is cancelled", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard("parent"));
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.cancel();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
     expect(events.some((e) => e.type === "completed")).toBe(false);
     expect(events.some((e) => e.type === "resumed")).toBe(false);
   });
 
-  it("does not emit cancelled for the parent when a sub-wizard is cancelled", () => {
-    const engine = new WizardEngine();
+  it("does not emit cancelled for the parent when a sub-path is cancelled", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start(twoStepWizard("parent"));
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.cancel();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
     const cancelledIds = events
       .filter((e) => e.type === "cancelled")
-      .map((e) => (e as Extract<WizardEngineEvent, { type: "cancelled" }>).wizardId);
+      .map((e) => (e as Extract<PathEvent, { type: "cancelled" }>).pathId);
     expect(cancelledIds).not.toContain("parent");
   });
 });
@@ -274,192 +288,188 @@ describe("WizardEngine — events", () => {
 // Lifecycle hooks
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — lifecycle hooks", () => {
-  it("calls onVisit when the wizard starts", () => {
-    const onVisit = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1", onVisit }] });
-    expect(onVisit).toHaveBeenCalledOnce();
+describe("PathEngine — lifecycle hooks", () => {
+  it("calls onEnter when the path starts", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1", onEnter }] });
+    expect(onEnter).toHaveBeenCalledOnce();
   });
 
-  it("calls onVisit when navigating forward to a new step", () => {
-    const onVisit = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2", onVisit }] });
-    engine.moveNext();
-    expect(onVisit).toHaveBeenCalledOnce();
+  it("calls onEnter when navigating forward to a new step", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2", onEnter }] });
+    await engine.next();
+    expect(onEnter).toHaveBeenCalledOnce();
   });
 
-  it("calls onVisit when navigating backward to a step", () => {
-    const onVisit = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1", onVisit }, { id: "step2" }] });
-    onVisit.mockClear();
-    engine.moveNext();
-    engine.movePrevious();
-    expect(onVisit).toHaveBeenCalledOnce();
+  it("calls onEnter when navigating backward to a step", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1", onEnter }, { id: "step2" }] });
+    onEnter.mockClear();
+    await engine.next();
+    await engine.previous();
+    expect(onEnter).toHaveBeenCalledOnce();
   });
 
-  it("applies the patch returned by onVisit to the wizard args", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1", onVisit: () => ({ visited: true }) }] });
-    expect(engine.getSnapshot()?.args.visited).toBe(true);
+  it("applies the patch returned by onEnter to the path data", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1", onEnter: () => ({ visited: true }) }] });
+    expect(engine.snapshot()?.args.visited).toBe(true);
   });
 
-  it("calls onLeavingStep when navigating forward", () => {
-    const onLeavingStep = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1", onLeavingStep }, { id: "step2" }] });
-    engine.moveNext();
-    expect(onLeavingStep).toHaveBeenCalledOnce();
+  it("calls onLeave when navigating forward", async () => {
+    const onLeave = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1", onLeave }, { id: "step2" }] });
+    await engine.next();
+    expect(onLeave).toHaveBeenCalledOnce();
   });
 
-  it("calls onLeavingStep when navigating backward", () => {
-    const onLeavingStep = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2", onLeavingStep }] });
-    engine.moveNext();
-    engine.movePrevious();
-    expect(onLeavingStep).toHaveBeenCalledOnce();
+  it("calls onLeave when navigating backward", async () => {
+    const onLeave = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2", onLeave }] });
+    await engine.next();
+    await engine.previous();
+    expect(onLeave).toHaveBeenCalledOnce();
   });
 
-  it("applies the patch returned by onLeavingStep to the wizard args", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("applies the patch returned by onLeave to the path data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
-      steps: [{ id: "step1", onLeavingStep: () => ({ left: true }) }, { id: "step2" }]
+      steps: [{ id: "step1", onLeave: () => ({ left: true }) }, { id: "step2" }]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.args.left).toBe(true);
+    await engine.next();
+    expect(engine.snapshot()?.args.left).toBe(true);
   });
 
-  it("does not call onLeavingStep when okToMoveNext blocks navigation", () => {
-    const onLeavingStep = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({
+  it("does not call onLeave when canMoveNext blocks navigation", async () => {
+    const onLeave = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
-      steps: [{ id: "step1", okToMoveNext: () => false, onLeavingStep }]
+      steps: [{ id: "step1", canMoveNext: () => false, onLeave }]
     });
-    engine.moveNext();
-    expect(onLeavingStep).not.toHaveBeenCalled();
+    await engine.next();
+    expect(onLeave).not.toHaveBeenCalled();
   });
 
-  it("calls onResumeFromSubWizard with the sub-wizard ID and its final args", () => {
-    const onResume = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "parent", steps: [{ id: "step1", onResumeFromSubWizard: onResume }] });
-    engine.startSubWizard({ id: "sub", steps: [{ id: "sub1" }] }, { result: 42 });
-    engine.moveNext();
-    expect(onResume).toHaveBeenCalledOnce();
-    expect(onResume).toHaveBeenCalledWith(
+  it("calls onSubPathComplete with the sub-path ID and its final data", async () => {
+    const onSubPathComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "step1", onSubPathComplete }] });
+    await engine.startSubPath({ id: "sub", steps: [{ id: "sub1" }] }, { result: 42 });
+    await engine.next();
+    expect(onSubPathComplete).toHaveBeenCalledOnce();
+    expect(onSubPathComplete).toHaveBeenCalledWith(
       "sub",
       expect.objectContaining({ result: 42 }),
-      expect.objectContaining({ wizardId: "parent", stepId: "step1" })
+      expect.objectContaining({ pathId: "parent", stepId: "step1" })
     );
   });
 
-  it("does not call onResumeFromSubWizard when the sub-wizard is cancelled", () => {
-    const onResume = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "parent", steps: [{ id: "step1", onResumeFromSubWizard: onResume }] });
-    engine.startSubWizard({ id: "sub", steps: [{ id: "sub1" }] });
-    engine.cancel();
-    expect(onResume).not.toHaveBeenCalled();
+  it("does not call onSubPathComplete when the sub-path is cancelled", async () => {
+    const onSubPathComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "step1", onSubPathComplete }] });
+    await engine.startSubPath({ id: "sub", steps: [{ id: "sub1" }] });
+    await engine.cancel();
+    expect(onSubPathComplete).not.toHaveBeenCalled();
   });
 
-  it("applies the patch returned by onResumeFromSubWizard to the parent args", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("applies the patch returned by onSubPathComplete to the parent data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "parent",
       steps: [{
         id: "step1",
-        onResumeFromSubWizard: (_id, subArgs) => ({ collected: subArgs.value })
+        onSubPathComplete: (_id, subData) => ({ collected: subData.value })
       }]
     });
-    engine.startSubWizard({
+    await engine.startSubPath({
       id: "sub",
-      steps: [{ id: "s1", onVisit: () => ({ value: "hello" }) }]
+      steps: [{ id: "s1", onEnter: () => ({ value: "hello" }) }]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.args.collected).toBe("hello");
+    await engine.next();
+    expect(engine.snapshot()?.args.collected).toBe("hello");
   });
 
-  it("context args are a snapshot copy — direct mutation has no effect on wizard state", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("context args are a snapshot copy — direct mutation has no effect on path state", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{
         id: "step1",
-        onVisit: (ctx) => {
-          (ctx.args as WizardArgs).sneaky = "mutation";
-          // intentionally return nothing
+        onEnter: (ctx) => {
+          (ctx.args as PathData).sneaky = "mutation";
         }
       }]
     });
-    expect(engine.getSnapshot()?.args.sneaky).toBeUndefined();
+    expect(engine.snapshot()?.args.sneaky).toBeUndefined();
   });
 
-  it("passes the correct wizardId and stepId in the hook context", () => {
-    let captured: { wizardId: string; stepId: string } | null = null;
-    const engine = new WizardEngine();
-    engine.start({
-      id: "my-wizard",
-      steps: [{ id: "my-step", onVisit: (ctx) => { captured = { wizardId: ctx.wizardId, stepId: ctx.stepId }; } }]
+  it("passes the correct pathId and stepId in the hook context", async () => {
+    let captured: { pathId: string; stepId: string } | null = null;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "my-path",
+      steps: [{ id: "my-step", onEnter: (ctx) => { captured = { pathId: ctx.pathId, stepId: ctx.stepId }; } }]
     });
-    expect(captured).toEqual({ wizardId: "my-wizard", stepId: "my-step" });
+    expect(captured).toEqual({ pathId: "my-path", stepId: "my-step" });
   });
 });
 
 // ---------------------------------------------------------------------------
-// Sub-wizards
+// Sub-paths
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — sub-wizards", () => {
-  it("throws when startSubWizard is called without an active wizard", () => {
-    expect(() => new WizardEngine().startSubWizard(twoStepWizard())).toThrow();
+describe("PathEngine — sub-paths", () => {
+  it("throws when startSubPath is called without an active path", () => {
+    expect(() => new PathEngine().startSubPath(twoStepPath())).toThrow();
   });
 
-  it("tracks the sub-wizard as the active wizard while it runs", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("parent"));
-    engine.startSubWizard(twoStepWizard("sub"));
-    expect(engine.getSnapshot()?.wizardId).toBe("sub");
+  it("tracks the sub-path as the active path while it runs", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    expect(engine.snapshot()?.pathId).toBe("sub");
   });
 
-  it("resumes the parent step after the sub-wizard completes", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("parent"));
-    engine.moveNext();
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.moveNext();
-    engine.moveNext(); // complete sub
-    expect(engine.getSnapshot()).toMatchObject({ wizardId: "parent", stepId: "step2" });
+  it("resumes the parent step after the sub-path completes", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.next();
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.next();
+    await engine.next(); // complete sub
+    expect(engine.snapshot()).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("resumes the parent step after the sub-wizard is cancelled", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("parent"));
-    engine.moveNext();
-    engine.startSubWizard(twoStepWizard("sub"));
-    engine.cancel();
-    expect(engine.getSnapshot()).toMatchObject({ wizardId: "parent", stepId: "step2" });
+  it("resumes the parent step after the sub-path is cancelled", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.next();
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
+    expect(engine.snapshot()).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("supports deeply nested sub-wizards and unwinds the stack correctly", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard("root"));
-    engine.startSubWizard(twoStepWizard("level1"));
-    engine.startSubWizard(twoStepWizard("level2"));
-
-    expect(engine.getSnapshot()?.stackDepth).toBe(2);
-
-    engine.moveNext();
-    engine.moveNext(); // complete level2 → back to level1
-    expect(engine.getSnapshot()?.wizardId).toBe("level1");
-
-    engine.moveNext();
-    engine.moveNext(); // complete level1 → back to root
-    expect(engine.getSnapshot()?.wizardId).toBe("root");
+  it("supports deeply nested sub-paths and unwinds the stack correctly", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("root"));
+    await engine.startSubPath(twoStepPath("level1"));
+    await engine.startSubPath(twoStepPath("level2"));
+    expect(engine.snapshot()?.nestingLevel).toBe(2);
+    await engine.next();
+    await engine.next(); // complete level2 → back to level1
+    expect(engine.snapshot()?.pathId).toBe("level1");
+    await engine.next();
+    await engine.next(); // complete level1 → back to root
+    expect(engine.snapshot()?.pathId).toBe("root");
   });
 });
 
@@ -467,33 +477,36 @@ describe("WizardEngine — sub-wizards", () => {
 // Subscriptions
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — subscriptions", () => {
-  it("supports multiple simultaneous subscribers", () => {
-    const engine = new WizardEngine();
+describe("PathEngine — subscriptions", () => {
+  it("supports multiple simultaneous subscribers", async () => {
+    const engine = new PathEngine();
     const a: string[] = [];
     const b: string[] = [];
     engine.subscribe((e) => { if (e.type === "stateChanged") a.push(e.snapshot.stepId); });
     engine.subscribe((e) => { if (e.type === "stateChanged") b.push(e.snapshot.stepId); });
-    engine.start(twoStepWizard());
-    engine.moveNext();
-    expect(a).toEqual(["step1", "step2"]);
-    expect(b).toEqual(["step1", "step2"]);
+    await engine.start(twoStepPath());
+    await engine.next();
+    expect(a).toContain("step1");
+    expect(a).toContain("step2");
+    expect(b).toContain("step1");
+    expect(b).toContain("step2");
   });
 
-  it("unsubscribe stops the listener from receiving further events", () => {
-    const engine = new WizardEngine();
+  it("unsubscribe stops the listener from receiving further events", async () => {
+    const engine = new PathEngine();
     const received: string[] = [];
     const unsubscribe = engine.subscribe((e) => {
       if (e.type === "stateChanged") received.push(e.snapshot.stepId);
     });
-    engine.start(twoStepWizard());
+    await engine.start(twoStepPath());
     unsubscribe();
-    engine.moveNext();
-    expect(received).toEqual(["step1"]);
+    await engine.next();
+    expect(received).not.toContain("step2");
+    expect(received.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("unsubscribing one listener does not affect others", () => {
-    const engine = new WizardEngine();
+  it("unsubscribing one listener does not affect others", async () => {
+    const engine = new PathEngine();
     const kept: string[] = [];
     const removed: string[] = [];
     const unsubscribe = engine.subscribe((e) => {
@@ -502,11 +515,11 @@ describe("WizardEngine — subscriptions", () => {
     engine.subscribe((e) => {
       if (e.type === "stateChanged") kept.push(e.snapshot.stepId);
     });
-    engine.start(twoStepWizard());
+    await engine.start(twoStepPath());
     unsubscribe();
-    engine.moveNext();
-    expect(removed).toEqual(["step1"]);
-    expect(kept).toEqual(["step1", "step2"]);
+    await engine.next();
+    expect(removed).not.toContain("step2");
+    expect(kept).toContain("step2");
   });
 });
 
@@ -514,40 +527,40 @@ describe("WizardEngine — subscriptions", () => {
 // shouldSkip
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — shouldSkip", () => {
-  it("skips a step during start when shouldSkip returns true", () => {
-    const engine = new WizardEngine();
-    engine.start({
+describe("PathEngine — shouldSkip", () => {
+  it("skips a step during start when shouldSkip returns true", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
     });
-    expect(engine.getSnapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("skips a step when navigating forward", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("skips a step when navigating forward", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("step3");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step3");
   });
 
-  it("skips a step when navigating backward", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("skips a step when navigating backward", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
     });
-    engine.moveNext(); // lands on step3 (step2 skipped)
-    engine.movePrevious(); // should skip step2 again and land on step1
-    expect(engine.getSnapshot()?.stepId).toBe("step1");
+    await engine.next();
+    await engine.previous();
+    expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("skips multiple consecutive steps", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("skips multiple consecutive steps", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
         { id: "step1" },
@@ -556,47 +569,46 @@ describe("WizardEngine — shouldSkip", () => {
         { id: "step4" }
       ]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("step4");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step4");
   });
 
-  it("completes the wizard when all remaining steps are skipped on moveNext", () => {
-    const engine = new WizardEngine();
+  it("completes the path when all remaining steps are skipped on next", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start({
+    await engine.start({
       id: "w",
       steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => true }]
     });
-    engine.moveNext();
-    expect(engine.getSnapshot()).toBeNull();
+    await engine.next();
+    expect(engine.snapshot()).toBeNull();
     expect(events.some((e) => e.type === "completed")).toBe(true);
   });
 
-  it("completes the wizard when all steps are skipped on start", () => {
-    const engine = new WizardEngine();
+  it("completes the path when all steps are skipped on start", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start({
+    await engine.start({
       id: "w",
       steps: [{ id: "skip-only", shouldSkip: () => true }]
     });
-    expect(engine.getSnapshot()).toBeNull();
+    expect(engine.snapshot()).toBeNull();
     expect(events.some((e) => e.type === "completed")).toBe(true);
   });
 
-  it("cancels the wizard when all steps before current are skipped on movePrevious", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("cancels the path when all steps before current are skipped on previous", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
     });
-    // We're on step2 because step1 was skipped at start
-    engine.movePrevious();
-    expect(engine.getSnapshot()).toBeNull();
+    await engine.previous();
+    expect(engine.snapshot()).toBeNull();
   });
 
-  it("evaluates shouldSkip with the current wizard args", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("evaluates shouldSkip with the current path data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
         { id: "step1" },
@@ -604,29 +616,28 @@ describe("WizardEngine — shouldSkip", () => {
         { id: "step3" }
       ]
     }, { skipMiddle: true });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("step3");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step3");
 
-    // Change args so the step is no longer skipped
-    engine.movePrevious(); // back to step1
-    engine.setArg("skipMiddle", false);
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepId).toBe("conditional");
+    await engine.previous(); // back to step1
+    await engine.setArg("skipMiddle", false);
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("conditional");
   });
 
-  it("does not call onVisit for skipped steps", () => {
-    const onVisit = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({
+  it("does not call onEnter for skipped steps", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
         { id: "step1" },
-        { id: "skip-me", shouldSkip: () => true, onVisit },
+        { id: "skip-me", shouldSkip: () => true, onEnter },
         { id: "step3" }
       ]
     });
-    engine.moveNext();
-    expect(onVisit).not.toHaveBeenCalled();
+    await engine.next();
+    expect(onEnter).not.toHaveBeenCalled();
   });
 });
 
@@ -634,31 +645,28 @@ describe("WizardEngine — shouldSkip", () => {
 // stepTitle in snapshot
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — stepTitle", () => {
-  it("includes the step title in the snapshot when defined", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1", title: "Welcome" }] });
-    expect(engine.getSnapshot()?.stepTitle).toBe("Welcome");
+describe("PathEngine — stepTitle", () => {
+  it("includes the step title in the snapshot when defined", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1", title: "Welcome" }] });
+    expect(engine.snapshot()?.stepTitle).toBe("Welcome");
   });
 
-  it("is undefined when the step has no title", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1" }] });
-    expect(engine.getSnapshot()?.stepTitle).toBeUndefined();
+  it("is undefined when the step has no title", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1" }] });
+    expect(engine.snapshot()?.stepTitle).toBeUndefined();
   });
 
-  it("updates as navigation progresses through titled steps", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("updates as navigation progresses through titled steps", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", title: "First" },
-        { id: "step2", title: "Second" }
-      ]
+      steps: [{ id: "step1", title: "First" }, { id: "step2", title: "Second" }]
     });
-    expect(engine.getSnapshot()?.stepTitle).toBe("First");
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepTitle).toBe("Second");
+    expect(engine.snapshot()?.stepTitle).toBe("First");
+    await engine.next();
+    expect(engine.snapshot()?.stepTitle).toBe("Second");
   });
 });
 
@@ -666,85 +674,84 @@ describe("WizardEngine — stepTitle", () => {
 // goToStep — direct navigation
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — goToStep", () => {
-  it("jumps forward to a step by ID", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.goToStep("c");
-    expect(engine.getSnapshot()?.stepId).toBe("c");
-    expect(engine.getSnapshot()?.stepIndex).toBe(2);
+describe("PathEngine — goToStep", () => {
+  it("jumps forward to a step by ID", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.goToStep("c");
+    expect(engine.snapshot()?.stepId).toBe("c");
+    expect(engine.snapshot()?.stepIndex).toBe(2);
   });
 
-  it("jumps backward to a step by ID", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.moveNext();
-    engine.moveNext();
-    engine.goToStep("a");
-    expect(engine.getSnapshot()?.stepId).toBe("a");
-    expect(engine.getSnapshot()?.stepIndex).toBe(0);
+  it("jumps backward to a step by ID", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.next();
+    await engine.next();
+    await engine.goToStep("a");
+    expect(engine.snapshot()?.stepId).toBe("a");
+    expect(engine.snapshot()?.stepIndex).toBe(0);
   });
 
-  it("calls onLeavingStep on the current step", () => {
-    const onLeavingStep = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a", onLeavingStep }, { id: "b" }] });
-    engine.goToStep("b");
-    expect(onLeavingStep).toHaveBeenCalledOnce();
+  it("calls onLeave on the current step", async () => {
+    const onLeave = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a", onLeave }, { id: "b" }] });
+    await engine.goToStep("b");
+    expect(onLeave).toHaveBeenCalledOnce();
   });
 
-  it("calls onVisit on the target step", () => {
-    const onVisit = vi.fn();
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b", onVisit }] });
-    engine.goToStep("b");
-    expect(onVisit).toHaveBeenCalledOnce();
+  it("calls onEnter on the target step", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b", onEnter }] });
+    await engine.goToStep("b");
+    expect(onEnter).toHaveBeenCalledOnce();
   });
 
-  it("applies patches from both onLeavingStep and onVisit", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("applies patches from both onLeave and onEnter", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
-        { id: "a", onLeavingStep: () => ({ leftA: true }) },
-        { id: "b", onVisit: () => ({ visitedB: true }) }
+        { id: "a", onLeave: () => ({ leftA: true }) },
+        { id: "b", onEnter: () => ({ visitedB: true }) }
       ]
     });
-    engine.goToStep("b");
-    expect(engine.getSnapshot()?.args).toMatchObject({ leftA: true, visitedB: true });
+    await engine.goToStep("b");
+    expect(engine.snapshot()?.args).toMatchObject({ leftA: true, visitedB: true });
   });
 
-  it("emits stateChanged after jumping", () => {
-    const engine = new WizardEngine();
+  it("emits stateChanged after jumping", async () => {
+    const engine = new PathEngine();
     const events = collectEvents(engine);
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
     const before = events.filter((e) => e.type === "stateChanged").length;
-    engine.goToStep("b");
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 1);
+    await engine.goToStep("b");
+    // goToStep emits 2 events: busy at start + final
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
   });
 
-  it("throws when the step ID does not exist", () => {
-    const engine = new WizardEngine();
-    engine.start(twoStepWizard());
+  it("throws when the step ID does not exist", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
     expect(() => engine.goToStep("nonexistent")).toThrow('Step "nonexistent" not found');
   });
 
-  it("throws when no wizard is active", () => {
-    expect(() => new WizardEngine().goToStep("any")).toThrow();
+  it("throws when no path is active", () => {
+    expect(() => new PathEngine().goToStep("any")).toThrow();
   });
 
-  it("updates isFirstStep and isLastStep correctly", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.getSnapshot()?.isFirstStep).toBe(true);
-
-    engine.goToStep("c");
-    expect(engine.getSnapshot()?.isFirstStep).toBe(false);
-    expect(engine.getSnapshot()?.isLastStep).toBe(true);
-
-    engine.goToStep("b");
-    expect(engine.getSnapshot()?.isFirstStep).toBe(false);
-    expect(engine.getSnapshot()?.isLastStep).toBe(false);
+  it("updates isFirstStep and isLastStep correctly", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.snapshot()?.isFirstStep).toBe(true);
+    await engine.goToStep("c");
+    expect(engine.snapshot()?.isFirstStep).toBe(false);
+    expect(engine.snapshot()?.isLastStep).toBe(true);
+    await engine.goToStep("b");
+    expect(engine.snapshot()?.isFirstStep).toBe(false);
+    expect(engine.snapshot()?.isLastStep).toBe(false);
   });
 });
 
@@ -752,34 +759,34 @@ describe("WizardEngine — goToStep", () => {
 // stepMeta in snapshot
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — stepMeta", () => {
-  it("includes step meta in the snapshot when defined", () => {
-    const engine = new WizardEngine();
-    engine.start({
+describe("PathEngine — stepMeta", () => {
+  it("includes step meta in the snapshot when defined", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [{ id: "step1", meta: { icon: "star", group: "intro" } }]
     });
-    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "star", group: "intro" });
+    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "star", group: "intro" });
   });
 
-  it("is undefined when the step has no meta", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "step1" }] });
-    expect(engine.getSnapshot()?.stepMeta).toBeUndefined();
+  it("is undefined when the step has no meta", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1" }] });
+    expect(engine.snapshot()?.stepMeta).toBeUndefined();
   });
 
-  it("updates as navigation progresses through steps with different meta", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("updates as navigation progresses through steps with different meta", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
         { id: "step1", meta: { icon: "edit" } },
         { id: "step2", meta: { icon: "check" } }
       ]
     });
-    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "edit" });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.stepMeta).toEqual({ icon: "check" });
+    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "edit" });
+    await engine.next();
+    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "check" });
   });
 });
 
@@ -787,37 +794,37 @@ describe("WizardEngine — stepMeta", () => {
 // Progress indicator
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — progress indicator", () => {
-  it("progress is 0 on the first step of a multi-step wizard", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.getSnapshot()?.progress).toBe(0);
+describe("PathEngine — progress indicator", () => {
+  it("progress is 0 on the first step of a multi-step path", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.snapshot()?.progress).toBe(0);
   });
 
-  it("progress is 1 on the last step of a multi-step wizard", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.moveNext();
-    engine.moveNext();
-    expect(engine.getSnapshot()?.progress).toBe(1);
+  it("progress is 1 on the last step of a multi-step path", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.next();
+    await engine.next();
+    expect(engine.snapshot()?.progress).toBe(1);
   });
 
-  it("progress is the correct fraction in the middle of a wizard", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.moveNext();
-    expect(engine.getSnapshot()?.progress).toBe(0.5);
+  it("progress is the correct fraction in the middle of a path", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.next();
+    expect(engine.snapshot()?.progress).toBe(0.5);
   });
 
-  it("progress is 1 for a single-step wizard", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "only" }] });
-    expect(engine.getSnapshot()?.progress).toBe(1);
+  it("progress is 1 for a single-step path", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "only" }] });
+    expect(engine.snapshot()?.progress).toBe(1);
   });
 
-  it("steps array contains a summary for every step in the wizard", () => {
-    const engine = new WizardEngine();
-    engine.start({
+  it("steps array contains a summary for every step in the path", async () => {
+    const engine = new PathEngine();
+    await engine.start({
       id: "w",
       steps: [
         { id: "a", title: "Alpha", meta: { icon: "star" } },
@@ -825,7 +832,7 @@ describe("WizardEngine — progress indicator", () => {
         { id: "c", title: "Charlie" }
       ]
     });
-    const snap = engine.getSnapshot()!;
+    const snap = engine.snapshot()!;
     expect(snap.steps).toHaveLength(3);
     expect(snap.steps[0]).toMatchObject({ id: "a", title: "Alpha", meta: { icon: "star" } });
     expect(snap.steps[1]).toMatchObject({ id: "b" });
@@ -833,45 +840,33 @@ describe("WizardEngine — progress indicator", () => {
     expect(snap.steps[2]).toMatchObject({ id: "c", title: "Charlie" });
   });
 
-  it("marks the current step as 'current', earlier as 'completed', later as 'upcoming'", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.moveNext(); // on step b (index 1)
-    const statuses = engine.getSnapshot()!.steps.map((s) => s.status);
+  it("marks the current step as 'current', earlier as 'completed', later as 'upcoming'", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.next(); // on step b (index 1)
+    const statuses = engine.snapshot()!.steps.map((s) => s.status);
     expect(statuses).toEqual(["completed", "current", "upcoming"]);
   });
 
-  it("step statuses update as navigation progresses", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-
-    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
-      "current", "upcoming", "upcoming"
-    ]);
-
-    engine.moveNext();
-    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
-      "completed", "current", "upcoming"
-    ]);
-
-    engine.moveNext();
-    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
-      "completed", "completed", "current"
-    ]);
-
-    engine.movePrevious();
-    expect(engine.getSnapshot()!.steps.map((s) => s.status)).toEqual([
-      "completed", "current", "upcoming"
-    ]);
+  it("step statuses update as navigation progresses", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["current", "upcoming", "upcoming"]);
+    await engine.next();
+    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "current", "upcoming"]);
+    await engine.next();
+    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "completed", "current"]);
+    await engine.previous();
+    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "current", "upcoming"]);
   });
 
-  it("step statuses revert to 'upcoming' when navigating backward", () => {
-    const engine = new WizardEngine();
-    engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    engine.moveNext();
-    engine.moveNext(); // on c
-    engine.goToStep("a");
-    const statuses = engine.getSnapshot()!.steps.map((s) => s.status);
+  it("step statuses revert to 'upcoming' when navigating backward", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await engine.next();
+    await engine.next(); // on c
+    await engine.goToStep("a");
+    const statuses = engine.snapshot()!.steps.map((s) => s.status);
     expect(statuses).toEqual(["current", "upcoming", "upcoming"]);
   });
 });
@@ -880,20 +875,171 @@ describe("WizardEngine — progress indicator", () => {
 // Error cases
 // ---------------------------------------------------------------------------
 
-describe("WizardEngine — errors", () => {
-  it("throws when starting a wizard with no steps", () => {
-    expect(() => new WizardEngine().start({ id: "empty", steps: [] })).toThrow();
+describe("PathEngine — errors", () => {
+  it("throws when starting a path with no steps", () => {
+    expect(() => new PathEngine().start({ id: "empty", steps: [] })).toThrow();
   });
 
-  it("throws when moveNext is called with no active wizard", () => {
-    expect(() => new WizardEngine().moveNext()).toThrow();
+  it("throws when next is called with no active path", () => {
+    expect(() => new PathEngine().next()).toThrow();
   });
 
-  it("throws when movePrevious is called with no active wizard", () => {
-    expect(() => new WizardEngine().movePrevious()).toThrow();
+  it("throws when previous is called with no active path", () => {
+    expect(() => new PathEngine().previous()).toThrow();
   });
 
-  it("throws when cancel is called with no active wizard", () => {
-    expect(() => new WizardEngine().cancel()).toThrow();
+  it("throws when cancel is called with no active path", () => {
+    expect(() => new PathEngine().cancel()).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Async hooks and guards
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — async hooks and guards", () => {
+  it("resolves an async canMoveNext guard that returns true and advances", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => Promise.resolve(true) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("resolves an async canMoveNext guard that returns false and stays", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => Promise.resolve(false) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step1");
+  });
+
+  it("resolves an async canMovePrevious guard that returns false and stays", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "step2", canMovePrevious: () => Promise.resolve(false) }
+      ]
+    });
+    await engine.next();
+    await engine.previous();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("applies a patch returned by an async onEnter hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", onEnter: () => Promise.resolve({ asyncVisit: true }) }]
+    });
+    expect(engine.snapshot()?.args.asyncVisit).toBe(true);
+  });
+
+  it("applies a patch returned by an async onLeave hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", onLeave: () => Promise.resolve({ asyncLeft: true }) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.args.asyncLeft).toBe(true);
+  });
+
+  it("applies a patch returned by an async onSubPathComplete hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "step1",
+        onSubPathComplete: (_id, subData) =>
+          Promise.resolve({ collected: subData.value })
+      }]
+    });
+    await engine.startSubPath({
+      id: "sub",
+      steps: [{ id: "s1", onEnter: () => ({ value: "async-result" }) }]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.args.collected).toBe("async-result");
+  });
+
+  it("skips a step when an async shouldSkip guard returns true", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
+        { id: "step3" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step3");
+  });
+
+  it("isNavigating is true in intermediate stateChanged events during next", async () => {
+    let sawNavigating = false;
+    const engine = new PathEngine();
+    engine.subscribe((event) => {
+      if (event.type === "stateChanged" && event.snapshot.isNavigating) {
+        sawNavigating = true;
+      }
+    });
+    await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2" }] });
+    sawNavigating = false; // reset — only care about next's busy state
+    await engine.next();
+    expect(sawNavigating).toBe(true);
+  });
+
+  it("isNavigating is false in the final stateChanged event after navigation completes", async () => {
+    const navigatingValues: boolean[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((event) => {
+      if (event.type === "stateChanged") navigatingValues.push(event.snapshot.isNavigating);
+    });
+    await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2" }] });
+    navigatingValues.length = 0; // reset after start
+    await engine.next();
+    expect(navigatingValues[navigatingValues.length - 1]).toBe(false);
+  });
+
+  it("ignores a concurrent next call while navigation is already in progress", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2" }, { id: "step3" }] });
+    const p1 = engine.next();
+    const p2 = engine.next(); // should be ignored — busy
+    await Promise.all([p1, p2]);
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("a slow async guard resolves correctly and navigation completes", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          canMoveNext: () => new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 10))
+        },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
   });
 });

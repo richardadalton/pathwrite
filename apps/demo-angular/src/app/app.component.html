@@ -4,26 +4,26 @@
   <section class="panel">
     <h2>Controls</h2>
     <div class="button-row">
-      <button type="button" (click)="startMain()">Start Main Wizard</button>
-      <button type="button" (click)="startSub()" [disabled]="!snapshot()">Start Sub Wizard</button>
+      <button type="button" (click)="startMain()">Start Main Path</button>
+      <button type="button" (click)="startSub()" [disabled]="!snapshot()">Start Sub-path</button>
       <button type="button" (click)="previous()" [disabled]="!snapshot()">Previous</button>
       <button type="button" (click)="next()" [disabled]="!snapshot()">Next</button>
       <button type="button" (click)="cancel()" [disabled]="!snapshot()">Cancel</button>
     </div>
   </section>
 
-  <section class="panel" *ngIf="snapshot() as s; else noWizard">
+  <section class="panel" *ngIf="snapshot() as s; else noPath">
     <h2>Current State</h2>
-    <p><strong>Wizard:</strong> {{ s.wizardId }}</p>
+    <p><strong>Path:</strong> {{ s.pathId }}</p>
     <p><strong>Step:</strong> {{ s.stepId }} ({{ s.stepIndex + 1 }} / {{ s.stepCount }})</p>
-    <p><strong>Stack depth:</strong> {{ s.stackDepth }}</p>
+    <p><strong>Nesting level:</strong> {{ s.nestingLevel }}</p>
     <p><strong>Args:</strong> {{ s.args | json }}</p>
   </section>
 
-  <ng-template #noWizard>
+  <ng-template #noPath>
     <section class="panel">
       <h2>Current State</h2>
-      <p>No active wizard.</p>
+      <p>No active path.</p>
     </section>
   </ng-template>
 

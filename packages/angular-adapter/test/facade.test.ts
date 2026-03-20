@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { WizardDefinition } from "@pathwrite/core";
-import { WizardFacade } from "../src/index";
+import { PathDefinition } from "@pathwrite/core";
+import { PathFacade } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function twoStepWizard(id = "main"): WizardDefinition {
+function twoStepPath(id = "main"): PathDefinition {
   return { id, steps: [{ id: "step1" }, { id: "step2" }] };
 }
 
-function latestState(facade: WizardFacade) {
+function latestState(facade: PathFacade) {
   return facade.snapshot();
 }
 
@@ -18,73 +18,73 @@ function latestState(facade: WizardFacade) {
 // state$
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — state$", () => {
-  it("starts as null before any wizard is launched", () => {
-    const facade = new WizardFacade();
+describe("PathFacade — state$", () => {
+  it("starts as null before any path is launched", () => {
+    const facade = new PathFacade();
     let initial: unknown = "not-set";
     facade.state$.subscribe((s) => (initial = s)).unsubscribe();
     expect(initial).toBeNull();
   });
 
-  it("emits the current step snapshot when a wizard starts", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    expect(latestState(facade)).toMatchObject({ wizardId: "main", stepId: "step1" });
+  it("emits the current step snapshot when a path starts", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    expect(latestState(facade)).toMatchObject({ pathId: "main", stepId: "step1" });
   });
 
-  it("emits updated snapshots as navigation progresses", () => {
-    const facade = new WizardFacade();
+  it("emits updated snapshots as navigation progresses", async () => {
+    const facade = new PathFacade();
     const steps: string[] = [];
     facade.state$.subscribe((s) => { if (s) steps.push(s.stepId); });
 
-    facade.start(twoStepWizard());
-    facade.next();
+    await facade.start(twoStepPath());
+    await facade.next();
 
     expect(steps).toContain("step1");
     expect(steps).toContain("step2");
   });
 
-  it("emits null when the wizard completes", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.next();
-    facade.next(); // complete
+  it("emits null when the path completes", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
+    await facade.next(); // complete
     expect(latestState(facade)).toBeNull();
   });
 
-  it("emits null when the wizard is cancelled", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.cancel();
+  it("emits null when the path is cancelled", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.cancel();
     expect(latestState(facade)).toBeNull();
   });
 
-  it("reflects the parent wizard snapshot after a sub-wizard resumes", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard("parent"));
-    facade.next();
-    facade.startSubWizard(twoStepWizard("sub"));
-    expect(latestState(facade)?.wizardId).toBe("sub");
+  it("reflects the parent path snapshot after a sub-path resumes", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath("parent"));
+    await facade.next();
+    await facade.startSubPath(twoStepPath("sub"));
+    expect(latestState(facade)?.pathId).toBe("sub");
 
-    facade.next();
-    facade.next(); // complete sub → resume parent
+    await facade.next();
+    await facade.next(); // complete sub → resume parent
 
-    expect(latestState(facade)).toMatchObject({ wizardId: "parent", stepId: "step2" });
+    expect(latestState(facade)).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("reflects the parent wizard snapshot after a sub-wizard is cancelled", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard("parent"));
-    facade.next();
-    facade.startSubWizard(twoStepWizard("sub"));
-    facade.cancel();
-    expect(latestState(facade)).toMatchObject({ wizardId: "parent", stepId: "step2" });
+  it("reflects the parent path snapshot after a sub-path is cancelled", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath("parent"));
+    await facade.next();
+    await facade.startSubPath(twoStepPath("sub"));
+    await facade.cancel();
+    expect(latestState(facade)).toMatchObject({ pathId: "parent", stepId: "step2" });
   });
 
-  it("late subscribers immediately receive the current state via BehaviorSubject replay", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.next();
+  it("late subscribers immediately receive the current state via BehaviorSubject replay", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
 
     let received: string | null = null;
     facade.state$.subscribe((s) => { received = s?.stepId ?? null; });
@@ -96,22 +96,22 @@ describe("WizardFacade — state$", () => {
 // snapshot()
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — snapshot()", () => {
-  it("returns null when no wizard is active", () => {
-    expect(new WizardFacade().snapshot()).toBeNull();
+describe("PathFacade — snapshot()", () => {
+  it("returns null when no path is active", () => {
+    expect(new PathFacade().snapshot()).toBeNull();
   });
 
-  it("returns the current snapshot synchronously", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard(), { owner: "test" });
+  it("returns the current snapshot synchronously", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), { owner: "test" });
     const snap = facade.snapshot();
-    expect(snap).toMatchObject({ wizardId: "main", stepId: "step1", args: { owner: "test" } });
+    expect(snap).toMatchObject({ pathId: "main", stepId: "step1", args: { owner: "test" } });
   });
 
-  it("is consistent with state$ after navigation", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.next();
+  it("is consistent with state$ after navigation", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
     let stateValue: string | undefined;
     facade.state$.subscribe((s) => { stateValue = s?.stepId; }).unsubscribe();
     expect(facade.snapshot()?.stepId).toBe(stateValue);
@@ -122,66 +122,63 @@ describe("WizardFacade — snapshot()", () => {
 // events$
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — events$", () => {
-  it("emits stateChanged on start and navigation", () => {
-    const facade = new WizardFacade();
+describe("PathFacade — events$", () => {
+  it("emits stateChanged on start and navigation", async () => {
+    const facade = new PathFacade();
     const types: string[] = [];
     facade.events$.subscribe((e) => types.push(e.type));
 
-    facade.start(twoStepWizard());
-    facade.next();
+    await facade.start(twoStepPath());
+    await facade.next();
 
     expect(types.filter((t) => t === "stateChanged").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("emits completed when the wizard finishes", () => {
-    const facade = new WizardFacade();
+  it("emits completed when the path finishes", async () => {
+    const facade = new PathFacade();
     const events: string[] = [];
     facade.events$.subscribe((e) => events.push(e.type));
 
-    facade.start(twoStepWizard());
-    facade.next();
-    facade.next();
+    await facade.start(twoStepPath());
+    await facade.next();
+    await facade.next();
 
     expect(events).toContain("completed");
   });
 
-  it("emits cancelled when cancel is called on a top-level wizard", () => {
-    const facade = new WizardFacade();
+  it("emits cancelled when cancel is called on a top-level path", async () => {
+    const facade = new PathFacade();
     const events: string[] = [];
     facade.events$.subscribe((e) => events.push(e.type));
 
-    facade.start(twoStepWizard());
-    facade.cancel();
+    await facade.start(twoStepPath());
+    await facade.cancel();
 
     expect(events).toContain("cancelled");
   });
 
-  it("emits resumed when a sub-wizard completes", () => {
-    const facade = new WizardFacade();
+  it("emits resumed when a sub-path completes", async () => {
+    const facade = new PathFacade();
     const events: string[] = [];
     facade.events$.subscribe((e) => events.push(e.type));
 
-    facade.start(twoStepWizard("parent"));
-    facade.startSubWizard(twoStepWizard("sub"));
-    facade.next();
-    facade.next(); // complete sub
+    await facade.start(twoStepPath("parent"));
+    await facade.startSubPath(twoStepPath("sub"));
+    await facade.next();
+    await facade.next(); // complete sub
 
     expect(events).toContain("resumed");
   });
 
-  it("does not emit to subscribers after the observable completes via ngOnDestroy", () => {
-    const facade = new WizardFacade();
+  it("does not emit to subscribers after the observable completes via ngOnDestroy", async () => {
+    const facade = new PathFacade();
     const received: string[] = [];
     facade.events$.subscribe((e) => received.push(e.type));
 
-    facade.start(twoStepWizard());
+    await facade.start(twoStepPath());
     facade.ngOnDestroy();
 
-    // Engine events fired after destroy should not reach the observable
     const countBefore = received.length;
-    // (We cannot call facade methods safely after destroy, but the subscription
-    // should be completed and no further emissions expected)
     let completed = false;
     facade.events$.subscribe({ complete: () => (completed = true) });
     expect(completed).toBe(true);
@@ -193,62 +190,62 @@ describe("WizardFacade — events$", () => {
 // Navigation methods
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — navigation methods", () => {
-  it("next() advances the step", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.next();
+describe("PathFacade — navigation methods", () => {
+  it("next() advances the step", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
     expect(facade.snapshot()?.stepId).toBe("step2");
   });
 
-  it("previous() goes back a step", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.next();
-    facade.previous();
+  it("previous() goes back a step", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.next();
+    await facade.previous();
     expect(facade.snapshot()?.stepId).toBe("step1");
   });
 
-  it("cancel() clears the active wizard", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard());
-    facade.cancel();
+  it("cancel() clears the active path", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath());
+    await facade.cancel();
     expect(facade.snapshot()).toBeNull();
   });
 
-  it("setArg() updates the arg and is visible in the next snapshot", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard(), { label: "old" });
-    facade.setArg("label", "new");
+  it("setArg() updates the arg and is visible in the next snapshot", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath(), { label: "old" });
+    await facade.setArg("label", "new");
     expect(facade.snapshot()?.args.label).toBe("new");
   });
 
-  it("setArg() update is reflected in state$", () => {
-    const facade = new WizardFacade();
+  it("setArg() update is reflected in state$", async () => {
+    const facade = new PathFacade();
     let latest: unknown;
     facade.state$.subscribe((s) => { latest = s?.args.label; });
 
-    facade.start(twoStepWizard(), { label: "old" });
-    facade.setArg("label", "new");
+    await facade.start(twoStepPath(), { label: "old" });
+    await facade.setArg("label", "new");
 
     expect(latest).toBe("new");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Sub-wizard
+// Sub-path
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — sub-wizard", () => {
-  it("startSubWizard() throws when no wizard is active", () => {
-    expect(() => new WizardFacade().startSubWizard(twoStepWizard())).toThrow();
+describe("PathFacade — sub-path", () => {
+  it("startSubPath() throws when no path is active", () => {
+    expect(() => new PathFacade().startSubPath(twoStepPath())).toThrow();
   });
 
-  it("startSubWizard() sets the sub-wizard as the active snapshot", () => {
-    const facade = new WizardFacade();
-    facade.start(twoStepWizard("parent"));
-    facade.startSubWizard(twoStepWizard("sub"));
-    expect(facade.snapshot()?.wizardId).toBe("sub");
+  it("startSubPath() sets the sub-path as the active snapshot", async () => {
+    const facade = new PathFacade();
+    await facade.start(twoStepPath("parent"));
+    await facade.startSubPath(twoStepPath("sub"));
+    expect(facade.snapshot()?.pathId).toBe("sub");
   });
 });
 
@@ -256,16 +253,16 @@ describe("WizardFacade — sub-wizard", () => {
 // goToStep
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — goToStep", () => {
-  it("jumps to the target step by ID", () => {
-    const facade = new WizardFacade();
-    facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    facade.goToStep("c");
+describe("PathFacade — goToStep", () => {
+  it("jumps to the target step by ID", async () => {
+    const facade = new PathFacade();
+    await facade.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await facade.goToStep("c");
     expect(facade.snapshot()?.stepId).toBe("c");
   });
 
-  it("throws when no wizard is active", () => {
-    expect(() => new WizardFacade().goToStep("any")).toThrow();
+  it("throws when no path is active", () => {
+    expect(() => new PathFacade().goToStep("any")).toThrow();
   });
 });
 
@@ -273,9 +270,9 @@ describe("WizardFacade — goToStep", () => {
 // Cleanup
 // ---------------------------------------------------------------------------
 
-describe("WizardFacade — ngOnDestroy", () => {
+describe("PathFacade — ngOnDestroy", () => {
   it("completes state$ on destroy", () => {
-    const facade = new WizardFacade();
+    const facade = new PathFacade();
     let stateCompleted = false;
     facade.state$.subscribe({ complete: () => (stateCompleted = true) });
     facade.ngOnDestroy();
@@ -283,7 +280,7 @@ describe("WizardFacade — ngOnDestroy", () => {
   });
 
   it("completes events$ on destroy", () => {
-    const facade = new WizardFacade();
+    const facade = new PathFacade();
     let eventsCompleted = false;
     facade.events$.subscribe({ complete: () => (eventsCompleted = true) });
     facade.ngOnDestroy();
