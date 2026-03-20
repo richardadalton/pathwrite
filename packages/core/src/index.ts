@@ -51,6 +51,10 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   nestingLevel: number;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
+  /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. */
+  canMoveNext: boolean;
+  /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
+  canMovePrevious: boolean;
   data: TData;
 }
 
@@ -175,6 +179,8 @@ export class PathEngine {
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       isNavigating: this._isNavigating,
+      canMoveNext: this.evaluateGuardSync(step.canMoveNext, active),
+      canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
       data: { ...active.data }
     };
   }
@@ -232,15 +238,16 @@ export class PathEngine {
         this.applyPatch(await this.leaveCurrentStep(active, step));
         active.currentStepIndex += 1;
         await this.skipSteps(1);
+
+        if (active.currentStepIndex >= active.definition.steps.length) {
+          this._isNavigating = false;
+          await this.finishActivePath();
+          return;
+        }
+
+        this.applyPatch(await this.enterCurrentStep());
       }
 
-      if (active.currentStepIndex >= active.definition.steps.length) {
-        this._isNavigating = false;
-        await this.finishActivePath();
-        return;
-      }
-
-      this.applyPatch(await this.enterCurrentStep());
       this._isNavigating = false;
       this.emitStateChanged();
     } catch (err) {
@@ -263,15 +270,16 @@ export class PathEngine {
         this.applyPatch(await this.leaveCurrentStep(active, step));
         active.currentStepIndex -= 1;
         await this.skipSteps(-1);
+
+        if (active.currentStepIndex < 0) {
+          this._isNavigating = false;
+          await this.cancel();
+          return;
+        }
+
+        this.applyPatch(await this.enterCurrentStep());
       }
 
-      if (active.currentStepIndex < 0) {
-        this._isNavigating = false;
-        await this.cancel();
-        return;
-      }
-
-      this.applyPatch(await this.enterCurrentStep());
       this._isNavigating = false;
       this.emitStateChanged();
     } catch (err) {
@@ -447,6 +455,27 @@ export class PathEngine {
       data: { ...active.data }
     };
     return step.canMovePrevious(ctx);
+  }
+
+  /**
+   * Evaluates a guard function synchronously for inclusion in the snapshot.
+   * If the guard is absent, returns `true`.
+   * If the guard returns a `Promise`, returns `true` (optimistic default).
+   */
+  private evaluateGuardSync(
+    guard: ((ctx: PathStepContext) => boolean | Promise<boolean>) | undefined,
+    active: ActivePath
+  ): boolean {
+    if (!guard) return true;
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: this.getCurrentStep(active).id,
+      data: { ...active.data }
+    };
+    const result = guard(ctx);
+    if (typeof result === "boolean") return result;
+    // Async guard — default to true (optimistic); the engine will enforce the real result on navigation.
+    return true;
   }
 }
 

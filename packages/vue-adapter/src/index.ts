@@ -247,7 +247,7 @@ function renderVueFooter(
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--back",
-            disabled: snapshot.isNavigating,
+            disabled: snapshot.isNavigating || !snapshot.canMovePrevious,
             onClick: actions.previous
           }, props.backLabel)
         : null
@@ -264,7 +264,7 @@ function renderVueFooter(
       h("button", {
         type: "button",
         class: "pw-shell__btn pw-shell__btn--next",
-        disabled: snapshot.isNavigating,
+        disabled: snapshot.isNavigating || !snapshot.canMoveNext,
         onClick: actions.next
       }, snapshot.isLastStep ? props.finishLabel : props.nextLabel)
     ])

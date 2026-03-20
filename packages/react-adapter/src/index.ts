@@ -341,7 +341,7 @@ function defaultFooter(
       !snapshot.isFirstStep && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--back",
-        disabled: snapshot.isNavigating,
+        disabled: snapshot.isNavigating || !snapshot.canMovePrevious,
         onClick: actions.previous
       }, labels.backLabel)
     ),
@@ -355,7 +355,7 @@ function defaultFooter(
       createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--next",
-        disabled: snapshot.isNavigating,
+        disabled: snapshot.isNavigating || !snapshot.canMoveNext,
         onClick: actions.next
       }, snapshot.isLastStep ? labels.finishLabel : labels.nextLabel)
     )

@@ -108,7 +108,7 @@ export class PathStepDirective {
             *ngIf="!s.isFirstStep"
             type="button"
             class="pw-shell__btn pw-shell__btn--back"
-            [disabled]="s.isNavigating"
+            [disabled]="s.isNavigating || !s.canMovePrevious"
             (click)="facade.previous()"
           >{{ backLabel }}</button>
         </div>
@@ -123,7 +123,7 @@ export class PathStepDirective {
           <button
             type="button"
             class="pw-shell__btn pw-shell__btn--next"
-            [disabled]="s.isNavigating"
+            [disabled]="s.isNavigating || !s.canMoveNext"
             (click)="facade.next()"
           >{{ s.isLastStep ? finishLabel : nextLabel }}</button>
         </div>

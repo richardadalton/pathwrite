@@ -166,6 +166,87 @@ describe("PathEngine — snapshot", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Snapshot — canMoveNext / canMovePrevious
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
+  it("defaults to true when no guards are defined", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+    expect(engine.snapshot()?.canMovePrevious).toBe(true);
+  });
+
+  it("reflects a sync canMoveNext guard returning false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", canMoveNext: () => false }, { id: "step2" }]
+    });
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+  });
+
+  it("reflects a sync canMovePrevious guard returning false", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false }]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.canMovePrevious).toBe(false);
+  });
+
+  it("defaults to true for async canMoveNext guards (optimistic)", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", canMoveNext: () => Promise.resolve(false) }, { id: "step2" }]
+    });
+    // Async guard — snapshot defaults to true; the engine enforces on navigation
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+  });
+
+  it("updates canMoveNext when data changes via setData", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: (ctx) => (ctx.data as { name: string }).name.length > 0 },
+        { id: "step2" }
+      ]
+    }, { name: "" });
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+  });
+
+  it("does not re-run onEnter when canMoveNext blocks navigation", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", canMoveNext: () => false, onEnter }]
+    });
+    const callsAfterStart = onEnter.mock.calls.length;
+    await engine.next();
+    expect(onEnter).toHaveBeenCalledTimes(callsAfterStart);
+  });
+
+  it("does not re-run onEnter when canMovePrevious blocks navigation", async () => {
+    const onEnter = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false, onEnter }]
+    });
+    await engine.next();
+    const callsAfterEnter = onEnter.mock.calls.length;
+    await engine.previous();
+    expect(onEnter).toHaveBeenCalledTimes(callsAfterEnter);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // setData
 // ---------------------------------------------------------------------------
 
