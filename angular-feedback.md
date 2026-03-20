@@ -166,6 +166,12 @@ consumers who need guard-safe direct navigation.
 
 ### 8. `autoStart` defaults to `true` with no obvious hint
 
+> ✅ **Fixed.** Every `@Input()` on `PathShellComponent` now carries a JSDoc comment.
+> The `autoStart` comment reads: *"Start the path automatically on ngOnInit. Set to
+> false to call doStart() manually."* The shell template already renders a labelled
+> Start button when `autoStart` is false, so the manual-start flow is self-documenting
+> at both the code and UI level.
+
 The shell starts the path immediately on `ngOnInit` by default. This is convenient
 but surprising when you expect to control start timing explicitly. The README
 documents it in the inputs table, but there is no warning in the code or a visible

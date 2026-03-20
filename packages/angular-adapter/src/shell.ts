@@ -133,15 +133,23 @@ export class PathStepDirective {
   `
 })
 export class PathShellComponent implements OnInit, OnDestroy {
+  /** The path definition to run. Required. */
   @Input({ required: true }) path!: PathDefinition;
+  /** Initial data merged into the path engine on start. */
   @Input() initialData: PathData = {};
   /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */
   @Input() autoStart = true;
+  /** Label for the Back navigation button. */
   @Input() backLabel = "Back";
+  /** Label for the Next navigation button. */
   @Input() nextLabel = "Next";
+  /** Label for the Next button when on the last step. */
   @Input() finishLabel = "Finish";
+  /** Label for the Cancel button. */
   @Input() cancelLabel = "Cancel";
+  /** Hide the Cancel button entirely. */
   @Input() hideCancel = false;
+  /** Hide the step progress indicator in the header. */
   @Input() hideProgress = false;
 
   @Output() completed = new EventEmitter<PathData>();
