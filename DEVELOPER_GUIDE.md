@@ -534,7 +534,7 @@ function NavBar() {
 | `previous` | `() => void` | Go back one step |
 | `cancel` | `() => void` | Cancel the active path or sub-path |
 | `goToStep` | `(stepId) => void` | Jump to a step by ID |
-| `setData` | `(key, value) => void` | Update a single data value |
+| `setData` | `(key, value) => void` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
 
 All action functions are **referentially stable** — safe in dependency arrays and as props.
 
@@ -608,7 +608,7 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 | `previous` | `() => Promise<void>` | Go back one step |
 | `cancel` | `() => Promise<void>` | Cancel the active path or sub-path |
 | `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID |
-| `setData` | `(key, value) => Promise<void>` | Update a single data value |
+| `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
 
 ### Design notes
 
@@ -994,15 +994,25 @@ The React and Vue adapters also accept an optional generic on `usePath` and `use
 
 ```tsx
 // React
-const { snapshot } = usePath<CourseData>();
-snapshot?.data.courseName; // string
+const { snapshot, setData } = usePath<CourseData>();
+snapshot?.data.courseName; // string — no cast needed
 
 // Vue
-const { snapshot } = usePath<CourseData>();
-snapshot.value?.data.courseName; // string
+const { snapshot, setData } = usePath<CourseData>();
+snapshot.value?.data.courseName; // string — no cast needed
 ```
 
-The generic is a **type-level assertion** — it narrows `snapshot.data` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<TData>` and use the same generic at the adapter level to keep the types consistent throughout.
+`setData` is also typed against `TData` — both the key and value are checked at compile time:
+
+```tsx
+setData("courseName", 42);       // ✗ TS error: number is not assignable to string
+setData("typo", "x");            // ✗ TS error: "typo" is not a key of CourseData
+setData("courseName", "Biology"); // ✓
+```
+
+The generic is a **type-level assertion** — it narrows `snapshot.data` and `setData` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<TData>` and use the same generic at the adapter level to keep the types consistent throughout.
+
+**Non-generic users are unaffected.** When no type argument is supplied, `TData` defaults to `PathData` (`Record<string, unknown>`), and `setData` collapses to `(key: string, value: unknown) => void` — identical to before.
 
 ---
 

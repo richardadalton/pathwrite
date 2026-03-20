@@ -3,7 +3,7 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
@@ -197,6 +197,16 @@ describe("usePath — navigation", () => {
     await act(() => result.current.start(twoStepPath(), { label: "old" }));
     await act(() => result.current.setData("label", "new"));
     expect(result.current.snapshot?.data.label).toBe("new");
+  });
+
+  it("setData() is type-safe when TData generic is provided", async () => {
+    interface StepData extends PathData { label: string; count: number; }
+    const { result } = renderHook(() => usePath<StepData>());
+    await act(() => result.current.start(twoStepPath(), { label: "old", count: 0 }));
+    await act(() => result.current.setData("label", "new"));
+    await act(() => result.current.setData("count", 99));
+    expect(result.current.snapshot?.data.label).toBe("new");
+    expect(result.current.snapshot?.data.count).toBe(99);
   });
 
   it("action callbacks are referentially stable across re-renders", async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { effectScope } from "vue";
-import { PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
@@ -181,6 +181,19 @@ describe("usePath — navigation", () => {
     await path.start(twoStepPath(), { label: "old" });
     await path.setData("label", "new");
     expect(path.snapshot.value?.data.label).toBe("new");
+  });
+
+  it("setData() is type-safe when TData generic is provided", async () => {
+    interface StepData extends PathData { label: string; count: number; }
+    const scope = effectScope();
+    let path!: ReturnType<typeof usePath<StepData>>;
+    scope.run(() => { path = usePath<StepData>(); });
+    await path.start(twoStepPath(), { label: "old", count: 0 });
+    await path.setData("label", "new");
+    await path.setData("count", 99);
+    expect(path.snapshot.value?.data.label).toBe("new");
+    expect(path.snapshot.value?.data.count).toBe(99);
+    scope.stop();
   });
 });
 
