@@ -6,11 +6,11 @@
  * Every visual value is a CSS custom property (--pw-*) so you can
  * theme the shell without overriding selectors.
  *
- * Usage:
- *   import "@daltonr/pathwrite-react/styles.css";    // React
- *   import "@daltonr/pathwrite-vue/styles.css";      // Vue
- *   // Angular: add "node_modules/@daltonr/pathwrite-angular/dist/index.css"
- *   //          to the styles array in angular.json
+ * Usage (React / Vue):
+ *   import "adapter-package/styles.css";
+ *
+ * Usage (Angular) — add to the styles array in angular.json:
+ *   "node_modules/@daltonr/pathwrite-angular/dist/index.css"
  */
 
 /* ------------------------------------------------------------------ */

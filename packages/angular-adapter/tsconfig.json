@@ -1,14 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "rootDir": "src",
     "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@daltonr/pathwrite-core": ["../core/src/index.ts"]
-    }
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "emitDecoratorMetadata": false
   },
-  "references": [{ "path": "../core" }],
+  "angularCompilerOptions": {
+    "compilationMode": "partial",
+    "strictTemplates": false
+  },
   "include": ["src/**/*.ts"]
 }

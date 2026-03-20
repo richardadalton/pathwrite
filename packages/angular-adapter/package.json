@@ -40,7 +40,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css",
+    "build": "ngc -p tsconfig.json && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "npm run clean && npm run build"
   },
@@ -48,6 +48,10 @@
     "@angular/core": ">=16.0.0",
     "@angular/common": ">=16.0.0",
     "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@angular/compiler": "^17.0.0",
+    "@angular/compiler-cli": "^17.0.0"
   },
   "dependencies": {
     "@daltonr/pathwrite-core": "^0.1.5"
