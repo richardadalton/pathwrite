@@ -229,6 +229,29 @@ describe("usePath — goToStep", () => {
 });
 
 // ---------------------------------------------------------------------------
+// goToStepChecked
+// ---------------------------------------------------------------------------
+
+describe("usePath — goToStepChecked", () => {
+  it("navigates to the target step when the guard allows", async () => {
+    const { path } = createPath();
+    await path.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    await path.goToStepChecked("c");
+    expect(path.snapshot.value?.stepId).toBe("c");
+  });
+
+  it("blocks navigation when canMoveNext returns false", async () => {
+    const { path } = createPath();
+    await path.start({
+      id: "w",
+      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+    });
+    await path.goToStepChecked("b");
+    expect(path.snapshot.value?.stepId).toBe("a");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // scope disposal
 // ---------------------------------------------------------------------------
 

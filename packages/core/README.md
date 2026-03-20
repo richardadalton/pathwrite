@@ -43,6 +43,8 @@ engine.next();
 engine.previous();
 engine.cancel();
 engine.setData(key, value);                // update a single data value; emits stateChanged
+engine.goToStep(stepId);                   // jump to step by ID; bypasses guards and shouldSkip
+engine.goToStepChecked(stepId);            // jump to step by ID; checks canMoveNext / canMovePrevious first
 engine.snapshot();                         // returns PathSnapshot | null
 
 const unsubscribe = engine.subscribe((event) => { ... });
@@ -60,6 +62,7 @@ All hooks are optional. Hooks that want to update data **return a partial patch*
 | `onSubPathComplete` | On the parent step when a sub-path finishes | ✅ |
 | `canMoveNext` | Before advancing — return `false` to block | — |
 | `canMovePrevious` | Before going back — return `false` to block | — |
+| `validationMessages` | On every snapshot — return `string[]` explaining why the step is not yet valid | — |
 
 ### Snapshot guard booleans
 

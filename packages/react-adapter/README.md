@@ -88,9 +88,10 @@ function NavButtons() {
 | `start(definition, data?)` | `function` | Start or re-start a path. |
 | `startSubPath(definition, data?)` | `function` | Push a sub-path. Requires an active path. |
 | `next()` | `function` | Advance one step. Completes the path on the last step. |
-| `previous()` | `function` | Go back one step. Cancels the path from the first step. |
+| `previous()` | `function` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel()` | `function` | Cancel the active path (or sub-path). |
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
+| `goToStepChecked(stepId)` | `function` | Jump to a step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
 | `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
 
 All action callbacks are **referentially stable** — safe to pass as props or include in dependency arrays without causing unnecessary re-renders.

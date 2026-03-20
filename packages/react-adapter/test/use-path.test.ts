@@ -263,6 +263,36 @@ describe("usePath — goToStep", () => {
 });
 
 // ---------------------------------------------------------------------------
+// goToStepChecked
+// ---------------------------------------------------------------------------
+
+describe("usePath — goToStepChecked", () => {
+  it("navigates to the target step when the guard allows", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] }));
+    await act(() => result.current.goToStepChecked("c"));
+    expect(result.current.snapshot?.stepId).toBe("c");
+  });
+
+  it("blocks navigation when canMoveNext returns false", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start({
+      id: "w",
+      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+    }));
+    await act(() => result.current.goToStepChecked("b"));
+    expect(result.current.snapshot?.stepId).toBe("a");
+  });
+
+  it("goToStepChecked callback is referentially stable across re-renders", () => {
+    const { result, rerender } = renderHook(() => usePath());
+    const first = result.current.goToStepChecked;
+    rerender();
+    expect(result.current.goToStepChecked).toBe(first);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // PathProvider + usePathContext
 // ---------------------------------------------------------------------------
 

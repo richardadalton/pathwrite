@@ -43,11 +43,19 @@ export class MyComponent {
 | `start(definition, data?)` | Start or re-start a path. |
 | `startSubPath(definition, data?)` | Push a sub-path. Requires an active path. |
 | `next()` | Advance one step. Completes the path on the last step. |
-| `previous()` | Go back one step. Cancels the path from the first step. |
+| `previous()` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel()` | Cancel the active path (or sub-path). |
-| `setData(key, value)` | Update a single data value; emits `stateChanged`. |
-| `goToStep(stepId)` | Jump directly to a step by ID. |
+| `setData(key, value)` | Update a single data value; emits `stateChanged`. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
+| `goToStep(stepId)` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked(stepId)` | Jump to a step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Blocked if the guard returns false. |
 | `snapshot()` | Synchronous read of the current `PathSnapshot \| null`. |
+
+`PathFacade` accepts an optional generic `PathFacade<TData>`. Because Angular's DI cannot carry generics at runtime, narrow it with a cast at the injection site:
+
+```typescript
+protected readonly facade = inject(PathFacade) as PathFacade<MyData>;
+facade.snapshot()?.data.name; // typed as string (or whatever MyData defines)
+```
 
 ---
 

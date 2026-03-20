@@ -126,6 +126,7 @@ const myPath: PathDefinition = {
 | `shouldSkip` | function | — | Return `true` to skip this step during navigation. |
 | `canMoveNext` | function | — | Return `false` to block forward navigation. |
 | `canMovePrevious` | function | — | Return `false` to block backward navigation. |
+| `validationMessages` | function | — | Returns a `string[]` explaining why the step is not yet valid. Evaluated synchronously on every snapshot; displayed by the default shell below the step body. Async functions default to `[]`. |
 | `onEnter` | function | — | Called on arrival at a step. Can return a partial data patch. |
 | `onLeave` | function | — | Called on departure (only when the guard allows). Can return a partial data patch. |
 | `onSubPathComplete` | function | — | Called when a sub-path launched from this step finishes. Can return a partial data patch. |
@@ -168,7 +169,8 @@ canMovePrevious(current step)
       onLeave(current step)         ← patch applied to data
       decrement index
       shouldSkip(new step)?         ← repeat until a non-skipped step is found
-      if index < 0: cancel path
+      if index < 0 on top-level path: no-op (stay on step 0, no event emitted)
+      if index < 0 on sub-path: pop back to parent, emit stateChanged
       onEnter(new step)             ← patch applied to data
       emit stateChanged (isNavigating: false)
 ```
@@ -252,6 +254,7 @@ interface PathSnapshot<TData> {
   isNavigating:   boolean;              // true while an async hook/guard is running
   canMoveNext:    boolean;              // result of the current step's canMoveNext guard
   canMovePrevious: boolean;             // result of the current step's canMovePrevious guard
+  validationMessages: string[];         // messages from the current step's validationMessages hook
   data:           TData;                // copy of current path data
 }
 ```
@@ -448,7 +451,8 @@ public constructor() {
 | `previous()` | Go back one step |
 | `cancel()` | Cancel the active path or sub-path |
 | `setData(key, value)` | Update a single data value |
-| `goToStep(stepId)` | Jump directly to a step by ID |
+| `goToStep(stepId)` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked(stepId)` | Jump to a step by ID, checking the current step's `canMoveNext` (forward) or `canMovePrevious` (backward) guard first. Navigation is blocked if the guard returns false. |
 | `snapshot()` | Synchronous read of the current snapshot |
 
 ### Angular Forms integration — `syncFormGroup`
@@ -610,9 +614,10 @@ function NavBar() {
 | `start` | `(def, data?) => void` | Start or restart a path |
 | `startSubPath` | `(def, data?) => void` | Push a sub-path |
 | `next` | `() => void` | Advance one step |
-| `previous` | `() => void` | Go back one step |
+| `previous` | `() => void` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel` | `() => void` | Cancel the active path or sub-path |
-| `goToStep` | `(stepId) => void` | Jump to a step by ID |
+| `goToStep` | `(stepId) => void` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked` | `(stepId) => void` | Jump to a step by ID, checking the current step's guard first. |
 | `setData` | `(key, value) => void` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
 
 All action functions are **referentially stable** — safe in dependency arrays and as props.
@@ -684,9 +689,10 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 | `start` | `(def, data?) => Promise<void>` | Start or restart a path |
 | `startSubPath` | `(def, data?) => Promise<void>` | Push a sub-path |
 | `next` | `() => Promise<void>` | Advance one step |
-| `previous` | `() => Promise<void>` | Go back one step |
+| `previous` | `() => Promise<void>` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel` | `() => Promise<void>` | Cancel the active path or sub-path |
-| `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID |
+| `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked` | `(stepId) => Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
 | `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
 
 ### Design notes
@@ -742,6 +748,9 @@ This means step content components can read `snapshot.data`, call `setData()`, o
 │                                     │
 │  [your step content goes here]      │  ← body (from steps map / named slots / pwStep)
 │                                     │
+├─────────────────────────────────────┤
+│  • Name is required                 │  ← validation messages (hidden when empty)
+│  • Email must be valid              │
 ├─────────────────────────────────────┤
 │  ‹ Back          Cancel    Next ›   │  ← navigation footer
 └─────────────────────────────────────┘
@@ -951,6 +960,9 @@ Import the optional stylesheet from your adapter package for sensible defaults. 
 | `--pw-color-primary-light` | `rgba(37,99,235,0.12)` | Light primary for hover states. |
 | `--pw-color-btn-bg` | `#f8fbff` | Button background. |
 | `--pw-color-btn-border` | `#c2d0e5` | Button border. |
+| `--pw-color-error` | `#dc2626` | Validation message text colour. |
+| `--pw-color-error-bg` | `#fef2f2` | Validation message background. |
+| `--pw-color-error-border` | `#fecaca` | Validation message border colour. |
 | `--pw-dot-size` | `32px` | Step indicator dot size. |
 | `--pw-dot-font-size` | `13px` | Step indicator dot font size. |
 | `--pw-track-height` | `4px` | Progress track height. |
@@ -977,6 +989,8 @@ All shell components use BEM-style `pw-shell__*` classes:
 | `.pw-shell__track` | Progress bar track. |
 | `.pw-shell__track-fill` | Progress bar fill. |
 | `.pw-shell__body` | Step content area. |
+| `.pw-shell__validation` | Validation message list (hidden when empty). |
+| `.pw-shell__validation-item` | Individual validation message. |
 | `.pw-shell__footer` | Navigation button bar. |
 | `.pw-shell__footer-left` | Left side of footer (Back). |
 | `.pw-shell__footer-right` | Right side of footer (Cancel, Next). |
@@ -1034,10 +1048,11 @@ await engine.start(path, { apiKey: "" });
 | `start(def, data?)` | `Promise<void>` | Start or restart. Throws if definition has no steps. |
 | `startSubPath(def, data?)` | `Promise<void>` | Push sub-path. Throws if no path is active. |
 | `next()` | `Promise<void>` | Advance. Completes path past the last step. |
-| `previous()` | `Promise<void>` | Go back. Cancels path before the first step. |
+| `previous()` | `Promise<void>` | Go back. No-op when already on the first step of a top-level path. Pops a sub-path back to its parent. |
 | `cancel()` | `Promise<void>` | Cancel. Pops sub-path silently; completes top-level with `cancelled` event. |
 | `setData(key, value)` | `Promise<void>` | Update one data value. Emits `stateChanged`. |
 | `goToStep(stepId)` | `Promise<void>` | Jump to step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked(stepId)` | `Promise<void>` | Jump to step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
 | `snapshot()` | `PathSnapshot \| null` | Synchronous snapshot read. |
 | `subscribe(listener)` | `() => void` | Subscribe to events. Returns the unsubscribe function. |
 
@@ -1083,6 +1098,18 @@ snapshot?.data.courseName; // string — no cast needed
 // Vue
 const { snapshot, setData } = usePath<CourseData>();
 snapshot.value?.data.courseName; // string — no cast needed
+```
+
+The Angular adapter uses a generic on `PathFacade` itself. Because `PathFacade` is injected via Angular's DI (which cannot carry generics at runtime), narrow it with a cast at the injection site:
+
+```typescript
+// Angular
+const facade = inject(PathFacade) as PathFacade<CourseData>;
+facade.snapshot()?.data.courseName; // string — no cast needed
+
+// Or declare the field typed from the start:
+protected readonly facade = inject(PathFacade) as PathFacade<CourseData>;
+protected readonly snapshot = this.facade.stateSignal; // Signal<PathSnapshot<CourseData> | null>
 ```
 
 `setData` is also typed against `TData` — both the key and value are checked at compile time:
