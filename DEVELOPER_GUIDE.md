@@ -369,6 +369,14 @@ Nesting is unlimited. `nestingLevel` in the snapshot tells you how deep you are.
 
 ## 10. Angular Adapter
 
+> **Build note:** The Angular adapter is compiled with **`ngc`** (Angular's own
+> compiler) rather than plain `tsc`. This produces partial-compilation Ivy
+> artefacts (`ɵngDeclareComponent`, `ɵngDeclareDirective`, `ɵngDeclareInjectable`)
+> that are compatible with the Angular linker for any Angular 14+ consumer. If
+> you are building the monorepo from source, `npm run build` handles this
+> automatically — it runs `tsc -b` for core/React/Vue first, then invokes `ngc`
+> for the Angular adapter via `npm run build -w packages/angular-adapter`.
+
 ### Setup
 
 Provide `PathFacade` at the **component level** so each component gets its own isolated engine instance, and Angular handles cleanup automatically.
@@ -645,9 +653,39 @@ All shell components automatically provide their engine instance to child compon
 
 - **React**: `PathShell` wraps its children in a `PathContext.Provider`. Step children can call `usePathContext()`.
 - **Vue**: `PathShell` calls `provide()` internally. Step children can call `usePathContext()`.
-- **Angular**: `PathShellComponent` provides `PathFacade` at the component level. Step children can `inject(PathFacade)`.
+- **Angular**: `PathShellComponent` provides `PathFacade` in its own `providers` array.
+  However, step templates are **declared in the parent component** and rendered
+  via `*ngTemplateOutlet`. Angular resolves DI for embedded views using the
+  *declaring* component's injector, not the shell's — so `inject(PathFacade)`
+  inside a step component resolves from the parent, not the shell.
 
-This means step content components can read `snapshot.data`, call `setData()`, or trigger navigation without prop drilling.
+  The recommended pattern is to provide `PathFacade` in the **parent** component
+  (the one that hosts `<pw-shell>`) and inject it from there:
+
+  ```typescript
+  // ✅ Works — PathFacade is provided by the parent that owns <pw-shell>
+  @Component({
+    providers: [PathFacade],       // parent provides the facade
+    template: `
+      <pw-shell [path]="myPath">
+        <ng-template pwStep="details"><app-details-form /></ng-template>
+      </pw-shell>
+    `
+  })
+  export class MyComponent {
+    protected readonly facade = inject(PathFacade);
+  }
+
+  // Step component can also inject it — it resolves from the same parent provider
+  @Component({ ... })
+  export class DetailsFormComponent {
+    protected readonly facade = inject(PathFacade);
+  }
+  ```
+
+  Do **not** add `providers: [PathFacade]` inside `<pw-shell>` via a separate
+  entry — the shell creates its own internal instance and a second provider in
+  the parent would shadow it. Provide it once at the parent level.
 
 ### Architecture
 
@@ -1194,6 +1232,30 @@ it("advances to the next step", async () => {
 ```
 
 ### Testing with the Angular adapter
+
+`PathFacade` is a plain `@Injectable` service with no component dependencies, so
+it can be tested with or without `TestBed`. Because the adapter is now compiled
+with `ngc` (emitting full Ivy metadata), it also works in `TestBed` integration
+tests that include the shell components.
+
+**Unit testing `PathFacade` directly (no TestBed needed):**
+
+```typescript
+it("emits completed after the last step", async () => {
+  const facade = new PathFacade();
+  const events: PathEvent[] = [];
+  facade.events$.subscribe((e) => events.push(e));
+
+  await facade.start(myPath);
+  await facade.next();
+  await facade.next();
+
+  expect(events.some((e) => e.type === "completed")).toBe(true);
+  facade.ngOnDestroy();
+});
+```
+
+**Integration testing with `TestBed`:**
 
 ```typescript
 it("emits completed after the last step", async () => {

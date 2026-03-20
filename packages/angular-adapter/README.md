@@ -113,12 +113,34 @@ Each `<ng-template pwStep="<stepId>">` is rendered when the active step matches 
 
 ### Context sharing
 
-`PathShellComponent` provides a `PathFacade` instance at the component level. Step content components can inject it directly without a separate provider:
+`PathShellComponent` provides a `PathFacade` instance at the component level.
+Step templates are **declared in the parent** component and rendered via
+`*ngTemplateOutlet`. Angular resolves DI for embedded views from the *declaring*
+component's injector, not the shell's. The recommended pattern is to provide
+`PathFacade` in the **parent** that hosts `<pw-shell>`:
 
 ```typescript
+// Parent component — owns the pw-shell and provides the facade
+@Component({
+  imports: [PathShellComponent, PathStepDirective],
+  providers: [PathFacade],
+  template: `
+    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+      <ng-template pwStep="review"><app-review-panel /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent {
+  protected readonly facade = inject(PathFacade);
+  protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
+  protected onDone(data: PathData) { console.log("Done!", data); }
+}
+
+// Step component — injects from the same parent provider
 @Component({
   template: `
-    <input [value]="snapshot()?.data?.name ?? ''"
+    <input [value]="snapshot()?.data?.['name'] ?? ''"
            (input)="facade.setData('name', $event.target.value)" />
   `
 })
@@ -127,6 +149,11 @@ export class DetailsFormComponent {
   protected readonly snapshot = toSignal(this.facade.state$, { initialValue: null });
 }
 ```
+
+> **Note:** Do not add a separate `providers: [PathFacade]` inside the parent
+> alongside the `<pw-shell>` — the shell creates its own internal instance.
+> Provide `PathFacade` once at the parent level and let both the parent and step
+> components inject from that single provider.
 
 ### Inputs
 
