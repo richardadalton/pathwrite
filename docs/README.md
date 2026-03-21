@@ -23,6 +23,12 @@ Comprehensive guides for developers using and contributing to Pathwrite:
 
 **New to Pathwrite?** Start with the main [README.md](../README.md) in the project root.
 
+**Exploring use cases?** See [BEYOND_WIZARDS.md](guides/BEYOND_WIZARDS.md) for non-wizard applications like:
+- Single-page forms
+- Shopping carts & checkout
+- Backend workflows
+- State machines
+
 **Implementing persistence?** Check out:
 1. [AUTO_PERSISTENCE_SUMMARY.md](guides/AUTO_PERSISTENCE_SUMMARY.md) - Overview
 2. [PERSISTENCE_STRATEGY_GUIDE.md](guides/PERSISTENCE_STRATEGY_GUIDE.md) - Detailed guide
