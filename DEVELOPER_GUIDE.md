@@ -625,6 +625,7 @@ public constructor() {
 | `stateSignal` | `Signal<PathSnapshot \| null>` — pre-wired signal, updated in sync with `state$` |
 | `events$` | `Observable<PathEvent>` — all engine events |
 | `start(def, data?)` | Start or restart a path |
+| `restart(def, data?)` | Tear down any active path (without firing hooks) and start fresh. Safe at any time. Use for "Start over" / retry flows. |
 | `startSubPath(def, data?, meta?)` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel` unchanged — use it for collection correlation. |
 | `next()` | Advance one step |
 | `previous()` | Go back one step |
@@ -798,6 +799,7 @@ function NavBar() {
 | `goToStep` | `(stepId) => void` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked` | `(stepId) => void` | Jump to a step by ID, checking the current step's guard first. |
 | `setData` | `(key, value) => void` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
+| `restart` | `(def, data?) => void` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
 
 All action functions are **referentially stable** — safe in dependency arrays and as props.
 
@@ -873,6 +875,7 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 | `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked` | `(stepId) => Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
 | `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
+| `restart` | `(def, data?) => Promise<void>` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
 
 ### Design notes
 
@@ -1225,6 +1228,7 @@ await engine.start(path, { apiKey: "" });
 | Method | Returns | Description |
 |---|---|---|
 | `start(def, data?)` | `Promise<void>` | Start or restart. Throws if definition has no steps. |
+| `restart(def, data?)` | `Promise<void>` | Tear down any active path (without firing hooks) and start fresh. Safe at any time. |
 | `startSubPath(def, data?, meta?)` | `Promise<void>` | Push sub-path. Throws if no path is active. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | `Promise<void>` | Advance. Completes path past the last step. |
 | `previous()` | `Promise<void>` | Go back. No-op when already on the first step of a top-level path. Pops a sub-path back to its parent. |

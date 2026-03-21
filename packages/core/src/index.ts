@@ -136,6 +136,26 @@ export class PathEngine {
   }
 
   /**
+   * Tears down any active path (and the entire sub-path stack) without firing
+   * lifecycle hooks or emitting `cancelled`, then immediately starts the given
+   * path from scratch.
+   *
+   * Safe to call at any time — whether a path is running, already completed,
+   * or has never been started. Use this to implement a "Start over" button or
+   * to retry a path after completion without remounting the host component.
+   *
+   * @param path        The path definition to (re)start.
+   * @param initialData Data to seed the fresh path with. Defaults to `{}`.
+   */
+  public restart(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
+    this.assertPathHasSteps(path);
+    this._isNavigating = false;
+    this.activePath = null;
+    this.pathStack.length = 0;
+    return this._startAsync(path, initialData);
+  }
+
+  /**
    * Starts a sub-path on top of the currently active path. Throws if no path
    * is running.
    *

@@ -41,6 +41,7 @@ export class MyComponent {
 | Method | Description |
 |--------|-------------|
 | `start(definition, data?)` | Start or re-start a path. |
+| `restart(definition, data?)` | Tear down any active path (without firing hooks) and start the given path fresh. Safe to call at any time. Use for "Start over" / retry flows. |
 | `startSubPath(definition, data?, meta?)` | Push a sub-path. Requires an active path. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | Advance one step. Completes the path on the last step. |
 | `previous()` | Go back one step. No-op when already on the first step of a top-level path. |

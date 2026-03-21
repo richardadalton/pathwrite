@@ -4,13 +4,18 @@
 
 ### Patch Changes
 
-- **Guard and `validationMessages` error resilience**
+- **Guard and `validationMessages` error resilience** — `evaluateGuardSync` and
+  `evaluateValidationMessagesSync` now wrap execution in `try/catch`. If a guard or
+  validation hook throws, Pathwrite logs a descriptive `console.warn` (step ID +
+  thrown value + note about before-`onEnter` timing) and returns the safe default
+  (`true` / `[]`) so the UI stays operable. Write guards defensively:
+  `(data.name ?? "").trim().length > 0` rather than `data.name.trim().length > 0`.
 
-  `evaluateGuardSync` and `evaluateValidationMessagesSync` (the private helpers that produce the `canMoveNext`, `canMovePrevious`, and `validationMessages` fields on every `PathSnapshot`) now wrap execution in a `try/catch`. If a guard or validation hook throws, Pathwrite logs a descriptive `console.warn` that includes the step ID and the thrown error, then returns the safe default (`true` / `[]`) so the UI remains operable rather than silently failing.
-
-  The most common trigger is writing a guard that assumes a field is populated when the path first starts. Guards are evaluated on the very first snapshot — which is emitted *before* `onEnter` runs on the arriving step, so fields that `onEnter` would initialise are not yet present. The warning message explicitly calls this out and points developers to the fix: write guards defensively (e.g. `(data.name ?? "").trim().length > 0`).
-
-  No breaking changes. Existing paths that already write defensive guards are completely unaffected.
+- **`restart(path, initialData?)`** — new `PathEngine` method that tears down any
+  active path and sub-path stack without firing lifecycle hooks or emitting
+  `cancelled`, then immediately starts the given path fresh. Safe to call at any
+  time — whether a path is running, already completed, or never been started. Use
+  for "Start over" / retry flows without remounting the host component.
 
 
 

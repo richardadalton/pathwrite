@@ -1,6 +1,23 @@
 # @daltonr/pathwrite-vue
 
-## 0.3.0
+## 0.3.1
+
+### Patch Changes
+
+- **`restart(path, initialData?)`** — new method on `usePath()` return value.
+  Tears down any active path (without firing hooks) and immediately starts the given
+  path fresh. Safe to call at any time. Use for "Start over" / retry flows without
+  remounting the component.
+
+- **`PathShellActions.restart()`** — the `actions` object passed to the `#footer`
+  slot now includes a `restart()` method that restarts the shell's own `path` prop
+  with its own `initialData` prop. Add a "Start over" button to a custom footer
+  without needing to lift the restart call into the parent.
+
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.3.1
+
+
 
 ### Minor Changes
 

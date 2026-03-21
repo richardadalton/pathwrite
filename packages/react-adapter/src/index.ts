@@ -44,6 +44,12 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   goToStepChecked: (stepId: string) => void;
   /** Update a single data value; triggers a re-render via stateChanged. When `TData` is specified, `key` and `value` are type-checked against your data shape. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => void;
+  /**
+   * Tear down any active path (without firing hooks) and immediately start the
+   * given path fresh. Safe to call whether or not a path is currently active.
+   * Use for "Start over" / retry flows without remounting the component.
+   */
+  restart: (path: PathDefinition<any>, initialData?: PathData) => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
@@ -120,7 +126,13 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     [engine]
   ) as UsePathReturn<TData>["setData"];
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData };
+  const restart = useCallback(
+    (path: PathDefinition<any>, initialData: PathData = {}) =>
+      engine.restart(path, initialData),
+    [engine]
+  );
+
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, restart };
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +211,8 @@ export interface PathShellActions {
   goToStep: (stepId: string) => void;
   goToStepChecked: (stepId: string) => void;
   setData: (key: string, value: unknown) => void;
+  /** Restart the shell's current path with its current `initialData`. */
+  restart: () => void;
 }
 
 /**
@@ -243,7 +257,7 @@ export function PathShell({
     }
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
   // Auto-start on mount
   const startedRef = useRef(false);
@@ -273,7 +287,10 @@ export function PathShell({
     );
   }
 
-  const actions: PathShellActions = { next, previous, cancel, goToStep, goToStepChecked, setData };
+  const actions: PathShellActions = {
+    next, previous, cancel, goToStep, goToStepChecked, setData,
+    restart: () => restart(pathDef, initialData)
+  };
 
   return createElement(PathContext.Provider, { value: pathReturn },
     createElement("div", { className: cls("pw-shell", className) },

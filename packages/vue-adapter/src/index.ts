@@ -51,6 +51,12 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   goToStepChecked: (stepId: string) => Promise<void>;
   /** Update a single data value; triggers a re-render via stateChanged. When `TData` is specified, `key` and `value` are type-checked against your data shape. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
+  /**
+   * Tear down any active path (without firing hooks) and immediately start the
+   * given path fresh. Safe to call whether or not a path is currently active.
+   * Use for "Start over" / retry flows without remounting the component.
+   */
+  restart: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +96,10 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData };
+  const restart = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
+    engine.restart(path, initialData);
+
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, restart };
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +135,8 @@ export interface PathShellActions {
   goToStep: (stepId: string) => Promise<void>;
   goToStepChecked: (stepId: string) => Promise<void>;
   setData: (key: string, value: unknown) => Promise<void>;
+  /** Restart the shell's current path with its current `initialData`. */
+  restart: () => Promise<void>;
 }
 
 /**
@@ -163,7 +174,7 @@ export const PathShell = defineComponent({
       }
     });
 
-    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData } = pathReturn;
+    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
     // Provide context so child components can use usePathContext()
     provide(PathInjectionKey, pathReturn);
@@ -176,7 +187,10 @@ export const PathShell = defineComponent({
       }
     });
 
-    const actions: PathShellActions = { next, previous, cancel, goToStep, goToStepChecked, setData };
+    const actions: PathShellActions = {
+      next, previous, cancel, goToStep, goToStepChecked, setData,
+      restart: () => restart(props.path, props.initialData)
+    };
 
     return () => {
       const snap = snapshot.value as PathSnapshot | null;

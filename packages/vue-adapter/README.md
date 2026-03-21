@@ -55,6 +55,7 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `function` | Jump to a step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
 | `setData(key, value)` | `function` | Update a single data value; triggers re-render via `stateChanged`. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
+| `restart(definition, data?)` | `function` | Tear down any active path (without firing hooks) and start the given path fresh. Safe to call at any time. Use for "Start over" / retry flows. |
 
 ### Typed snapshot data
 
@@ -161,7 +162,7 @@ Use the `#header` and `#footer` slots to replace the built-in progress bar or na
 </PathShell>
 ```
 
-`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`.
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`.
 
 ### Context sharing
 

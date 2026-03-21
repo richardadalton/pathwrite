@@ -38,6 +38,7 @@ const path: PathDefinition<CourseData> = {
 const engine = new PathEngine();
 
 engine.start(definition, initialData?);    // start or re-start a path
+engine.restart(definition, initialData?);  // tear down stack and start fresh (no hooks, no cancelled event)
 engine.startSubPath(definition, data?);    // push sub-path onto the stack (requires active path)
 engine.next();
 engine.previous();

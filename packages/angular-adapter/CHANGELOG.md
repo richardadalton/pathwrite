@@ -1,6 +1,18 @@
 # @daltonr/pathwrite-angular
 
-## 0.3.0
+## 0.3.1
+
+### Patch Changes
+
+- **`restart(path, initialData?)`** — new `PathFacade` method. Tears down any
+  active path (without firing hooks) and immediately starts the given path fresh.
+  Safe to call at any time. Use for "Start over" / retry flows without destroying
+  and re-creating the component that provides the facade.
+
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.3.1
+
+
 
 ### Minor Changes
 

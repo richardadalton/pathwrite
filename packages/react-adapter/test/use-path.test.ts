@@ -350,3 +350,45 @@ describe("usePath — cleanup", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// restart
+// ---------------------------------------------------------------------------
+
+describe("usePath — restart()", () => {
+  it("starts from step 1 when no path has been started", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.restart(twoStepPath()));
+    expect(result.current.snapshot?.stepId).toBe("step1");
+  });
+
+  it("resets to step 1 from mid-flow", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
+    expect(result.current.snapshot?.stepId).toBe("step2");
+
+    await act(() => result.current.restart(twoStepPath()));
+    expect(result.current.snapshot?.stepId).toBe("step1");
+  });
+
+  it("restarts after completion (snapshot was null)", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.next());
+    await act(() => result.current.next());
+    expect(result.current.snapshot).toBeNull();
+
+    await act(() => result.current.restart(twoStepPath()));
+    expect(result.current.snapshot?.stepId).toBe("step1");
+  });
+
+  it("seeds fresh initialData on restart", async () => {
+    const { result } = renderHook(() => usePath());
+    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.setData("name" as never, "Alice"));
+
+    await act(() => result.current.restart(twoStepPath(), { name: "Bob" }));
+    expect(result.current.snapshot?.data.name).toBe("Bob");
+  });
+});
+

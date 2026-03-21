@@ -58,6 +58,16 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this.engine.start(path, initialData);
   }
 
+  /**
+   * Tears down any active path (without firing lifecycle hooks) and immediately
+   * starts the given path fresh. Safe to call whether or not a path is running.
+   * Use for "Start over" / retry flows without destroying and re-creating the
+   * component that provides this facade.
+   */
+  public restart(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
+    return this.engine.restart(path, initialData);
+  }
+
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
     return this.engine.startSubPath(path, initialData, meta);
   }

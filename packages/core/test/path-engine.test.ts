@@ -1958,3 +1958,90 @@ describe("PathEngine — guard error resilience", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// restart()
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — restart()", () => {
+  it("starts the path from step 1 when no path has ever been started", async () => {
+    const engine = new PathEngine();
+    await engine.restart(twoStepPath());
+    expect(engine.snapshot()?.stepId).toBe("step1");
+  });
+
+  it("restarts to step 1 while a path is mid-flow", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+
+    await engine.restart(twoStepPath());
+    expect(engine.snapshot()?.stepId).toBe("step1");
+  });
+
+  it("restarts after a path has completed (snapshot was null)", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    await engine.next(); // completes
+    expect(engine.snapshot()).toBeNull();
+
+    await engine.restart(twoStepPath());
+    expect(engine.snapshot()?.stepId).toBe("step1");
+  });
+
+  it("clears the sub-path stack and restarts at the top level", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    expect(engine.snapshot()?.nestingLevel).toBe(1);
+
+    await engine.restart(twoStepPath("fresh"));
+    expect(engine.snapshot()?.pathId).toBe("fresh");
+    expect(engine.snapshot()?.nestingLevel).toBe(0);
+  });
+
+  it("seeds fresh data via initialData", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.setData("name", "Alice");
+
+    await engine.restart(twoStepPath(), { name: "Bob" });
+    expect(engine.snapshot()?.data.name).toBe("Bob");
+  });
+
+  it("does not fire cancelled event when restarting", async () => {
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+
+    await engine.start(twoStepPath());
+    await engine.restart(twoStepPath());
+
+    expect(events.some((e) => e.type === "cancelled")).toBe(false);
+  });
+
+  it("emits stateChanged after restarting", async () => {
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+
+    await engine.restart(twoStepPath());
+
+    expect(events.some((e) => e.type === "stateChanged")).toBe(true);
+  });
+
+  it("restarts with a different path definition", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("original"));
+
+    const threeStep: PathDefinition = {
+      id: "replacement",
+      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
+    };
+    await engine.restart(threeStep);
+    expect(engine.snapshot()?.pathId).toBe("replacement");
+    expect(engine.snapshot()?.stepCount).toBe(3);
+  });
+});
+

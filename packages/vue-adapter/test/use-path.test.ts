@@ -271,3 +271,45 @@ describe("usePath — scope disposal", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// restart
+// ---------------------------------------------------------------------------
+
+describe("usePath — restart()", () => {
+  it("starts from step 1 when no path has been started", async () => {
+    const { path } = createPath();
+    await path.restart(twoStepPath());
+    expect(path.snapshot.value?.stepId).toBe("step1");
+  });
+
+  it("resets to step 1 from mid-flow", async () => {
+    const { path } = createPath();
+    await path.start(twoStepPath());
+    await path.next();
+    expect(path.snapshot.value?.stepId).toBe("step2");
+
+    await path.restart(twoStepPath());
+    expect(path.snapshot.value?.stepId).toBe("step1");
+  });
+
+  it("restarts after completion (snapshot was null)", async () => {
+    const { path } = createPath();
+    await path.start(twoStepPath());
+    await path.next();
+    await path.next();
+    expect(path.snapshot.value).toBeNull();
+
+    await path.restart(twoStepPath());
+    expect(path.snapshot.value?.stepId).toBe("step1");
+  });
+
+  it("seeds fresh initialData on restart", async () => {
+    const { path } = createPath();
+    await path.start(twoStepPath());
+    await path.setData("name" as never, "Alice");
+
+    await path.restart(twoStepPath(), { name: "Bob" });
+    expect(path.snapshot.value?.data.name).toBe("Bob");
+  });
+});
+
