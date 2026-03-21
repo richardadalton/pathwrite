@@ -137,6 +137,33 @@ export type PathEvent =
       snapshot: PathSnapshot;
     };
 
+/**
+ * A function called on every engine event. Observers are registered at
+ * construction time and receive every event for the lifetime of the engine.
+ *
+ * The second argument is the engine itself — useful when the observer needs to
+ * read current state (e.g. calling `engine.exportState()` for persistence).
+ *
+ * ```typescript
+ * const logger: PathObserver = (event) => console.log(event.type);
+ * const persist: PathObserver = (event, engine) => { ... };
+ * ```
+ */
+export type PathObserver = (event: PathEvent, engine: PathEngine) => void;
+
+/**
+ * Options accepted by the `PathEngine` constructor and `PathEngine.fromState()`.
+ */
+export interface PathEngineOptions {
+  /**
+   * Zero or more observers to register before the first event fires.
+   * Each observer is called synchronously on every engine event for the
+   * lifetime of the engine. Observers cannot be removed; for removable
+   * listeners use `engine.subscribe()`.
+   */
+  observers?: PathObserver[];
+}
+
 interface ActivePath {
   definition: PathDefinition;
   currentStepIndex: number;
@@ -150,6 +177,15 @@ export class PathEngine {
   private readonly pathStack: ActivePath[] = [];
   private readonly listeners = new Set<(event: PathEvent) => void>();
   private _isNavigating = false;
+
+  constructor(options?: PathEngineOptions) {
+    if (options?.observers) {
+      for (const observer of options.observers) {
+        // Wrap so observer receives the engine instance as the second argument
+        this.listeners.add((event) => observer(event, this));
+      }
+    }
+  }
 
   /**
    * Restores a PathEngine from previously exported state.
@@ -167,13 +203,14 @@ export class PathEngine {
    */
   public static fromState(
     state: SerializedPathState,
-    pathDefinitions: Record<string, PathDefinition>
+    pathDefinitions: Record<string, PathDefinition>,
+    options?: PathEngineOptions
   ): PathEngine {
     if (state.version !== 1) {
       throw new Error(`Unsupported SerializedPathState version: ${state.version}`);
     }
 
-    const engine = new PathEngine();
+    const engine = new PathEngine(options);
 
     // Restore the path stack (sub-paths)
     for (const stackItem of state.pathStack) {

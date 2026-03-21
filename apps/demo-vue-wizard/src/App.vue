@@ -2,21 +2,8 @@
 import { ref, shallowRef, onUnmounted } from 'vue';
 import { PathShell } from '@daltonr/pathwrite-vue';
 import type { PathEngine } from '@daltonr/pathwrite-vue';
-import { HttpStore, PathEngineWithStore } from '@daltonr/pathwrite-store-http';
+import { createPersistedEngine } from '@daltonr/pathwrite-store-http';
 import { onboardingWizard, type OnboardingData } from './wizard';
-
-// ─── Store + wrapper ──────────────────────────────────────────────────────────
-
-const store = new HttpStore({
-  baseUrl: 'http://localhost:3001/api/wizard',
-  onError: (err, op, key) => console.warn(`[HttpStore] ${op} failed for ${key}:`, err.message),
-});
-
-const wrapper = new PathEngineWithStore({
-  key: 'demo-user:onboarding',
-  store,
-  persistenceStrategy: 'onNext',
-});
 
 // ─── Reactive state ───────────────────────────────────────────────────────────
 
@@ -39,20 +26,24 @@ async function init(clearFirst = false) {
 
   try {
     if (clearFirst) {
-      console.log('[init] clearing saved state...');
-      await wrapper.deleteSavedState();
+      // Load and immediately delete any saved state before starting fresh
+      const { HttpStore } = await import('@daltonr/pathwrite-store-http');
+      const store = new HttpStore({ baseUrl: 'http://localhost:3001/api/wizard' });
+      await store.delete('demo-user:onboarding');
     }
 
-    console.log('[init] calling startOrRestore...');
-    await wrapper.startOrRestore(
-      onboardingWizard,
-      { [onboardingWizard.id]: onboardingWizard },
-      initialData
-    );
-    console.log('[init] startOrRestore complete');
+    const result = await createPersistedEngine({
+      baseUrl: 'http://localhost:3001/api/wizard',
+      key: 'demo-user:onboarding',
+      path: onboardingWizard,
+      initialData,
+      strategy: 'onNext',
+      onSaveError: (err) => console.warn('[persistence] save failed:', err.message),
+    });
 
-    engine.value = wrapper.getEngine();
-    console.log('[init] engine ready, snapshot:', engine.value.snapshot()?.stepId);
+    engine.value = result.engine;
+    wasRestored.value = result.restored;
+    console.log('[init] ready — restored:', result.restored, '| step:', result.engine.snapshot()?.stepId);
   } catch (err) {
     console.error('[init] FAILED:', err);
   } finally {
@@ -62,14 +53,11 @@ async function init(clearFirst = false) {
 
 init();
 
-onUnmounted(() => wrapper.cleanup());
-
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 function handleComplete(data: Record<string, unknown>) {
   completedName.value = (data.name as string) || 'there';
   isCompleted.value = true;
-  console.log('🎉 Onboarding complete:', data);
 }
 
 async function clearState() {

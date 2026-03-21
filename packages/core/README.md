@@ -65,11 +65,14 @@ const path: PathDefinition<CourseData> = {
 | `PathSnapshot<TData>` | Point-in-time read of the engine: step ID, index, count, flags, and a copy of data. |
 | `PathEvent` | Union of `stateChanged` (includes `cause`), `completed`, `cancelled`, and `resumed`. |
 | `StateChangeCause` | Identifies the method that triggered a `stateChanged` event: `"start"` \| `"next"` \| `"previous"` \| `"goToStep"` \| `"goToStepChecked"` \| `"setData"` \| `"cancel"` \| `"restart"`. |
+| `PathObserver` | `(event: PathEvent, engine: PathEngine) => void` — a function registered at construction time that receives every event for the engine's lifetime. |
+| `PathEngineOptions` | `{ observers?: PathObserver[] }` — options accepted by the `PathEngine` constructor and `PathEngine.fromState()`. |
 
 ## PathEngine API
 
 ```typescript
-const engine = new PathEngine();
+// Observers are wired before the first event fires
+const engine = new PathEngine({ observers: [myObserver, anotherObserver] });
 
 engine.start(definition, initialData?);    // start or re-start a path
 engine.restart(definition, initialData?);  // tear down stack and start fresh (no hooks, no cancelled event)
@@ -84,13 +87,38 @@ engine.snapshot();                         // returns PathSnapshot | null
 
 // Serialization API (for persistence)
 const state = engine.exportState();        // returns SerializedPathState | null
-const restoredEngine = PathEngine.fromState(state, pathDefinitions);
+const restoredEngine = PathEngine.fromState(state, pathDefinitions, { observers: [...] });
 
+// Removable one-off listener (use subscribe when you need to unsubscribe)
 const unsubscribe = engine.subscribe((event) => { ... });
-unsubscribe(); // remove the listener
+unsubscribe();
 ```
 
-## Lifecycle hooks
+## Observers
+
+Observers are functions registered at construction time. They receive every event for the engine's lifetime and cannot be removed — for removable listeners use `subscribe()`.
+
+```typescript
+// A logger observer
+const logger: PathObserver = (event) =>
+  console.log(`[${event.type}]`, 'cause' in event ? event.cause : '');
+
+// A persistence observer (see @daltonr/pathwrite-store-http)
+const persist: PathObserver = (event, engine) => {
+  if (event.type === "stateChanged" && event.cause === "next" && !event.snapshot.isNavigating) {
+    myStore.save(engine.exportState());
+  }
+};
+
+const engine = new PathEngine({ observers: [logger, persist] });
+
+// Observers are also passed through fromState — so restored engines are fully observed
+const restoredEngine = PathEngine.fromState(saved, pathDefs, { observers: [logger, persist] });
+```
+
+The second argument to each observer is the engine itself, which lets observers call `engine.exportState()`, `engine.snapshot()`, etc. without needing a separate reference.
+
+
 
 All hooks are optional. Hooks that want to update data **return a partial patch** — the engine applies it automatically. Direct mutation of `ctx.data` is a no-op; the context receives a copy.
 

@@ -1,12 +1,19 @@
 /**
  * @daltonr/pathwrite-store-http
- * 
+ *
  * REST API storage adapter for PathEngine state.
  * Calls your custom endpoints to save/load serialized path state.
  */
 
 import { PathEngine } from "@daltonr/pathwrite-core";
-import type { SerializedPathState, PathEvent, PathDefinition, PathData } from "@daltonr/pathwrite-core";
+import type {
+  SerializedPathState,
+  PathEvent,
+  PathDefinition,
+  PathData,
+  PathObserver,
+  PathEngineOptions,
+} from "@daltonr/pathwrite-core";
 
 export interface HttpStoreOptions {
   /**
@@ -53,7 +60,7 @@ export interface HttpStoreOptions {
 }
 
 export class HttpStore {
-  private options: Required<Omit<HttpStoreOptions, "headers" | "onError">> & 
+  private options: Required<Omit<HttpStoreOptions, "headers" | "onError">> &
     Pick<HttpStoreOptions, "headers" | "onError">;
 
   constructor(options: HttpStoreOptions) {
@@ -163,273 +170,246 @@ export class HttpStore {
  * Persistence strategy determines when the wizard state is saved.
  */
 export type PersistenceStrategy =
-  | "onEveryChange"        // Save on every stateChanged event (default)
-  | "onNext"               // Save only on successful next() navigation
-  | "onSubPathComplete"    // Save when sub-paths complete
-  | "onComplete"           // Save only when the entire wizard completes
-  | "manual";              // Never auto-save; call save() explicitly
+  | "onEveryChange"       // Save on every stateChanged / resumed event
+  | "onNext"              // Save only when next() navigates to a new step (default)
+  | "onSubPathComplete"   // Save when a sub-path completes and the parent resumes
+  | "onComplete"          // Save a final record only when the entire path completes
+  | "manual";             // Never auto-save; call the store directly
 
-export interface PathEngineWithStoreOptions {
-  /**
-   * The storage key to use for this wizard.
-   * Example: "user:123:onboarding" or "document:456"
-   */
-  key: string;
+// ---------------------------------------------------------------------------
+// httpPersistence — PathObserver factory
+// ---------------------------------------------------------------------------
 
-  /**
-   * The HttpStore instance to use for persistence.
-   */
+export interface HttpPersistenceOptions {
+  /** The HttpStore instance to use for persistence. */
   store: HttpStore;
-
+  /** Storage key that identifies this path's saved state. */
+  key: string;
+  /** When to automatically save. Defaults to `"onNext"`. */
+  strategy?: PersistenceStrategy;
   /**
-   * When to automatically persist state. Defaults to "onNext".
-   */
-  persistenceStrategy?: PersistenceStrategy;
-
-  /**
-   * Debounce time in milliseconds. If > 0, saves are debounced to avoid
-   * excessive API calls. Defaults to 0 (no debouncing).
+   * Debounce window in milliseconds. When > 0, rapid events are collapsed into
+   * a single save after the window expires. Only useful with `"onEveryChange"`.
+   * Defaults to 0 (no debouncing).
    */
   debounceMs?: number;
-
-  /**
-   * Called when a save operation fails. The wrapper will continue to
-   * function normally even if saves fail.
-   */
-  onSaveError?: (error: Error) => void;
-
-  /**
-   * Called after a successful save operation.
-   */
+  /** Called after every successful save. */
   onSaveSuccess?: () => void;
+  /** Called when a save fails. The engine continues regardless. */
+  onSaveError?: (error: Error) => void;
 }
 
 /**
- * Wraps a PathEngine with automatic persistence to an HttpStore.
- * 
- * Usage:
- * ```ts
+ * Returns a `PathObserver` that automatically persists engine state to an
+ * `HttpStore` based on the chosen strategy.
+ *
+ * Pass the returned observer to `PathEngine` (or `PathEngine.fromState`) via
+ * the `observers` option:
+ *
+ * ```typescript
  * const store = new HttpStore({ baseUrl: "/api/wizard" });
- * const wrapper = new PathEngineWithStore({
- *   key: "user:123:onboarding",
- *   store,
- *   persistenceStrategy: "onNext",
- *   debounceMs: 500,
+ * const engine = new PathEngine({
+ *   observers: [
+ *     httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" }),
+ *   ],
  * });
- * 
- * // Start fresh or restore from saved state
- * await wrapper.startOrRestore(myPath, myPathDefinitions);
- * 
- * // Use the engine normally
- * await wrapper.next();
- * await wrapper.setData("name", "Alice");
- * 
- * // State is automatically persisted based on strategy
+ * await engine.start(myPath, initialData);
  * ```
+ *
+ * The observer is stateless from the engine's perspective — it closes over its
+ * own save-timer and pending-save state internally.
  */
-export class PathEngineWithStore {
-  private engine: PathEngine | null = null;
-  private unsubscribe: (() => void) | null = null;
-  private saveTimer: ReturnType<typeof setTimeout> | null = null;
-  private pendingSave: Promise<void> | null = null;
+export function httpPersistence(options: HttpPersistenceOptions): PathObserver {
+  const strategy = options.strategy ?? "onNext";
+  const debounceMs = options.debounceMs ?? 0;
 
-  constructor(private options: PathEngineWithStoreOptions) {
-    this.options.persistenceStrategy ??= "onNext";
-    this.options.debounceMs ??= 0;
-  }
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSave: Promise<void> | null = null;
 
-  /**
-   * Loads saved state from the store and restores the engine, or starts
-   * a fresh path if no saved state exists.
-   * 
-   * @param path The path definition to start (if no saved state)
-   * @param pathDefinitions Map of all path definitions (for restoration)
-   * @param initialData Initial data if starting fresh
-   */
-  async startOrRestore(
-    path: PathDefinition,
-    pathDefinitions: Record<string, PathDefinition>,
-    initialData?: PathData
-  ): Promise<void> {
+  const performSave = (engine: PathEngine): Promise<void> => {
+    if (pendingSave) return pendingSave;
 
-    // Clean up previous engine if any
-    this.cleanup();
+    pendingSave = (async () => {
+      const state = engine.exportState();
+      if (!state) return;
+      try {
+        await options.store.save(options.key, state);
+        options.onSaveSuccess?.();
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        options.onSaveError?.(err);
+      }
+    })().finally(() => { pendingSave = null; });
 
-    // Try to load saved state
-    const saved = await this.options.store.load(this.options.key);
+    return pendingSave;
+  };
 
-    if (saved) {
-      // Restore from saved state
-      this.engine = PathEngine.fromState(saved, pathDefinitions);
+  const scheduleSave = (engine: PathEngine): void => {
+    if (debounceMs > 0) {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        performSave(engine);
+      }, debounceMs);
     } else {
-      // Start fresh
-      this.engine = new PathEngine();
-      await this.engine.start(path, initialData);
+      performSave(engine);
     }
+  };
 
-    // Subscribe to events for auto-persistence
-    this.unsubscribe = this.engine.subscribe((event) => {
-      this.handleEvent(event);
-    });
-  }
-
-  /**
-   * Get the underlying PathEngine instance. Use this to call navigation
-   * methods like next(), previous(), setData(), etc.
-   */
-  getEngine(): PathEngine {
-    if (!this.engine) {
-      throw new Error("Engine not initialized. Call startOrRestore() first.");
-    }
-    return this.engine;
-  }
-
-  /**
-   * Manually trigger a save operation. Useful when persistenceStrategy is "manual"
-   * or when you want to force a save at a specific point.
-   */
-  async save(): Promise<void> {
-    if (!this.engine) return;
-
-    const state = this.engine.exportState();
-    if (!state) return; // No active path
-
-    try {
-      await this.options.store.save(this.options.key, state);
-      this.options.onSaveSuccess?.();
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.options.onSaveError?.(err);
-    }
-  }
-
-  /**
-   * Delete the saved state from the store.
-   */
-  async deleteSavedState(): Promise<void> {
-    await this.options.store.delete(this.options.key);
-  }
-
-  /**
-   * Wait for any pending save operations to complete.
-   * Useful for testing or ensuring data is persisted before critical operations.
-   */
-  async waitForPendingSave(): Promise<void> {
-    if (this.saveTimer) {
-      // Force the debounced save to execute now
-      clearTimeout(this.saveTimer);
-      this.saveTimer = null;
-      await this.save();
-    }
-    
-    if (this.pendingSave) {
-      await this.pendingSave;
-    }
-  }
-
-  /**
-   * Clean up resources (unsubscribe from events, cancel pending saves).
-   * Call this when unmounting the component or before creating a new wrapper.
-   */
-  cleanup(): void {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
-
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer);
-      this.saveTimer = null;
-    }
-
-    this.engine = null;
-  }
-
-  private handleEvent(event: PathEvent): void {
-    const strategy = this.options.persistenceStrategy!;
-
+  return (event: PathEvent, engine: PathEngine): void => {
     let shouldSave = false;
 
     switch (strategy) {
       case "onEveryChange":
-        shouldSave = event.type === "stateChanged" || event.type === "resumed";
+        // Only save when navigation has settled — stateChanged fires twice per
+        // navigation (once at start with isNavigating:true, once at end with false).
+        shouldSave = (event.type === "stateChanged" && !event.snapshot.isNavigating)
+          || event.type === "resumed";
         break;
-
       case "onNext":
-        shouldSave = event.type === "stateChanged" && event.cause === "next";
+        // Save only on the settled stateChanged caused by next()
+        shouldSave = event.type === "stateChanged"
+          && event.cause === "next"
+          && !event.snapshot.isNavigating;
         break;
-
       case "onSubPathComplete":
-        shouldSave = event.type === "resumed"; // Sub-path completed and resumed parent
+        shouldSave = event.type === "resumed";
         break;
-
       case "onComplete":
-        // Special handling for onComplete - save the final state from the completed event
         if (event.type === "completed") {
-          // Build a final SerializedPathState from the completed event data
-          // This is mainly for record-keeping, not for restoration
-          const finalState: import("@daltonr/pathwrite-core").SerializedPathState = {
+          const finalState: SerializedPathState = {
             version: 1,
             pathId: event.pathId,
-            currentStepIndex: -1, // Wizard is complete
+            currentStepIndex: -1,
             data: event.data,
             visitedStepIds: [],
             pathStack: [],
             _isNavigating: false,
           };
-
-          // Save the final state
-          this.options.store.save(this.options.key, finalState)
-            .then(() => this.options.onSaveSuccess?.())
+          options.store.save(options.key, finalState)
+            .then(() => options.onSaveSuccess?.())
             .catch((error) => {
               const err = error instanceof Error ? error : new Error(String(error));
-              this.options.onSaveError?.(err);
+              options.onSaveError?.(err);
             });
         }
         break;
-
       case "manual":
         shouldSave = false;
         break;
     }
 
-    if (shouldSave) {
-      this.scheduleSave();
-    }
+    if (shouldSave) scheduleSave(engine);
 
-    // Delete saved state when wizard completes (unless strategy is onComplete, which saves the final record)
+    // Clean up persisted state once the path completes (restore would restart from scratch)
     if (event.type === "completed" && strategy !== "onComplete") {
-      this.deleteSavedState().catch((err) => {
-        console.warn("Failed to delete saved state after completion:", err);
+      options.store.delete(options.key).catch((err) => {
+        console.warn("[pathwrite] Failed to delete saved state after completion:", err);
       });
     }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// createPersistedEngine — convenience factory
+// ---------------------------------------------------------------------------
+
+export interface CreatePersistedEngineOptions {
+  /** Base URL for the HTTP store (e.g. `"/api/wizard"`). */
+  baseUrl: string;
+  /** Custom headers — static object or async function returning headers. */
+  headers?: HttpStoreOptions["headers"];
+  /** Custom fetch implementation. Defaults to global `fetch`. */
+  fetch?: HttpStoreOptions["fetch"];
+  /** Custom URL builder for saves. */
+  saveUrl?: HttpStoreOptions["saveUrl"];
+  /** Custom URL builder for loads. */
+  loadUrl?: HttpStoreOptions["loadUrl"];
+  /** Custom URL builder for deletes. */
+  deleteUrl?: HttpStoreOptions["deleteUrl"];
+  /** Storage key that identifies this path's saved state. */
+  key: string;
+  /** Path definition to start when no saved state exists. */
+  path: PathDefinition;
+  /**
+   * Map of all path definitions that may appear in serialized state
+   * (active path + any sub-paths). Defaults to `{ [path.id]: path }`.
+   */
+  pathDefinitions?: Record<string, PathDefinition>;
+  /** Initial data for a fresh (non-restored) start. Defaults to `{}`. */
+  initialData?: PathData;
+  /** Persistence strategy. Defaults to `"onNext"`. */
+  strategy?: PersistenceStrategy;
+  /** Debounce window in ms. Defaults to 0. */
+  debounceMs?: number;
+  /** Called after every successful save. */
+  onSaveSuccess?: () => void;
+  /** Called when a save fails. */
+  onSaveError?: (error: Error) => void;
+  /** Additional observers beyond persistence (e.g. logger, analytics). */
+  observers?: PathObserver[];
+}
+
+/**
+ * Creates a `PathEngine` pre-wired with HTTP persistence in a single call.
+ *
+ * Loads any existing saved state; if found, restores the engine to the saved
+ * position. If not found, starts a fresh path.
+ *
+ * Returns the ready-to-use engine and a `restored` flag.
+ *
+ * ```typescript
+ * const { engine, restored } = await createPersistedEngine({
+ *   baseUrl: "/api/wizard",
+ *   key: "user:123:onboarding",
+ *   path: onboardingWizard,
+ *   initialData: { name: "", email: "" },
+ *   strategy: "onNext",
+ * });
+ *
+ * // Pass directly to the framework adapter
+ * const { snapshot, next } = usePath({ engine });
+ * ```
+ */
+export async function createPersistedEngine(
+  options: CreatePersistedEngineOptions
+): Promise<{ engine: PathEngine; restored: boolean }> {
+  const store = new HttpStore({
+    baseUrl: options.baseUrl,
+    headers: options.headers,
+    fetch: options.fetch,
+    saveUrl: options.saveUrl,
+    loadUrl: options.loadUrl,
+    deleteUrl: options.deleteUrl,
+  });
+
+  const persistence = httpPersistence({
+    store,
+    key: options.key,
+    strategy: options.strategy,
+    debounceMs: options.debounceMs,
+    onSaveSuccess: options.onSaveSuccess,
+    onSaveError: options.onSaveError,
+  });
+
+  const allObservers: PathObserver[] = [persistence, ...(options.observers ?? [])];
+  const pathDefs = options.pathDefinitions ?? { [options.path.id]: options.path };
+
+  const saved = await store.load(options.key);
+
+  let engine: PathEngine;
+  let restored: boolean;
+
+  if (saved) {
+    engine = PathEngine.fromState(saved, pathDefs, { observers: allObservers });
+    restored = true;
+  } else {
+    engine = new PathEngine({ observers: allObservers });
+    await engine.start(options.path, options.initialData);
+    restored = false;
   }
 
-  private scheduleSave(): void {
-    if (this.options.debounceMs! > 0) {
-      // Debounced save
-      if (this.saveTimer) {
-        clearTimeout(this.saveTimer);
-      }
-
-      this.saveTimer = setTimeout(() => {
-        this.saveTimer = null;
-        this.performSave();
-      }, this.options.debounceMs);
-    } else {
-      // Immediate save
-      this.performSave();
-    }
-  }
-
-  private performSave(): Promise<void> {
-    // Avoid overlapping saves
-    if (this.pendingSave) return this.pendingSave;
-
-    this.pendingSave = this.save().finally(() => {
-      this.pendingSave = null;
-    });
-
-    return this.pendingSave;
-  }
+  return { engine, restored };
 }
 
 // Re-export core types for convenience
@@ -437,9 +417,11 @@ export type {
   PathData,
   PathDefinition,
   PathEvent,
+  PathObserver,
+  PathEngineOptions,
   PathSnapshot,
   PathStep,
   PathStepContext,
-  SerializedPathState
+  SerializedPathState,
 } from "@daltonr/pathwrite-core";
 

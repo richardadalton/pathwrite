@@ -1,6 +1,6 @@
 # @daltonr/pathwrite-store-http
 
-REST API storage adapter for PathEngine state with automatic persistence support.
+REST API persistence for `PathEngine`. Plugs in as a `PathObserver` — the engine emits events, the observer decides when to save. No wrappers, no two-object dance.
 
 ---
 
@@ -9,769 +9,270 @@ REST API storage adapter for PathEngine state with automatic persistence support
 ```bash
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-store-http
 # Plus your framework adapter:
-npm install @daltonr/pathwrite-vue
-# or
-npm install @daltonr/pathwrite-react
-# or
-npm install @daltonr/pathwrite-angular
+npm install @daltonr/pathwrite-vue   # or react / angular
 ```
 
 ---
 
-## Exported Types
+## Exports
 
-This package exports:
-
-**Store-specific:**
-- `HttpStore` — REST API storage adapter class
-- `HttpStoreOptions` — Configuration for HttpStore
-- `PathEngineWithStore` — Wrapper with automatic persistence
-- `PathEngineWithStoreOptions` — Configuration options
-- `PersistenceStrategy` — Type for persistence strategies
-
-**Re-exported from core (for convenience):**
 ```typescript
-import { 
-  HttpStore,              // Store-specific
-  PathEngineWithStore,    // Store-specific
-  PersistenceStrategy,    // Store-specific
-  PathData,               // Re-exported from core
-  PathDefinition,         // Re-exported from core
-  PathEvent,              // Re-exported from core
-  PathSnapshot,           // Re-exported from core
-  PathStep,               // Re-exported from core
-  PathStepContext,        // Re-exported from core
-  SerializedPathState     // Re-exported from core
+import {
+  // Core classes
+  HttpStore,                    // REST transport: save / load / delete
+  httpPersistence,              // Observer factory — returns a PathObserver
+  createPersistedEngine,        // Convenience: load-or-start in one call
+
+  // Types
+  HttpStoreOptions,
+  HttpPersistenceOptions,
+  CreatePersistedEngineOptions,
+  PersistenceStrategy,
+
+  // Re-exported from core
+  PathData, PathDefinition, PathEvent, PathObserver,
+  PathEngineOptions, PathSnapshot, PathStep,
+  PathStepContext, SerializedPathState,
 } from "@daltonr/pathwrite-store-http";
 ```
 
 ---
 
-## Quick Start: Auto-Persistence
+## The one-call approach — `createPersistedEngine`
 
-The easiest way to use the store is with `PathEngineWithStore`, which automatically persists wizard state as users navigate:
+For most use cases, one async call is all you need:
 
 ```typescript
-import { PathEngineWithStore } from "@daltonr/pathwrite-store-http";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
+import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
 
-const store = new HttpStore({
+const { engine, restored } = await createPersistedEngine({
   baseUrl: "/api/wizard",
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-const wrapper = new PathEngineWithStore({
   key: "user:123:onboarding",
-  store,
-  persistenceStrategy: "onNext", // Default: saves on forward navigation
-  debounceMs: 500, // Optional: debounce rapid changes
+  path: onboardingWizard,
+  initialData: { name: "", email: "" },
+  strategy: "onNext",           // save on each Next click (default)
 });
 
-// Start fresh or restore from saved state
-await wrapper.startOrRestore(myPath, { "my-path": myPath });
+// engine is a plain PathEngine — pass it to any adapter
+const { snapshot, next } = usePath({ engine });
 
-// Get the engine and use normally
-const engine = wrapper.getEngine();
-await engine.next();
-await engine.setData("name", "Alice");
-
-// State is automatically persisted based on strategy
-```
-
-### Persistence Strategies
-
-| Strategy | When it saves | Use case |
-|---|---|---|
-| `onNext` **(default)** | On successful `next()` navigation | Best balance of safety and performance for most wizards |
-| `onEveryChange` | Every `stateChanged` or `resumed` event | Maximum safety - never lose data. **Requires debouncing for text inputs!** |
-| `onSubPathComplete` | When sub-paths complete and return to parent | Multi-step wizards with sub-flows |
-| `onComplete` | Only when the entire wizard completes | Keep final results as a record, don't save progress |
-| `manual` | Never auto-saves | You control when to call `wrapper.save()` |
-
-**Why `onNext` is the default:**
-- ✅ Saves progress at natural checkpoints (when users click Next)
-- ✅ Minimal API calls (1 save per step)
-- ✅ No debouncing needed for text inputs
-- ✅ Users intuitively expect "save on next" behavior
-- ✅ Still protects against navigation loss
-
-**When to use `onEveryChange`:**
-- Forms with only dropdowns/checkboxes (no rapid typing)
-- When you need crash protection even before clicking Next
-- **Always use with `debounceMs: 500` if forms have text inputs**
-
-### Debouncing (Only Needed with `onEveryChange`)
-
-**With the default `onNext` strategy, debouncing is not needed** because saves only happen on navigation, not during typing.
-
-**If you use `onEveryChange`**, typing "Hello" in a text field would trigger **5 saves** (one per keystroke) without debouncing.
-
-**With debouncing**, rapid changes are batched and only the final value is saved:
-
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:onboarding",
-  store,
-  persistenceStrategy: "onEveryChange", // Only use if you need crash protection
-  debounceMs: 500, // REQUIRED for text inputs!
-});
-
-// User types "Hello" rapidly
-engine.setData("name", "H");    // Timer starts
-engine.setData("name", "He");   // Timer resets
-engine.setData("name", "Hel");  // Timer resets
-engine.setData("name", "Hell"); // Timer resets
-engine.setData("name", "Hello");// Timer resets
-// ... 500ms pass with no new changes ...
-// → Only 1 save with "Hello" 🎉
-```
-
-**When to use debouncing:**
-- ✅ Always use with `onEveryChange` + text inputs
-- ❌ Not needed with `onNext` (default)
-- ❌ Not needed with forms that only have dropdowns/checkboxes
-
-### Choosing the Right Strategy
-
-Here's how different strategies behave when a user types "Hello" and clicks Next:
-
-| Strategy | Saves triggered | When |
-|---|---|---|
-| **`onNext` (default)** | **1 save** ✅ | Next button only |
-| `onEveryChange` (no debounce) | **6 saves** ❌ | H, He, Hel, Hell, Hello, Next button |
-| `onEveryChange` (500ms debounce) | **2 saves** ⚠️ | Hello (after 500ms idle), Next button |
-| `manual` | **0 saves** | Only when you call `wrapper.save()` |
-
-**Best practices:**
-- **Most wizards**: Use `onNext` (default) - simple and efficient
-- **Crash protection needed**: Use `onEveryChange` + `debounceMs: 500`
-- **Dropdowns/checkboxes only**: Use `onEveryChange` (no debounce needed)
-- **Record-keeping only**: Use `onComplete`
-
----
-
-## HttpStore API
-
-The `HttpStore` class handles HTTP requests to your backend.
-
-### Your Backend API Contract
-
-The store expects these endpoints:
-
-| Method | Endpoint | Request Body | Response | Notes |
-|---|---|---|---|---|
-| `PUT` | `/state/{key}` | `SerializedPathState` | 200 OK | Creates or updates |
-| `GET` | `/state/{key}` | — | `SerializedPathState` or 404 | 404 means no saved state |
-| `DELETE` | `/state/{key}` | — | 200 OK or 404 | 404 is treated as success |
-
-### Example Express Backend
-
-```typescript
-import express from "express";
-
-const app = express();
-app.use(express.json());
-
-// In-memory store (replace with your DB)
-const states = new Map();
-
-app.put("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  const state = req.body;
-  
-  if (!state.version || !state.pathId) {
-    return res.status(400).json({ error: "Invalid state format" });
-  }
-  
-  states.set(key, state);
-  res.json({ ok: true });
-});
-
-app.get("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  const state = states.get(key);
-  
-  if (!state) {
-    return res.status(404).json({ error: "Not found" });
-  }
-  
-  res.json(state);
-});
-
-app.delete("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  states.delete(key);
-  res.json({ ok: true });
-});
-
-app.listen(3000);
-```
-
-### HttpStore Options
-
-```typescript
-const store = new HttpStore({
-  baseUrl: "/api/wizard",
-  
-  // Optional: custom URL builders
-  saveUrl: (key) => `/v2/wizard/${key}/state`,
-  loadUrl: (key) => `/v2/wizard/${key}/state`,
-  deleteUrl: (key) => `/v2/wizard/${key}/state`,
-  
-  // Optional: auth headers (static or dynamic)
-  headers: { Authorization: `Bearer ${token}` },
-  // or
-  headers: async () => ({
-    Authorization: `Bearer ${await getToken()}`,
-  }),
-  
-  // Optional: error handling
-  onError: (error, operation, key) => {
-    console.error(`Failed to ${operation} state for ${key}:`, error);
-  },
-  
-  // Optional: custom fetch (for testing or SSR)
-  fetch: customFetch,
-});
-```
-
----
-
-## Manual Usage (Without Auto-Persistence)
-
-If you prefer manual control, use `HttpStore` directly with `PathEngine`:
-
-```typescript
-import { PathEngine } from "@daltonr/pathwrite-core";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-
-const userId = "user-123";
-const store = new HttpStore({ baseUrl: "/api/wizard" });
-
-// Load or create engine
-const saved = await store.load(`user:${userId}`);
-const engine = saved
-  ? PathEngine.fromState(saved, { "my-path": myPath })
-  : new PathEngine();
-
-// Manually save when needed
-await engine.next();
-const state = engine.exportState();
-if (state) {
-  await store.save(`user:${userId}`, state);
-}
-
-// Start if it's a new engine
-if (!saved) {
-  await engine.start(myPath, { userId });
+if (restored) {
+  console.log("Welcome back! Resuming from step", engine.snapshot()?.stepId);
 }
 ```
 
----
+`createPersistedEngine` returns `{ engine, restored }`:
+- `engine` — a `PathEngine` pre-wired with HTTP persistence, ready to pass to `usePath({ engine })` or `<PathShell :engine="engine">`
+- `restored: boolean` — `true` if state was loaded from the server, `false` if it started fresh
 
-## Advanced: Lifecycle Callbacks
-
-Monitor save operations with callbacks:
-
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  
-  onSaveSuccess: () => {
-    console.log("✓ State saved");
-    showToast("Progress saved");
-  },
-  
-  onSaveError: (error) => {
-    console.error("✗ Save failed:", error);
-    showToast("Failed to save progress", "error");
-  },
-});
-```
-
----
-
-## Advanced: Waiting for Pending Saves
-
-Ensure all saves complete before critical operations:
-
-```typescript
-// Before navigating away
-await wrapper.waitForPendingSave();
-router.push("/next-page");
-
-// Before logging out
-await wrapper.waitForPendingSave();
-logout();
-```
-
----
-
-## Advanced: Cleanup
-
-Always cleanup when unmounting:
-
-```typescript
-// React
-useEffect(() => {
-  return () => wrapper.cleanup();
-}, []);
-
-// Vue
-onBeforeUnmount(() => {
-  wrapper.cleanup();
-});
-```
-
----
-
-## Testing
-
-Mock the fetch calls:
-
-```typescript
-import { vi } from "vitest";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-
-test("saves state to API", async () => {
-  const mockFetch = vi.fn(() =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    } as Response)
-  );
-
-  const store = new HttpStore({
-    baseUrl: "/api",
-    fetch: mockFetch as any,
-  });
-
-  const state = { version: 1, pathId: "test", /* ... */ };
-  await store.save("key-1", state);
-
-  expect(mockFetch).toHaveBeenCalledWith("/api/state/key-1", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(state),
-  });
-});
-```
-
----
-
-## Migration from Manual Approach
-
-If you were previously using `HttpStore` directly, migrate to `PathEngineWithStore`:
-
-**Before:**
-```typescript
-const engine = new PathEngine();
-engine.subscribe(async (event) => {
-  if (event.type === "stateChanged") {
-    const state = engine.exportState();
-    await store.save(key, state);
-  }
-});
-await engine.start(path);
-```
-
-**After:**
-```typescript
-const wrapper = new PathEngineWithStore({
-  key,
-  store,
-  persistenceStrategy: "onEveryChange",
-});
-await wrapper.startOrRestore(path, { [path.id]: path });
-const engine = wrapper.getEngine();
-```
-
----
-
-## Framework Integration Examples
-
-### Vue 3
+### Vue example
 
 ```vue
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { PathEngineWithStore, HttpStore } from "@daltonr/pathwrite-store-http";
-
-const store = new HttpStore({ baseUrl: "/api/wizard" });
-const wrapper = new PathEngineWithStore({
-  key: "user:123:onboarding",
-  store,
-  persistenceStrategy: "onNext",
-  debounceMs: 300,
-});
-
-let engine;
-
-onMounted(async () => {
-  await wrapper.startOrRestore(myPath, { "my-path": myPath });
-  engine = wrapper.getEngine();
-});
-
-onBeforeUnmount(() => {
-  wrapper.cleanup();
-});
-
-const handleNext = async () => {
-  await engine.next();
-};
-</script>
-```
-
-### React
-
-```typescript
-import { useEffect, useRef } from "react";
-import { PathEngineWithStore, HttpStore } from "@daltonr/pathwrite-store-http";
-
-function MyWizard() {
-  const wrapperRef = useRef<PathEngineWithStore>();
-  const [engine, setEngine] = useState(null);
-
-  useEffect(() => {
-    const store = new HttpStore({ baseUrl: "/api/wizard" });
-    const wrapper = new PathEngineWithStore({
-      key: "user:123:onboarding",
-      store,
-      persistenceStrategy: "onNext",
-    });
-
-    wrapper.startOrRestore(myPath, { "my-path": myPath })
-      .then(() => setEngine(wrapper.getEngine()));
-
-    wrapperRef.current = wrapper;
-
-    return () => wrapper.cleanup();
-  }, []);
-
-  const handleNext = async () => {
-    await engine?.next();
-  };
-
-  return <button onClick={handleNext}>Next</button>;
-}
-```
-
----
-
-The store expects these endpoints:
-
-| Method | Endpoint | Request Body | Response | Notes |
-|---|---|---|---|---|
-| `PUT` | `/state/{key}` | `SerializedPathState` | 200 OK | Creates or updates |
-| `GET` | `/state/{key}` | — | `SerializedPathState` or 404 | 404 means no saved state |
-| `DELETE` | `/state/{key}` | — | 200 OK or 404 | 404 is treated as success |
-
-### Example Express backend
-
-```ts
-// server.js
-import express from "express";
-
-const app = express();
-app.use(express.json());
-
-// In-memory store (replace with your DB)
-const states = new Map();
-
-app.put("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  const state = req.body;
-  
-  // Validate it's a SerializedPathState
-  if (!state.version || !state.pathId) {
-    return res.status(400).json({ error: "Invalid state format" });
-  }
-  
-  states.set(key, state);
-  res.json({ ok: true });
-});
-
-app.get("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  const state = states.get(key);
-  
-  if (!state) {
-    return res.status(404).json({ error: "Not found" });
-  }
-  
-  res.json(state);
-});
-
-app.delete("/api/wizard/state/:key", (req, res) => {
-  const { key } = req.params;
-  states.delete(key);
-  res.json({ ok: true });
-});
-
-app.listen(3000);
-```
-
----
-
-## Usage: Vue 3
-
-Use `PathEngineWithStore` for automatic persistence, then pass the engine to `usePath()`:
-
-```vue
-<script setup lang="ts">
-import { ref, shallowRef, onMounted, onBeforeUnmount } from "vue";
-import { usePath, PathShell } from "@daltonr/pathwrite-vue";
-import { HttpStore, PathEngineWithStore } from "@daltonr/pathwrite-store-http";
-import { myPath, pathDefs } from "./paths";
-
-const store = new HttpStore({
-  baseUrl: "/api/wizard",
-  headers: () => ({ Authorization: `Bearer ${getAuthToken()}` }),
-});
-
-const wrapper = new PathEngineWithStore({
-  key: "user:123:onboarding",
-  store,
-  persistenceStrategy: "onNext",
-});
+import { shallowRef, ref } from "vue";
+import { PathShell } from "@daltonr/pathwrite-vue";
+import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import type { PathEngine } from "@daltonr/pathwrite-vue";
 
 const engine = shallowRef<PathEngine | null>(null);
+const isLoading = ref(true);
+const wasRestored = ref(false);
 
-onMounted(async () => {
-  await wrapper.startOrRestore(myPath, pathDefs);
-  engine.value = wrapper.getEngine();
+const { engine: e, restored } = await createPersistedEngine({
+  baseUrl: "/api/wizard",
+  key: `user:${userId}:onboarding`,
+  path: onboardingWizard,
+  initialData: { name: "", email: "" },
 });
-
-onBeforeUnmount(() => wrapper.cleanup());
+engine.value = e;
+wasRestored.value = restored;
+isLoading.value = false;
 </script>
 
 <template>
-  <!-- Wait for engine before rendering -->
-  <PathShell v-if="engine" :path="myPath" :engine="engine" @complete="handleDone">
-    <template #step1>…</template>
-    <template #step2>…</template>
-  </PathShell>
-  <p v-else>Loading…</p>
+  <div v-if="isLoading">Loading…</div>
+  <PathShell v-else-if="engine" :path="onboardingWizard" :engine="engine" />
 </template>
 ```
 
-
----
-
-## Usage: React
-
-Use `PathEngineWithStore` for automatic persistence, then pass the engine to `<PathShell>` or `usePath()`:
+### React example
 
 ```tsx
-import { useEffect, useRef, useState } from "react";
-import { PathShell, PathEngine } from "@daltonr/pathwrite-react";
-import { HttpStore, PathEngineWithStore } from "@daltonr/pathwrite-store-http";
-import { myPath, pathDefs } from "./paths";
+import { useState, useEffect } from "react";
+import { usePath } from "@daltonr/pathwrite-react";
+import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import type { PathEngine } from "@daltonr/pathwrite-react";
 
 function WizardPage() {
   const [engine, setEngine] = useState<PathEngine | null>(null);
-  const wrapperRef = useRef<PathEngineWithStore>();
 
   useEffect(() => {
-    const store = new HttpStore({
+    createPersistedEngine({
       baseUrl: "/api/wizard",
-      headers: { Authorization: `Bearer ${getAuthToken()}` },
-    });
-    const wrapper = new PathEngineWithStore({
-      key: "user:123:onboarding",
-      store,
-      persistenceStrategy: "onNext",
-    });
-    wrapperRef.current = wrapper;
-
-    wrapper.startOrRestore(myPath, pathDefs).then(() => {
-      setEngine(wrapper.getEngine());
-    });
-
-    return () => wrapper.cleanup();
+      key: `user:${userId}:onboarding`,
+      path: onboardingWizard,
+      initialData: { name: "", email: "" },
+    }).then(({ engine }) => setEngine(engine));
   }, []);
 
-  if (!engine) return <p>Loading…</p>;
+  const { snapshot, next } = usePath({ engine: engine ?? undefined });
 
-  return (
-    <PathShell
-      path={myPath}
-      engine={engine}
-      onComplete={(data) => console.log("Done!", data)}
-      steps={{ step1: <Step1 />, step2: <Step2 /> }}
-    />
-  );
+  if (!engine) return <div>Loading…</div>;
+  // render wizard…
 }
 ```
 
 ---
 
-## Usage: Vanilla JS (direct engine)
+## The observer approach — `httpPersistence`
 
-If you're using `PathEngine` directly (not via an adapter), it's simpler:
+`httpPersistence()` returns a `PathObserver` — a plain function `(event, engine) => void`. Pass it to `PathEngine` via the `observers` option:
 
-```ts
+```typescript
 import { PathEngine } from "@daltonr/pathwrite-core";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-import { myPath } from "./paths.js";
+import { HttpStore, httpPersistence } from "@daltonr/pathwrite-store-http";
 
-const userId = "user-123";
 const store = new HttpStore({ baseUrl: "/api/wizard" });
 
-// Load or create engine
-const saved = await store.load(`user:${userId}`);
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" }),
+    // add as many observers as you like — logger, analytics, SQL capture, etc.
+  ],
+});
+
+await engine.start(myPath, initialData);
+```
+
+For restoration, pass observers through `fromState()`:
+
+```typescript
+import { PathEngine } from "@daltonr/pathwrite-core";
+
+const saved = await store.load("user:123:onboarding");
 const engine = saved
-  ? PathEngine.fromState(saved, myPath)
-  : new PathEngine();
+  ? PathEngine.fromState(saved, pathDefs, { observers: [httpPersistence({ store, key: "user:123:onboarding" })] })
+  : new PathEngine({ observers: [httpPersistence({ store, key: "user:123:onboarding" })] });
 
-// Auto-save on every change
-engine.subscribe(async (event) => {
-  if (event.type === "stateChanged" || event.type === "resumed") {
-    const state = engine.exportState();
-    await store.save(`user:${userId}`, state);
-  }
-});
+if (!saved) await engine.start(myPath, initialData);
+```
 
-// Start if it's a new engine
-if (!saved) {
-  await engine.start(myPath, { userId });
-}
+This is exactly what `createPersistedEngine` does internally — use it directly if you need more control over the load step or want to add other observers.
 
-// Wire to DOM
-document.getElementById("next").addEventListener("click", () => engine.next());
-document.getElementById("back").addEventListener("click", () => engine.previous());
+---
+
+## Persistence strategies
+
+| Strategy | Saves when | Best for |
+|---|---|---|
+| `"onNext"` *(default)* | `next()` completes navigation to a new step | Text-heavy forms — 1 save per step |
+| `"onEveryChange"` | Any `stateChanged` event (data changes + navigation) | Checkbox/dropdown wizards, crash protection |
+| `"onSubPathComplete"` | A sub-path finishes and the parent resumes | Wizards with nested sub-flows |
+| `"onComplete"` | The entire path completes | Audit trail / record-keeping only |
+| `"manual"` | Never automatically | Full control — call `store.save(key, engine.exportState()!)` yourself |
+
+> **`"onEveryChange"` + text inputs?** Add `debounceMs: 500` to avoid saving on every keystroke.
+
+```typescript
+httpPersistence({
+  store,
+  key: "user:123:onboarding",
+  strategy: "onEveryChange",
+  debounceMs: 500,   // collapse rapid keystrokes into one save
+})
 ```
 
 ---
 
-## Advanced: Custom URL patterns
+## HttpStore
 
-```ts
+`HttpStore` is a thin REST transport. It has three methods:
+
+| Method | HTTP verb | Default URL |
+|---|---|---|
+| `store.save(key, state)` | `PUT` | `${baseUrl}/state/${encodeURIComponent(key)}` |
+| `store.load(key)` | `GET` | `${baseUrl}/state/${encodeURIComponent(key)}` |
+| `store.delete(key)` | `DELETE` | `${baseUrl}/state/${encodeURIComponent(key)}` |
+
+Returns `null` from `load()` when the server responds with 404.
+
+### Options
+
+```typescript
 const store = new HttpStore({
-  baseUrl: "https://api.example.com",
-  saveUrl: (key) => `https://api.example.com/users/${userId}/wizard/${key}`,
-  loadUrl: (key) => `https://api.example.com/users/${userId}/wizard/${key}`,
-  deleteUrl: (key) => `https://api.example.com/users/${userId}/wizard/${key}`,
-  headers: async () => {
-    // Fetch fresh token on every request
-    const token = await refreshAuthToken();
-    return { Authorization: `Bearer ${token}` };
-  },
+  baseUrl: "/api/wizard",
+
+  // Optional: custom URL builders
+  saveUrl:   (key) => `/v2/paths/${key}`,
+  loadUrl:   (key) => `/v2/paths/${key}`,
+  deleteUrl: (key) => `/v2/paths/${key}`,
+
+  // Optional: auth headers (static object or async function)
+  headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
+
+  // Optional: custom fetch (for testing, SSR, etc.)
+  fetch: myCustomFetch,
+
+  // Optional: transport-level error callback
+  onError: (err, operation, key) => console.error(`${operation} failed for ${key}:`, err),
 });
 ```
 
 ---
 
-## Advanced: Debounced saves
+## Multiple observers
 
-Saving on every `stateChanged` event can be chatty. Debounce it:
+Observers compose freely. Each one is a plain function, independent of all others:
 
-```ts
-import { debounce } from "lodash-es"; // or write your own
+```typescript
+import { PathEngine } from "@daltonr/pathwrite-core";
+import { HttpStore, httpPersistence } from "@daltonr/pathwrite-store-http";
 
-const debouncedSave = debounce(async (state: SerializedPathState) => {
-  await store.save(`user:${userId}`, state);
-}, 500);
-
-engine.subscribe((event) => {
-  if (event.type === "stateChanged") {
-    debouncedSave(engine.exportState());
-  }
-});
-```
-
----
-
-## Advanced: Optimistic updates with rollback
-
-```ts
-let lastSavedState: SerializedPathState | null = null;
-
-engine.subscribe(async (event) => {
-  if (event.type === "stateChanged") {
-    const state = engine.exportState();
-    
-    try {
-      await store.save(`user:${userId}`, state);
-      lastSavedState = state; // Save succeeded
-    } catch (error) {
-      console.error("Failed to save, rolling back:", error);
-      
-      // Rollback to last known-good state
-      if (lastSavedState) {
-        const restored = PathEngine.fromState(lastSavedState, myPath);
-        // Need to replace the current engine instance
-        // This is tricky with the current API
-      }
-      
-      alert("Failed to save your progress. Please check your connection.");
-    }
-  }
-});
-```
-
----
-
-
-## Server-side: Document-based state (multi-user)
-
-If multiple users work on the same wizard state (see the approval scenario), you'd key by document rather than user:
-
-```ts
-const documentId = "doc-123";
 const store = new HttpStore({ baseUrl: "/api/wizard" });
 
-// Each user loads the shared document state
-const saved = await store.load(`document:${documentId}`);
+const logger: PathObserver = (event) =>
+  console.log(`[wizard] ${event.type}`, 'cause' in event ? event.cause : '');
 
-// But navigation state is per-user
-const userNavState = await store.load(`nav:${documentId}:${userId}`);
-```
+const analytics: PathObserver = (event) => {
+  if (event.type === "stateChanged" && !event.snapshot.isNavigating) {
+    trackEvent("wizard_step", { stepId: event.snapshot.stepId });
+  }
+};
 
-Your backend would:
-- Store `data` (the document content) shared across all users
-- Store `wizardState` (step index, visited steps) per user
-- Merge patches to `data` when multiple users save concurrently
-
-See `DEVELOPER_GUIDE.md` section on multi-user wizards for the full pattern.
-
----
-
-## Testing
-
-Mock the fetch calls:
-
-```ts
-import { vi } from "vitest";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-
-test("saves state to API", async () => {
-  const mockFetch = vi.fn(() =>
-    Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response)
-  );
-
-  const store = new HttpStore({
-    baseUrl: "/api",
-    fetch: mockFetch as any,
-  });
-
-  const state = { version: 1, pathId: "test", /* ... */ };
-  await store.save("key-1", state);
-
-  expect(mockFetch).toHaveBeenCalledWith("/api/state/key-1", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(state),
-  });
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key: "user:123:onboarding" }),
+    logger,
+    analytics,
+  ],
 });
 ```
 
 ---
 
+## API server contract
 
+Your API server must handle these three endpoints for the default URL scheme:
 
+| Endpoint | Method | Body | Success response |
+|---|---|---|---|
+| `/state/:key` | `PUT` | JSON `SerializedPathState` | `200 OK` |
+| `/state/:key` | `GET` | — | `200 OK` + JSON body, or `404` if not found |
+| `/state/:key` | `DELETE` | — | `200 OK` or `404` |
 
+The state is automatically deleted from the server when the path completes (except with the `"onComplete"` strategy, which saves a final record instead).
 
+---
 
+## Callbacks
 
+```typescript
+httpPersistence({
+  store,
+  key: "user:123:onboarding",
+  onSaveSuccess: () => console.log("Saved ✓"),
+  onSaveError:   (err) => toast.error(`Save failed: ${err.message}`),
+});
+```
+
+`createPersistedEngine` accepts the same `onSaveSuccess` / `onSaveError` options and passes them through to the persistence observer.

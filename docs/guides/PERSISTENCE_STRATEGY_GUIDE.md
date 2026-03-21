@@ -1,295 +1,149 @@
-# Persistence Strategy Behavior - Detailed Analysis
+# Persistence Strategy Guide
 
-This document explains exactly when saves occur with different persistence strategies and configurations.
+This document explains when saves occur with each strategy and which to choose.
 
 ---
 
-## Scenario: User Types "Hello" and Clicks Next
+## Strategies at a glance
 
-Let's trace through what happens when a user:
-1. Types "H" → "He" → "Hel" → "Hell" → "Hello" (5 keystrokes)
-2. Clicks the "Next" button
+| Strategy | Trigger | API calls (5 keystrokes + Next) | Notes |
+|---|---|---|---|
+| `"onNext"` *(default)* | `next()` settles on a new step | **1** | Best for text-heavy forms |
+| `"onEveryChange"` | Any settled `stateChanged` or `resumed` | **6** (or 2 with `debounceMs: 500`) | Add debounce for text inputs |
+| `"onSubPathComplete"` | `resumed` event only | depends | Nested sub-path wizards |
+| `"onComplete"` | `completed` event | **0** mid-flow, **1** at end | Audit trail / record-keeping |
+| `"manual"` | Never | **0** | You call `store.save()` yourself |
 
-### Strategy: `onEveryChange` (No Debouncing)
+---
+
+## `"onNext"` — the default
 
 ```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
-  debounceMs: 0, // No debouncing
-});
+httpPersistence({ store, key: "user:123:wizard" })
+// strategy defaults to "onNext"
 ```
 
-**What happens:**
-1. User types "H" → `setData("name", "H")` → `stateChanged` event → **Save #1**
-2. User types "e" → `setData("name", "He")` → `stateChanged` event → **Save #2**
-3. User types "l" → `setData("name", "Hel")` → `stateChanged` event → **Save #3**
-4. User types "l" → `setData("name", "Hell")` → `stateChanged` event → **Save #4**
-5. User types "o" → `setData("name", "Hello")` → `stateChanged` event → **Save #5**
-6. User clicks Next → `next()` → `stateChanged` event → **Save #6**
+Saves once, after `next()` has finished navigating to the new step. Ignores `setData`, `previous`, `start`, and everything else.
 
-**Total: 6 saves** ❌ Inefficient for text input
+**Trace:** User types "Hello" (5 × `setData`) then clicks Next:
+1. "H" → `setData` → ❌ no save
+2. "He" → `setData` → ❌ no save
+3. "Hel" → `setData` → ❌ no save
+4. "Hell" → `setData` → ❌ no save
+5. "Hello" → `setData` → ❌ no save
+6. Click Next → navigation settles → ✅ **1 save**
+
+**Total: 1 save.** Ideal for multi-step forms.
+
+**Risk:** Data typed before clicking Next is lost if the browser crashes.
 
 ---
 
-### Strategy: `onEveryChange` (With 500ms Debouncing)
+## `"onEveryChange"` without debounce
 
 ```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
-  debounceMs: 500, // 500ms debounce
-});
+httpPersistence({ store, key: "user:123:wizard", strategy: "onEveryChange" })
 ```
 
-**What happens:**
-1. User types "H" → `setData("name", "H")` → Save timer starts (500ms)
-2. User types "e" (100ms later) → `setData("name", "He")` → Timer resets (500ms)
-3. User types "l" (100ms later) → `setData("name", "Hel")` → Timer resets (500ms)
-4. User types "l" (100ms later) → `setData("name", "Hell")` → Timer resets (500ms)
-5. User types "o" (100ms later) → `setData("name", "Hello")` → Timer resets (500ms)
-6. *User stops typing*
-7. ... 500ms pass with no changes ...
-8. Timer fires → **Save #1** (with "Hello")
-9. User clicks Next → `next()` → `stateChanged` event → Timer starts
-10. ... 500ms would pass, but navigation completes ...
-11. **Save #2** (with navigation to step 2)
+Saves on every settled `stateChanged` event — including `setData`. Fires once per `setData` call, once per navigation, once per sub-path completion.
 
-**Total: 2 saves** ✅ Much better!
+**Trace:** Same scenario:
+1–5. Each keystroke → `setData` → ✅ **5 saves**
+6. Click Next → ✅ **1 save**
+
+**Total: 6 saves.** Fine for dropdown/checkbox-only steps, but never use with text inputs without a debounce.
 
 ---
 
-### Strategy: `onNext`
+## `"onEveryChange"` with debounce
 
 ```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
+httpPersistence({
   store,
-  persistenceStrategy: "onNext",
-  debounceMs: 0, // Debouncing not needed
-});
-```
-
-**What happens:**
-1. User types "H" → `setData("name", "H")` → `stateChanged` event → ❌ No save (onNext ignores setData)
-2. User types "e" → `setData("name", "He")` → `stateChanged` event → ❌ No save
-3. User types "l" → `setData("name", "Hel")` → `stateChanged` event → ❌ No save
-4. User types "l" → `setData("name", "Hell")` → `stateChanged` event → ❌ No save
-5. User types "o" → `setData("name", "Hello")` → `stateChanged` event → ❌ No save
-6. User clicks Next → `next()` → `stateChanged` event → **Save #1**
-
-**Total: 1 save** ✅ Ideal for text-heavy forms!
-
-**Risk**: If browser crashes before clicking Next, typed data is lost.
-
----
-
-### Strategy: `manual`
-
-```typescript
-const wrapper = new PathEngineWithStore({
   key: "user:123:wizard",
-  store,
-  persistenceStrategy: "manual",
-});
-```
-
-**What happens:**
-1. User types "H" → `setData("name", "H")` → ❌ No save
-2. User types "e" → `setData("name", "He")` → ❌ No save
-3. User types "l" → `setData("name", "Hel")` → ❌ No save
-4. User types "l" → `setData("name", "Hell")` → ❌ No save
-5. User types "o" → `setData("name", "Hello")` → ❌ No save
-6. User clicks Next → `next()` → ❌ No save
-
-**Total: 0 saves** (unless developer calls `wrapper.save()` explicitly)
-
----
-
-## Performance Comparison
-
-### API Calls per User Action
-
-| User Action | onEveryChange (no debounce) | onEveryChange (500ms) | onNext | manual |
-|---|---|---|---|---|
-| Types 1 character | 1 save | Timer starts/resets | 0 | 0 |
-| Types 5 characters | 5 saves | Timer resets 5x → 1 save after 500ms | 0 | 0 |
-| Clicks Next | 1 save | 1 save | 1 save | 0 |
-| Selects dropdown | 1 save | 1 save (or debounced) | 0 | 0 |
-| Checks checkbox | 1 save | 1 save (immediate, usually) | 0 | 0 |
-
----
-
-## Real-World Form Example
-
-**Wizard with 3 text fields:**
-- Name (user types 10 characters)
-- Email (user types 20 characters)  
-- Company (user types 15 characters)
-- User clicks Next
-
-### Without Debouncing (`onEveryChange`)
-- **45 saves** (10 + 20 + 15) during typing
-- **1 save** on Next
-- **Total: 46 saves** ❌
-
-### With 500ms Debouncing (`onEveryChange` + `debounceMs: 500`)
-- **3 saves** (1 per field after user stops typing)
-- **1 save** on Next
-- **Total: 4 saves** ✅
-
-### With `onNext` Strategy
-- **0 saves** during typing
-- **1 save** on Next
-- **Total: 1 save** ✅
-
----
-
-## Recommendations by Wizard Type
-
-### Text-Heavy Forms (Name, Email, Address, etc.)
-
-**Best Choice: `onNext` (Default)** ✅
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  // persistenceStrategy defaults to "onNext" - no need to specify!
-});
-```
-
-**Why?** 
-- Minimizes API calls (1 save per step)
-- No debouncing needed
-- Users don't lose progress if they navigate away
-- Simple and intuitive behavior
-
-**Alternative: `onEveryChange` + Debouncing** (for crash protection)
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
-  debounceMs: 500, // REQUIRED with text inputs!
-});
-```
-
-**Why?** Provides crash protection even before clicking Next. But generates more API calls than `onNext`.
-
----
-
-### Dropdowns/Checkboxes Only
-
-**Best Choice: `onNext` (Default)** ✅
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-});
-```
-
-**Why?** Simple, efficient, works great for all input types.
-
-**Alternative: `onEveryChange` (no debouncing needed)**
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
-});
-```
-
-**Why?** Each change is deliberate (not rapid typing), so immediate saves are fine. Use if you want instant persistence.
-
----
-
-### Mixed: Text + Dropdowns
-
-**Best Choice: `onNext` (Default)** ✅
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-});
-```
-
-**Why?** Works perfectly for all input types without any configuration.
-
-**Alternative: `onEveryChange` + Debouncing** (if crash protection needed)
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
-  debounceMs: 500, // Required for text inputs!
-});
-```
-
----
-
-### Long Multi-Step Wizard
-
-**Best Choice: `onNext` (Default)** ✅
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-});
-```
-
-**Why?** Users expect to save when moving between pages. Minimal server load. Perfect fit.
-
----
-
-### Record-Keeping (Audit Trail)
-
-**Best Choice: `onComplete`**
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onComplete",
-});
-```
-
-**Why?** Only saves the final submitted data as a record. No intermediate states saved.
-
----
-
-## Key Takeaways
-
-1. **`onNext` is the default and best choice for most wizards** ✅ - 1 save per step, no debouncing needed.
-
-2. **`onEveryChange` without debouncing = ❌** Triggers save on every keystroke. Only use with dropdowns/checkboxes or with `debounceMs: 500`.
-
-3. **`onEveryChange` + `debounceMs: 500` = ⚠️** Use only if you need crash protection before clicking Next. More API calls than `onNext`.
-
-4. **Always add `debounceMs: 500`** if using `onEveryChange` with text inputs.
-
-5. **Default behavior** (`onNext`) balances safety and performance perfectly for most use cases.
-
----
-
-## Testing Your Configuration
-
-Add this to see exactly when saves occur:
-
-```typescript
-const wrapper = new PathEngineWithStore({
-  key: "user:123:wizard",
-  store,
-  persistenceStrategy: "onEveryChange",
+  strategy: "onEveryChange",
   debounceMs: 500,
-  
-  onSaveSuccess: () => {
-    console.log(`[${new Date().toISOString()}] Save successful`);
-  },
-});
+})
 ```
 
-Then type in a field and watch the console. You should see one save **after** you stop typing for 500ms, not during typing.
+Collapses rapid saves into one, firing after the user pauses for 500 ms.
 
+**Trace:**
+1–5. Each keystroke resets the 500 ms timer → no immediate save
+6. User stops typing → 500 ms later → ✅ **1 save**
+7. Click Next → ✅ **1 save**
 
+**Total: 2 saves.** Use this when you want crash protection (state saved while typing) without flooding the API.
 
+---
+
+## `"onSubPathComplete"`
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "onSubPathComplete" })
+```
+
+Saves only when a sub-path finishes and the parent path resumes. Useful for wizards where each sub-flow represents a meaningful checkpoint.
+
+---
+
+## `"onComplete"`
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "onComplete" })
+```
+
+Saves a final record when the wizard completes. Does **not** delete the record after saving (so it's available for audit/review). Does not save anything mid-flow.
+
+Use when you only care about the final submitted data, not the in-progress state.
+
+---
+
+## `"manual"`
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "manual" })
+```
+
+Never auto-saves. Call `store.save(key, engine.exportState()!)` yourself at the points you choose.
+
+---
+
+## Choosing a strategy
+
+| Wizard type | Recommended | Why |
+|---|---|---|
+| Text-heavy forms | `"onNext"` | 1 save per step, no debounce needed |
+| Dropdowns / checkboxes | `"onNext"` or `"onEveryChange"` | Each change is deliberate, no rapid-fire |
+| Crash-sensitive text input | `"onEveryChange"` + `debounceMs: 500` | Saves while typing without flooding |
+| Sub-flow wizards | `"onSubPathComplete"` | Save at meaningful checkpoints |
+| Audit trail | `"onComplete"` | Record-keeping only |
+| Custom logic | `"manual"` | Full control |
+
+---
+
+## Debugging save timing
+
+Pass `onSaveSuccess` to see exactly when saves happen:
+
+```typescript
+httpPersistence({
+  store,
+  key: "user:123:wizard",
+  strategy: "onEveryChange",
+  debounceMs: 500,
+  onSaveSuccess: () => console.log(`[${new Date().toISOString()}] Saved`),
+  onSaveError:   (err) => console.error("Save failed:", err.message),
+})
+```
+
+Or add a logging observer alongside persistence:
+
+```typescript
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key: "user:123:wizard" }),
+    (event) => console.log(`[wizard] ${event.type}`, 'cause' in event ? event.cause : ""),
+  ],
+});
+```
