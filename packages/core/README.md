@@ -48,6 +48,10 @@ engine.goToStep(stepId);                   // jump to step by ID; bypasses guard
 engine.goToStepChecked(stepId);            // jump to step by ID; checks canMoveNext / canMovePrevious first
 engine.snapshot();                         // returns PathSnapshot | null
 
+// Serialization API (for persistence)
+const state = engine.exportState();        // returns SerializedPathState | null
+const restoredEngine = PathEngine.fromState(state, pathDefinitions);
+
 const unsubscribe = engine.subscribe((event) => { ... });
 unsubscribe(); // remove the listener
 ```
@@ -120,4 +124,49 @@ engine.subscribe((event) => {
     case "resumed":      // event.resumedPathId, event.fromSubPathId, event.snapshot
   }
 });
+```
+
+## State Persistence
+
+The engine supports exporting and restoring state for persistence scenarios (e.g., saving wizard progress to a server or localStorage).
+
+### exportState()
+
+Returns a plain JSON-serializable object (`SerializedPathState`) containing the current state:
+- Current path ID and step index
+- Path data
+- Visited step IDs
+- Sub-path stack (if nested paths are active)
+- Navigation flags
+
+Returns `null` if no path is active.
+
+```typescript
+const state = engine.exportState();
+if (state) {
+  const json = JSON.stringify(state);
+  // Save to localStorage, send to server, etc.
+}
+```
+
+### PathEngine.fromState()
+
+Restores a PathEngine from previously exported state. **Important:** You must provide the same path definitions that were active when the state was exported.
+
+```typescript
+const state = JSON.parse(savedJson);
+const engine = PathEngine.fromState(state, {
+  "main-path": mainPathDefinition,
+  "sub-path": subPathDefinition
+});
+
+// Engine is restored to the exact step and state
+const snapshot = engine.snapshot();
+```
+
+Throws if:
+- State references a path ID not in `pathDefinitions`
+- State version is unsupported
+
+The restored engine is fully functional — you can continue navigation, modify data, complete or cancel paths normally.
 ```

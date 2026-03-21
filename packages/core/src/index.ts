@@ -1,5 +1,22 @@
 export type PathData = Record<string, unknown>;
 
+export interface SerializedPathState {
+  version: 1;
+  pathId: string;
+  currentStepIndex: number;
+  data: PathData;
+  visitedStepIds: string[];
+  subPathMeta?: Record<string, unknown>;
+  pathStack: Array<{
+    pathId: string;
+    currentStepIndex: number;
+    data: PathData;
+    visitedStepIds: string[];
+    subPathMeta?: Record<string, unknown>;
+  }>;
+  _isNavigating: boolean;
+}
+
 export interface PathStepContext<TData extends PathData = PathData> {
   readonly pathId: string;
   readonly stepId: string;
@@ -121,6 +138,71 @@ export class PathEngine {
   private readonly listeners = new Set<(event: PathEvent) => void>();
   private _isNavigating = false;
 
+  /**
+   * Restores a PathEngine from previously exported state.
+   *
+   * **Important:** You must provide the same path definitions that were
+   * active when the state was exported. The path IDs in `state` are used
+   * to match against the provided definitions.
+   *
+   * @param state           The serialized state from `exportState()`.
+   * @param pathDefinitions A map of path ID → definition. Must include the
+   *                        active path and any paths in the stack.
+   * @returns A new PathEngine instance with the restored state.
+   * @throws If `state` references a path ID not present in `pathDefinitions`,
+   *         or if the state format is invalid.
+   */
+  public static fromState(
+    state: SerializedPathState,
+    pathDefinitions: Record<string, PathDefinition>
+  ): PathEngine {
+    if (state.version !== 1) {
+      throw new Error(`Unsupported SerializedPathState version: ${state.version}`);
+    }
+
+    const engine = new PathEngine();
+
+    // Restore the path stack (sub-paths)
+    for (const stackItem of state.pathStack) {
+      const definition = pathDefinitions[stackItem.pathId];
+      if (!definition) {
+        throw new Error(
+          `Cannot restore state: path definition "${stackItem.pathId}" not found. ` +
+          `Provide all path definitions that were active when state was exported.`
+        );
+      }
+      engine.pathStack.push({
+        definition,
+        currentStepIndex: stackItem.currentStepIndex,
+        data: { ...stackItem.data },
+        visitedStepIds: new Set(stackItem.visitedStepIds),
+        subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined
+      });
+    }
+
+    // Restore the active path
+    const activeDefinition = pathDefinitions[state.pathId];
+    if (!activeDefinition) {
+      throw new Error(
+        `Cannot restore state: active path definition "${state.pathId}" not found.`
+      );
+    }
+
+    engine.activePath = {
+      definition: activeDefinition,
+      currentStepIndex: state.currentStepIndex,
+      data: { ...state.data },
+      visitedStepIds: new Set(state.visitedStepIds),
+      // Active path's subPathMeta is not serialized (it's transient metadata
+      // from the parent when this path was started). On restore, it's undefined.
+      subPathMeta: undefined
+    };
+
+    engine._isNavigating = state._isNavigating;
+
+    return engine;
+  }
+
   public subscribe(listener: (event: PathEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -191,9 +273,11 @@ export class PathEngine {
 
     const cancelledPathId = active.definition.id;
     const cancelledData = { ...active.data };
-    const cancelledMeta = active.subPathMeta;
 
     if (this.pathStack.length > 0) {
+      // Get meta from the parent in the stack
+      const parent = this.pathStack[this.pathStack.length - 1];
+      const cancelledMeta = parent.subPathMeta;
       return this._cancelSubPathAsync(cancelledPathId, cancelledData, cancelledMeta);
     }
 
@@ -278,6 +362,41 @@ export class PathEngine {
     };
   }
 
+  /**
+   * Exports the current engine state as a plain JSON-serializable object.
+   * Use with storage adapters (e.g. `@daltonr/pathwrite-store-http`) to
+   * persist and restore wizard progress.
+   *
+   * Returns `null` if no path is active.
+   *
+   * **Important:** This only exports the _state_ (data, step position, etc.),
+   * not the path definition. When restoring, you must provide the same
+   * `PathDefinition` to `fromState()`.
+   */
+  public exportState(): SerializedPathState | null {
+    if (this.activePath === null) {
+      return null;
+    }
+
+    const active = this.activePath;
+
+    return {
+      version: 1,
+      pathId: active.definition.id,
+      currentStepIndex: active.currentStepIndex,
+      data: { ...active.data },
+      visitedStepIds: Array.from(active.visitedStepIds),
+      pathStack: this.pathStack.map((p) => ({
+        pathId: p.definition.id,
+        currentStepIndex: p.currentStepIndex,
+        data: { ...p.data },
+        visitedStepIds: Array.from(p.visitedStepIds),
+        subPathMeta: p.subPathMeta ? { ...p.subPathMeta } : undefined
+      })),
+      _isNavigating: this._isNavigating
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Private async helpers
   // ---------------------------------------------------------------------------
@@ -286,7 +405,12 @@ export class PathEngine {
     if (this._isNavigating) return;
 
     if (this.activePath !== null) {
-      this.pathStack.push(this.activePath);
+      // Store the meta on the parent before pushing to stack
+      const parentWithMeta: ActivePath = {
+        ...this.activePath,
+        subPathMeta
+      };
+      this.pathStack.push(parentWithMeta);
     }
 
     this.activePath = {
@@ -294,7 +418,7 @@ export class PathEngine {
       currentStepIndex: 0,
       data: { ...initialData },
       visitedStepIds: new Set(),
-      subPathMeta
+      subPathMeta: undefined
     };
 
     this._isNavigating = true;
@@ -483,11 +607,12 @@ export class PathEngine {
     const finished = this.requireActivePath();
     const finishedPathId = finished.definition.id;
     const finishedData = { ...finished.data };
-    const finishedMeta = finished.subPathMeta;
 
     if (this.pathStack.length > 0) {
-      this.activePath = this.pathStack.pop()!;
-      const parent = this.activePath;
+      const parent = this.pathStack.pop()!;
+      // The meta is stored on the parent, not the sub-path
+      const finishedMeta = parent.subPathMeta;
+      this.activePath = parent;
       const parentStep = this.getCurrentStep(parent);
 
       if (parentStep.onSubPathComplete) {

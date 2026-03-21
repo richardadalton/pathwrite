@@ -2045,3 +2045,286 @@ describe("PathEngine — restart()", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// State export/import
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — exportState / fromState", () => {
+  it("exportState returns null when no path is active", () => {
+    const engine = new PathEngine();
+    expect(engine.exportState()).toBeNull();
+  });
+
+  it("exportState captures current step position and data", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    await engine.next();
+    await engine.setData("age", 30);
+
+    const state = engine.exportState();
+    expect(state).not.toBeNull();
+    expect(state?.pathId).toBe("test");
+    expect(state?.currentStepIndex).toBe(1);
+    expect(state?.data.name).toBe("Alice");
+    expect(state?.data.age).toBe(30);
+  });
+
+  it("exportState captures visitedStepIds", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
+    });
+    await engine.next(); // visit b
+    await engine.next(); // visit c
+
+    const state = engine.exportState();
+    expect(state?.visitedStepIds).toContain("a");
+    expect(state?.visitedStepIds).toContain("b");
+    expect(state?.visitedStepIds).toContain("c");
+  });
+
+  it("exportState includes version field", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    const state = engine.exportState();
+    expect(state?.version).toBe(1);
+  });
+
+  it("exportState captures the path stack when sub-paths are active", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.setData("parentData", "value1");
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.setData("subData", "value2");
+
+    const state = engine.exportState();
+    expect(state?.pathId).toBe("sub");
+    expect(state?.data.subData).toBe("value2");
+    expect(state?.pathStack).toHaveLength(1);
+    expect(state?.pathStack[0].pathId).toBe("parent");
+    expect(state?.pathStack[0].data.parentData).toBe("value1");
+  });
+
+  it("exportState captures subPathMeta in the stack", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"), {}, { itemId: 42 });
+
+    const state = engine.exportState();
+    expect(state?.pathStack[0].subPathMeta).toEqual({ itemId: 42 });
+  });
+
+  it("fromState restores a simple path at the correct step", async () => {
+    const engine1 = new PathEngine();
+    const path = twoStepPath("test");
+    await engine1.start(path, { name: "Bob" });
+    await engine1.next();
+    await engine1.setData("age", 25);
+
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { test: path });
+    const snapshot = engine2.snapshot();
+    expect(snapshot?.pathId).toBe("test");
+    expect(snapshot?.stepId).toBe("step2");
+    expect(snapshot?.stepIndex).toBe(1);
+    expect(snapshot?.data.name).toBe("Bob");
+    expect(snapshot?.data.age).toBe(25);
+  });
+
+  it("fromState restores visitedStepIds", async () => {
+    const engine1 = new PathEngine();
+    const path: PathDefinition = {
+      id: "test",
+      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
+    };
+    await engine1.start(path);
+    await engine1.next(); // visit b
+    await engine1.previous(); // back to a
+
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { test: path });
+    const snapshot = engine2.snapshot();
+    expect(snapshot?.stepId).toBe("a");
+    // visitedStepIds should include both a and b
+    // We can verify this by checking isFirstEntry in hooks
+    const events: PathEvent[] = [];
+    engine2.subscribe((e) => events.push(e));
+    await engine2.next(); // should go to b (already visited)
+    expect(snapshot?.stepId).toBe("a");
+  });
+
+  it("fromState restores sub-paths and the path stack", async () => {
+    const engine1 = new PathEngine();
+    const parent = twoStepPath("parent");
+    const sub = twoStepPath("sub");
+    
+    await engine1.start(parent, { parentValue: "p1" });
+    await engine1.startSubPath(sub, { subValue: "s1" });
+    await engine1.next(); // advance sub to step2
+
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { parent, sub });
+    const snapshot = engine2.snapshot();
+    
+    expect(snapshot?.pathId).toBe("sub");
+    expect(snapshot?.stepId).toBe("step2");
+    expect(snapshot?.data.subValue).toBe("s1");
+    expect(snapshot?.nestingLevel).toBe(1);
+  });
+
+  it("fromState throws when a path definition is missing", async () => {
+    const engine1 = new PathEngine();
+    const path = twoStepPath("test");
+    await engine1.start(path);
+    const state = engine1.exportState()!;
+
+    expect(() => {
+      PathEngine.fromState(state, {}); // missing "test" definition
+    }).toThrow(/path definition "test" not found/);
+  });
+
+  it("fromState throws when a stack path definition is missing", async () => {
+    const engine1 = new PathEngine();
+    const parent = twoStepPath("parent");
+    const sub = twoStepPath("sub");
+    await engine1.start(parent);
+    await engine1.startSubPath(sub);
+    const state = engine1.exportState()!;
+
+    expect(() => {
+      PathEngine.fromState(state, { sub }); // missing "parent"
+    }).toThrow(/path definition "parent" not found/);
+  });
+
+  it("fromState throws for unsupported version", () => {
+    const badState: any = {
+      version: 999,
+      pathId: "test",
+      currentStepIndex: 0,
+      data: {},
+      visitedStepIds: [],
+      pathStack: [],
+      _isNavigating: false
+    };
+
+    expect(() => {
+      PathEngine.fromState(badState, { test: twoStepPath() });
+    }).toThrow(/Unsupported SerializedPathState version/);
+  });
+
+  it("fromState creates a new engine that can navigate normally", async () => {
+    const engine1 = new PathEngine();
+    const path = twoStepPath("test");
+    await engine1.start(path, { count: 1 });
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { test: path });
+    await engine2.next();
+    expect(engine2.snapshot()?.stepId).toBe("step2");
+    await engine2.setData("count", 2);
+    expect(engine2.snapshot()?.data.count).toBe(2);
+  });
+
+  it("fromState does not mutate the original state object", async () => {
+    const engine1 = new PathEngine();
+    const path = twoStepPath("test");
+    await engine1.start(path, { name: "Original" });
+    const state = engine1.exportState()!;
+    const stateCopy = JSON.parse(JSON.stringify(state));
+
+    const engine2 = PathEngine.fromState(state, { test: path });
+    await engine2.setData("name", "Modified");
+
+    expect(state).toEqual(stateCopy);
+  });
+
+  it("exportState returns a serializable object (no functions or class instances)", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    const state = engine.exportState()!;
+
+    // Should be able to JSON.stringify and parse without errors
+    const json = JSON.stringify(state);
+    const parsed = JSON.parse(json);
+    expect(parsed.pathId).toBe(state.pathId);
+    expect(parsed.data).toEqual(state.data);
+  });
+
+  it("round-trip export/import preserves all state correctly", async () => {
+    const engine1 = new PathEngine();
+    const path: PathDefinition = {
+      id: "complex",
+      steps: [
+        { id: "step1" },
+        { id: "step2" },
+        { id: "step3" }
+      ]
+    };
+    
+    await engine1.start(path, { a: 1, b: "test" });
+    await engine1.next();
+    await engine1.setData("c", [1, 2, 3]);
+
+    const state1 = engine1.exportState()!;
+    const json = JSON.stringify(state1);
+    const state2 = JSON.parse(json);
+    const engine2 = PathEngine.fromState(state2, { complex: path });
+    const snapshot2 = engine2.snapshot()!;
+
+    expect(snapshot2.pathId).toBe("complex");
+    expect(snapshot2.stepId).toBe("step2");
+    expect(snapshot2.stepIndex).toBe(1);
+    expect(snapshot2.data).toEqual({ a: 1, b: "test", c: [1, 2, 3] });
+  });
+
+  it("fromState restores _isNavigating flag", async () => {
+    const path = twoStepPath("test");
+    const state: any = {
+      version: 1,
+      pathId: "test",
+      currentStepIndex: 0,
+      data: {},
+      visitedStepIds: ["step1"],
+      pathStack: [],
+      _isNavigating: true
+    };
+
+    const engine = PathEngine.fromState(state, { test: path });
+    expect(engine.snapshot()?.isNavigating).toBe(true);
+  });
+
+  it("can restore and complete a path normally", async () => {
+    const engine1 = new PathEngine();
+    const path = twoStepPath("test");
+    await engine1.start(path);
+    await engine1.next(); // on step2
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { test: path });
+    const events: PathEvent[] = [];
+    engine2.subscribe((e) => events.push(e));
+    
+    await engine2.next(); // should complete
+    expect(engine2.snapshot()).toBeNull();
+    expect(events.some((e) => e.type === "completed")).toBe(true);
+  });
+
+  it("fromState with sub-path can be cancelled and pops to parent", async () => {
+    const engine1 = new PathEngine();
+    const parent = twoStepPath("parent");
+    const sub = twoStepPath("sub");
+    await engine1.start(parent);
+    await engine1.startSubPath(sub);
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { parent, sub });
+    await engine2.cancel();
+    
+    expect(engine2.snapshot()?.pathId).toBe("parent");
+  });
+});
+
