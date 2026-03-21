@@ -33,19 +33,20 @@ Observers are wired **before** the first event fires, so persistence sees every 
 
 ## The convenience factory
 
-For the common load-or-start pattern, `createPersistedEngine()` does it in one call:
+For the common load-or-start pattern, `restoreOrStart()` does it in one call:
 
 ```typescript
-import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
+const key = "user:123:onboarding";
 
-const { engine, restored } = await createPersistedEngine({
+const { engine, restored } = await restoreOrStart({
   store,
-  key: "user:123:onboarding",
+  key,
   path: onboardingWizard,
   initialData: { name: "", email: "" },
-  strategy: "onNext",
+  observers: [httpPersistence({ store, key, strategy: "onNext" })],
 });
 
 // engine is a plain PathEngine — pass to any adapter
