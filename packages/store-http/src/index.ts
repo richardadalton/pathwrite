@@ -436,3 +436,15 @@ export class PathEngineWithStore {
     return this.pendingSave;
   }
 }
+
+// Re-export core types for convenience
+export type {
+  PathData,
+  PathDefinition,
+  PathEvent,
+  PathSnapshot,
+  PathStep,
+  PathStepContext,
+  SerializedPathState
+} from "@daltonr/pathwrite-core";
+

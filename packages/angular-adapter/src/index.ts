@@ -172,3 +172,15 @@ export function syncFormGroup<TData extends PathData = PathData>(
   destroyRef?.onDestroy(cleanup);
   return cleanup;
 }
+
+// Re-export core types for convenience (users don't need to import from @daltonr/pathwrite-core)
+export type {
+  PathData,
+  PathDefinition,
+  PathEvent,
+  PathSnapshot,
+  PathStep,
+  PathStepContext,
+  SerializedPathState
+} from "@daltonr/pathwrite-core";
+

@@ -393,7 +393,21 @@ function defaultFooter(
 // Helpers
 // ---------------------------------------------------------------------------
 
-
 function cls(...parts: (string | undefined | false | null)[]): string {
   return parts.filter(Boolean).join(" ");
 }
+
+// ---------------------------------------------------------------------------
+// Re-export core types for convenience
+// ---------------------------------------------------------------------------
+
+export type {
+  PathData,
+  PathDefinition,
+  PathEvent,
+  PathSnapshot,
+  PathStep,
+  PathStepContext,
+  SerializedPathState
+} from "@daltonr/pathwrite-core";
+

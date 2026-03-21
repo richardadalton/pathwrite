@@ -1,5 +1,20 @@
 # @daltonr/pathwrite-core
 
+## 0.4.0 - 2026-03-21
+
+### Documentation
+
+- **Comprehensive documentation overhaul** — All features that existed but were undocumented are now properly explained:
+  - `isFirstEntry` flag usage in lifecycle hooks
+  - `onSubPathCancel` hook for tracking abandoned sub-paths
+  - Guard safety: warnings about guards running before `onEnter` on first entry
+  - Defensive coding patterns for guards (nullish coalescing)
+  - `restart()` method for "start over" flows
+
+### Notes
+
+No code changes in this release. All features listed were already implemented in v0.3.0-0.3.1 but lacked comprehensive documentation. This release focuses on making the API discoverable and easier to use correctly.
+
 ## 0.3.1
 
 ### Patch Changes

@@ -2,6 +2,31 @@
 
 Angular `@Injectable` facade over `@daltonr/pathwrite-core`. Exposes path state and events as RxJS observables that work seamlessly with Angular signals, the `async` pipe, and `takeUntilDestroyed`.
 
+## Installation
+
+```bash
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-angular
+```
+
+## Exported Types
+
+For convenience, this package re-exports core types so you don't need to import from `@daltonr/pathwrite-core`:
+
+```typescript
+import { 
+  PathFacade,           // Angular-specific
+  PathData,             // Re-exported from core
+  PathDefinition,       // Re-exported from core
+  PathEvent,            // Re-exported from core
+  PathSnapshot,         // Re-exported from core
+  PathStep,             // Re-exported from core
+  PathStepContext,      // Re-exported from core
+  SerializedPathState   // Re-exported from core
+} from "@daltonr/pathwrite-angular";
+```
+
+---
+
 ## Setup
 
 Provide `PathFacade` at the component level so each component gets its own isolated path instance, and Angular handles cleanup automatically via `ngOnDestroy`.
@@ -339,6 +364,276 @@ Both directives can be combined. Only the sections you override are replaced —
 
 ---
 
+## Sub-Paths
+
+Sub-paths allow you to nest multi-step workflows. Common use cases include:
+- Running a child workflow per collection item (e.g., approve each document)
+- Conditional drill-down flows (e.g., "Add payment method" modal)
+- Reusable wizard components
+
+### Basic Sub-Path Flow
+
+When a sub-path is active:
+- The shell switches to show the sub-path's steps
+- The progress bar displays sub-path steps (not main path steps)
+- Pressing Back on the first sub-path step **cancels** the sub-path and returns to the parent
+- The `PathFacade` (and thus `state$`, `stateSignal`) reflects the **sub-path** snapshot, not the parent's
+
+### Complete Example: Approver Collection
+
+```typescript
+import { PathData, PathDefinition, PathFacade } from "@daltonr/pathwrite-angular";
+
+// Sub-path data shape
+interface ApproverReviewData extends PathData {
+  decision: "approve" | "reject" | "";
+  comments: string;
+}
+
+// Main path data shape
+interface ApprovalWorkflowData extends PathData {
+  documentTitle: string;
+  approvers: string[];
+  approvals: Array<{ approver: string; decision: string; comments: string }>;
+}
+
+// Define the sub-path (approver review wizard)
+const approverReviewPath: PathDefinition<ApproverReviewData> = {
+  id: "approver-review",
+  steps: [
+    { id: "review", title: "Review Document" },
+    {
+      id: "decision",
+      title: "Make Decision",
+      canMoveNext: ({ data }) =>
+        data.decision === "approve" || data.decision === "reject",
+      validationMessages: ({ data }) =>
+        !data.decision ? ["Please select Approve or Reject"] : []
+    },
+    { id: "comments", title: "Add Comments" }
+  ]
+};
+
+// Define the main path
+const approvalWorkflowPath: PathDefinition<ApprovalWorkflowData> = {
+  id: "approval-workflow",
+  steps: [
+    {
+      id: "setup",
+      title: "Setup Approval",
+      canMoveNext: ({ data }) =>
+        (data.documentTitle ?? "").trim().length > 0 &&
+        data.approvers.length > 0
+    },
+    {
+      id: "run-approvals",
+      title: "Collect Approvals",
+      // Block "Next" until all approvers have completed their reviews
+      canMoveNext: ({ data }) =>
+        data.approvals.length === data.approvers.length,
+      validationMessages: ({ data }) => {
+        const remaining = data.approvers.length - data.approvals.length;
+        return remaining > 0
+          ? [`${remaining} approver(s) pending review`]
+          : [];
+      },
+      // When an approver finishes their sub-path, record the result
+      onSubPathComplete(subPathId, subPathData, ctx, meta) {
+        const approverName = meta?.approverName as string;
+        const result = subPathData as ApproverReviewData;
+        return {
+          approvals: [
+            ...ctx.data.approvals,
+            {
+              approver: approverName,
+              decision: result.decision,
+              comments: result.comments
+            }
+          ]
+        };
+      },
+      // If an approver cancels (presses Back on first step), you can track it
+      onSubPathCancel(subPathId, subPathData, ctx, meta) {
+        console.log(`${meta?.approverName} cancelled their review`);
+        // Optionally return data changes, or just log
+      }
+    },
+    { id: "summary", title: "Summary" }
+  ]
+};
+
+// Component
+@Component({
+  selector: 'app-approval-workflow',
+  standalone: true,
+  imports: [PathShellComponent, PathStepDirective],
+  providers: [PathFacade],
+  template: `
+    <pw-shell [path]="approvalWorkflowPath" [initialData]="initialData">
+      <!-- Main path steps -->
+      <ng-template pwStep="setup">
+        <input [(ngModel)]="facade.snapshot()!.data.documentTitle" placeholder="Document title" />
+        <!-- approver selection UI here -->
+      </ng-template>
+
+      <ng-template pwStep="run-approvals">
+        <h3>Approvers</h3>
+        <ul>
+          @for (approver of facade.snapshot()!.data.approvers; track $index) {
+            <li>
+              {{ approver }}
+              @if (!hasApproval(approver)) {
+                <button (click)="launchReviewForApprover(approver, $index)">
+                  Start Review
+                </button>
+              } @else {
+                <span>✓ {{ getApproval(approver)?.decision }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </ng-template>
+
+      <ng-template pwStep="summary">
+        <h3>All Approvals Collected</h3>
+        <ul>
+          @for (approval of facade.snapshot()!.data.approvals; track approval.approver) {
+            <li>{{ approval.approver }}: {{ approval.decision }}</li>
+          }
+        </ul>
+      </ng-template>
+
+      <!-- Sub-path steps (must be co-located in the same pw-shell) -->
+      <ng-template pwStep="review">
+        <p>Review the document: "{{ facade.snapshot()!.data.documentTitle }}"</p>
+      </ng-template>
+
+      <ng-template pwStep="decision">
+        <label><input type="radio" value="approve" [(ngModel)]="facade.snapshot()!.data.decision" /> Approve</label>
+        <label><input type="radio" value="reject" [(ngModel)]="facade.snapshot()!.data.decision" /> Reject</label>
+      </ng-template>
+
+      <ng-template pwStep="comments">
+        <textarea [(ngModel)]="facade.snapshot()!.data.comments" placeholder="Optional comments"></textarea>
+      </ng-template>
+    </pw-shell>
+  `
+})
+export class ApprovalWorkflowComponent {
+  protected readonly facade = inject(PathFacade) as PathFacade<ApprovalWorkflowData>;
+  protected readonly approvalWorkflowPath = approvalWorkflowPath;
+  protected readonly initialData = { documentTitle: '', approvers: [], approvals: [] };
+
+  protected launchReviewForApprover(approverName: string, index: number): void {
+    // Pass correlation data via `meta` — it's echoed back to onSubPathComplete
+    void this.facade.startSubPath(
+      approverReviewPath,
+      { decision: "", comments: "" },
+      { approverName, approverIndex: index }
+    );
+  }
+
+  protected hasApproval(approver: string): boolean {
+    return this.facade.snapshot()!.data.approvals.some(a => a.approver === approver);
+  }
+
+  protected getApproval(approver: string) {
+    return this.facade.snapshot()!.data.approvals.find(a => a.approver === approver);
+  }
+}
+```
+
+### Key Notes
+
+**1. Sub-path steps must be co-located with main path steps**  
+All `pwStep` templates (main path + sub-path steps) live in the same `<pw-shell>`. When a sub-path is active, the shell renders the sub-path's step templates. This means:
+- Parent and sub-path step IDs **must not collide** (e.g., don't use `summary` in both)
+- The shell matches step IDs from the current path only (main or sub), but all templates are registered globally
+
+**2. The `meta` correlation field**  
+`startSubPath` accepts an optional third argument (`meta`) that is returned unchanged to `onSubPathComplete` and `onSubPathCancel`. Use it to correlate which collection item triggered the sub-path:
+
+```typescript
+facade.startSubPath(subPath, initialData, { itemIndex: 3, itemId: "abc" });
+
+// In the parent step:
+onSubPathComplete(subPathId, subPathData, ctx, meta) {
+  const itemIndex = meta?.itemIndex; // 3
+}
+```
+
+**3. Progress bar switches during sub-paths**  
+When `snapshot.nestingLevel > 0`, you're in a sub-path. The `steps` array in the snapshot contains the sub-path's steps, not the main path's. The default PathShell progress bar shows sub-path progress. You can check `nestingLevel` to show a breadcrumb or "back to main flow" indicator.
+
+**4. Accessing parent path data from sub-path components**  
+There is currently no way to inject a "parent facade" in sub-path step components. If a sub-path step needs parent data (e.g., the document title), pass it via `initialData` when calling `startSubPath`:
+
+```typescript
+facade.startSubPath(approverReviewPath, {
+  decision: "",
+  comments: "",
+  documentTitle: facade.snapshot()!.data.documentTitle // copy from parent
+});
+```
+
+---
+
+## Guards and Lifecycle Hooks
+
+### Defensive Guards (Important!)
+
+**Guards and `validationMessages` are evaluated *before* `onEnter` runs on first entry.**
+
+If you access fields in a guard that `onEnter` is supposed to initialize, the guard will throw a `TypeError` on startup. Write guards defensively using nullish coalescing:
+
+```typescript
+// ✗ Unsafe — crashes if data.name is undefined
+canMoveNext: ({ data }) => data.name.trim().length > 0
+
+// ✓ Safe — handles undefined gracefully
+canMoveNext: ({ data }) => (data.name ?? "").trim().length > 0
+```
+
+Alternatively, pass `initialData` to `start()` / `<pw-shell>` so all fields are present from the first snapshot:
+
+```typescript
+<pw-shell [path]="myPath" [initialData]="{ name: '', age: 0 }" />
+```
+
+If a guard throws, the engine catches it, logs a warning, and returns `true` (allow navigation) as a safe default.
+
+### Async Guards and Validation Messages
+
+Guards and `validationMessages` must be **synchronous** for inclusion in snapshots. Async functions are detected and warned about:
+- Async `canMoveNext` / `canMovePrevious` default to `true` (optimistic)
+- Async `validationMessages` default to `[]`
+
+The async version is still enforced during actual navigation (when you call `next()` / `previous()`), but the snapshot won't reflect the pending state. If you need async validation, perform it in the guard and store the result in `data` so the guard can read it synchronously.
+
+### `isFirstEntry` Flag
+
+The `PathStepContext` passed to all hooks includes an `isFirstEntry: boolean` flag. It's `true` the first time a step is visited, `false` on re-entry (e.g., after navigating back then forward again).
+
+Use it to distinguish initialization from re-entry:
+
+```typescript
+{
+  id: "details",
+  onEnter: ({ isFirstEntry, data }) => {
+    if (isFirstEntry) {
+      // Only pre-fill on first visit, not when returning via Back
+      return { name: "Default Name" };
+    }
+  }
+}
+```
+
+**Important:** `onEnter` fires every time you enter the step. If you want "initialize once" behavior, either:
+1. Use `isFirstEntry` to conditionally return data
+2. Provide `initialData` to `start()` instead of using `onEnter`
+
+---
+
 ## Styling
 
 Import the optional stylesheet for sensible default styles. All visual values are CSS custom properties (`--pw-*`) so you can theme without overriding selectors.
@@ -368,3 +663,36 @@ Override any `--pw-*` variable to customise the appearance:
   --pw-shell-radius: 12px;
 }
 ```
+
+### Available CSS Custom Properties
+
+**Layout:**
+- `--pw-shell-max-width` — Maximum width of the shell (default: `720px`)
+- `--pw-shell-padding` — Internal padding (default: `24px`)
+- `--pw-shell-gap` — Gap between header, body, footer (default: `20px`)
+- `--pw-shell-radius` — Border radius for cards (default: `10px`)
+
+**Colors:**
+- `--pw-color-bg` — Background color (default: `#ffffff`)
+- `--pw-color-border` — Border color (default: `#dbe4f0`)
+- `--pw-color-text` — Primary text color (default: `#1f2937`)
+- `--pw-color-muted` — Muted text color (default: `#5b677a`)
+- `--pw-color-primary` — Primary/accent color (default: `#2563eb`)
+- `--pw-color-primary-light` — Light primary for backgrounds (default: `rgba(37, 99, 235, 0.12)`)
+- `--pw-color-btn-bg` — Button background (default: `#f8fbff`)
+- `--pw-color-btn-border` — Button border (default: `#c2d0e5`)
+
+**Validation:**
+- `--pw-color-error` — Error text color (default: `#dc2626`)
+- `--pw-color-error-bg` — Error background (default: `#fef2f2`)
+- `--pw-color-error-border` — Error border (default: `#fecaca`)
+
+**Progress Indicator:**
+- `--pw-dot-size` — Step dot size (default: `32px`)
+- `--pw-dot-font-size` — Font size inside dots (default: `13px`)
+- `--pw-track-height` — Progress track height (default: `4px`)
+
+**Buttons:**
+- `--pw-btn-padding` — Button padding (default: `8px 16px`)
+- `--pw-btn-radius` — Button border radius (default: `6px`)
+

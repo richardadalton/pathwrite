@@ -5,7 +5,6 @@ import {
   onScopeDispose,
   defineComponent,
   h,
-  computed,
   onMounted,
   provide,
   inject,
@@ -111,7 +110,7 @@ const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
 
 /**
  * Access the nearest `PathShell`'s path instance via Vue `inject`.
- * Throws if used outside of a `<PathShell>`.
+ * Throws if used outside of a PathShell component.
  *
  * The optional generic narrows `snapshot.data` for convenience — it is a
  * **type-level assertion**, not a runtime guarantee.
@@ -119,7 +118,7 @@ const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
 export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
   const ctx = inject(PathInjectionKey, null);
   if (ctx === null) {
-    throw new Error("usePathContext must be used within a <PathShell>.");
+    throw new Error("usePathContext must be used within a PathShell component.");
   }
   return ctx as UsePathReturn<TData>;
 }
@@ -309,3 +308,16 @@ function renderVueFooter(
   ]);
 }
 
+// ---------------------------------------------------------------------------
+// Re-export core types for convenience
+// ---------------------------------------------------------------------------
+
+export type {
+  PathData,
+  PathDefinition,
+  PathEvent,
+  PathSnapshot,
+  PathStep,
+  PathStepContext,
+  SerializedPathState
+} from "@daltonr/pathwrite-core";

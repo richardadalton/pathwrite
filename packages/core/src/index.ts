@@ -790,6 +790,15 @@ export class PathEngine {
     try {
       const result = guard(ctx);
       if (typeof result === "boolean") return result;
+      // Async guard detected - warn and return optimistic default
+      if (result && typeof result.then === "function") {
+        console.warn(
+          `[pathwrite] Async guard detected on step "${step.id}". ` +
+          `Guards in snapshots must be synchronous. ` +
+          `Returning true (optimistic) as default. ` +
+          `The async guard will still be enforced during actual navigation.`
+        );
+      }
       return true;
     } catch (err) {
       console.warn(
@@ -829,6 +838,15 @@ export class PathEngine {
     try {
       const result = fn(ctx);
       if (Array.isArray(result)) return result;
+      // Async validationMessages detected - warn and return empty array
+      if (result && typeof result.then === "function") {
+        console.warn(
+          `[pathwrite] Async validationMessages detected on step "${step.id}". ` +
+          `validationMessages in snapshots must be synchronous. ` +
+          `Returning [] as default. ` +
+          `Use synchronous validation or move async checks to canMoveNext.`
+        );
+      }
       return [];
     } catch (err) {
       console.warn(

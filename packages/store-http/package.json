@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-store-http",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "REST API storage adapter for PathEngine state persistence",
   "type": "module",
   "main": "dist/index.js",
@@ -38,7 +38,7 @@
     "directory": "packages/store-http"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.3.0"
+    "@daltonr/pathwrite-core": "^0.4.0"
   },
   "peerDependencies": {},
   "devDependencies": {

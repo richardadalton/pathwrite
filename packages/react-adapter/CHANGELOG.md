@@ -1,5 +1,25 @@
 # @daltonr/pathwrite-react
 
+## 0.4.0 - 2026-03-21
+
+### Documentation
+
+- **Complete sub-path workflow examples** — Added comprehensive approver collection example showing:
+  - Collection iteration with sub-paths
+  - `meta` correlation field for tracking items
+  - `onSubPathComplete` and `onSubPathCancel` usage
+  - Step content co-location requirements
+- **Guards and lifecycle hooks guide** — New section covering:
+  - Warning: guards run before `onEnter` on first entry
+  - Defensive coding patterns (nullish coalescing)
+  - `isFirstEntry` flag usage examples
+  - `onEnter` vs `initialData` guidance
+- **Exported types reference** — Documents all re-exported core types
+- **CSS custom properties reference** — Complete list of all `--pw-*` theming variables with defaults
+
+### Updated dependencies
+- @daltonr/pathwrite-core@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

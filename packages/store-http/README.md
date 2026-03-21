@@ -18,6 +18,35 @@ npm install @daltonr/pathwrite-angular
 
 ---
 
+## Exported Types
+
+This package exports:
+
+**Store-specific:**
+- `HttpStore` — REST API storage adapter class
+- `HttpStoreOptions` — Configuration for HttpStore
+- `PathEngineWithStore` — Wrapper with automatic persistence
+- `PathEngineWithStoreOptions` — Configuration options
+- `PersistenceStrategy` — Type for persistence strategies
+
+**Re-exported from core (for convenience):**
+```typescript
+import { 
+  HttpStore,              // Store-specific
+  PathEngineWithStore,    // Store-specific
+  PersistenceStrategy,    // Store-specific
+  PathData,               // Re-exported from core
+  PathDefinition,         // Re-exported from core
+  PathEvent,              // Re-exported from core
+  PathSnapshot,           // Re-exported from core
+  PathStep,               // Re-exported from core
+  PathStepContext,        // Re-exported from core
+  SerializedPathState     // Re-exported from core
+} from "@daltonr/pathwrite-store-http";
+```
+
+---
+
 ## Quick Start: Auto-Persistence
 
 The easiest way to use the store is with `PathEngineWithStore`, which automatically persists wizard state as users navigate:
