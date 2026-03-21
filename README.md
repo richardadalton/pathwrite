@@ -2,6 +2,14 @@
 
 A headless, framework-agnostic path engine for the web, with first-class Angular, React, and Vue adapters — plus optional default UI shell components for rapid prototyping.
 
+## Documentation
+
+📚 **[View all documentation in `/docs`](docs/README.md)**
+
+- **[Developer Guide](docs/guides/DEVELOPER_GUIDE.md)** - Comprehensive development guide
+- **[Persistence Guide](docs/guides/PERSISTENCE_STRATEGY_GUIDE.md)** - Auto-persistence strategies and implementation
+- **[Publishing Guide](docs/guides/PUBLISHING.md)** - Release process and versioning
+
 ## Packages
 
 | Package | Description |
@@ -10,6 +18,7 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 | [`@daltonr/pathwrite-angular`](packages/angular-adapter) | Angular `@Injectable` facade over the core engine. Exposes state and events as RxJS observables; integrates with signals via `toSignal`. Includes optional `<pw-shell>` component. |
 | [`@daltonr/pathwrite-react`](packages/react-adapter) | React hooks over the core engine. Exposes state via `useSyncExternalStore` with stable action callbacks, an optional context provider, and an optional `<PathShell>` component. |
 | [`@daltonr/pathwrite-vue`](packages/vue-adapter) | Vue 3 composable over the core engine. Exposes state as a reactive `shallowRef` with automatic cleanup via `onScopeDispose`. Includes optional `<PathShell>` component. |
+| [`@daltonr/pathwrite-store-http`](packages/store-http) | REST API storage adapter with auto-persistence. Configurable strategies for saving wizard state to your backend. |
 
 ## Apps
 
