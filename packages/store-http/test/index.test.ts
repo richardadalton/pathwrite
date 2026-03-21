@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { HttpStore, httpPersistence, createPersistedEngine } from "../src/index";
+import { HttpStore, httpPersistence, restoreOrStart } from "../src/index";
 import type { SerializedPathState, PathDefinition } from "@daltonr/pathwrite-core";
 import { PathEngine } from "@daltonr/pathwrite-core";
 
@@ -410,17 +410,17 @@ describe("httpPersistence", () => {
 });
 
 // ---------------------------------------------------------------------------
-// createPersistedEngine
+// restoreOrStart
 // ---------------------------------------------------------------------------
 
-describe("createPersistedEngine", () => {
+describe("restoreOrStart", () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
   it("starts fresh when no saved state exists", async () => {
     const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
 
-    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath });
+    const { engine, restored } = await restoreOrStart({ store, key: "test-wizard", path: simplePath });
 
     expect(restored).toBe(false);
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -437,7 +437,7 @@ describe("createPersistedEngine", () => {
       fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
     });
 
-    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, pathDefinitions });
+    const { engine, restored } = await restoreOrStart({ store, key: "test-wizard", path: simplePath, pathDefinitions });
 
     expect(restored).toBe(true);
     expect(engine.snapshot()?.stepId).toBe("step2");
@@ -453,7 +453,10 @@ describe("createPersistedEngine", () => {
     });
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
 
-    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, strategy: "onNext" });
+    const { engine } = await restoreOrStart({
+      store, key: "test-wizard", path: simplePath,
+      observers: [httpPersistence({ store, key: "test-wizard", strategy: "onNext" })],
+    });
 
     mockFetch.mockClear();
     await engine.next();
@@ -475,7 +478,10 @@ describe("createPersistedEngine", () => {
     });
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
 
-    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, pathDefinitions });
+    const { engine } = await restoreOrStart({
+      store, key: "test-wizard", path: simplePath, pathDefinitions,
+      observers: [httpPersistence({ store, key: "test-wizard" })],
+    });
 
     mockFetch.mockClear();
     await engine.next();
@@ -488,7 +494,7 @@ describe("createPersistedEngine", () => {
     const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
     const extraEvents: string[] = [];
 
-    const { engine } = await createPersistedEngine({
+    const { engine } = await restoreOrStart({
       store, key: "test-wizard", path: simplePath,
       observers: [(event) => extraEvents.push(event.type)],
     });
@@ -507,7 +513,10 @@ describe("createPersistedEngine", () => {
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     const onSaveSuccess = vi.fn();
 
-    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, onSaveSuccess });
+    const { engine } = await restoreOrStart({
+      store, key: "test-wizard", path: simplePath,
+      observers: [httpPersistence({ store, key: "test-wizard", onSaveSuccess })],
+    });
 
     await engine.next();
     await vi.runAllTimersAsync();
@@ -524,7 +533,7 @@ describe("createPersistedEngine", () => {
       fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
     });
 
-    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath });
+    const { engine, restored } = await restoreOrStart({ store, key: "test-wizard", path: simplePath });
 
     expect(restored).toBe(true);
     expect(engine.snapshot()?.stepId).toBe("step2");

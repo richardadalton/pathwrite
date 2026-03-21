@@ -14,6 +14,7 @@ import type {
   PathObserver,
   PathEngineOptions,
   ObserverStrategy,
+  PathStore,
 } from "@daltonr/pathwrite-core";
 
 export interface HttpStoreOptions {
@@ -60,7 +61,7 @@ export interface HttpStoreOptions {
   onError?: (error: Error, operation: "save" | "load" | "delete", key: string) => void;
 }
 
-export class HttpStore {
+export class HttpStore implements PathStore {
   private options: Required<Omit<HttpStoreOptions, "headers" | "onError">> &
     Pick<HttpStoreOptions, "headers" | "onError">;
 
@@ -176,8 +177,8 @@ export class HttpStore {
 // ---------------------------------------------------------------------------
 
 export interface HttpPersistenceOptions {
-  /** The HttpStore instance to use for persistence. */
-  store: HttpStore;
+  /** The store to persist state to. Any PathStore implementation works — HttpStore, MongoStore, RedisStore, etc. */
+  store: PathStore;
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** When to automatically save. Defaults to `"onNext"`. */
@@ -290,9 +291,13 @@ export function httpPersistence(options: HttpPersistenceOptions): PathObserver {
 // createPersistedEngine — convenience factory
 // ---------------------------------------------------------------------------
 
-export interface CreatePersistedEngineOptions {
-  /** The HttpStore instance to use for persistence. */
-  store: HttpStore;
+// ---------------------------------------------------------------------------
+// restoreOrStart — convenience factory for the load/restore-or-start pattern
+// ---------------------------------------------------------------------------
+
+export interface RestoreOrStartOptions {
+  /** The store to load saved state from. Any PathStore implementation works. */
+  store: PathStore;
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** Path definition to start when no saved state exists. */
@@ -304,66 +309,53 @@ export interface CreatePersistedEngineOptions {
   pathDefinitions?: Record<string, PathDefinition>;
   /** Initial data for a fresh (non-restored) start. Defaults to `{}`. */
   initialData?: PathData;
-  /** Persistence strategy. Defaults to `"onNext"`. */
-  strategy?: ObserverStrategy;
-  /** Debounce window in ms. Defaults to 0. */
-  debounceMs?: number;
-  /** Called after every successful save. */
-  onSaveSuccess?: () => void;
-  /** Called when a save fails. */
-  onSaveError?: (error: Error) => void;
-  /** Additional observers beyond persistence (e.g. logger, analytics). */
+  /**
+   * Observers to wire on the engine before the first event fires.
+   * Build these explicitly — e.g. `httpPersistence({ store, key })` — and
+   * pass them here. `restoreOrStart` does not create any observers itself.
+   */
   observers?: PathObserver[];
 }
 
 /**
- * Creates a `PathEngine` pre-wired with HTTP persistence in a single call.
+ * Handles the load/restore-or-start pattern in a single call.
  *
- * Loads any existing saved state; if found, restores the engine to the saved
- * position. If not found, starts a fresh path.
+ * Tries to load saved state from the store. If found, restores the engine
+ * to the saved position. If not found, starts a fresh path.
  *
- * Returns the ready-to-use engine and a `restored` flag.
+ * Build your observers separately and pass them in — `restoreOrStart` does
+ * not create or configure observers itself.
  *
  * ```typescript
  * const store = new HttpStore({ baseUrl: "/api/wizard" });
+ * const key = "user:123:onboarding";
  *
- * const { engine, restored } = await createPersistedEngine({
+ * const { engine, restored } = await restoreOrStart({
  *   store,
- *   key: "user:123:onboarding",
+ *   key,
  *   path: onboardingWizard,
  *   initialData: { name: "", email: "" },
- *   strategy: "onNext",
+ *   observers: [
+ *     httpPersistence({ store, key, strategy: "onNext" }),
+ *   ],
  * });
- *
- * // Pass directly to the framework adapter
- * const { snapshot, next } = usePath({ engine });
  * ```
  */
-export async function createPersistedEngine(
-  options: CreatePersistedEngineOptions
+export async function restoreOrStart(
+  options: RestoreOrStartOptions
 ): Promise<{ engine: PathEngine; restored: boolean }> {
-  const persistence = httpPersistence({
-    store: options.store,
-    key: options.key,
-    strategy: options.strategy,
-    debounceMs: options.debounceMs,
-    onSaveSuccess: options.onSaveSuccess,
-    onSaveError: options.onSaveError,
-  });
-
-  const allObservers: PathObserver[] = [persistence, ...(options.observers ?? [])];
+  const observers = options.observers ?? [];
   const pathDefs = options.pathDefinitions ?? { [options.path.id]: options.path };
-
   const saved = await options.store.load(options.key);
 
   let engine: PathEngine;
   let restored: boolean;
 
   if (saved) {
-    engine = PathEngine.fromState(saved, pathDefs, { observers: allObservers });
+    engine = PathEngine.fromState(saved, pathDefs, { observers });
     restored = true;
   } else {
-    engine = new PathEngine({ observers: allObservers });
+    engine = new PathEngine({ observers });
     await engine.start(options.path, options.initialData);
     restored = false;
   }
@@ -384,5 +376,6 @@ export type {
   PathStepContext,
   SerializedPathState,
   ObserverStrategy,
+  PathStore,
 } from "@daltonr/pathwrite-core";
 

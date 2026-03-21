@@ -17,6 +17,20 @@ export interface SerializedPathState {
   _isNavigating: boolean;
 }
 
+/**
+ * The interface every path state store must implement.
+ *
+ * `HttpStore` from `@daltonr/pathwrite-store-http` is the reference
+ * implementation. Any backend — MongoDB, Redis, localStorage, etc. —
+ * implements this interface and works with `httpPersistence` and
+ * `restoreOrStart` without any other changes.
+ */
+export interface PathStore {
+  save(key: string, state: SerializedPathState): Promise<void>;
+  load(key: string): Promise<SerializedPathState | null>;
+  delete(key: string): Promise<void>;
+}
+
 export interface PathStepContext<TData extends PathData = PathData> {
   readonly pathId: string;
   readonly stepId: string;

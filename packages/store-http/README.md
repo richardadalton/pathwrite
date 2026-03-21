@@ -18,17 +18,22 @@ npm install @daltonr/pathwrite-vue   # or react / angular
 
 ```typescript
 import {
-  // Core classes
+  // Storage adapter
   HttpStore,                    // REST transport: save / load / delete
-  httpPersistence,              // Observer factory — returns a PathObserver
-  createPersistedEngine,        // Convenience: load-or-start in one call
-
+  
+  // Observer factory
+  httpPersistence,              // Returns a PathObserver that saves state
+  
+  // Load/restore orchestration
+  restoreOrStart,               // Handles the load/restore-or-start pattern
+  
   // Types
   HttpStoreOptions,
   HttpPersistenceOptions,
-  CreatePersistedEngineOptions,
+  RestoreOrStartOptions,
   ObserverStrategy,
-
+  PathStore,                    // Interface that HttpStore implements
+  
   // Re-exported from core
   PathData, PathDefinition, PathEvent, PathObserver,
   PathEngineOptions, PathSnapshot, PathStep,
@@ -39,21 +44,24 @@ import {
 
 ---
 
-## The one-call approach — `createPersistedEngine`
+## The one-call approach — `restoreOrStart`
 
 For most use cases, one async call is all you need:
 
 ```typescript
-import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
+const key = "user:123:onboarding";
 
-const { engine, restored } = await createPersistedEngine({
+const { engine, restored } = await restoreOrStart({
   store,
-  key: "user:123:onboarding",
+  key,
   path: onboardingWizard,
   initialData: { name: "", email: "" },
-  strategy: "onNext",           // save on each Next click (default)
+  observers: [
+    httpPersistence({ store, key, strategy: "onNext" }),
+  ],
 });
 
 // engine is a plain PathEngine — pass it to any adapter
@@ -64,7 +72,7 @@ if (restored) {
 }
 ```
 
-`createPersistedEngine` returns `{ engine, restored }`:
+`restoreOrStart` returns `{ engine, restored }`:
 - `engine` — a `PathEngine` pre-wired with HTTP persistence, ready to pass to `usePath({ engine })` or `<PathShell :engine="engine">`
 - `restored: boolean` — `true` if state was loaded from the server, `false` if it started fresh
 
@@ -72,17 +80,18 @@ if (restored) {
 
 ```vue
 <script setup lang="ts">
-import { shallowRef } from "vue";
 import { PathShell } from "@daltonr/pathwrite-vue";
-import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
-import type { PathEngine } from "@daltonr/pathwrite-vue";
+import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
-const { engine, restored } = await createPersistedEngine({
+const key = `user:${userId}:onboarding`;
+
+const { engine } = await restoreOrStart({
   store,
-  key: `user:${userId}:onboarding`,
+  key,
   path: onboardingWizard,
   initialData: { name: "", email: "" },
+  observers: [httpPersistence({ store, key })],
 });
 </script>
 
@@ -94,17 +103,19 @@ const { engine, restored } = await createPersistedEngine({
 ### React example
 
 ```tsx
-import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
+const key = `user:${userId}:onboarding`;
 
 // In a route loader or equivalent — runs before the component mounts
 export async function loader() {
-  return createPersistedEngine({
+  return restoreOrStart({
     store,
-    key: `user:${userId}:onboarding`,
+    key,
     path: onboardingWizard,
     initialData: { name: "", email: "" },
+    observers: [httpPersistence({ store, key })],
   });
 }
 
