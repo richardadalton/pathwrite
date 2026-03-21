@@ -20,6 +20,7 @@
 16. [Backend Lifecycle Patterns](#16-backend-lifecycle-patterns)
 17. [Testing](#17-testing)
 18. [Design Decisions](#18-design-decisions)
+19. [Observers & Persistence](#19-observers--persistence)
 
 ---
 
@@ -1695,4 +1696,92 @@ The default UI shell components (`<PathShell>` / `<pw-shell>`) are an optional c
 
 ### Unstyled by default, themeable by convention
 Shell components render structural HTML with BEM-style `pw-shell__*` CSS classes but include no embedded styles. The optional `shell.css` stylesheet provides sensible defaults using CSS custom properties (`--pw-*`). This means the shell works in any design system — override a few variables to re-theme, or ignore the stylesheet entirely and write your own CSS targeting the same classes.
+
+---
+
+## 19. Observers & Persistence
+
+### PathObserver
+
+A `PathObserver` is a plain function registered at engine construction time:
+
+```typescript
+type PathObserver = (event: PathEvent, engine: PathEngine) => void;
+```
+
+Observers are wired **before** the first event fires and run for the engine's lifetime. They cannot be removed — for removable one-off listeners use `engine.subscribe()`.
+
+The second argument is the engine itself, giving the observer access to `engine.exportState()`, `engine.snapshot()`, etc.
+
+```typescript
+const logger: PathObserver = (event) =>
+  console.log(`[wizard] ${event.type}`, 'cause' in event ? event.cause : "");
+
+const engine = new PathEngine({ observers: [logger] });
+```
+
+Multiple observers compose freely — each receives the same events independently:
+
+```typescript
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key: "user:123:onboarding" }),
+    logger,
+    analyticsObserver,
+  ],
+});
+```
+
+### Serialization
+
+`engine.exportState()` returns a `SerializedPathState | null` — the full current state as a plain JSON-serializable object: step position, data, visited steps, and any sub-path stack.
+
+`PathEngine.fromState(state, pathDefinitions, options?)` reconstructs a working engine from saved state. Pass `options.observers` to wire observers on the restored engine exactly as you would on a fresh one:
+
+```typescript
+const saved = await store.load(key);
+const engine = PathEngine.fromState(saved, { [path.id]: path }, {
+  observers: [httpPersistence({ store, key })],
+});
+// engine is already on the correct step — no start() needed
+```
+
+### HTTP persistence
+
+`@daltonr/pathwrite-store-http` provides `httpPersistence()` — an observer factory that saves state to a REST API based on a configurable strategy:
+
+```typescript
+import { HttpStore, httpPersistence, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+
+// Lower-level: wire manually
+const store = new HttpStore({ baseUrl: "/api/wizard" });
+const engine = new PathEngine({
+  observers: [httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" })],
+});
+await engine.start(myPath, initialData);
+
+// Higher-level: one-call convenience
+const { engine, restored } = await createPersistedEngine({
+  baseUrl: "/api/wizard",
+  key: "user:123:onboarding",
+  path: myPath,
+  initialData: { name: "", email: "" },
+  strategy: "onNext",
+});
+```
+
+`createPersistedEngine` tries to load saved state; if found it restores, if not it starts fresh. It returns `{ engine, restored }` — `restored` is `true` when state was loaded from the server.
+
+### Persistence strategies
+
+| Strategy | Saves when |
+|---|---|
+| `"onNext"` *(default)* | `next()` completes navigation to a new step |
+| `"onEveryChange"` | Any settled `stateChanged` or `resumed` event |
+| `"onSubPathComplete"` | A sub-path finishes and the parent resumes |
+| `"onComplete"` | The entire path completes |
+| `"manual"` | Never — call `store.save()` yourself |
+
+See `PERSISTENCE_STRATEGY_GUIDE.md` and `AUTO_PERSISTENCE_SUMMARY.md` for details.
+
 

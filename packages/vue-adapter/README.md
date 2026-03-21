@@ -68,7 +68,7 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `engine` | `PathEngine` | An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`). When provided, `usePath` subscribes to it instead of creating a new one; snapshot is seeded immediately. The caller is responsible for the engine's lifecycle. |
+| `engine` | `PathEngine` | An externally-managed engine (e.g. from `createPersistedEngine()`). When provided, `usePath` subscribes to it instead of creating a new one; snapshot is seeded immediately from the engine's current state. The caller is responsible for the engine's lifecycle. |
 | `onEvent` | `(event: PathEvent) => void` | Called for every engine event. |
 
 ### Return value
