@@ -13,7 +13,6 @@ Comprehensive guides for developers using and contributing to Pathwrite:
 - **[DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md)** - Main developer documentation
 - **[AUTO_PERSISTENCE_SUMMARY.md](guides/AUTO_PERSISTENCE_SUMMARY.md)** - Auto-persistence feature implementation details
 - **[PERSISTENCE_STRATEGY_GUIDE.md](guides/PERSISTENCE_STRATEGY_GUIDE.md)** - Detailed analysis of persistence strategies
-- **[DEFAULT_STRATEGY_CHANGE.md](guides/DEFAULT_STRATEGY_CHANGE.md)** - Documentation of default strategy change
 - **[REST_API_PERSISTENCE_SUMMARY.md](guides/REST_API_PERSISTENCE_SUMMARY.md)** - REST API persistence implementation
 - **[HTTP_STORE_STATUS.md](guides/HTTP_STORE_STATUS.md)** - HTTP store implementation status
 - **[PUBLISHING.md](guides/PUBLISHING.md)** - Publishing and release process
@@ -55,7 +54,6 @@ Comprehensive guides for developers using and contributing to Pathwrite:
 We have multiple persistence-related documents that overlap:
 - AUTO_PERSISTENCE_SUMMARY.md
 - PERSISTENCE_STRATEGY_GUIDE.md
-- DEFAULT_STRATEGY_CHANGE.md
 - REST_API_PERSISTENCE_SUMMARY.md
 
 ### Future State

@@ -1773,19 +1773,114 @@ const { engine, restored } = await restoreOrStart({
 
 #### Persistence strategies
 
-The `strategy` option controls when saves occur:
+The `strategy` option controls when the observer saves state to your backend. The default is `"onNext"`.
 
-| Strategy | When it saves | Use case |
+##### Available strategies
+
+| Strategy | Saves when | Best for |
 |---|---|---|
-| `"onNext"` *(default)* | After `next()` completes | Multi-step forms — 1 save per step |
-| `"onEveryChange"` | Every settled `stateChanged` event | Real-time saves — add `debounceMs` for text inputs |
-| `"onSubPathComplete"` | When a sub-path finishes | Nested wizard checkpoints |
-| `"onComplete"` | When the wizard completes | Audit trail / record-keeping |
-| `"manual"` | Never (call `store.save()` yourself) | Custom logic |
+| `"onNext"` *(default)* | After `next()` navigation completes | Multi-step forms (1 save per step) |
+| `"onEveryChange"` | Every settled `stateChanged` event | Real-time autosave (use with `debounceMs`) |
+| `"onSubPathComplete"` | A sub-path completes and parent resumes | Nested wizard checkpoints |
+| `"onComplete"` | The path completes | Audit trail / final submission only |
+| `"manual"` | Never — you call `store.save()` yourself | Custom save logic |
 
-**The default is `"onNext"`** — it saves once after each navigation, which produces one API call per step for typical text forms without needing any debounce configuration.
+##### Strategy examples
 
-For detailed strategy comparisons and API call counts, see `PERSISTENCE_STRATEGY_GUIDE.md`.
+**`"onNext"` — save after each navigation (default)**
+
+```typescript
+httpPersistence({ store, key: "user:123:onboarding" })
+// Saves once after each next() navigation settles
+```
+
+User flow: types "Hello" (5 keystrokes) → clicks Next → **1 save**.
+
+**`"onEveryChange"` — save on every state change**
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "onEveryChange" })
+// Saves on every setData(), every navigation, every sub-path completion
+```
+
+User flow: types "Hello" → **5 saves** (one per keystroke) → clicks Next → **1 more save** = **6 total**.
+
+For text inputs, add a debounce to avoid flooding the API:
+
+```typescript
+httpPersistence({
+  store,
+  key: "user:123:wizard",
+  strategy: "onEveryChange",
+  debounceMs: 500,  // waits 500ms after last change before saving
+})
+```
+
+User flow: types "Hello" → pauses → **1 save** (after 500ms idle) → clicks Next → **1 save** = **2 total**.
+
+**`"onSubPathComplete"` — save when sub-paths finish**
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "onSubPathComplete" })
+// Only saves when a sub-path completes and the parent resumes
+```
+
+Useful for wizards where each sub-flow represents a meaningful checkpoint.
+
+**`"onComplete"` — save only the final result**
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "onComplete" })
+// No mid-flow saves — only saves when the path completes
+```
+
+Use when you only care about the final submitted data, not in-progress state. The saved record persists after completion (not deleted) for audit/review purposes.
+
+**`"manual"` — full control**
+
+```typescript
+httpPersistence({ store, key: "user:123:wizard", strategy: "manual" })
+// Never auto-saves. Call store.save(key, engine.exportState()!) yourself
+```
+
+##### Choosing a strategy
+
+| Your wizard has... | Use | Why |
+|---|---|---|
+| Text-heavy forms | `"onNext"` | 1 save per step, no debounce needed |
+| Dropdowns / checkboxes only | `"onNext"` or `"onEveryChange"` | Each change is deliberate |
+| Text inputs + crash protection needed | `"onEveryChange"` + `debounceMs: 500` | Saves while typing without flooding API |
+| Nested sub-flows | `"onSubPathComplete"` | Save at meaningful checkpoints |
+| Final submission only | `"onComplete"` | Audit trail / record-keeping |
+| Custom save logic | `"manual"` | Full control over when saves occur |
+
+##### Debugging save timing
+
+Use callbacks to observe when saves happen:
+
+```typescript
+httpPersistence({
+  store,
+  key: "user:123:wizard",
+  strategy: "onEveryChange",
+  debounceMs: 500,
+  onSaveSuccess: () => console.log(`[${new Date().toISOString()}] Saved`),
+  onSaveError: (err) => console.error("Save failed:", err.message),
+})
+```
+
+Or add a logging observer alongside persistence:
+
+```typescript
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key }),
+    (event) => console.log(`[wizard] ${event.type}`, 'cause' in event ? event.cause : ""),
+  ],
+});
+```
+
+For detailed API call counts and timing diagrams, see `PERSISTENCE_STRATEGY_GUIDE.md`.
 
 ### Advanced Patterns: Multi-Store Scenarios
 

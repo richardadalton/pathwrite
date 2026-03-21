@@ -18,7 +18,6 @@ pathwrite/
 │   ├── README.md               # Documentation index and navigation
 │   └── guides/                 # Development guides
 │       ├── AUTO_PERSISTENCE_SUMMARY.md
-│       ├── DEFAULT_STRATEGY_CHANGE.md
 │       ├── DEVELOPER_GUIDE.md
 │       ├── HTTP_STORE_STATUS.md
 │       ├── PERSISTENCE_STRATEGY_GUIDE.md
@@ -39,7 +38,6 @@ pathwrite/
 
 ### Moved to `/docs/guides/`
 - ✅ `AUTO_PERSISTENCE_SUMMARY.md`
-- ✅ `DEFAULT_STRATEGY_CHANGE.md`
 - ✅ `DEVELOPER_GUIDE.md`
 - ✅ `HTTP_STORE_STATUS.md`
 - ✅ `PERSISTENCE_STRATEGY_GUIDE.md`
@@ -86,7 +84,7 @@ pathwrite/
 The `/docs/README.md` includes a roadmap for improving documentation:
 
 1. **Consolidate Persistence Guides**
-   - Combine AUTO_PERSISTENCE_SUMMARY.md, PERSISTENCE_STRATEGY_GUIDE.md, DEFAULT_STRATEGY_CHANGE.md
+   - Combine AUTO_PERSISTENCE_SUMMARY.md, PERSISTENCE_STRATEGY_GUIDE.md, REST_API_PERSISTENCE_SUMMARY.md
    - Create single comprehensive PERSISTENCE_GUIDE.md
 
 2. **Add Missing Guides**
