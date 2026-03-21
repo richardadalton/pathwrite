@@ -27,8 +27,9 @@ httpPersistence({ store, key: "user:123:wizard" })
 or with the convenience factory:
 
 ```typescript
+const store = new HttpStore({ baseUrl: "/api/wizard" });
 const { engine } = await createPersistedEngine({
-  baseUrl: "/api/wizard",
+  store,
   key: "user:123:wizard",
   path: myPath,
   // strategy defaults to "onNext"

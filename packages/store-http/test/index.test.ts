@@ -414,27 +414,13 @@ describe("httpPersistence", () => {
 // ---------------------------------------------------------------------------
 
 describe("createPersistedEngine", () => {
-  let mockFetch: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    mockFetch = makeOkFetch();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.useRealTimers();
-  });
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
   it("starts fresh when no saved state exists", async () => {
-    mockFetch = make404Fetch(); // load → 404
+    const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
 
-    const { engine, restored } = await createPersistedEngine({
-      baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-    });
+    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath });
 
     expect(restored).toBe(false);
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -442,25 +428,16 @@ describe("createPersistedEngine", () => {
 
   it("restores from saved state when it exists", async () => {
     const savedState: SerializedPathState = {
-      version: 1,
-      pathId: "simple",
-      currentStepIndex: 1,
-      data: { name: "Restored" },
-      visitedStepIds: ["step1", "step2"],
-      pathStack: [],
-      _isNavigating: false,
+      version: 1, pathId: "simple", currentStepIndex: 1,
+      data: { name: "Restored" }, visitedStepIds: ["step1", "step2"],
+      pathStack: [], _isNavigating: false,
     };
-    mockFetch = vi.fn(() =>
-      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)
-    );
-
-    const { engine, restored } = await createPersistedEngine({
+    const store = new HttpStore({
       baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-      pathDefinitions,
+      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
     });
+
+    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, pathDefinitions });
 
     expect(restored).toBe(true);
     expect(engine.snapshot()?.stepId).toBe("step2");
@@ -469,19 +446,14 @@ describe("createPersistedEngine", () => {
 
   it("auto-saves on navigation after a fresh start", async () => {
     let callCount = 0;
-    mockFetch = vi.fn(() => {
+    const mockFetch = vi.fn(() => {
       callCount++;
       if (callCount === 1) return Promise.resolve({ ok: false, status: 404 } as Response);
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(null) } as Response);
     });
+    const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
 
-    const { engine } = await createPersistedEngine({
-      baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-      strategy: "onNext",
-    });
+    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, strategy: "onNext" });
 
     mockFetch.mockClear();
     await engine.next();
@@ -496,21 +468,14 @@ describe("createPersistedEngine", () => {
       data: {}, visitedStepIds: ["step1"], pathStack: [], _isNavigating: false,
     };
     let callCount = 0;
-    mockFetch = vi.fn(() => {
+    const mockFetch = vi.fn(() => {
       callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response);
-      }
+      if (callCount === 1) return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response);
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(null) } as Response);
     });
+    const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
 
-    const { engine } = await createPersistedEngine({
-      baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-      pathDefinitions,
-    });
+    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, pathDefinitions });
 
     mockFetch.mockClear();
     await engine.next();
@@ -520,14 +485,11 @@ describe("createPersistedEngine", () => {
   });
 
   it("extra observers also receive events", async () => {
-    mockFetch = make404Fetch();
-
+    const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
     const extraEvents: string[] = [];
+
     const { engine } = await createPersistedEngine({
-      baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
+      store, key: "test-wizard", path: simplePath,
       observers: [(event) => extraEvents.push(event.type)],
     });
 
@@ -537,20 +499,15 @@ describe("createPersistedEngine", () => {
 
   it("calls onSaveSuccess after successful save", async () => {
     let callCount = 0;
-    mockFetch = vi.fn(() => {
+    const mockFetch = vi.fn(() => {
       callCount++;
       if (callCount === 1) return Promise.resolve({ ok: false, status: 404 } as Response);
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(null) } as Response);
     });
+    const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     const onSaveSuccess = vi.fn();
 
-    const { engine } = await createPersistedEngine({
-      baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-      onSaveSuccess,
-    });
+    const { engine } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath, onSaveSuccess });
 
     await engine.next();
     await vi.runAllTimersAsync();
@@ -562,17 +519,12 @@ describe("createPersistedEngine", () => {
       version: 1, pathId: "simple", currentStepIndex: 1,
       data: {}, visitedStepIds: ["step1", "step2"], pathStack: [], _isNavigating: false,
     };
-    mockFetch = vi.fn(() =>
-      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)
-    );
-
-    const { engine, restored } = await createPersistedEngine({
+    const store = new HttpStore({
       baseUrl: "/api",
-      fetch: mockFetch as any,
-      key: "test-wizard",
-      path: simplePath,
-      // no pathDefinitions — should default to { simple: simplePath }
+      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
     });
+
+    const { engine, restored } = await createPersistedEngine({ store, key: "test-wizard", path: simplePath });
 
     expect(restored).toBe(true);
     expect(engine.snapshot()?.stepId).toBe("step2");

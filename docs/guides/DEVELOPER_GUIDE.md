@@ -1753,8 +1753,9 @@ const engine = PathEngine.fromState(saved, { [path.id]: path }, {
 ```typescript
 import { HttpStore, httpPersistence, createPersistedEngine } from "@daltonr/pathwrite-store-http";
 
-// Lower-level: wire manually
 const store = new HttpStore({ baseUrl: "/api/wizard" });
+
+// Lower-level: wire manually
 const engine = new PathEngine({
   observers: [httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" })],
 });
@@ -1762,7 +1763,7 @@ await engine.start(myPath, initialData);
 
 // Higher-level: one-call convenience
 const { engine, restored } = await createPersistedEngine({
-  baseUrl: "/api/wizard",
+  store,
   key: "user:123:onboarding",
   path: myPath,
   initialData: { name: "", email: "" },

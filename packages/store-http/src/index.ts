@@ -291,18 +291,8 @@ export function httpPersistence(options: HttpPersistenceOptions): PathObserver {
 // ---------------------------------------------------------------------------
 
 export interface CreatePersistedEngineOptions {
-  /** Base URL for the HTTP store (e.g. `"/api/wizard"`). */
-  baseUrl: string;
-  /** Custom headers — static object or async function returning headers. */
-  headers?: HttpStoreOptions["headers"];
-  /** Custom fetch implementation. Defaults to global `fetch`. */
-  fetch?: HttpStoreOptions["fetch"];
-  /** Custom URL builder for saves. */
-  saveUrl?: HttpStoreOptions["saveUrl"];
-  /** Custom URL builder for loads. */
-  loadUrl?: HttpStoreOptions["loadUrl"];
-  /** Custom URL builder for deletes. */
-  deleteUrl?: HttpStoreOptions["deleteUrl"];
+  /** The HttpStore instance to use for persistence. */
+  store: HttpStore;
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** Path definition to start when no saved state exists. */
@@ -335,8 +325,10 @@ export interface CreatePersistedEngineOptions {
  * Returns the ready-to-use engine and a `restored` flag.
  *
  * ```typescript
+ * const store = new HttpStore({ baseUrl: "/api/wizard" });
+ *
  * const { engine, restored } = await createPersistedEngine({
- *   baseUrl: "/api/wizard",
+ *   store,
  *   key: "user:123:onboarding",
  *   path: onboardingWizard,
  *   initialData: { name: "", email: "" },
@@ -350,17 +342,8 @@ export interface CreatePersistedEngineOptions {
 export async function createPersistedEngine(
   options: CreatePersistedEngineOptions
 ): Promise<{ engine: PathEngine; restored: boolean }> {
-  const store = new HttpStore({
-    baseUrl: options.baseUrl,
-    headers: options.headers,
-    fetch: options.fetch,
-    saveUrl: options.saveUrl,
-    loadUrl: options.loadUrl,
-    deleteUrl: options.deleteUrl,
-  });
-
   const persistence = httpPersistence({
-    store,
+    store: options.store,
     key: options.key,
     strategy: options.strategy,
     debounceMs: options.debounceMs,
@@ -371,7 +354,7 @@ export async function createPersistedEngine(
   const allObservers: PathObserver[] = [persistence, ...(options.observers ?? [])];
   const pathDefs = options.pathDefinitions ?? { [options.path.id]: options.path };
 
-  const saved = await store.load(options.key);
+  const saved = await options.store.load(options.key);
 
   let engine: PathEngine;
   let restored: boolean;

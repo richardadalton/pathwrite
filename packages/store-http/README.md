@@ -44,10 +44,12 @@ import {
 For most use cases, one async call is all you need:
 
 ```typescript
-import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+
+const store = new HttpStore({ baseUrl: "/api/wizard" });
 
 const { engine, restored } = await createPersistedEngine({
-  baseUrl: "/api/wizard",
+  store,
   key: "user:123:onboarding",
   path: onboardingWizard,
   initialData: { name: "", email: "" },
@@ -70,56 +72,45 @@ if (restored) {
 
 ```vue
 <script setup lang="ts">
-import { shallowRef, ref } from "vue";
+import { shallowRef } from "vue";
 import { PathShell } from "@daltonr/pathwrite-vue";
-import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
 import type { PathEngine } from "@daltonr/pathwrite-vue";
 
-const engine = shallowRef<PathEngine | null>(null);
-const isLoading = ref(true);
-const wasRestored = ref(false);
-
-const { engine: e, restored } = await createPersistedEngine({
-  baseUrl: "/api/wizard",
+const store = new HttpStore({ baseUrl: "/api/wizard" });
+const { engine, restored } = await createPersistedEngine({
+  store,
   key: `user:${userId}:onboarding`,
   path: onboardingWizard,
   initialData: { name: "", email: "" },
 });
-engine.value = e;
-wasRestored.value = restored;
-isLoading.value = false;
 </script>
 
 <template>
-  <div v-if="isLoading">Loading…</div>
-  <PathShell v-else-if="engine" :path="onboardingWizard" :engine="engine" />
+  <PathShell :path="onboardingWizard" :engine="engine" />
 </template>
 ```
 
 ### React example
 
 ```tsx
-import { useState, useEffect } from "react";
-import { usePath } from "@daltonr/pathwrite-react";
-import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
-import type { PathEngine } from "@daltonr/pathwrite-react";
+import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
 
-function WizardPage() {
-  const [engine, setEngine] = useState<PathEngine | null>(null);
+const store = new HttpStore({ baseUrl: "/api/wizard" });
 
-  useEffect(() => {
-    createPersistedEngine({
-      baseUrl: "/api/wizard",
-      key: `user:${userId}:onboarding`,
-      path: onboardingWizard,
-      initialData: { name: "", email: "" },
-    }).then(({ engine }) => setEngine(engine));
-  }, []);
+// In a route loader or equivalent — runs before the component mounts
+export async function loader() {
+  return createPersistedEngine({
+    store,
+    key: `user:${userId}:onboarding`,
+    path: onboardingWizard,
+    initialData: { name: "", email: "" },
+  });
+}
 
-  const { snapshot, next } = usePath({ engine: engine ?? undefined });
-
-  if (!engine) return <div>Loading…</div>;
-  // render wizard…
+function WizardPage({ engine }: { engine: PathEngine }) {
+  // engine is ready — no loading state needed
+  return <PathShell engine={engine} path={onboardingWizard} steps={{ ... }} />;
 }
 ```
 

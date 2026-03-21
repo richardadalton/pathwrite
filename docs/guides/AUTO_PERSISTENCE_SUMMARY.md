@@ -36,10 +36,12 @@ Observers are wired **before** the first event fires, so persistence sees every 
 For the common load-or-start pattern, `createPersistedEngine()` does it in one call:
 
 ```typescript
-import { createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+
+const store = new HttpStore({ baseUrl: "/api/wizard" });
 
 const { engine, restored } = await createPersistedEngine({
-  baseUrl: "/api/wizard",
+  store,
   key: "user:123:onboarding",
   path: onboardingWizard,
   initialData: { name: "", email: "" },
@@ -50,7 +52,7 @@ const { engine, restored } = await createPersistedEngine({
 const { snapshot, next } = usePath({ engine });
 ```
 
-Internally it: creates an `HttpStore`, calls `store.load(key)`, then either `PathEngine.fromState(saved, defs, { observers })` or `new PathEngine({ observers })` + `engine.start(...)`.
+Internally it: calls `store.load(key)`, then either `PathEngine.fromState(saved, defs, { observers })` or `new PathEngine({ observers })` + `engine.start(...)`.
 
 ---
 
