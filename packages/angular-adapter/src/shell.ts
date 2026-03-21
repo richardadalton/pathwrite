@@ -41,6 +41,8 @@ export interface PathShellActions {
   goToStep: (stepId: string) => Promise<void>;
   goToStepChecked: (stepId: string) => Promise<void>;
   setData: (key: string, value: unknown) => Promise<void>;
+  /** Restart the shell's current path with its current `initialData`. */
+  restart: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,6 +261,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
     goToStep: (id) => this.facade.goToStep(id),
     goToStepChecked: (id) => this.facade.goToStepChecked(id),
     setData: (key, value) => this.facade.setData(key, value as never),
+    restart: () => this.facade.restart(this.path, this.initialData),
   };
 
   private readonly destroy$ = new Subject<void>();

@@ -127,6 +127,59 @@ describe("PathShell — navigation", () => {
     await act(async () => screen.getByText("Cancel").click());
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("applies pw-shell__btn--back class to the Back button", async () => {
+    const { container } = await act(async () => renderShell());
+    await act(async () => screen.getByText("Next").click());
+    const backBtn = container.querySelector(".pw-shell__btn--back");
+    expect(backBtn).toBeTruthy();
+    expect(backBtn?.textContent).toBe("Back");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// restart via renderFooter actions
+// ---------------------------------------------------------------------------
+
+describe("PathShell — restart via actions", () => {
+  it("actions.restart() resets to step 1 from mid-flow", async () => {
+    await act(async () =>
+      renderShell({
+        renderFooter: (_snap, actions) =>
+          createElement("div", null,
+            createElement("button", { onClick: actions.next }, "Next"),
+            createElement("button", { onClick: actions.restart }, "Restart")
+          )
+      })
+    );
+    // Advance to step 2
+    await act(async () => screen.getByText("Next").click());
+    expect(screen.getByText("Content B")).toBeTruthy();
+
+    // Restart via actions
+    await act(async () => screen.getByText("Restart").click());
+    expect(screen.getByText("Content A")).toBeTruthy();
+  });
+
+  it("actions.restart() from the last step returns to step 1 without completing", async () => {
+    await act(async () =>
+      renderShell({
+        renderFooter: (_snap, actions) =>
+          createElement("div", null,
+            createElement("button", { onClick: actions.next }, "Next"),
+            createElement("button", { onClick: actions.restart }, "Restart")
+          )
+      })
+    );
+    // Advance to last step
+    await act(async () => screen.getByText("Next").click());
+    await act(async () => screen.getByText("Next").click());
+    expect(screen.getByText("Content C")).toBeTruthy();
+
+    // Restart before finishing
+    await act(async () => screen.getByText("Restart").click());
+    expect(screen.getByText("Content A")).toBeTruthy();
+  });
 });
 
 // ---------------------------------------------------------------------------

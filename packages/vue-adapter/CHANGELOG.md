@@ -14,6 +14,10 @@
   with its own `initialData` prop. Add a "Start over" button to a custom footer
   without needing to lift the restart call into the parent.
 
+- **`.pw-shell__btn--back` CSS rule** — the Back button now has a distinct outlined
+  style (transparent background, primary-colour border and text). Previously it
+  rendered with the same neutral appearance as a generic button.
+
 - Updated dependencies
   - @daltonr/pathwrite-core@0.3.1
 

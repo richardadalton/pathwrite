@@ -331,7 +331,9 @@ export class MyComponent { ... }
 export class MyComponent { ... }
 ```
 
-`actions` (`PathShellActions`) contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`. All return `Promise<void>`.
+`actions` (`PathShellActions`) contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
+
+`restart()` restarts the shell's own `[path]` input with its own `[initialData]` input — useful for a "Start over" button in a custom footer.
 
 Both directives can be combined. Only the sections you override are replaced — a custom header still shows the default footer, and vice versa.
 

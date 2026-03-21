@@ -13,6 +13,10 @@
   now includes a `restart()` method that restarts the shell's own `path` prop with
   its own `initialData` prop.
 
+- **`.pw-shell__btn--back` CSS rule** — the Back button now has a distinct outlined
+  style (transparent background, primary-colour border and text). Previously it
+  rendered with the same neutral appearance as a generic button.
+
 - Updated dependencies
   - @daltonr/pathwrite-core@0.3.1
 

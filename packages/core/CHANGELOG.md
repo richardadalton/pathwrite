@@ -14,8 +14,15 @@
 - **`restart(path, initialData?)`** — new `PathEngine` method that tears down any
   active path and sub-path stack without firing lifecycle hooks or emitting
   `cancelled`, then immediately starts the given path fresh. Safe to call at any
-  time — whether a path is running, already completed, or never been started. Use
-  for "Start over" / retry flows without remounting the host component.
+  time. Use for "Start over" / retry flows without remounting the host component.
+
+- **`.pw-shell__btn--back` CSS rule** — `shell.css` now defines an explicit modifier
+  for the Back button (transparent background, primary-coloured border and text,
+  `primary-light` hover). Previously the Back button fell back to the neutral base
+  `.pw-shell__btn` style and was visually indistinguishable from a generic button.
+  All three adapters copy `shell.css` at build time so no adapter source changes are
+  required for this fix.
+
 
 
 

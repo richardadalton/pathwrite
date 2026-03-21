@@ -1098,6 +1098,25 @@ export class MyComponent { ... }
 | `(cancelled)` | `PathData` | Path cancelled. |
 | `(pathEvent)` | `PathEvent` | Every engine event. |
 
+#### Angular footer customisation (`pwShellFooter`)
+
+Use the `pwShellFooter` directive to replace the default navigation buttons. The template receives the snapshot as the implicit variable and an `actions` object with all navigation callbacks:
+
+```html
+<pw-shell [path]="myPath">
+  <ng-template pwShellFooter let-s let-actions="actions">
+    <button (click)="actions.previous()" [disabled]="s.isFirstStep">Back</button>
+    <button (click)="actions.next()"     [disabled]="!s.canMoveNext">
+      {{ s.isLastStep ? 'Finish' : 'Next' }}
+    </button>
+    <button (click)="actions.restart()">Start over</button>
+  </ng-template>
+  <ng-template pwStep="details"><app-details-form /></ng-template>
+</pw-shell>
+```
+
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
+
 ### Styling with CSS custom properties
 
 Import the optional stylesheet from your adapter package for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
@@ -1177,9 +1196,9 @@ All shell components use BEM-style `pw-shell__*` classes:
 | `.pw-shell__footer-left` | Left side of footer (Back). |
 | `.pw-shell__footer-right` | Right side of footer (Cancel, Next). |
 | `.pw-shell__btn` | Base button class. |
-| `.pw-shell__btn--back` | Back button. |
-| `.pw-shell__btn--next` | Next / Finish button. |
-| `.pw-shell__btn--cancel` | Cancel button. |
+| `.pw-shell__btn--back` | Back button — outlined secondary style (transparent bg, primary border + text). |
+| `.pw-shell__btn--next` | Next / Finish button — primary filled style. |
+| `.pw-shell__btn--cancel` | Cancel button — ghost style (no border, muted text). |
 
 ### When to use the shell vs. going headless
 

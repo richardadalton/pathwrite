@@ -250,6 +250,16 @@
   border-color: #1d4ed8;
 }
 
+.pw-shell__btn--back {
+  background: transparent;
+  border-color: var(--pw-color-primary);
+  color: var(--pw-color-primary);
+}
+
+.pw-shell__btn--back:hover:not(:disabled) {
+  background: var(--pw-color-primary-light);
+}
+
 .pw-shell__btn--cancel {
   color: var(--pw-color-muted);
   border-color: transparent;

@@ -9,6 +9,11 @@
   Safe to call at any time. Use for "Start over" / retry flows without destroying
   and re-creating the component that provides the facade.
 
+- **`PathShellActions.restart()`** — the `actions` object passed to custom
+  `pwShellFooter` templates now includes `restart()`, which restarts the shell's
+  own `[path]` input with its own `[initialData]` input. Matches the `restart()`
+  action already present in Vue's `#footer` slot and React's `renderFooter` prop.
+
 - Updated dependencies
   - @daltonr/pathwrite-core@0.3.1
 

@@ -176,6 +176,83 @@ describe("PathShell (Vue) — navigation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// restart via #footer slot actions
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — restart via actions", () => {
+  it("actions.restart() resets to step 1 from mid-flow via #footer slot", async () => {
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(
+            PathShell,
+            { path: threeStepPath() },
+            {
+              "step-a": () => h("div", { "data-testid": "content-a" }, "Content A"),
+              "step-b": () => h("div", { "data-testid": "content-b" }, "Content B"),
+              "step-c": () => h("div", "Content C"),
+              footer: ({ actions }: { snapshot: PathSnapshot; actions: PathShellActions }) =>
+                h("div", [
+                  h("button", { "data-testid": "footer-next", onClick: actions.next }, "Next"),
+                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart")
+                ])
+            }
+          );
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find("[data-testid='content-a']").exists()).toBe(true);
+
+    await wrapper.find("[data-testid='footer-next']").trigger("click");
+    await settled();
+    expect(wrapper.find("[data-testid='content-b']").exists()).toBe(true);
+
+    await wrapper.find("[data-testid='footer-restart']").trigger("click");
+    await settled();
+    expect(wrapper.find("[data-testid='content-a']").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("actions.restart() from the last step returns to step 1 without completing", async () => {
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(
+            PathShell,
+            { path: threeStepPath() },
+            {
+              "step-a": () => h("div", { "data-testid": "content-a" }, "Content A"),
+              "step-b": () => h("div", "Content B"),
+              "step-c": () => h("div", { "data-testid": "content-c" }, "Content C"),
+              footer: ({ actions }: { snapshot: PathSnapshot; actions: PathShellActions }) =>
+                h("div", [
+                  h("button", { "data-testid": "footer-next", onClick: actions.next }, "Next"),
+                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart")
+                ])
+            }
+          );
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+
+    // Advance to last step
+    await wrapper.find("[data-testid='footer-next']").trigger("click");
+    await settled();
+    await wrapper.find("[data-testid='footer-next']").trigger("click");
+    await settled();
+    expect(wrapper.find("[data-testid='content-c']").exists()).toBe(true);
+
+    // Restart before finishing
+    await wrapper.find("[data-testid='footer-restart']").trigger("click");
+    await settled();
+    expect(wrapper.find("[data-testid='content-a']").exists()).toBe(true);
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Custom labels
 // ---------------------------------------------------------------------------
 
