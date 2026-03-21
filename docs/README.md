@@ -11,6 +11,8 @@ This directory contains all documentation and guides for the Pathwrite project.
 Comprehensive guides for developers using and contributing to Pathwrite:
 
 - **[DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md)** - Main developer documentation
+- **[BEYOND_WIZARDS.md](guides/BEYOND_WIZARDS.md)** - Using Pathwrite beyond multi-step forms
+- **[COMPETITIVE_ANALYSIS.md](guides/COMPETITIVE_ANALYSIS.md)** - How Pathwrite compares to alternatives
 - **[AUTO_PERSISTENCE_SUMMARY.md](guides/AUTO_PERSISTENCE_SUMMARY.md)** - Auto-persistence feature implementation details
 - **[PERSISTENCE_STRATEGY_GUIDE.md](guides/PERSISTENCE_STRATEGY_GUIDE.md)** - Detailed analysis of persistence strategies
 - **[REST_API_PERSISTENCE_SUMMARY.md](guides/REST_API_PERSISTENCE_SUMMARY.md)** - REST API persistence implementation
