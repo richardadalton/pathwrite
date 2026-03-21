@@ -40,7 +40,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
   },
   "peerDependencies": {
     "vue": ">=3.3.0"

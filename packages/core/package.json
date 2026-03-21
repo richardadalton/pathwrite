@@ -36,7 +36,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
   },
   "publishConfig": {
     "access": "public"
