@@ -138,9 +138,74 @@ These update automatically when data changes (e.g. after `setData`). Async guard
 
 Wrap a subtree in `<PathProvider>` so multiple components share the same engine instance. Consume with `usePathContext()`.
 
-### `PathShell` context
+---
 
-`<PathShell>` also provides context automatically. Step components rendered inside `<PathShell>` can call `usePathContext()` without a separate `<PathProvider>`:
+## Default UI — `PathShell`
+
+`<PathShell>` is a ready-made shell component that renders a progress indicator, step content, and navigation buttons. Pass a `steps` map to define per-step content.
+
+```tsx
+import { PathShell } from "@daltonr/pathwrite-react";
+
+<PathShell
+  path={myPath}
+  initialData={{ name: "" }}
+  onComplete={(data) => console.log("Done!", data)}
+  steps={{
+    details: <DetailsForm />,
+    review:  <ReviewPanel />,
+  }}
+/>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `path` | `PathDefinition` | *required* | The path to run. |
+| `steps` | `Record<string, ReactNode>` | *required* | Map of step ID → content to render. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
+| `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
+| `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
+| `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `className` | `string` | — | Extra CSS class on the root element. |
+| `renderHeader` | `(snapshot) => ReactNode` | — | Render prop to replace the progress header. |
+| `renderFooter` | `(snapshot, actions) => ReactNode` | — | Render prop to replace the navigation footer. |
+
+### Customising the header and footer
+
+Use `renderHeader` and `renderFooter` to replace the built-in progress bar or navigation buttons with your own UI. Both receive the current `PathSnapshot`; `renderFooter` also receives a `PathShellActions` object with all navigation callbacks.
+
+```tsx
+<PathShell
+  path={myPath}
+  steps={{ details: <DetailsForm />, review: <ReviewPanel /> }}
+  renderHeader={(snapshot) => (
+    <p>{snapshot.stepIndex + 1} / {snapshot.stepCount} — {snapshot.stepTitle}</p>
+  )}
+  renderFooter={(snapshot, actions) => (
+    <div>
+      <button onClick={actions.previous} disabled={snapshot.isFirstStep}>Back</button>
+      <button onClick={actions.next}     disabled={!snapshot.canMoveNext}>
+        {snapshot.isLastStep ? "Finish" : "Next"}
+      </button>
+    </div>
+  )}
+/>
+```
+
+`PathShellActions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`.
+
+### Context sharing
+
+`<PathShell>` provides a path context automatically — step components rendered inside it can call `usePathContext()` without a separate `<PathProvider>`:
 
 ```tsx
 function DetailsForm() {
@@ -157,12 +222,11 @@ function DetailsForm() {
   path={myPath}
   initialData={{ name: "" }}
   onComplete={handleDone}
-  steps={{
-    details: <DetailsForm />,
-    review: <ReviewPanel />,
-  }}
+  steps={{ details: <DetailsForm />, review: <ReviewPanel /> }}
 />
 ```
+
+---
 
 ## Styling
 

@@ -41,7 +41,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   startSubPath: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
-  /** Go back one step. Cancels the path from the first step. */
+  /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
   previous: () => Promise<void>;
   /** Cancel the active path (or sub-path). */
   cancel: () => Promise<void>;
@@ -124,6 +124,7 @@ export interface PathShellActions {
   previous: () => Promise<void>;
   cancel: () => Promise<void>;
   goToStep: (stepId: string) => Promise<void>;
+  goToStepChecked: (stepId: string) => Promise<void>;
   setData: (key: string, value: unknown) => Promise<void>;
 }
 
@@ -162,7 +163,7 @@ export const PathShell = defineComponent({
       }
     });
 
-    const { snapshot, start, next, previous, cancel, goToStep, setData } = pathReturn;
+    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData } = pathReturn;
 
     // Provide context so child components can use usePathContext()
     provide(PathInjectionKey, pathReturn);
@@ -175,7 +176,7 @@ export const PathShell = defineComponent({
       }
     });
 
-    const actions: PathShellActions = { next, previous, cancel, goToStep, setData };
+    const actions: PathShellActions = { next, previous, cancel, goToStep, goToStepChecked, setData };
 
     return () => {
       const snap = snapshot.value as PathSnapshot | null;

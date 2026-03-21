@@ -199,7 +199,12 @@ The Angular adapter ships an optional shell component that renders a complete pr
 The shell lives in a separate entry point so that headless-only usage does not pull in the Angular compiler:
 
 ```typescript
-import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
+import {
+  PathShellComponent,
+  PathStepDirective,
+  PathShellHeaderDirective,
+  PathShellFooterDirective,
+} from "@daltonr/pathwrite-angular/shell";
 ```
 
 ### Usage
@@ -282,6 +287,52 @@ export class MyComponent {
 | `(completed)` | `PathData` | Emitted when the path finishes naturally. |
 | `(cancelled)` | `PathData` | Emitted when the path is cancelled. |
 | `(pathEvent)` | `PathEvent` | Emitted for every engine event. |
+
+### Customising the header and footer
+
+Use `pwShellHeader` and `pwShellFooter` directives to replace the built-in progress bar or navigation buttons with your own templates. Both are declared on `<ng-template>` elements inside the shell.
+
+**`pwShellHeader`** — receives the current `PathSnapshot` as the implicit template variable:
+
+```typescript
+@Component({
+  imports: [PathShellComponent, PathStepDirective, PathShellHeaderDirective],
+  template: `
+    <pw-shell [path]="myPath">
+      <ng-template pwShellHeader let-s>
+        <p>Step {{ s.stepIndex + 1 }} of {{ s.stepCount }} — {{ s.stepTitle }}</p>
+      </ng-template>
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+      <ng-template pwStep="review"><app-review-panel /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent { ... }
+```
+
+**`pwShellFooter`** — receives the snapshot as the implicit variable and an `actions` variable with all navigation callbacks:
+
+```typescript
+@Component({
+  imports: [PathShellComponent, PathStepDirective, PathShellFooterDirective],
+  template: `
+    <pw-shell [path]="myPath">
+      <ng-template pwShellFooter let-s let-actions="actions">
+        <button (click)="actions.previous()" [disabled]="s.isFirstStep || s.isNavigating">Back</button>
+        <button (click)="actions.next()"     [disabled]="!s.canMoveNext || s.isNavigating">
+          {{ s.isLastStep ? 'Finish' : 'Next' }}
+        </button>
+      </ng-template>
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent { ... }
+```
+
+`actions` (`PathShellActions`) contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`. All return `Promise<void>`.
+
+Both directives can be combined. Only the sections you override are replaced — a custom header still shows the default footer, and vice versa.
 
 ---
 

@@ -94,7 +94,76 @@ setData("name", "Alice");  // ✓
 
 The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated results of the current step's navigation guards. Use them to proactively disable buttons. These update automatically when data changes (e.g. after `setData`). Async guards default to `true` optimistically.
 
-## `usePathContext` — context sharing
+## Default UI — `PathShell`
+
+`<PathShell>` is a ready-made shell component that renders a progress indicator, step content, and navigation buttons. Step content is provided via **named slots** matching each step's `id`.
+
+```vue
+<PathShell
+  :path="myPath"
+  :initial-data="{ name: '' }"
+  @complete="handleDone"
+>
+  <template #details><DetailsForm /></template>
+  <template #review><ReviewPanel /></template>
+</PathShell>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `path` | `PathDefinition` | *required* | The path to run. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
+| `backLabel` | `string` | `"Back"` | Back button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+
+### Emits
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `@complete` | `PathData` | Emitted when the path completes. |
+| `@cancel` | `PathData` | Emitted when the path is cancelled. |
+| `@event` | `PathEvent` | Emitted for every engine event. |
+
+### Slots
+
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `#[stepId]` | `{ snapshot }` | Named slot rendered when the active step matches `stepId`. |
+| `#header` | `{ snapshot }` | Replaces the default progress header. |
+| `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. |
+
+### Customising the header and footer
+
+Use the `#header` and `#footer` slots to replace the built-in progress bar or navigation buttons with your own UI. The slot scope gives you the current `PathSnapshot`; `#footer` also provides an `actions` object with all navigation callbacks.
+
+```vue
+<PathShell :path="myPath">
+  <template #header="{ snapshot }">
+    <p>Step {{ snapshot.stepIndex + 1 }} of {{ snapshot.stepCount }}</p>
+  </template>
+
+  <template #footer="{ snapshot, actions }">
+    <button @click="actions.previous" :disabled="snapshot.isFirstStep">Back</button>
+    <button @click="actions.next"     :disabled="!snapshot.canMoveNext">
+      {{ snapshot.isLastStep ? 'Finish' : 'Next' }}
+    </button>
+  </template>
+
+  <template #details><DetailsForm /></template>
+  <template #review><ReviewPanel /></template>
+</PathShell>
+```
+
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`.
+
+### Context sharing
 
 `<PathShell>` automatically provides its engine instance to child components via Vue's `provide` / `inject`. Step children can call `usePathContext()` to access the snapshot and actions without prop drilling:
 
@@ -107,6 +176,8 @@ const { snapshot, setData } = usePathContext();
 ```
 
 `usePathContext()` throws if called outside a `<PathShell>`.
+
+---
 
 ## Styling
 

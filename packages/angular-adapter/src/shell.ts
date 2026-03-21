@@ -5,6 +5,7 @@ import {
   Input,
   Output,
   EventEmitter,
+  ContentChild,
   ContentChildren,
   QueryList,
   OnInit,
@@ -19,9 +20,28 @@ import { takeUntil } from "rxjs/operators";
 import {
   PathData,
   PathDefinition,
-  PathEvent
+  PathEvent,
+  PathSnapshot
 } from "@daltonr/pathwrite-core";
 import { PathFacade } from "./index";
+
+// ---------------------------------------------------------------------------
+// PathShellActions
+// ---------------------------------------------------------------------------
+
+/**
+ * Navigation actions passed as template context to custom `pwShellFooter`
+ * templates. Mirrors what React's `renderFooter` and Vue's `#footer` slot
+ * receive, using promises so it is consistent with the Angular facade.
+ */
+export interface PathShellActions {
+  next: () => Promise<void>;
+  previous: () => Promise<void>;
+  cancel: () => Promise<void>;
+  goToStep: (stepId: string) => Promise<void>;
+  goToStepChecked: (stepId: string) => Promise<void>;
+  setData: (key: string, value: unknown) => Promise<void>;
+}
 
 // ---------------------------------------------------------------------------
 // PathStepDirective
@@ -42,6 +62,56 @@ import { PathFacade } from "./index";
 export class PathStepDirective {
   @Input({ required: true, alias: "pwStep" }) stepId!: string;
   public constructor(public readonly templateRef: TemplateRef<unknown>) {}
+}
+
+// ---------------------------------------------------------------------------
+// PathShellHeaderDirective
+// ---------------------------------------------------------------------------
+
+/**
+ * Replaces the default progress header inside `<pw-shell>`.
+ * The template receives the current `PathSnapshot` as the implicit context.
+ *
+ * ```html
+ * <pw-shell [path]="myPath">
+ *   <ng-template pwShellHeader let-s>
+ *     <my-custom-progress [snapshot]="s" />
+ *   </ng-template>
+ *   <ng-template pwStep="details"><app-details-form /></ng-template>
+ * </pw-shell>
+ * ```
+ */
+@Directive({ selector: "[pwShellHeader]", standalone: true })
+export class PathShellHeaderDirective {
+  public constructor(
+    public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>
+  ) {}
+}
+
+// ---------------------------------------------------------------------------
+// PathShellFooterDirective
+// ---------------------------------------------------------------------------
+
+/**
+ * Replaces the default navigation footer inside `<pw-shell>`.
+ * The template receives the current `PathSnapshot` as the implicit context
+ * and a `actions` variable containing all navigation actions.
+ *
+ * ```html
+ * <pw-shell [path]="myPath">
+ *   <ng-template pwShellFooter let-s let-actions="actions">
+ *     <button (click)="actions.previous()" [disabled]="s.isFirstStep">Back</button>
+ *     <button (click)="actions.next()" [disabled]="!s.canMoveNext">Next</button>
+ *   </ng-template>
+ *   <ng-template pwStep="details"><app-details-form /></ng-template>
+ * </pw-shell>
+ * ```
+ */
+@Directive({ selector: "[pwShellFooter]", standalone: true })
+export class PathShellFooterDirective {
+  public constructor(
+    public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot; actions: PathShellActions }>
+  ) {}
 }
 
 // ---------------------------------------------------------------------------
@@ -76,22 +146,27 @@ export class PathStepDirective {
 
     <!-- Active path -->
     <div class="pw-shell" *ngIf="facade.state$ | async as s">
-      <!-- Header — progress indicator -->
-      <div class="pw-shell__header" *ngIf="!hideProgress">
-        <div class="pw-shell__steps">
-          <div
-            *ngFor="let step of s.steps; let i = index"
-            class="pw-shell__step"
-            [ngClass]="'pw-shell__step--' + step.status"
-          >
-            <span class="pw-shell__step-dot">{{ step.status === 'completed' ? '✓' : (i + 1) }}</span>
-            <span class="pw-shell__step-label">{{ step.title ?? step.id }}</span>
+      <!-- Header — custom or default progress indicator -->
+      <ng-container *ngIf="customHeader; else defaultHeader">
+        <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
+      </ng-container>
+      <ng-template #defaultHeader>
+        <div class="pw-shell__header" *ngIf="!hideProgress">
+          <div class="pw-shell__steps">
+            <div
+              *ngFor="let step of s.steps; let i = index"
+              class="pw-shell__step"
+              [ngClass]="'pw-shell__step--' + step.status"
+            >
+              <span class="pw-shell__step-dot">{{ step.status === 'completed' ? '✓' : (i + 1) }}</span>
+              <span class="pw-shell__step-label">{{ step.title ?? step.id }}</span>
+            </div>
+          </div>
+          <div class="pw-shell__track">
+            <div class="pw-shell__track-fill" [style.width.%]="s.progress * 100"></div>
           </div>
         </div>
-        <div class="pw-shell__track">
-          <div class="pw-shell__track-fill" [style.width.%]="s.progress * 100"></div>
-        </div>
-      </div>
+      </ng-template>
 
       <!-- Body — step content -->
       <div class="pw-shell__body">
@@ -107,33 +182,38 @@ export class PathStepDirective {
         <li *ngFor="let msg of s.validationMessages" class="pw-shell__validation-item">{{ msg }}</li>
       </ul>
 
-      <!-- Footer — navigation buttons -->
-      <div class="pw-shell__footer">
-        <div class="pw-shell__footer-left">
-          <button
-            *ngIf="!s.isFirstStep"
-            type="button"
-            class="pw-shell__btn pw-shell__btn--back"
-            [disabled]="s.isNavigating || !s.canMovePrevious"
-            (click)="facade.previous()"
-          >{{ backLabel }}</button>
+      <!-- Footer — custom or default navigation buttons -->
+      <ng-container *ngIf="customFooter; else defaultFooter">
+        <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+      </ng-container>
+      <ng-template #defaultFooter>
+        <div class="pw-shell__footer">
+          <div class="pw-shell__footer-left">
+            <button
+              *ngIf="!s.isFirstStep"
+              type="button"
+              class="pw-shell__btn pw-shell__btn--back"
+              [disabled]="s.isNavigating || !s.canMovePrevious"
+              (click)="facade.previous()"
+            >{{ backLabel }}</button>
+          </div>
+          <div class="pw-shell__footer-right">
+            <button
+              *ngIf="!hideCancel"
+              type="button"
+              class="pw-shell__btn pw-shell__btn--cancel"
+              [disabled]="s.isNavigating"
+              (click)="facade.cancel()"
+            >{{ cancelLabel }}</button>
+            <button
+              type="button"
+              class="pw-shell__btn pw-shell__btn--next"
+              [disabled]="s.isNavigating || !s.canMoveNext"
+              (click)="facade.next()"
+            >{{ s.isLastStep ? finishLabel : nextLabel }}</button>
+          </div>
         </div>
-        <div class="pw-shell__footer-right">
-          <button
-            *ngIf="!hideCancel"
-            type="button"
-            class="pw-shell__btn pw-shell__btn--cancel"
-            [disabled]="s.isNavigating"
-            (click)="facade.cancel()"
-          >{{ cancelLabel }}</button>
-          <button
-            type="button"
-            class="pw-shell__btn pw-shell__btn--next"
-            [disabled]="s.isNavigating || !s.canMoveNext"
-            (click)="facade.next()"
-          >{{ s.isLastStep ? finishLabel : nextLabel }}</button>
-        </div>
-      </div>
+      </ng-template>
     </div>
   `
 })
@@ -162,12 +242,24 @@ export class PathShellComponent implements OnInit, OnDestroy {
   @Output() pathEvent = new EventEmitter<PathEvent>();
 
   @ContentChildren(PathStepDirective) stepDirectives!: QueryList<PathStepDirective>;
+  @ContentChild(PathShellHeaderDirective) customHeader?: PathShellHeaderDirective;
+  @ContentChild(PathShellFooterDirective) customFooter?: PathShellFooterDirective;
 
   public readonly facade = inject(PathFacade);
   /** The shell's own component-level injector. Passed to ngTemplateOutlet so that
    *  step components can resolve PathFacade (provided by this shell) via inject(). */
   protected readonly shellInjector = inject(Injector);
   public started = false;
+
+  /** Navigation actions passed to custom `pwShellFooter` templates. */
+  protected readonly shellActions: PathShellActions = {
+    next: () => this.facade.next(),
+    previous: () => this.facade.previous(),
+    cancel: () => this.facade.cancel(),
+    goToStep: (id) => this.facade.goToStep(id),
+    goToStepChecked: (id) => this.facade.goToStepChecked(id),
+    setData: (key, value) => this.facade.setData(key, value as never),
+  };
 
   private readonly destroy$ = new Subject<void>();
 
@@ -193,5 +285,3 @@ export class PathShellComponent implements OnInit, OnDestroy {
     this.facade.start(this.path, this.initialData);
   }
 }
-
-

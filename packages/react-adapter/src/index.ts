@@ -34,7 +34,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   startSubPath: (path: PathDefinition<any>, initialData?: PathData) => void;
   /** Advance one step. Completes the path on the last step. */
   next: () => void;
-  /** Go back one step. Cancels the path from the first step. */
+  /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
   previous: () => void;
   /** Cancel the active path (or sub-path). */
   cancel: () => void;
@@ -197,6 +197,7 @@ export interface PathShellActions {
   previous: () => void;
   cancel: () => void;
   goToStep: (stepId: string) => void;
+  goToStepChecked: (stepId: string) => void;
   setData: (key: string, value: unknown) => void;
 }
 
@@ -242,7 +243,7 @@ export function PathShell({
     }
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, setData } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData } = pathReturn;
 
   // Auto-start on mount
   const startedRef = useRef(false);
@@ -272,7 +273,7 @@ export function PathShell({
     );
   }
 
-  const actions: PathShellActions = { next, previous, cancel, goToStep, setData };
+  const actions: PathShellActions = { next, previous, cancel, goToStep, goToStepChecked, setData };
 
   return createElement(PathContext.Provider, { value: pathReturn },
     createElement("div", { className: cls("pw-shell", className) },
