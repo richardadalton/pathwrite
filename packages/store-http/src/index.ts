@@ -72,6 +72,9 @@ export class HttpStore {
       saveUrl: options.saveUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
       loadUrl: options.loadUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
       deleteUrl: options.deleteUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
+      // fetch.bind(globalThis) is intentional: storing window.fetch as a bare
+      // reference and calling it as a method later loses the window binding,
+      // throwing "Illegal invocation" in every browser.
       fetch: options.fetch ?? fetch.bind(globalThis),
       headers: options.headers,
       onError: options.onError,
