@@ -29,9 +29,9 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Triggers a React re-render on change. */
   snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition, initialData?: PathData) => void;
+  start: (path: PathDefinition<any>, initialData?: PathData) => void;
   /** Push a sub-path onto the stack. Requires an active path. */
-  startSubPath: (path: PathDefinition, initialData?: PathData) => void;
+  startSubPath: (path: PathDefinition<any>, initialData?: PathData) => void;
   /** Advance one step. Completes the path on the last step. */
   next: () => void;
   /** Go back one step. Cancels the path from the first step. */
@@ -90,13 +90,13 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   // Stable action callbacks
   const start = useCallback(
-    (path: PathDefinition, initialData: PathData = {}) =>
+    (path: PathDefinition<any>, initialData: PathData = {}) =>
       engine.start(path, initialData),
     [engine]
   );
 
   const startSubPath = useCallback(
-    (path: PathDefinition, initialData: PathData = {}) =>
+    (path: PathDefinition<any>, initialData: PathData = {}) =>
       engine.startSubPath(path, initialData),
     [engine]
   );
@@ -159,7 +159,7 @@ export function usePathContext<TData extends PathData = PathData>(): UsePathRetu
 
 export interface PathShellProps {
   /** The path definition to drive. */
-  path: PathDefinition;
+  path: PathDefinition<any>;
   /** Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. */
   steps: Record<string, ReactNode>;
   /** Initial data passed to `engine.start()`. */

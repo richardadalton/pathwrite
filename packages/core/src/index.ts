@@ -99,13 +99,13 @@ export class PathEngine {
   // Public API
   // ---------------------------------------------------------------------------
 
-  public start(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+  public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     this.assertPathHasSteps(path);
     return this._startAsync(path, initialData);
   }
 
   /** Starts a sub-path on top of the currently active path. Throws if no path is running. */
-  public startSubPath(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     this.requireActivePath();
     return this.start(path, initialData);
   }

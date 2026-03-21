@@ -54,11 +54,11 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     this._state$.complete();
   }
 
-  public start(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+  public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     return this.engine.start(path, initialData);
   }
 
-  public startSubPath(path: PathDefinition, initialData: PathData = {}): Promise<void> {
+  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     return this.engine.startSubPath(path, initialData);
   }
 

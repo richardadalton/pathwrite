@@ -139,7 +139,7 @@ export class PathStepDirective {
 })
 export class PathShellComponent implements OnInit, OnDestroy {
   /** The path definition to run. Required. */
-  @Input({ required: true }) path!: PathDefinition;
+  @Input({ required: true }) path!: PathDefinition<any>;
   /** Initial data merged into the path engine on start. */
   @Input() initialData: PathData = {};
   /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */

@@ -36,9 +36,9 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Reactive — triggers Vue re-renders on change. */
   snapshot: DeepReadonly<Ref<PathSnapshot<TData> | null>>;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition, initialData?: PathData) => Promise<void>;
+  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. */
-  startSubPath: (path: PathDefinition, initialData?: PathData) => Promise<void>;
+  startSubPath: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. Cancels the path from the first step. */
@@ -74,10 +74,10 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const snapshot = readonly(_snapshot) as DeepReadonly<Ref<PathSnapshot<TData> | null>>;
 
-  const start = (path: PathDefinition, initialData: PathData = {}): Promise<void> =>
+  const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
 
-  const startSubPath = (path: PathDefinition, initialData: PathData = {}): Promise<void> =>
+  const startSubPath = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.startSubPath(path, initialData);
 
   const next = (): Promise<void> => engine.next();
@@ -142,7 +142,7 @@ export interface PathShellActions {
 export const PathShell = defineComponent({
   name: "PathShell",
   props: {
-    path: { type: Object as PropType<PathDefinition>, required: true },
+    path: { type: Object as PropType<PathDefinition<any>>, required: true },
     initialData: { type: Object as PropType<PathData>, default: () => ({}) },
     autoStart: { type: Boolean, default: true },
     backLabel: { type: String, default: "Back" },

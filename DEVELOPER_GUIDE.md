@@ -131,6 +131,12 @@ const myPath: PathDefinition = {
 | `onLeave` | function | — | Called on departure (only when the guard allows). Can return a partial data patch. |
 | `onSubPathComplete` | function | — | Called when a sub-path launched from this step finishes. Can return a partial data patch. |
 
+> **`validationMessages` must be synchronous.** The snapshot is built synchronously, so
+> async `validationMessages` functions are called but their result is ignored — the
+> messages will always appear as an empty array. If your validation depends on async
+> data (e.g. a server response), load it beforehand, store it in `data`, and reference
+> it from a synchronous `validationMessages` function.
+
 ---
 
 ## 5. Step Lifecycle
@@ -175,6 +181,21 @@ canMovePrevious(current step)
       emit stateChanged (isNavigating: false)
 ```
 
+> **`onEnter` fires on every entry, including Back navigation.**
+> Use it for side effects that should always run (resetting a sub-form, refreshing an
+> externally-loaded value). Do **not** use it to initialise data — it will silently
+> overwrite any changes the user made if they navigate back to the step.
+>
+> For one-time data initialisation, pass values in `initialData` when calling `start()`:
+>
+> ```typescript
+> // ❌ Resets data every time the user navigates back to this step
+> { id: 'items', onEnter: () => ({ items: [], currentIndex: 0 }) }
+>
+> // ✅ Initialised once when the path starts — survives Back navigation
+> await facade.start(myPath, { items: [], currentIndex: 0 });
+> ```
+
 ### Async hooks
 
 All hooks and guards can be `async` or return a `Promise`. The engine `await`s them and sets `isNavigating: true` in the snapshot for the entire duration so you can disable navigation controls.
@@ -218,6 +239,23 @@ The snapshot includes `canMoveNext` and `canMovePrevious` booleans, which are th
 The values update automatically whenever the snapshot is rebuilt (e.g. after `setData`), so a guard like `canMoveNext: (ctx) => ctx.data.name.length > 0` will flip from `false` to `true` as soon as the user types a name.
 
 **Async guards**: If a guard returns a `Promise`, the snapshot defaults to `true` (optimistic). The engine still enforces the real result when navigation is attempted.
+
+> **Async guard UX pattern:** Because async `canMoveNext` guards default to `true` in
+> the snapshot, the Next button will appear enabled until the user clicks it. Once
+> clicked, `isNavigating` becomes `true` (button is disabled), the guard runs, and if
+> it returns `false` the navigation is blocked and the button re-enables. This is the
+> intended behaviour — the guard is only evaluated on navigation, not before.
+>
+> If you need to pre-disable the button based on async state (e.g. a server check),
+> load the result ahead of time, store it in `data`, and use a synchronous guard:
+>
+> ```typescript
+> // Load async data → store in data → guard reads it synchronously
+> await facade.setData("emailAvailable", await api.checkEmail(email));
+>
+> // Guard is synchronous — snapshot reflects it immediately
+> { canMoveNext: (ctx) => ctx.data.emailAvailable === true }
+> ```
 
 ### `shouldSkip`
 
@@ -367,6 +405,82 @@ engine.startSubPath(subPath)        stack: [main]      active: sub
 ```
 
 Nesting is unlimited. `nestingLevel` in the snapshot tells you how deep you are.
+
+### What the shell shows while a sub-path is active
+
+When a sub-path is running, the snapshot reflects the **sub-path's** steps — the
+progress bar switches to show the sub-path's step list and `nestingLevel` increments.
+The parent path's steps disappear from the progress indicator until the sub-path
+completes or is cancelled and the parent is restored.
+
+### Back on the first step of a sub-path
+
+Calling `previous()` (or clicking Back in the shell) when on the **first step of a
+sub-path** cancels the sub-path and returns to the parent. The `onSubPathComplete`
+hook is **not** called in this case — Back cancels, it does not complete. The parent
+step's data is left unchanged.
+
+### Correlating `onSubPathComplete` to a collection item
+
+When running a sub-path per item in a collection, include a correlation key in the
+sub-path's `initialData` and read it back in `onSubPathComplete`:
+
+```typescript
+// Launch one sub-path per approver, carrying the index in data
+for (let i = 0; i < approvers.length; i++) {
+  facade.startSubPath(approvalSubPath, { approverIndex: i, approverName: approvers[i].name });
+}
+
+// In the parent step:
+onSubPathComplete: (subPathId, subData, ctx) => {
+  const i = subData.approverIndex as number;
+  const approvals = [...(ctx.data.approvals as unknown[])];
+  approvals[i] = subData.decision;
+  return { approvals };
+}
+```
+
+### Step ID collisions
+
+There is no automatic namespacing of step IDs across a main path and its sub-paths.
+If a main path step and a sub-path step share the same ID (e.g. both have a `summary`
+step), the shell will match both templates and may render both simultaneously.
+
+Avoid this by:
+- Using path-qualified IDs (`main-summary`, `approval-summary`), or
+- Always checking **both** `pathId` and `stepId` when conditionally rendering in
+  custom (headless) UI:
+
+```typescript
+// Unambiguous match — safe even when sub-paths share step IDs with the parent
+if (snapshot.pathId === "main-path" && snapshot.stepId === "summary") { ... }
+```
+
+The default shell components use `stepId` alone to match templates, so unique step
+IDs across all paths used within a single shell are required.
+
+### Angular — sub-path step templates
+
+Because `<pw-shell>` owns a single `PathFacade` instance and renders by matching
+`stepId` to `pwStep` directives, **all step templates — for both the main path and
+any sub-paths — must be declared inside the same `<pw-shell>`**:
+
+```html
+<pw-shell [path]="mainPath">
+  <!-- main path steps -->
+  <ng-template pwStep="add-approvers">...</ng-template>
+  <ng-template pwStep="summary">...</ng-template>
+
+  <!-- sub-path steps — must also live here -->
+  <ng-template pwStep="review-document">...</ng-template>
+  <ng-template pwStep="make-decision">...</ng-template>
+  <ng-template pwStep="approval-comments">...</ng-template>
+</pw-shell>
+```
+
+This means the parent component's template must include the step templates for every
+sub-path it can launch. Use unique step IDs across all paths to avoid silent
+rendering conflicts.
 
 ---
 
@@ -1121,6 +1235,23 @@ setData("courseName", "Biology"); // ✓
 ```
 
 The generic is a **type-level assertion** — it narrows `snapshot.data` and `setData` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<TData>` and use the same generic at the adapter level to keep the types consistent throughout.
+
+**Passing typed path definitions to `start()` and `startSubPath()`**: All adapters
+accept `PathDefinition<any>` at their public boundaries, so a typed
+`PathDefinition<CourseData>` can be passed directly — no cast required:
+
+```typescript
+const path: PathDefinition<CourseData> = { id: "course", steps: [...] };
+
+// All of these work without any cast:
+await facade.start(path);                    // Angular
+await engine.start(path);                    // core
+const { start } = usePath<CourseData>();     // React / Vue
+start(path);
+
+// Angular shell — [path] input also accepts PathDefinition<any>
+// <pw-shell [path]="path">...</pw-shell>
+```
 
 **Non-generic users are unaffected.** When no type argument is supplied, `TData` defaults to `PathData` (`Record<string, unknown>`), and `setData` collapses to `(key: string, value: unknown) => void` — identical to before.
 
