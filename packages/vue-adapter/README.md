@@ -147,7 +147,7 @@ The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated resu
 | `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()` and drives the UI from this engine. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |

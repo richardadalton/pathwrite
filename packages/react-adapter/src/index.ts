@@ -270,7 +270,7 @@ export function PathShell({
   onComplete,
   onCancel,
   onEvent,
-  backLabel = "Back",
+  backLabel = "Previous",
   nextLabel = "Next",
   finishLabel = "Finish",
   cancelLabel = "Cancel",

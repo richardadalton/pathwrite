@@ -201,7 +201,7 @@ import { PathShell } from "@daltonr/pathwrite-react";
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
 | `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |

@@ -58,9 +58,9 @@ describe("PathShell — rendering", () => {
     expect(screen.getByText("Next")).toBeTruthy();
   });
 
-  it("does not show Back button on first step", async () => {
+  it("does not show Previous button on first step", async () => {
     await act(async () => renderShell());
-    expect(screen.queryByText("Back")).toBeNull();
+    expect(screen.queryByText("Previous")).toBeNull();
   });
 
   it("shows Cancel button by default", async () => {
@@ -91,16 +91,16 @@ describe("PathShell — navigation", () => {
     expect(screen.queryByText("Content A")).toBeNull();
   });
 
-  it("shows Back button on the second step", async () => {
+  it("shows Previous button on the second step", async () => {
     await act(async () => renderShell());
     await act(async () => screen.getByText("Next").click());
-    expect(screen.getByText("Back")).toBeTruthy();
+    expect(screen.getByText("Previous")).toBeTruthy();
   });
 
-  it("goes back when Back is clicked", async () => {
+  it("goes back when Previous is clicked", async () => {
     await act(async () => renderShell());
     await act(async () => screen.getByText("Next").click());
-    await act(async () => screen.getByText("Back").click());
+    await act(async () => screen.getByText("Previous").click());
     expect(screen.getByText("Content A")).toBeTruthy();
   });
 
@@ -128,12 +128,12 @@ describe("PathShell — navigation", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("applies pw-shell__btn--back class to the Back button", async () => {
+  it("applies pw-shell__btn--back class to the Previous button", async () => {
     const { container } = await act(async () => renderShell());
     await act(async () => screen.getByText("Next").click());
     const backBtn = container.querySelector(".pw-shell__btn--back");
     expect(backBtn).toBeTruthy();
-    expect(backBtn?.textContent).toBe("Back");
+    expect(backBtn?.textContent).toBe("Previous");
   });
 });
 

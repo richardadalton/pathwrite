@@ -227,7 +227,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
   /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */
   @Input() autoStart = true;
   /** Label for the Back navigation button. */
-  @Input() backLabel = "Back";
+  @Input() backLabel = "Previous";
   /** Label for the Next navigation button. */
   @Input() nextLabel = "Next";
   /** Label for the Next button when on the last step. */

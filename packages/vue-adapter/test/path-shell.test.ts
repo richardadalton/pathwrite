@@ -117,7 +117,7 @@ describe("PathShell (Vue) — navigation", () => {
     wrapper.unmount();
   });
 
-  it("shows Back button on the second step", async () => {
+  it("shows Previous button on the second step", async () => {
     const wrapper = mountShell();
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");
@@ -126,7 +126,7 @@ describe("PathShell (Vue) — navigation", () => {
     wrapper.unmount();
   });
 
-  it("goes back when Back is clicked", async () => {
+  it("goes back when Previous is clicked", async () => {
     const wrapper = mountShell();
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");

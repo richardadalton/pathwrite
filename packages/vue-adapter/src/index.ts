@@ -178,7 +178,7 @@ export const PathShell = defineComponent({
     engine: { type: Object as PropType<PathEngine>, default: undefined },
     initialData: { type: Object as PropType<PathData>, default: () => ({}) },
     autoStart: { type: Boolean, default: true },
-    backLabel: { type: String, default: "Back" },
+    backLabel: { type: String, default: "Previous" },
     nextLabel: { type: String, default: "Next" },
     finishLabel: { type: String, default: "Finish" },
     cancelLabel: { type: String, default: "Cancel" },

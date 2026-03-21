@@ -301,7 +301,7 @@ export class MyComponent {
 | `path` | `PathDefinition` | *required* | The path definition to drive. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |

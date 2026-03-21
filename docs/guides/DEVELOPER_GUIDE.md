@@ -973,7 +973,7 @@ function CoursePath() {
 | `onComplete` | `(data) => void` | — | Called when the path completes. |
 | `onCancel` | `(data) => void` | — | Called when the path is cancelled. |
 | `onEvent` | `(event) => void` | — | Called for every engine event. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
@@ -993,7 +993,7 @@ Use `renderHeader` or `renderFooter` to override just one section while keeping 
   steps={{ a: <StepA />, b: <StepB /> }}
   renderFooter={(snap, { next, previous }) => (
     <div className="my-nav">
-      <button onClick={previous}>← Back</button>
+      <button onClick={previous}>← Previous</button>
       <span>{snap.stepIndex + 1} / {snap.stepCount}</span>
       <button onClick={next}>{snap.isLastStep ? "Done" : "→ Next"}</button>
     </div>
@@ -1087,7 +1087,7 @@ export class MyComponent { ... }
 | `path` | `PathDefinition` | *required* | The path definition. |
 | `initialData` | `PathData` | `{}` | Initial data. |
 | `autoStart` | `boolean` | `true` | Auto-start on init. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
