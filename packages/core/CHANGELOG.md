@@ -1,6 +1,18 @@
 # @daltonr/pathwrite-core
 
-## 0.3.0
+## 0.3.1
+
+### Patch Changes
+
+- **Guard and `validationMessages` error resilience**
+
+  `evaluateGuardSync` and `evaluateValidationMessagesSync` (the private helpers that produce the `canMoveNext`, `canMovePrevious`, and `validationMessages` fields on every `PathSnapshot`) now wrap execution in a `try/catch`. If a guard or validation hook throws, Pathwrite logs a descriptive `console.warn` that includes the step ID and the thrown error, then returns the safe default (`true` / `[]`) so the UI remains operable rather than silently failing.
+
+  The most common trigger is writing a guard that assumes a field is populated when the path first starts. Guards are evaluated on the very first snapshot — which is emitted *before* `onEnter` runs on the arriving step, so fields that `onEnter` would initialise are not yet present. The warning message explicitly calls this out and points developers to the fix: write guards defensively (e.g. `(data.name ?? "").trim().length > 0`).
+
+  No breaking changes. Existing paths that already write defensive guards are completely unaffected.
+
+
 
 ### Minor Changes
 

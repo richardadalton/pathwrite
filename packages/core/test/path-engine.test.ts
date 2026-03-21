@@ -1835,3 +1835,126 @@ describe("PathEngine — onSubPathCancel", () => {
     expect(engine.snapshot()?.data.asyncResult).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Guard / validationMessages error resilience (pain point 7)
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — guard error resilience", () => {
+  it("does not throw when canMoveNext crashes on the first snapshot (before onEnter)", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const engine = new PathEngine();
+
+    // canMoveNext accesses a field that is absent in initialData — would throw
+    // if not caught.
+    await expect(
+      engine.start({
+        id: "p",
+        steps: [{
+          id: "s1",
+          canMoveNext: ({ data }) => (data.name as string).trim().length > 0
+        }]
+      })
+    ).resolves.toBeUndefined();
+
+    // Snapshot is still valid; canMoveNext defaults to true on error.
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[pathwrite]"),
+      expect.anything()
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it("does not throw when canMovePrevious crashes on the first snapshot", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const engine = new PathEngine();
+
+    await expect(
+      engine.start({
+        id: "p",
+        steps: [{
+          id: "s1",
+          canMovePrevious: ({ data }) => (data.choice as string).toUpperCase() === "YES"
+        }]
+      })
+    ).resolves.toBeUndefined();
+
+    expect(engine.snapshot()?.canMovePrevious).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[pathwrite]"),
+      expect.anything()
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it("does not throw when validationMessages crashes on the first snapshot", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const engine = new PathEngine();
+
+    await expect(
+      engine.start({
+        id: "p",
+        steps: [{
+          id: "s1",
+          validationMessages: ({ data }) => [(data.name as string).trim()]
+        }]
+      })
+    ).resolves.toBeUndefined();
+
+    // Safe default is an empty array.
+    expect(engine.snapshot()?.validationMessages).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[pathwrite]"),
+      expect.anything()
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it("returns the guard value normally when it does not throw", async () => {
+    const engine = new PathEngine();
+
+    await engine.start({
+      id: "p",
+      steps: [{ id: "s1", canMoveNext: () => false }]
+    });
+
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+  });
+
+  it("returns validationMessages normally when they do not throw", async () => {
+    const engine = new PathEngine();
+
+    await engine.start({
+      id: "p",
+      steps: [{ id: "s1", validationMessages: () => ["Field is required"] }]
+    });
+
+    expect(engine.snapshot()?.validationMessages).toEqual(["Field is required"]);
+  });
+
+  it("still evaluates guards correctly after onEnter has run and data is populated", async () => {
+    const engine = new PathEngine();
+
+    await engine.start(
+      {
+        id: "p",
+        steps: [{
+          id: "s1",
+          onEnter: () => ({ name: "" }),
+          canMoveNext: ({ data }) => (data.name as string).trim().length > 0
+        }]
+      }
+    );
+
+    // onEnter set name to "" — guard should now return false without throwing.
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+  });
+});
+

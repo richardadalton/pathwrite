@@ -249,6 +249,25 @@ The snapshot includes `canMoveNext` and `canMovePrevious` booleans, which are th
 
 The values update automatically whenever the snapshot is rebuilt (e.g. after `setData`), so a guard like `canMoveNext: (ctx) => ctx.data.name.length > 0` will flip from `false` to `true` as soon as the user types a name.
 
+> **Guards run before `onEnter` on first entry.** The engine emits a snapshot to signal
+> that navigation has started *before* calling `onEnter` on the arriving step. At that
+> moment `data` still reflects the `initialData` passed to `start()` — fields your
+> `onEnter` would set are not yet present. Write guards defensively so they do not
+> throw when optional fields are absent:
+>
+> ```typescript
+> // ❌ Crashes on first snapshot if initialData = {}
+> canMoveNext: (ctx) => ctx.data.name.trim().length > 0
+>
+> // ✅ Safe — handles undefined gracefully
+> canMoveNext: (ctx) => (ctx.data.name as string ?? "").trim().length > 0
+> ```
+>
+> If a guard or `validationMessages` hook throws during snapshot evaluation, Pathwrite
+> catches the error, logs a `console.warn` with the step ID and the thrown value, and
+> returns the safe default (`true` / `[]`) so the UI remains operable. The warning
+> points to this timing as the likely cause.
+
 **Async guards**: If a guard returns a `Promise`, the snapshot defaults to `true` (optimistic). The engine still enforces the real result when navigation is attempted.
 
 > **Async guard UX pattern:** Because async `canMoveNext` guards default to `true` in

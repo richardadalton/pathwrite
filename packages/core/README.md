@@ -68,6 +68,23 @@ All hooks are optional. Hooks that want to update data **return a partial patch*
 
 The snapshot includes `canMoveNext` and `canMovePrevious` booleans — the evaluated results of the current step's guards. Use them to proactively disable navigation buttons. Sync guards reflect their real value; async guards default to `true` (optimistic). Both update automatically when data changes via `setData`.
 
+> **Guards run before `onEnter` on first entry.** The engine emits a snapshot to signal
+> navigation has started before calling `onEnter` on the arriving step. At that point
+> `data` still reflects `initialData` — fields your `onEnter` would set are not yet
+> present. Write guards defensively:
+>
+> ```typescript
+> // ❌ Throws on first snapshot when initialData = {}
+> canMoveNext: (ctx) => ctx.data.name.trim().length > 0
+>
+> // ✅ Safe
+> canMoveNext: (ctx) => (ctx.data.name as string ?? "").trim().length > 0
+> ```
+>
+> If a guard or `validationMessages` hook throws, Pathwrite catches the error, emits a
+> `console.warn` (with the step ID and thrown value), and returns the safe default
+> (`true` / `[]`) so the UI remains operable.
+
 ### Example — sub-path result merged into parent data
 
 ```typescript

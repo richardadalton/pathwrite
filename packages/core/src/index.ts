@@ -620,6 +620,15 @@ export class PathEngine {
    * Evaluates a guard function synchronously for inclusion in the snapshot.
    * If the guard is absent, returns `true`.
    * If the guard returns a `Promise`, returns `true` (optimistic default).
+   *
+   * **Note:** Guards are evaluated on every snapshot, including the very first one
+   * emitted at the start of a path — _before_ `onEnter` has run on that step.
+   * This means `data` will still reflect the `initialData` passed to `start()`.
+   * Write guards defensively (e.g. `(data.name ?? "").trim().length > 0`) so they
+   * do not throw when optional fields are absent on first entry.
+   *
+   * If a guard throws, the error is caught, a `console.warn` is emitted, and the
+   * safe default (`true`) is returned so the UI remains operable.
    */
   private evaluateGuardSync(
     guard: ((ctx: PathStepContext) => boolean | Promise<boolean>) | undefined,
@@ -633,15 +642,32 @@ export class PathEngine {
       data: { ...active.data },
       isFirstEntry: !active.visitedStepIds.has(step.id)
     };
-    const result = guard(ctx);
-    if (typeof result === "boolean") return result;
-    return true;
+    try {
+      const result = guard(ctx);
+      if (typeof result === "boolean") return result;
+      return true;
+    } catch (err) {
+      console.warn(
+        `[pathwrite] Guard on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `Returning true (allow navigation) as a safe default. ` +
+        `Note: guards are evaluated before onEnter runs on first entry — ` +
+        `ensure guards handle missing/undefined data gracefully.`,
+        err
+      );
+      return true;
+    }
   }
 
   /**
    * Evaluates a validationMessages function synchronously for inclusion in the snapshot.
    * If the hook is absent, returns `[]`.
    * If the hook returns a `Promise`, returns `[]` (async hooks are not supported in snapshots).
+   *
+   * **Note:** Like guards, `validationMessages` is evaluated before `onEnter` runs on first
+   * entry. Write it defensively so it does not throw when fields are absent.
+   *
+   * If the function throws, the error is caught, a `console.warn` is emitted, and `[]`
+   * is returned so validation messages do not block the UI unexpectedly.
    */
   private evaluateValidationMessagesSync(
     fn: ((ctx: PathStepContext) => string[] | Promise<string[]>) | undefined,
@@ -655,9 +681,20 @@ export class PathEngine {
       data: { ...active.data },
       isFirstEntry: !active.visitedStepIds.has(step.id)
     };
-    const result = fn(ctx);
-    if (Array.isArray(result)) return result;
-    return [];
+    try {
+      const result = fn(ctx);
+      if (Array.isArray(result)) return result;
+      return [];
+    } catch (err) {
+      console.warn(
+        `[pathwrite] validationMessages on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `Returning [] as a safe default. ` +
+        `Note: validationMessages is evaluated before onEnter runs on first entry — ` +
+        `ensure it handles missing/undefined data gracefully.`,
+        err
+      );
+      return [];
+    }
   }
 }
 
