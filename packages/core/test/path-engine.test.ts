@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine, PathEvent, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -2419,6 +2419,98 @@ describe("PathEngine — exportState / fromState", () => {
     await engine2.cancel();
     
     expect(engine2.snapshot()?.pathId).toBe("parent");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// matchesStrategy
+// ---------------------------------------------------------------------------
+
+describe("matchesStrategy", () => {
+  // Minimal event stubs — only the fields matchesStrategy actually reads.
+  const settledNext    = { type: "stateChanged" as const, cause: "next" as const,    snapshot: { isNavigating: false } as any };
+  const navigatingNext = { type: "stateChanged" as const, cause: "next" as const,    snapshot: { isNavigating: true  } as any };
+  const settledSetData = { type: "stateChanged" as const, cause: "setData" as const, snapshot: { isNavigating: false } as any };
+  const settledStart   = { type: "stateChanged" as const, cause: "start" as const,   snapshot: { isNavigating: false } as any };
+  const resumed    = { type: "resumed"    as const, resumedPathId: "p", fromSubPathId: "s", snapshot: {} as any };
+  const completed  = { type: "completed"  as const, pathId: "p", data: {} };
+  const cancelled  = { type: "cancelled"  as const, pathId: "p", data: {} };
+
+  describe('"onNext"', () => {
+    it("returns true for a settled next stateChanged", () => {
+      expect(matchesStrategy("onNext", settledNext)).toBe(true);
+    });
+    it("returns false when isNavigating is true", () => {
+      expect(matchesStrategy("onNext", navigatingNext)).toBe(false);
+    });
+    it("returns false for setData stateChanged", () => {
+      expect(matchesStrategy("onNext", settledSetData)).toBe(false);
+    });
+    it("returns false for start stateChanged", () => {
+      expect(matchesStrategy("onNext", settledStart)).toBe(false);
+    });
+    it("returns false for resumed", () => {
+      expect(matchesStrategy("onNext", resumed)).toBe(false);
+    });
+    it("returns false for completed", () => {
+      expect(matchesStrategy("onNext", completed)).toBe(false);
+    });
+  });
+
+  describe('"onEveryChange"', () => {
+    it("returns true for a settled stateChanged (any cause)", () => {
+      expect(matchesStrategy("onEveryChange", settledNext)).toBe(true);
+      expect(matchesStrategy("onEveryChange", settledSetData)).toBe(true);
+      expect(matchesStrategy("onEveryChange", settledStart)).toBe(true);
+    });
+    it("returns false when isNavigating is true", () => {
+      expect(matchesStrategy("onEveryChange", navigatingNext)).toBe(false);
+    });
+    it("returns true for resumed", () => {
+      expect(matchesStrategy("onEveryChange", resumed)).toBe(true);
+    });
+    it("returns false for completed", () => {
+      expect(matchesStrategy("onEveryChange", completed)).toBe(false);
+    });
+    it("returns false for cancelled", () => {
+      expect(matchesStrategy("onEveryChange", cancelled)).toBe(false);
+    });
+  });
+
+  describe('"onSubPathComplete"', () => {
+    it("returns true for resumed", () => {
+      expect(matchesStrategy("onSubPathComplete", resumed)).toBe(true);
+    });
+    it("returns false for stateChanged", () => {
+      expect(matchesStrategy("onSubPathComplete", settledNext)).toBe(false);
+    });
+    it("returns false for completed", () => {
+      expect(matchesStrategy("onSubPathComplete", completed)).toBe(false);
+    });
+  });
+
+  describe('"onComplete"', () => {
+    it("returns true for completed", () => {
+      expect(matchesStrategy("onComplete", completed)).toBe(true);
+    });
+    it("returns false for stateChanged", () => {
+      expect(matchesStrategy("onComplete", settledNext)).toBe(false);
+    });
+    it("returns false for resumed", () => {
+      expect(matchesStrategy("onComplete", resumed)).toBe(false);
+    });
+    it("returns false for cancelled", () => {
+      expect(matchesStrategy("onComplete", cancelled)).toBe(false);
+    });
+  });
+
+  describe('"manual"', () => {
+    it("returns false for every event type", () => {
+      expect(matchesStrategy("manual", settledNext)).toBe(false);
+      expect(matchesStrategy("manual", resumed)).toBe(false);
+      expect(matchesStrategy("manual", completed)).toBe(false);
+      expect(matchesStrategy("manual", cancelled)).toBe(false);
+    });
   });
 });
 

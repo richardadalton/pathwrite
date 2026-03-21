@@ -1782,6 +1782,37 @@ const { engine, restored } = await createPersistedEngine({
 | `"onComplete"` | The entire path completes |
 | `"manual"` | Never — call `store.save()` yourself |
 
+The strategy type is `ObserverStrategy`, exported from `@daltonr/pathwrite-core`. The matching logic is `matchesStrategy(strategy, event)`, also from core.
+
 See `PERSISTENCE_STRATEGY_GUIDE.md` and `AUTO_PERSISTENCE_SUMMARY.md` for details.
+
+### Building your own observer with ObserverStrategy
+
+`ObserverStrategy` and `matchesStrategy` live in core so any observer — not just HTTP persistence — can share the same trigger logic without reimplementing it:
+
+```typescript
+import {
+  type ObserverStrategy,
+  matchesStrategy,
+  type PathObserver,
+} from "@daltonr/pathwrite-core";
+
+function auditLogObserver(strategy: ObserverStrategy): PathObserver {
+  return (event, engine) => {
+    if (matchesStrategy(strategy, event)) {
+      const state = engine.exportState();
+      if (state) auditLog.record(state);
+    }
+  };
+}
+
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" }),
+    auditLogObserver("onComplete"),
+    (event) => console.log(`[wizard] ${event.type}`),
+  ],
+});
+```
 
 

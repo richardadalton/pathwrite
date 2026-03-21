@@ -5,7 +5,7 @@
  * Calls your custom endpoints to save/load serialized path state.
  */
 
-import { PathEngine } from "@daltonr/pathwrite-core";
+import { PathEngine, matchesStrategy } from "@daltonr/pathwrite-core";
 import type {
   SerializedPathState,
   PathEvent,
@@ -13,6 +13,7 @@ import type {
   PathData,
   PathObserver,
   PathEngineOptions,
+  ObserverStrategy,
 } from "@daltonr/pathwrite-core";
 
 export interface HttpStoreOptions {
@@ -166,15 +167,6 @@ export class HttpStore {
   }
 }
 
-/**
- * Persistence strategy determines when the wizard state is saved.
- */
-export type PersistenceStrategy =
-  | "onEveryChange"       // Save on every stateChanged / resumed event
-  | "onNext"              // Save only when next() navigates to a new step (default)
-  | "onSubPathComplete"   // Save when a sub-path completes and the parent resumes
-  | "onComplete"          // Save a final record only when the entire path completes
-  | "manual";             // Never auto-save; call the store directly
 
 // ---------------------------------------------------------------------------
 // httpPersistence — PathObserver factory
@@ -186,7 +178,7 @@ export interface HttpPersistenceOptions {
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** When to automatically save. Defaults to `"onNext"`. */
-  strategy?: PersistenceStrategy;
+  strategy?: ObserverStrategy;
   /**
    * Debounce window in milliseconds. When > 0, rapid events are collapsed into
    * a single save after the window expires. Only useful with `"onEveryChange"`.
@@ -257,52 +249,33 @@ export function httpPersistence(options: HttpPersistenceOptions): PathObserver {
   };
 
   return (event: PathEvent, engine: PathEngine): void => {
-    let shouldSave = false;
-
-    switch (strategy) {
-      case "onEveryChange":
-        // Only save when navigation has settled — stateChanged fires twice per
-        // navigation (once at start with isNavigating:true, once at end with false).
-        shouldSave = (event.type === "stateChanged" && !event.snapshot.isNavigating)
-          || event.type === "resumed";
-        break;
-      case "onNext":
-        // Save only on the settled stateChanged caused by next()
-        shouldSave = event.type === "stateChanged"
-          && event.cause === "next"
-          && !event.snapshot.isNavigating;
-        break;
-      case "onSubPathComplete":
-        shouldSave = event.type === "resumed";
-        break;
-      case "onComplete":
-        if (event.type === "completed") {
-          const finalState: SerializedPathState = {
-            version: 1,
-            pathId: event.pathId,
-            currentStepIndex: -1,
-            data: event.data,
-            visitedStepIds: [],
-            pathStack: [],
-            _isNavigating: false,
-          };
-          options.store.save(options.key, finalState)
-            .then(() => options.onSaveSuccess?.())
-            .catch((error) => {
-              const err = error instanceof Error ? error : new Error(String(error));
-              options.onSaveError?.(err);
-            });
-        }
-        break;
-      case "manual":
-        shouldSave = false;
-        break;
+    // "onComplete" requires a synthetic state built from the event (exportState()
+    // returns null once the path finishes), so it is handled separately.
+    if (strategy === "onComplete") {
+      if (event.type === "completed") {
+        const finalState: SerializedPathState = {
+          version: 1,
+          pathId: event.pathId,
+          currentStepIndex: -1,
+          data: event.data,
+          visitedStepIds: [],
+          pathStack: [],
+          _isNavigating: false,
+        };
+        options.store.save(options.key, finalState)
+          .then(() => options.onSaveSuccess?.())
+          .catch((error) => {
+            const err = error instanceof Error ? error : new Error(String(error));
+            options.onSaveError?.(err);
+          });
+      }
+      return; // onComplete never auto-deletes
     }
 
-    if (shouldSave) scheduleSave(engine);
+    if (matchesStrategy(strategy, event)) scheduleSave(engine);
 
     // Clean up persisted state once the path completes (restore would restart from scratch)
-    if (event.type === "completed" && strategy !== "onComplete") {
+    if (event.type === "completed") {
       options.store.delete(options.key).catch((err) => {
         console.warn("[pathwrite] Failed to delete saved state after completion:", err);
       });
@@ -339,7 +312,7 @@ export interface CreatePersistedEngineOptions {
   /** Initial data for a fresh (non-restored) start. Defaults to `{}`. */
   initialData?: PathData;
   /** Persistence strategy. Defaults to `"onNext"`. */
-  strategy?: PersistenceStrategy;
+  strategy?: ObserverStrategy;
   /** Debounce window in ms. Defaults to 0. */
   debounceMs?: number;
   /** Called after every successful save. */
@@ -412,7 +385,8 @@ export async function createPersistedEngine(
   return { engine, restored };
 }
 
-// Re-export core types for convenience
+// Re-export core types and utilities for convenience
+export { matchesStrategy } from "@daltonr/pathwrite-core";
 export type {
   PathData,
   PathDefinition,
@@ -423,5 +397,6 @@ export type {
   PathStep,
   PathStepContext,
   SerializedPathState,
+  ObserverStrategy,
 } from "@daltonr/pathwrite-core";
 

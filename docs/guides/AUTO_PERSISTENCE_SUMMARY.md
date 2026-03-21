@@ -85,6 +85,31 @@ const engine = new PathEngine({
 
 ---
 
+## Building your own observer
+
+`ObserverStrategy` and `matchesStrategy` live in **`@daltonr/pathwrite-core`** so any observer — MongoDB, a logger, analytics — shares the same "when do I fire?" logic without reimplementing it:
+
+```typescript
+import {
+  type ObserverStrategy,
+  matchesStrategy,
+  type PathObserver,
+} from "@daltonr/pathwrite-core";
+
+function mongoObserver(collection: MongoCollection, strategy: ObserverStrategy): PathObserver {
+  return (event, engine) => {
+    if (matchesStrategy(strategy, event)) {
+      const state = engine.exportState();
+      if (state) collection.replaceOne({ _id: state.pathId }, state, { upsert: true });
+    }
+  };
+}
+```
+
+`httpPersistence` in `@daltonr/pathwrite-store-http` is a consumer of the same `matchesStrategy` helper — no special treatment, just the pattern above wired to a REST transport.
+
+---
+
 ## What is saved
 
 `engine.exportState()` serialises the **full current state** on every save:

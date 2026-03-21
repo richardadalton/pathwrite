@@ -67,6 +67,8 @@ const path: PathDefinition<CourseData> = {
 | `StateChangeCause` | Identifies the method that triggered a `stateChanged` event: `"start"` \| `"next"` \| `"previous"` \| `"goToStep"` \| `"goToStepChecked"` \| `"setData"` \| `"cancel"` \| `"restart"`. |
 | `PathObserver` | `(event: PathEvent, engine: PathEngine) => void` — a function registered at construction time that receives every event for the engine's lifetime. |
 | `PathEngineOptions` | `{ observers?: PathObserver[] }` — options accepted by the `PathEngine` constructor and `PathEngine.fromState()`. |
+| `ObserverStrategy` | Union type for the five built-in trigger strategies: `"onEveryChange" \| "onNext" \| "onSubPathComplete" \| "onComplete" \| "manual"`. Import and use in your own observer factories. |
+| `matchesStrategy` | `(strategy: ObserverStrategy, event: PathEvent) => boolean` — returns `true` when an event should trigger an observer under the given strategy. Shared by every observer so none re-implement the same "when do I fire?" logic. |
 
 ## PathEngine API
 
@@ -103,9 +105,11 @@ Observers are functions registered at construction time. They receive every even
 const logger: PathObserver = (event) =>
   console.log(`[${event.type}]`, 'cause' in event ? event.cause : '');
 
-// A persistence observer (see @daltonr/pathwrite-store-http)
+// A persistence observer using matchesStrategy from core
+import { matchesStrategy } from "@daltonr/pathwrite-core";
+
 const persist: PathObserver = (event, engine) => {
-  if (event.type === "stateChanged" && event.cause === "next" && !event.snapshot.isNavigating) {
+  if (matchesStrategy("onNext", event)) {
     myStore.save(engine.exportState());
   }
 };
@@ -117,6 +121,22 @@ const restoredEngine = PathEngine.fromState(saved, pathDefs, { observers: [logge
 ```
 
 The second argument to each observer is the engine itself, which lets observers call `engine.exportState()`, `engine.snapshot()`, etc. without needing a separate reference.
+
+### Building your own observer factory
+
+`ObserverStrategy` and `matchesStrategy` are exported from core so any observer — not just HTTP persistence — can share the same strategy logic without reimplementing it:
+
+```typescript
+import { type ObserverStrategy, matchesStrategy, type PathObserver } from "@daltonr/pathwrite-core";
+
+function myObserver(strategy: ObserverStrategy): PathObserver {
+  return (event, engine) => {
+    if (matchesStrategy(strategy, event)) {
+      // react — save to MongoDB, write to a log, fire analytics, etc.
+    }
+  };
+}
+```
 
 
 

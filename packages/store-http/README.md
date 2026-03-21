@@ -27,12 +27,13 @@ import {
   HttpStoreOptions,
   HttpPersistenceOptions,
   CreatePersistedEngineOptions,
-  PersistenceStrategy,
+  ObserverStrategy,
 
   // Re-exported from core
   PathData, PathDefinition, PathEvent, PathObserver,
   PathEngineOptions, PathSnapshot, PathStep,
   PathStepContext, SerializedPathState,
+  matchesStrategy,
 } from "@daltonr/pathwrite-store-http";
 ```
 

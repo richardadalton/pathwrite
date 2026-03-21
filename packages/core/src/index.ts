@@ -152,6 +152,57 @@ export type PathEvent =
 export type PathObserver = (event: PathEvent, engine: PathEngine) => void;
 
 /**
+ * Determines which engine events an observer should react to.
+ *
+ * | Strategy            | Triggers when                                              |
+ * |---------------------|------------------------------------------------------------|
+ * | `"onEveryChange"`   | Any settled `stateChanged` or `resumed`                    |
+ * | `"onNext"`          | `next()` completes navigation *(default)*                  |
+ * | `"onSubPathComplete"` | Sub-path finishes and the parent resumes                 |
+ * | `"onComplete"`      | The entire path completes                                  |
+ * | `"manual"`          | Never — caller decides when to act                        |
+ */
+export type ObserverStrategy =
+  | "onEveryChange"
+  | "onNext"
+  | "onSubPathComplete"
+  | "onComplete"
+  | "manual";
+
+/**
+ * Returns `true` when `event` matches the trigger condition for `strategy`.
+ *
+ * Use this in any `PathObserver` factory to centralise the
+ * "which events should I react to?" decision so every observer
+ * (HTTP, MongoDB, logger, analytics…) shares the same semantics.
+ *
+ * ```typescript
+ * const observer: PathObserver = (event, engine) => {
+ *   if (matchesStrategy(strategy, event)) doWork(engine);
+ * };
+ * ```
+ */
+export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): boolean {
+  switch (strategy) {
+    case "onEveryChange":
+      // Only react once navigation has settled — stateChanged fires twice per
+      // navigation (isNavigating:true then false).
+      return (event.type === "stateChanged" && !event.snapshot.isNavigating)
+        || event.type === "resumed";
+    case "onNext":
+      return event.type === "stateChanged"
+        && event.cause === "next"
+        && !event.snapshot.isNavigating;
+    case "onSubPathComplete":
+      return event.type === "resumed";
+    case "onComplete":
+      return event.type === "completed";
+    case "manual":
+      return false;
+  }
+}
+
+/**
  * Options accepted by the `PathEngine` constructor and `PathEngine.fromState()`.
  */
 export interface PathEngineOptions {
