@@ -24,10 +24,10 @@ import {
  */
 @Injectable()
 export class PathFacade<TData extends PathData = PathData> implements OnDestroy {
-  private readonly engine = new PathEngine();
+  private _engine = new PathEngine();
   private readonly _state$ = new BehaviorSubject<PathSnapshot<TData> | null>(null);
   private readonly _events$ = new Subject<PathEvent>();
-  private readonly unsubscribeFromEngine: () => void;
+  private _unsubscribeFromEngine: () => void = () => {};
   private readonly _stateSignal = signal<PathSnapshot<TData> | null>(null);
 
   public readonly state$: Observable<PathSnapshot<TData> | null> = this._state$.asObservable();
@@ -36,7 +36,37 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   public readonly stateSignal: Signal<PathSnapshot<TData> | null> = this._stateSignal.asReadonly();
 
   public constructor() {
-    this.unsubscribeFromEngine = this.engine.subscribe((event) => {
+    this.connectEngine(this._engine);
+  }
+
+  /**
+   * Adopt an externally-managed `PathEngine` — for example, the engine obtained
+   * from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   *
+   * The facade immediately reflects the engine's current state and forwards all
+   * subsequent events. The **caller** is responsible for the engine's lifecycle
+   * (starting, cleanup); the facade only subscribes to it.
+   *
+   * ```typescript
+   * await wrapper.startOrRestore(myPath, pathDefs, initialData);
+   * facade.adoptEngine(wrapper.getEngine());
+   * ```
+   */
+  public adoptEngine(engine: PathEngine): void {
+    // Disconnect from whatever engine we're currently listening to
+    this._unsubscribeFromEngine();
+    this._engine = engine;
+    this.connectEngine(engine);
+  }
+
+  private connectEngine(engine: PathEngine): void {
+    // Seed state immediately — critical when restoring a persisted path since
+    // the engine is already running before the facade connects to it.
+    const current = engine.snapshot() as PathSnapshot<TData> | null;
+    this._state$.next(current);
+    this._stateSignal.set(current);
+
+    this._unsubscribeFromEngine = engine.subscribe((event) => {
       this._events$.next(event);
       if (event.type === "stateChanged" || event.type === "resumed") {
         this._state$.next(event.snapshot as PathSnapshot<TData>);
@@ -49,13 +79,13 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   }
 
   public ngOnDestroy(): void {
-    this.unsubscribeFromEngine();
+    this._unsubscribeFromEngine();
     this._events$.complete();
     this._state$.complete();
   }
 
   public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
-    return this.engine.start(path, initialData);
+    return this._engine.start(path, initialData);
   }
 
   /**
@@ -65,38 +95,38 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
    * component that provides this facade.
    */
   public restart(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
-    return this.engine.restart(path, initialData);
+    return this._engine.restart(path, initialData);
   }
 
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
-    return this.engine.startSubPath(path, initialData, meta);
+    return this._engine.startSubPath(path, initialData, meta);
   }
 
   public next(): Promise<void> {
-    return this.engine.next();
+    return this._engine.next();
   }
 
   public previous(): Promise<void> {
-    return this.engine.previous();
+    return this._engine.previous();
   }
 
   public cancel(): Promise<void> {
-    return this.engine.cancel();
+    return this._engine.cancel();
   }
 
   public setData<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> {
-    return this.engine.setData(key, value as unknown);
+    return this._engine.setData(key, value as unknown);
   }
 
   public goToStep(stepId: string): Promise<void> {
-    return this.engine.goToStep(stepId);
+    return this._engine.goToStep(stepId);
   }
 
   /** Jump to a step by ID, checking the current step's canMoveNext (forward) or
    *  canMovePrevious (backward) guard first. Navigation is blocked if the guard
    *  returns false. Throws if the step ID does not exist. */
   public goToStepChecked(stepId: string): Promise<void> {
-    return this.engine.goToStepChecked(stepId);
+    return this._engine.goToStepChecked(stepId);
   }
 
   public snapshot(): PathSnapshot<TData> | null {

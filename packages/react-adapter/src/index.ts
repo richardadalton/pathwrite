@@ -21,7 +21,18 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface UsePathOptions {
-  /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
+  /**
+   * An externally-managed `PathEngine` to subscribe to — for example, the engine
+   * obtained from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   *
+   * When provided:
+   * - `usePath` will **not** create its own engine.
+   * - The snapshot is seeded immediately from the engine's current state.
+   * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
+   * - `PathShell` will skip its own `autoStart` call.
+   */
+  engine?: PathEngine;
+  /** Called for every engine event (stateChanged, completed, cancelled, resumed). The callback ref is kept current — changing it does **not** re-subscribe to the engine. */
   onEvent?: (event: PathEvent) => void;
 }
 
@@ -62,10 +73,11 @@ export type PathProviderProps = PropsWithChildren<{
 // ---------------------------------------------------------------------------
 
 export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  // Stable engine instance for the lifetime of the hook
+  // Use provided engine or create a stable new one for this hook's lifetime.
+  // options.engine must be a stable reference (don't recreate on every render).
   const engineRef = useRef<PathEngine | null>(null);
   if (engineRef.current === null) {
-    engineRef.current = new PathEngine();
+    engineRef.current = options?.engine ?? new PathEngine();
   }
   const engine = engineRef.current;
 
@@ -73,8 +85,20 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const onEventRef = useRef(options?.onEvent);
   onEventRef.current = options?.onEvent;
 
-  // Cached snapshot — updated only inside the subscribe callback
+  // Seed immediately from existing engine state — essential when restoring a
+  // persisted path (the engine is already started before usePath is called).
+  // We track whether we've seeded to avoid calling engine.snapshot() on every
+  // re-render (React evaluates useRef's argument each time).
+  const seededRef = useRef(false);
   const snapshotRef = useRef<PathSnapshot<TData> | null>(null);
+  if (!seededRef.current) {
+    seededRef.current = true;
+    try {
+      snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
+    } catch {
+      snapshotRef.current = null;
+    }
+  }
 
   const subscribe = useCallback(
     (callback: () => void) =>
@@ -172,6 +196,12 @@ export function usePathContext<TData extends PathData = PathData>(): UsePathRetu
 export interface PathShellProps {
   /** The path definition to drive. */
   path: PathDefinition<any>;
+  /**
+   * An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`).
+   * When supplied, `PathShell` will skip its own `start()` call and drive the
+   * UI from the provided engine instead of creating a new one.
+   */
+  engine?: PathEngine;
   /** Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. */
   steps: Record<string, ReactNode>;
   /** Initial data passed to `engine.start()`. */
@@ -233,6 +263,7 @@ export interface PathShellActions {
  */
 export function PathShell({
   path: pathDef,
+  engine: externalEngine,
   steps,
   initialData = {},
   autoStart = true,
@@ -250,6 +281,7 @@ export function PathShell({
   renderFooter,
 }: PathShellProps): ReactElement {
   const pathReturn = usePath({
+    engine: externalEngine,
     onEvent(event) {
       onEvent?.(event);
       if (event.type === "completed") onComplete?.(event.data);
@@ -259,10 +291,11 @@ export function PathShell({
 
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
-  // Auto-start on mount
+  // Auto-start on mount — skipped when an external engine is provided since
+  // the caller is responsible for starting it (e.g. PathEngineWithStore.startOrRestore).
   const startedRef = useRef(false);
   useEffect(() => {
-    if (autoStart && !startedRef.current) {
+    if (autoStart && !startedRef.current && !externalEngine) {
       startedRef.current = true;
       start(pathDef, initialData);
     }
@@ -410,4 +443,6 @@ export type {
   PathStepContext,
   SerializedPathState
 } from "@daltonr/pathwrite-core";
+
+export { PathEngine } from "@daltonr/pathwrite-core";
 

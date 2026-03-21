@@ -113,8 +113,21 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   data: TData;
 }
 
+/**
+ * Identifies the public method that triggered a `stateChanged` event.
+ */
+export type StateChangeCause =
+  | "start"
+  | "next"
+  | "previous"
+  | "goToStep"
+  | "goToStepChecked"
+  | "setData"
+  | "cancel"
+  | "restart";
+
 export type PathEvent =
-  | { type: "stateChanged"; snapshot: PathSnapshot }
+  | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot }
   | { type: "completed"; pathId: string; data: PathData }
   | { type: "cancelled"; pathId: string; data: PathData }
   | {
@@ -289,7 +302,7 @@ export class PathEngine {
   public setData(key: string, value: unknown): Promise<void> {
     const active = this.requireActivePath();
     active.data[key] = value;
-    this.emitStateChanged();
+    this.emitStateChanged("setData");
     return Promise.resolve();
   }
 
@@ -431,15 +444,15 @@ export class PathEngine {
       return;
     }
 
-    this.emitStateChanged();
+    this.emitStateChanged("start");
 
     try {
       this.applyPatch(await this.enterCurrentStep());
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("start");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("start");
       throw err;
     }
   }
@@ -448,7 +461,7 @@ export class PathEngine {
     if (this._isNavigating) return;
 
     this._isNavigating = true;
-    this.emitStateChanged();
+    this.emitStateChanged("next");
 
     try {
       const step = this.getCurrentStep(active);
@@ -468,10 +481,10 @@ export class PathEngine {
       }
 
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("next");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("next");
       throw err;
     }
   }
@@ -485,7 +498,7 @@ export class PathEngine {
     if (active.currentStepIndex === 0 && this.pathStack.length === 0) return;
 
     this._isNavigating = true;
-    this.emitStateChanged();
+    this.emitStateChanged("previous");
 
     try {
       const step = this.getCurrentStep(active);
@@ -505,10 +518,10 @@ export class PathEngine {
       }
 
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("previous");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("previous");
       throw err;
     }
   }
@@ -517,7 +530,7 @@ export class PathEngine {
     if (this._isNavigating) return;
 
     this._isNavigating = true;
-    this.emitStateChanged();
+    this.emitStateChanged("goToStep");
 
     try {
       const currentStep = this.getCurrentStep(active);
@@ -527,10 +540,10 @@ export class PathEngine {
 
       this.applyPatch(await this.enterCurrentStep());
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("goToStep");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("goToStep");
       throw err;
     }
   }
@@ -539,7 +552,7 @@ export class PathEngine {
     if (this._isNavigating) return;
 
     this._isNavigating = true;
-    this.emitStateChanged();
+    this.emitStateChanged("goToStepChecked");
 
     try {
       const currentStep = this.getCurrentStep(active);
@@ -555,10 +568,10 @@ export class PathEngine {
       }
 
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("goToStepChecked");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("goToStepChecked");
       throw err;
     }
   }
@@ -574,7 +587,7 @@ export class PathEngine {
     this.activePath = this.pathStack.pop() ?? null;
 
     this._isNavigating = true;
-    this.emitStateChanged();
+    this.emitStateChanged("cancel");
 
     try {
       const parent = this.activePath;
@@ -595,10 +608,10 @@ export class PathEngine {
       }
 
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("cancel");
     } catch (err) {
       this._isNavigating = false;
-      this.emitStateChanged();
+      this.emitStateChanged("cancel");
       throw err;
     }
   }
@@ -662,8 +675,8 @@ export class PathEngine {
     }
   }
 
-  private emitStateChanged(): void {
-    this.emit({ type: "stateChanged", snapshot: this.snapshot()! });
+  private emitStateChanged(cause: StateChangeCause): void {
+    this.emit({ type: "stateChanged", cause, snapshot: this.snapshot()! });
   }
 
   private getCurrentStep(active: ActivePath): PathStep {

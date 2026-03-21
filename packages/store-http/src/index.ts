@@ -5,7 +5,8 @@
  * Calls your custom endpoints to save/load serialized path state.
  */
 
-import type { SerializedPathState, PathEngine, PathEvent, PathDefinition, PathData } from "@daltonr/pathwrite-core";
+import { PathEngine } from "@daltonr/pathwrite-core";
+import type { SerializedPathState, PathEvent, PathDefinition, PathData } from "@daltonr/pathwrite-core";
 
 export interface HttpStoreOptions {
   /**
@@ -63,7 +64,7 @@ export class HttpStore {
       saveUrl: options.saveUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
       loadUrl: options.loadUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
       deleteUrl: options.deleteUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
-      fetch: options.fetch ?? fetch,
+      fetch: options.fetch ?? fetch.bind(globalThis),
       headers: options.headers,
       onError: options.onError,
     };
@@ -250,8 +251,6 @@ export class PathEngineWithStore {
     pathDefinitions: Record<string, PathDefinition>,
     initialData?: PathData
   ): Promise<void> {
-    // Import PathEngine here to avoid circular dependency issues
-    const { PathEngine } = await import("@daltonr/pathwrite-core");
 
     // Clean up previous engine if any
     this.cleanup();
@@ -355,11 +354,7 @@ export class PathEngineWithStore {
         break;
 
       case "onNext":
-        // Save on stateChanged events that represent forward navigation
-        // We can detect this by checking if the event happened after a next() call
-        // For simplicity, we'll save on all stateChanged for now
-        // A more sophisticated approach would track the last operation
-        shouldSave = event.type === "stateChanged";
+        shouldSave = event.type === "stateChanged" && event.cause === "next";
         break;
 
       case "onSubPathComplete":

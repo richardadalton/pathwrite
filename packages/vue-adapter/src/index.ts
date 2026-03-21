@@ -27,6 +27,17 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface UsePathOptions {
+  /**
+   * An externally-managed `PathEngine` to subscribe to — for example, the engine
+   * obtained from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   *
+   * When provided:
+   * - `usePath` will **not** create its own engine.
+   * - The snapshot is seeded immediately from the engine's current state.
+   * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
+   * - `PathShell` will skip its own `autoStart` call.
+   */
+  engine?: PathEngine;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
   onEvent?: (event: PathEvent) => void;
 }
@@ -63,8 +74,13 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 // ---------------------------------------------------------------------------
 
 export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  const engine = new PathEngine();
-  const _snapshot = shallowRef<PathSnapshot<TData> | null>(null);
+  const engine = options?.engine ?? new PathEngine();
+
+  // Seed immediately from existing engine state — essential when restoring a
+  // persisted path (the engine is already started before usePath is called).
+  const _snapshot = shallowRef<PathSnapshot<TData> | null>(
+    engine.snapshot() as PathSnapshot<TData> | null
+  );
 
   const unsubscribe = engine.subscribe((event: PathEvent) => {
     if (event.type === "stateChanged" || event.type === "resumed") {
@@ -154,6 +170,12 @@ export const PathShell = defineComponent({
   name: "PathShell",
   props: {
     path: { type: Object as PropType<PathDefinition<any>>, required: true },
+    /**
+     * An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`).
+     * When supplied, `PathShell` will skip its own `start()` call and drive the
+     * UI from the provided engine instead of creating a new one.
+     */
+    engine: { type: Object as PropType<PathEngine>, default: undefined },
     initialData: { type: Object as PropType<PathData>, default: () => ({}) },
     autoStart: { type: Boolean, default: true },
     backLabel: { type: String, default: "Back" },
@@ -166,6 +188,7 @@ export const PathShell = defineComponent({
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit }) {
     const pathReturn = usePath({
+      engine: props.engine,
       onEvent(event) {
         emit("event", event);
         if (event.type === "completed") emit("complete", event.data);
@@ -180,7 +203,9 @@ export const PathShell = defineComponent({
 
     const started = ref(false);
     onMounted(() => {
-      if (props.autoStart && !started.value) {
+      // Skip auto-start when an external engine has been provided — the caller
+      // is responsible for starting it (e.g. via PathEngineWithStore.startOrRestore).
+      if (props.autoStart && !started.value && !props.engine) {
         started.value = true;
         start(props.path, props.initialData);
       }
@@ -321,3 +346,6 @@ export type {
   PathStepContext,
   SerializedPathState
 } from "@daltonr/pathwrite-core";
+
+export { PathEngine } from "@daltonr/pathwrite-core";
+
