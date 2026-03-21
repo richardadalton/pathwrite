@@ -40,16 +40,16 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   }
 
   /**
-   * Adopt an externally-managed `PathEngine` — for example, the engine obtained
-   * from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   * Adopt an externally-managed `PathEngine` — for example, the engine returned
+   * by `createPersistedEngine()` from `@daltonr/pathwrite-store-http`.
    *
    * The facade immediately reflects the engine's current state and forwards all
    * subsequent events. The **caller** is responsible for the engine's lifecycle
    * (starting, cleanup); the facade only subscribes to it.
    *
    * ```typescript
-   * await wrapper.startOrRestore(myPath, pathDefs, initialData);
-   * facade.adoptEngine(wrapper.getEngine());
+   * const { engine } = await createPersistedEngine({ baseUrl, key, path });
+   * facade.adoptEngine(engine);
    * ```
    */
   public adoptEngine(engine: PathEngine): void {

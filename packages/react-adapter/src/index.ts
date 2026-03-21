@@ -23,7 +23,7 @@ import {
 export interface UsePathOptions {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
-   * obtained from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   * returned by `createPersistedEngine()` from `@daltonr/pathwrite-store-http`.
    *
    * When provided:
    * - `usePath` will **not** create its own engine.
@@ -197,9 +197,9 @@ export interface PathShellProps {
   /** The path definition to drive. */
   path: PathDefinition<any>;
   /**
-   * An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`).
-   * When supplied, `PathShell` will skip its own `start()` call and drive the
-   * UI from the provided engine instead of creating a new one.
+   * An externally-managed engine — for example, the engine returned by
+   * `createPersistedEngine()`. When supplied, `PathShell` will skip its own
+   * `start()` call and drive the UI from the provided engine instead.
    */
   engine?: PathEngine;
   /** Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. */
@@ -292,7 +292,7 @@ export function PathShell({
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
   // Auto-start on mount — skipped when an external engine is provided since
-  // the caller is responsible for starting it (e.g. PathEngineWithStore.startOrRestore).
+  // the caller is responsible for starting it (e.g. via createPersistedEngine).
   const startedRef = useRef(false);
   useEffect(() => {
     if (autoStart && !startedRef.current && !externalEngine) {

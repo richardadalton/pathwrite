@@ -29,7 +29,7 @@ import {
 export interface UsePathOptions {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
-   * obtained from `PathEngineWithStore.getEngine()` after calling `startOrRestore()`.
+   * returned by `createPersistedEngine()` from `@daltonr/pathwrite-store-http`.
    *
    * When provided:
    * - `usePath` will **not** create its own engine.
@@ -171,9 +171,9 @@ export const PathShell = defineComponent({
   props: {
     path: { type: Object as PropType<PathDefinition<any>>, required: true },
     /**
-     * An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`).
-     * When supplied, `PathShell` will skip its own `start()` call and drive the
-     * UI from the provided engine instead of creating a new one.
+     * An externally-managed engine — for example, the engine returned by
+     * `createPersistedEngine()`. When supplied, `PathShell` will skip its own
+     * `start()` call and drive the UI from the provided engine instead.
      */
     engine: { type: Object as PropType<PathEngine>, default: undefined },
     initialData: { type: Object as PropType<PathData>, default: () => ({}) },
@@ -204,7 +204,7 @@ export const PathShell = defineComponent({
     const started = ref(false);
     onMounted(() => {
       // Skip auto-start when an external engine has been provided — the caller
-      // is responsible for starting it (e.g. via PathEngineWithStore.startOrRestore).
+      // is responsible for starting it (e.g. via createPersistedEngine).
       if (props.autoStart && !started.value && !props.engine) {
         started.value = true;
         start(props.path, props.initialData);
