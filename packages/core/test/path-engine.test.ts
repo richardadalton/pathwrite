@@ -382,8 +382,102 @@ describe("PathEngine — events", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Lifecycle hooks
+// StateChangeCause — cause field on stateChanged events
 // ---------------------------------------------------------------------------
+
+describe("PathEngine — stateChanged cause field", () => {
+  function stateChangedCauses(events: PathEvent[]): string[] {
+    return events
+      .filter((e) => e.type === "stateChanged")
+      .map((e) => (e as Extract<PathEvent, { type: "stateChanged" }>).cause);
+  }
+
+  it("start() emits stateChanged events with cause 'start'", async () => {
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+    await engine.start(twoStepPath());
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "start")).toBe(true);
+  });
+
+  it("next() emits stateChanged events with cause 'next'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    const events = collectEvents(engine);
+    await engine.next();
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "next")).toBe(true);
+  });
+
+  it("previous() emits stateChanged events with cause 'previous'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    const events = collectEvents(engine);
+    await engine.previous();
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "previous")).toBe(true);
+  });
+
+  it("setData() emits stateChanged with cause 'setData'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "a" });
+    const events = collectEvents(engine);
+    await engine.setData("name", "b");
+    const causes = stateChangedCauses(events);
+    expect(causes).toEqual(["setData"]);
+  });
+
+  it("cancel() emits stateChanged events with cause 'cancel'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"));
+    await engine.startSubPath(twoStepPath("sub"));
+    const events = collectEvents(engine);
+    await engine.cancel();
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "cancel")).toBe(true);
+  });
+
+  it("goToStep() emits stateChanged events with cause 'goToStep'", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    const events = collectEvents(engine);
+    await engine.goToStep("c");
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "goToStep")).toBe(true);
+  });
+
+  it("goToStepChecked() emits stateChanged events with cause 'goToStepChecked'", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
+    const events = collectEvents(engine);
+    await engine.goToStepChecked("c");
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "goToStepChecked")).toBe(true);
+  });
+
+  it("restart() emits stateChanged events with cause 'start'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    await engine.next();
+    const events = collectEvents(engine);
+    await engine.restart(twoStepPath());
+    const causes = stateChangedCauses(events);
+    expect(causes.length).toBeGreaterThan(0);
+    expect(causes.every((c) => c === "start")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Snapshot fields
+// ---------------------------------------------------------------------------
+
 
 describe("PathEngine — lifecycle hooks", () => {
   it("calls onEnter when the path starts", async () => {

@@ -17,6 +17,7 @@ import {
   PathShell,            // Vue-specific
   usePath,              // Vue-specific
   usePathContext,       // Vue-specific
+  PathEngine,           // Re-exported from core (value + type)
   PathData,             // Re-exported from core
   PathDefinition,       // Re-exported from core
   PathEvent,            // Re-exported from core
@@ -67,6 +68,7 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
 
 | Option | Type | Description |
 |--------|------|-------------|
+| `engine` | `PathEngine` | An externally-managed engine (e.g. from `PathEngineWithStore.getEngine()`). When provided, `usePath` subscribes to it instead of creating a new one; snapshot is seeded immediately. The caller is responsible for the engine's lifecycle. |
 | `onEvent` | `(event: PathEvent) => void` | Called for every engine event. |
 
 ### Return value
@@ -142,6 +144,7 @@ The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated resu
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | *required* | The path to run. |
+| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()` and drives the UI from this engine. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `backLabel` | `string` | `"Back"` | Back button label. |

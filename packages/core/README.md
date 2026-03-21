@@ -63,7 +63,8 @@ const path: PathDefinition<CourseData> = {
 | `PathStep<TData>` | A single step: guards, lifecycle hooks. |
 | `PathStepContext<TData>` | Passed to every hook and guard. `data` is a **readonly snapshot copy** — return a patch to update state. |
 | `PathSnapshot<TData>` | Point-in-time read of the engine: step ID, index, count, flags, and a copy of data. |
-| `PathEvent` | Union of `stateChanged`, `completed`, `cancelled`, and `resumed`. |
+| `PathEvent` | Union of `stateChanged` (includes `cause`), `completed`, `cancelled`, and `resumed`. |
+| `StateChangeCause` | Identifies the method that triggered a `stateChanged` event: `"start"` \| `"next"` \| `"previous"` \| `"goToStep"` \| `"goToStepChecked"` \| `"setData"` \| `"cancel"` \| `"restart"`. |
 
 ## PathEngine API
 
@@ -72,7 +73,7 @@ const engine = new PathEngine();
 
 engine.start(definition, initialData?);    // start or re-start a path
 engine.restart(definition, initialData?);  // tear down stack and start fresh (no hooks, no cancelled event)
-engine.startSubPath(definition, data?);    // push sub-path onto the stack (requires active path)
+engine.startSubPath(definition, data?, meta?); // push sub-path onto the stack (requires active path)
 engine.next();
 engine.previous();
 engine.cancel();
@@ -416,13 +417,15 @@ Sub-paths can themselves start sub-paths (unlimited nesting). Use `snapshot.nest
 ```typescript
 engine.subscribe((event) => {
   switch (event.type) {
-    case "stateChanged": // event.snapshot
+    case "stateChanged": // event.cause ("start" | "next" | "previous" | ...), event.snapshot
     case "completed":    // event.pathId, event.data
     case "cancelled":    // event.pathId, event.data
     case "resumed":      // event.resumedPathId, event.fromSubPathId, event.snapshot
   }
 });
 ```
+
+Every `stateChanged` event includes a `cause` field (`StateChangeCause`) identifying which public method triggered it. Use this to react to specific operations — for example, the `store-http` package uses `event.cause === "next"` to implement the `onNext` persistence strategy.
 
 ## State Persistence
 

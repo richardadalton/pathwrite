@@ -364,8 +364,12 @@ If no guard is defined, the value defaults to `true`. If the guard is async (ret
 Subscribe with `engine.subscribe`. The callback receives a `PathEvent`:
 
 ```typescript
+type StateChangeCause =
+  | "start" | "next" | "previous" | "goToStep"
+  | "goToStepChecked" | "setData" | "cancel" | "restart";
+
 type PathEvent =
-  | { type: "stateChanged"; snapshot: PathSnapshot }
+  | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot }
   | { type: "completed";    pathId: string; data: PathData }
   | { type: "cancelled";    pathId: string; data: PathData }
   | { type: "resumed";      resumedPathId: string; fromSubPathId: string; snapshot: PathSnapshot };
@@ -383,7 +387,7 @@ unsubscribe();
 
 | Event | When fired | Key payload |
 |---|---|---|
-| `stateChanged` | After every navigation or `setData` call (possibly multiple times per operation — see `isNavigating`) | `snapshot` |
+| `stateChanged` | After every navigation or `setData` call (possibly multiple times per operation — see `isNavigating`) | `cause`, `snapshot` |
 | `completed` | When the path finishes naturally (past the last step) | `pathId`, `data` (final state) |
 | `cancelled` | When the top-level path is cancelled | `pathId`, `data` |
 | `resumed` | When a sub-path finishes and the parent is restored | `resumedPathId`, `fromSubPathId`, `snapshot` |

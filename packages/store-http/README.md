@@ -516,113 +516,91 @@ app.listen(3000);
 
 ## Usage: Vue 3
 
+Use `PathEngineWithStore` for automatic persistence, then pass the engine to `usePath()`:
+
 ```vue
 <script setup lang="ts">
-import { ref, onMounted, watchEffect } from "vue";
-import { usePath } from "@daltonr/pathwrite-vue";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-import { PathEngine } from "@daltonr/pathwrite-core";
-import { myPath } from "./paths";
+import { ref, shallowRef, onMounted, onBeforeUnmount } from "vue";
+import { usePath, PathShell } from "@daltonr/pathwrite-vue";
+import { HttpStore, PathEngineWithStore } from "@daltonr/pathwrite-store-http";
+import { myPath, pathDefs } from "./paths";
 
-const userId = "user-123"; // From auth
 const store = new HttpStore({
   baseUrl: "/api/wizard",
-  headers: () => ({
-    Authorization: `Bearer ${getAuthToken()}`,
-  }),
-  onError: (error, operation, key) => {
-    console.error(`Failed to ${operation} state for ${key}:`, error);
-  },
+  headers: () => ({ Authorization: `Bearer ${getAuthToken()}` }),
 });
 
-const { snapshot, next, previous, setData } = usePath({
-  async onEvent(event) {
-    // Auto-save on every state change
-    if (event.type === "stateChanged" || event.type === "resumed") {
-      const engine = getEngineFromSomewhere(); // See note below
-      const state = engine.exportState();
-      await store.save(`user:${userId}`, state);
-    }
-  },
+const wrapper = new PathEngineWithStore({
+  key: "user:123:onboarding",
+  store,
+  persistenceStrategy: "onNext",
 });
 
-// Load saved state on mount
+const engine = shallowRef<PathEngine | null>(null);
+
 onMounted(async () => {
-  const saved = await store.load(`user:${userId}`);
-  
-  if (saved) {
-    // Restore from saved state
-    const engine = PathEngine.fromState(saved, myPath);
-    // TODO: need a way to inject this engine into usePath
-    // For now, this requires a new usePath option or method
-  } else {
-    // Start fresh
-    await start(myPath, { userId });
-  }
+  await wrapper.startOrRestore(myPath, pathDefs);
+  engine.value = wrapper.getEngine();
 });
+
+onBeforeUnmount(() => wrapper.cleanup());
 </script>
 
 <template>
-  <div v-if="snapshot">
-    <h2>{{ snapshot.stepTitle ?? snapshot.stepId }}</h2>
-    <button @click="previous">Back</button>
-    <button @click="next">Next</button>
-  </div>
+  <!-- Wait for engine before rendering -->
+  <PathShell v-if="engine" :path="myPath" :engine="engine" @complete="handleDone">
+    <template #step1>…</template>
+    <template #step2>…</template>
+  </PathShell>
+  <p v-else>Loading…</p>
 </template>
 ```
 
-**Note:** The current `usePath()` API doesn't expose the internal engine, so you can't call `exportState()` on it. We'll need to add that — see "Required API additions" below.
 
 ---
 
 ## Usage: React
 
-```tsx
-import { useEffect, useRef } from "react";
-import { usePath } from "@daltonr/pathwrite-react";
-import { HttpStore } from "@daltonr/pathwrite-store-http";
-import { PathEngine } from "@daltonr/pathwrite-core";
-import { myPath } from "./paths";
+Use `PathEngineWithStore` for automatic persistence, then pass the engine to `<PathShell>` or `usePath()`:
 
-function WizardComponent() {
-  const userId = "user-123";
-  const storeRef = useRef(
-    new HttpStore({
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { PathShell, PathEngine } from "@daltonr/pathwrite-react";
+import { HttpStore, PathEngineWithStore } from "@daltonr/pathwrite-store-http";
+import { myPath, pathDefs } from "./paths";
+
+function WizardPage() {
+  const [engine, setEngine] = useState<PathEngine | null>(null);
+  const wrapperRef = useRef<PathEngineWithStore>();
+
+  useEffect(() => {
+    const store = new HttpStore({
       baseUrl: "/api/wizard",
       headers: { Authorization: `Bearer ${getAuthToken()}` },
-    })
-  );
+    });
+    const wrapper = new PathEngineWithStore({
+      key: "user:123:onboarding",
+      store,
+      persistenceStrategy: "onNext",
+    });
+    wrapperRef.current = wrapper;
 
-  const { snapshot, next, previous } = usePath({
-    async onEvent(event) {
-      if (event.type === "stateChanged" || event.type === "resumed") {
-        // Need access to engine.exportState() here
-        // See "Required API additions" below
-      }
-    },
-  });
+    wrapper.startOrRestore(myPath, pathDefs).then(() => {
+      setEngine(wrapper.getEngine());
+    });
 
-  // Load on mount
-  useEffect(() => {
-    (async () => {
-      const saved = await storeRef.current.load(`user:${userId}`);
-      if (saved) {
-        // Restore engine from saved state
-        // Need a way to pass this to usePath
-      }
-    })();
+    return () => wrapper.cleanup();
   }, []);
 
+  if (!engine) return <p>Loading…</p>;
+
   return (
-    <div>
-      {snapshot && (
-        <>
-          <h2>{snapshot.stepTitle ?? snapshot.stepId}</h2>
-          <button onClick={previous}>Back</button>
-          <button onClick={next}>Next</button>
-        </>
-      )}
-    </div>
+    <PathShell
+      path={myPath}
+      engine={engine}
+      onComplete={(data) => console.log("Done!", data)}
+      steps={{ step1: <Step1 />, step2: <Step2 /> }}
+    />
   );
 }
 ```
@@ -735,37 +713,6 @@ engine.subscribe(async (event) => {
 
 ---
 
-## Required API additions
-
-For this to work cleanly, the adapters need two additions:
-
-### 1. Expose `exportState()` from `usePath()`
-
-```ts
-// Vue
-const { snapshot, next, exportState } = usePath();
-
-// React
-const { snapshot, next, exportState } = usePath();
-```
-
-### 2. Accept a pre-constructed engine or state
-
-```ts
-// Option A: fromState shortcut
-const { snapshot, next } = usePath({
-  fromState: savedState,
-  path: myPath,
-});
-
-// Option B: Accept an engine directly
-const engine = PathEngine.fromState(savedState, myPath);
-const { snapshot, next } = usePath({ engine });
-```
-
-Without these, you have to work around the adapter's encapsulation, which is awkward.
-
----
 
 ## Server-side: Document-based state (multi-user)
 
@@ -821,16 +768,6 @@ test("saves state to API", async () => {
 ```
 
 ---
-
-## Next steps
-
-1. **Add `exportState()` / `fromState()` to core** (prerequisite)
-2. **Update Vue/React adapters** to expose `exportState()` and accept `fromState` or `engine`
-3. **Publish `@daltonr/pathwrite-store-http`** as a separate package
-4. **Document the pattern** in DEVELOPER_GUIDE.md
-
-
-
 
 
 

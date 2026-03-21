@@ -214,3 +214,5 @@ export type {
   SerializedPathState
 } from "@daltonr/pathwrite-core";
 
+export { PathEngine } from "@daltonr/pathwrite-core";
+

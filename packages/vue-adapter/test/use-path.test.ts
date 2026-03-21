@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { effectScope } from "vue";
-import { PathData, PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
@@ -313,3 +313,76 @@ describe("usePath — restart()", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// External engine option
+// ---------------------------------------------------------------------------
+
+describe("usePath — external engine", () => {
+  it("seeds snapshot from a pre-started engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { owner: "ext" });
+    await engine.next(); // step2
+
+    const { path } = createPath({ engine });
+    expect(path.snapshot.value?.stepId).toBe("step2");
+    expect(path.snapshot.value?.data.owner).toBe("ext");
+  });
+
+  it("tracks state changes made through the external engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const { path } = createPath({ engine });
+    expect(path.snapshot.value?.stepId).toBe("step1");
+
+    await engine.next();
+    expect(path.snapshot.value?.stepId).toBe("step2");
+  });
+
+  it("tracks state changes made through usePath helpers", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const { path } = createPath({ engine });
+    await path.next();
+    expect(path.snapshot.value?.stepId).toBe("step2");
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("fires onEvent for external engine events", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const events: PathEvent[] = [];
+    const { path } = createPath({ engine, onEvent: (e) => events.push(e) });
+
+    await engine.next();
+    expect(events.some((e) => e.type === "stateChanged")).toBe(true);
+  });
+
+  it("sets snapshot to null when the external engine completes", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const { path } = createPath({ engine });
+    await engine.next();
+    await engine.next(); // completes
+    expect(path.snapshot.value).toBeNull();
+  });
+
+  it("works with fromState-restored engines", async () => {
+    // Create and advance an engine, export state
+    const engine1 = new PathEngine();
+    const pathDef = twoStepPath("test");
+    await engine1.start(pathDef, { count: 5 });
+    await engine1.next();
+    const state = engine1.exportState()!;
+
+    // Restore from state
+    const engine2 = PathEngine.fromState(state, { test: pathDef });
+
+    const { path } = createPath({ engine: engine2 });
+    expect(path.snapshot.value?.stepId).toBe("step2");
+    expect(path.snapshot.value?.data.count).toBe(5);
+  });
+});

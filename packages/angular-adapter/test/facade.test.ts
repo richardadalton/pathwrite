@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Subject } from "rxjs";
-import { PathData, PathDefinition } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine } from "@daltonr/pathwrite-core";
 import { PathFacade, syncFormGroup, FormGroupLike } from "../src/index";
 
 // ---------------------------------------------------------------------------
@@ -609,3 +609,86 @@ describe("syncFormGroup", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// adoptEngine
+// ---------------------------------------------------------------------------
+
+describe("PathFacade — adoptEngine", () => {
+  it("seeds state$ from a pre-started engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine);
+
+    expect(latestState(facade)).toMatchObject({ pathId: "main", stepId: "step1" });
+  });
+
+  it("follows navigation on the adopted engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine);
+    await engine.next();
+    expect(latestState(facade)?.stepId).toBe("step2");
+  });
+
+  it("emits events$ from the adopted engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine);
+
+    const types: string[] = [];
+    facade.events$.subscribe((e) => types.push(e.type));
+    await engine.next();
+    expect(types).toContain("stateChanged");
+  });
+
+  it("sets state to null when the adopted engine completes", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine);
+    await engine.next();
+    await engine.next(); // completes
+    expect(latestState(facade)).toBeNull();
+  });
+
+  it("works with fromState-restored engines", async () => {
+    const engine1 = new PathEngine();
+    const pathDef = twoStepPath("test");
+    await engine1.start(pathDef, { count: 5 });
+    await engine1.next();
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { test: pathDef });
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine2);
+    expect(latestState(facade)?.stepId).toBe("step2");
+    expect(latestState(facade)?.data.count).toBe(5);
+  });
+
+  it("disconnects from the previous engine when adopting a new one", async () => {
+    const engine1 = new PathEngine();
+    await engine1.start(twoStepPath("first"));
+
+    const facade = new PathFacade();
+    facade.adoptEngine(engine1);
+    expect(latestState(facade)?.pathId).toBe("first");
+
+    const engine2 = new PathEngine();
+    await engine2.start(twoStepPath("second"));
+    facade.adoptEngine(engine2);
+    expect(latestState(facade)?.pathId).toBe("second");
+
+    // Navigation on old engine should not affect facade
+    await engine1.next();
+    expect(latestState(facade)?.pathId).toBe("second");
+    expect(latestState(facade)?.stepId).toBe("step1");
+  });
+});
