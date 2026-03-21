@@ -17,7 +17,7 @@
     *ngIf="!completedData"
     [path]="signupPath"
     [initialData]="{ name: '', email: '', bio: '' }"
-    finishLabel="Sign Up"
+    completeLabel="Sign Up"
     (completed)="onComplete($event)"
     (pathEvent)="onPathEvent($event)"
   >

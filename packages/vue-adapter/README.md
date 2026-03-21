@@ -149,7 +149,7 @@ The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated resu
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
@@ -183,7 +183,7 @@ Use the `#header` and `#footer` slots to replace the built-in progress bar or na
   <template #footer="{ snapshot, actions }">
     <button @click="actions.previous" :disabled="snapshot.isFirstStep">Back</button>
     <button @click="actions.next"     :disabled="!snapshot.canMoveNext">
-      {{ snapshot.isLastStep ? 'Finish' : 'Next' }}
+      {{ snapshot.isLastStep ? 'Complete' : 'Next' }}
     </button>
   </template>
 

@@ -55,7 +55,7 @@ function MyPathHost() {
           <p>Step {snapshot.stepIndex + 1} of {snapshot.stepCount}</p>
           <button onClick={previous} disabled={snapshot.isNavigating}>Back</button>
           <button onClick={next}     disabled={snapshot.isNavigating}>
-            {snapshot.isLastStep ? "Finish" : "Next"}
+            {snapshot.isLastStep ? "Complete" : "Next"}
           </button>
           <button onClick={cancel}>Cancel</button>
         </>
@@ -203,7 +203,7 @@ import { PathShell } from "@daltonr/pathwrite-react";
 | `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
@@ -226,7 +226,7 @@ Use `renderHeader` and `renderFooter` to replace the built-in progress bar or na
     <div>
       <button onClick={actions.previous} disabled={snapshot.isFirstStep}>Back</button>
       <button onClick={actions.next}     disabled={!snapshot.canMoveNext}>
-        {snapshot.isLastStep ? "Finish" : "Next"}
+        {snapshot.isLastStep ? "Complete" : "Next"}
       </button>
     </div>
   )}

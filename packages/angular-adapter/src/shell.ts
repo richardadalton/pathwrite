@@ -212,7 +212,7 @@ export class PathShellFooterDirective {
               class="pw-shell__btn pw-shell__btn--next"
               [disabled]="s.isNavigating || !s.canMoveNext"
               (click)="facade.next()"
-            >{{ s.isLastStep ? finishLabel : nextLabel }}</button>
+            >{{ s.isLastStep ? completeLabel : nextLabel }}</button>
           </div>
         </div>
       </ng-template>
@@ -231,7 +231,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
   /** Label for the Next navigation button. */
   @Input() nextLabel = "Next";
   /** Label for the Next button when on the last step. */
-  @Input() finishLabel = "Finish";
+  @Input() completeLabel = "Complete";
   /** Label for the Cancel button. */
   @Input() cancelLabel = "Cancel";
   /** Hide the Cancel button entirely. */

@@ -137,18 +137,18 @@ describe("PathShell (Vue) — navigation", () => {
     wrapper.unmount();
   });
 
-  it("shows Finish on the last step", async () => {
+  it("shows Complete on the last step", async () => {
     const wrapper = mountShell();
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
-    expect(wrapper.find(".pw-shell__btn--next").text()).toBe("Finish");
+    expect(wrapper.find(".pw-shell__btn--next").text()).toBe("Complete");
     wrapper.unmount();
   });
 
-  it("emits complete when Finish is clicked", async () => {
+  it("emits complete when Complete is clicked", async () => {
     const onComplete = vi.fn();
     const wrapper = mountShell({ onComplete });
     await settled();
@@ -269,14 +269,14 @@ describe("PathShell (Vue) — custom labels", () => {
     wrapper.unmount();
   });
 
-  it("uses custom finish label on last step", async () => {
-    const wrapper = mountShell({ finishLabel: "Complete" });
+  it("uses custom complete label on last step", async () => {
+    const wrapper = mountShell({ completeLabel: "Done" });
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
-    expect(wrapper.find(".pw-shell__btn--next").text()).toBe("Complete");
+    expect(wrapper.find(".pw-shell__btn--next").text()).toBe("Done");
     wrapper.unmount();
   });
 });

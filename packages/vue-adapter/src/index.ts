@@ -180,7 +180,7 @@ export const PathShell = defineComponent({
     autoStart: { type: Boolean, default: true },
     backLabel: { type: String, default: "Previous" },
     nextLabel: { type: String, default: "Next" },
-    finishLabel: { type: String, default: "Finish" },
+    completeLabel: { type: String, default: "Complete" },
     cancelLabel: { type: String, default: "Cancel" },
     hideCancel: { type: Boolean, default: false },
     hideProgress: { type: Boolean, default: false }
@@ -301,7 +301,7 @@ function renderVueHeader(snapshot: PathSnapshot): VNode {
 function renderVueFooter(
   snapshot: PathSnapshot,
   actions: PathShellActions,
-  props: { backLabel: string; nextLabel: string; finishLabel: string; cancelLabel: string; hideCancel: boolean }
+  props: { backLabel: string; nextLabel: string; completeLabel: string; cancelLabel: string; hideCancel: boolean }
 ): VNode {
   return h("div", { class: "pw-shell__footer" }, [
     h("div", { class: "pw-shell__footer-left" }, [
@@ -328,7 +328,7 @@ function renderVueFooter(
         class: "pw-shell__btn pw-shell__btn--next",
         disabled: snapshot.isNavigating || !snapshot.canMoveNext,
         onClick: actions.next
-      }, snapshot.isLastStep ? props.finishLabel : props.nextLabel)
+      }, snapshot.isLastStep ? props.completeLabel : props.nextLabel)
     ])
   ]);
 }

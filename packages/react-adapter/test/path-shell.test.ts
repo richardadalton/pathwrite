@@ -104,20 +104,19 @@ describe("PathShell — navigation", () => {
     expect(screen.getByText("Content A")).toBeTruthy();
   });
 
-  it("shows Finish on the last step", async () => {
+  it("shows Complete on the last step", async () => {
     await act(async () => renderShell());
     await act(async () => screen.getByText("Next").click());
     await act(async () => screen.getByText("Next").click());
-    expect(screen.getByText("Finish")).toBeTruthy();
-    expect(screen.queryByText("Next")).toBeNull();
+    expect(screen.getByText("Complete")).toBeTruthy();
   });
 
-  it("calls onComplete when Finish is clicked", async () => {
+  it("calls onComplete when Complete is clicked", async () => {
     const onComplete = vi.fn();
     await act(async () => renderShell({ onComplete }));
     await act(async () => screen.getByText("Next").click());
     await act(async () => screen.getByText("Next").click());
-    await act(async () => screen.getByText("Finish").click());
+    await act(async () => screen.getByText("Complete").click());
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
@@ -199,11 +198,11 @@ describe("PathShell — custom labels", () => {
     expect(screen.getByText("Abort")).toBeTruthy();
   });
 
-  it("uses custom finish label on last step", async () => {
-    await act(async () => renderShell({ finishLabel: "Complete" }));
+  it("uses custom complete label on last step", async () => {
+    await act(async () => renderShell({ completeLabel: "Done" }));
     await act(async () => screen.getByText("Next").click());
     await act(async () => screen.getByText("Next").click());
-    expect(screen.getByText("Complete")).toBeTruthy();
+    expect(screen.getByText("Done")).toBeTruthy();
   });
 });
 

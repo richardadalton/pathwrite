@@ -303,7 +303,7 @@ export class MyComponent {
 | `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
@@ -348,7 +348,7 @@ export class MyComponent { ... }
       <ng-template pwShellFooter let-s let-actions="actions">
         <button (click)="actions.previous()" [disabled]="s.isFirstStep || s.isNavigating">Back</button>
         <button (click)="actions.next()"     [disabled]="!s.canMoveNext || s.isNavigating">
-          {{ s.isLastStep ? 'Finish' : 'Next' }}
+          {{ s.isLastStep ? 'Complete' : 'Next' }}
         </button>
       </ng-template>
       <ng-template pwStep="details"><app-details-form /></ng-template>

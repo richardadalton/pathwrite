@@ -214,12 +214,12 @@ export interface PathShellProps {
   onCancel?: (data: PathData) => void;
   /** Called for every engine event. */
   onEvent?: (event: PathEvent) => void;
-  /** Label for the Back button. Defaults to `"Back"`. */
+  /** Label for the Previous button. Defaults to `"Previous"`. */
   backLabel?: string;
   /** Label for the Next button. Defaults to `"Next"`. */
   nextLabel?: string;
-  /** Label for the Finish button (shown on the last step). Defaults to `"Finish"`. */
-  finishLabel?: string;
+  /** Label for the Complete button (shown on the last step). Defaults to `"Complete"`. */
+  completeLabel?: string;
   /** Label for the Cancel button. Defaults to `"Cancel"`. */
   cancelLabel?: string;
   /** If true, hide the Cancel button. Defaults to `false`. */
@@ -272,7 +272,7 @@ export function PathShell({
   onEvent,
   backLabel = "Previous",
   nextLabel = "Next",
-  finishLabel = "Finish",
+  completeLabel = "Complete",
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
@@ -343,7 +343,7 @@ export function PathShell({
       renderFooter
         ? renderFooter(snapshot, actions)
         : defaultFooter(snapshot, actions, {
-            backLabel, nextLabel, finishLabel, cancelLabel, hideCancel
+            backLabel, nextLabel, completeLabel, cancelLabel, hideCancel
           })
     )
   );
@@ -386,7 +386,7 @@ function defaultHeader(snapshot: PathSnapshot): ReactElement {
 interface FooterLabels {
   backLabel: string;
   nextLabel: string;
-  finishLabel: string;
+  completeLabel: string;
   cancelLabel: string;
   hideCancel: boolean;
 }
@@ -417,7 +417,7 @@ function defaultFooter(
         className: "pw-shell__btn pw-shell__btn--next",
         disabled: snapshot.isNavigating || !snapshot.canMoveNext,
         onClick: actions.next
-      }, snapshot.isLastStep ? labels.finishLabel : labels.nextLabel)
+      }, snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
     )
   );
 }

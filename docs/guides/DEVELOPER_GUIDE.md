@@ -1089,7 +1089,7 @@ export class MyComponent { ... }
 | `autoStart` | `boolean` | `true` | Auto-start on init. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
@@ -1201,7 +1201,7 @@ All shell components use BEM-style `pw-shell__*` classes:
 | `.pw-shell__footer-right` | Right side of footer (Cancel, Next). |
 | `.pw-shell__btn` | Base button class. |
 | `.pw-shell__btn--back` | Back button — outlined secondary style (transparent bg, primary border + text). |
-| `.pw-shell__btn--next` | Next / Finish button — primary filled style. |
+| `.pw-shell__btn--next` | Next / Complete button — primary filled style. |
 | `.pw-shell__btn--cancel` | Cancel button — ghost style (no border, muted text). |
 
 ### When to use the shell vs. going headless
