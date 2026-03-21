@@ -480,8 +480,7 @@ completes or is cancelled and the parent is restored.
 
 ### Back on the first step of a sub-path
 
-Calling `previous()` (or clicking Back in the shell) when on the **first step of a
-sub-path** cancels the sub-path and returns to the parent. `onSubPathCancel` is
+Calling `previous()` (or clicking Back in the shell) when on the **first step of a sub-path** cancels the sub-path and returns to the parent. `onSubPathCancel` is
 called if defined; `onSubPathComplete` is **not** called.
 
 ### Correlating sub-paths to collection items
@@ -1674,7 +1673,7 @@ it("renders step content and navigates", async () => {
 Pathwrite owns no HTML or CSS at its core. The snapshot gives you everything you need to render a path; how you render it is entirely up to you. The engine works equally well driving a UI wizard, a backend document lifecycle, or any ordered state transition with constraints. The optional shell components are a convenience layer — they use the same public API you would use to build custom UI.
 
 ### Steps are states
-A "step" is just an ordered state with optional guards and hooks. This abstraction maps naturally to UI wizard steps, but also to lifecycle states (Draft → Review → Approved → Published), pipeline stages, or onboarding phases. `goToStep` enables non-linear transitions (e.g. rejection), and `shouldSkip` handles conditional routing.
+A "step" is just an ordered state with optional guards and hooks. This abstraction maps naturally to lifecycle states (Draft → Review → Approved → Published), but also to wizard steps, pipeline stages, or onboarding phases. `goToStep` enables non-linear transitions (e.g. rejection), and `shouldSkip` handles conditional routing.
 
 ### Data is the source of truth
 All path data lives in `data`. There is no separate "form model" — `data` is the form model. Guards and hooks read from `data` and return patches to update it. Data flow is unidirectional and auditable.
@@ -1751,69 +1750,101 @@ const engine = PathEngine.fromState(saved, { [path.id]: path }, {
 `@daltonr/pathwrite-store-http` provides `httpPersistence()` — an observer factory that saves state to a REST API based on a configurable strategy:
 
 ```typescript
-import { HttpStore, httpPersistence, createPersistedEngine } from "@daltonr/pathwrite-store-http";
+import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
+const key = "user:123:onboarding";
 
 // Lower-level: wire manually
 const engine = new PathEngine({
-  observers: [httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" })],
+  observers: [httpPersistence({ store, key })],
 });
 await engine.start(myPath, initialData);
 
 // Higher-level: one-call convenience
-const { engine, restored } = await createPersistedEngine({
+const { engine, restored } = await restoreOrStart({
   store,
-  key: "user:123:onboarding",
+  key,
   path: myPath,
   initialData: { name: "", email: "" },
-  strategy: "onNext",
+  observers: [httpPersistence({ store, key })],
 });
 ```
 
-`createPersistedEngine` tries to load saved state; if found it restores, if not it starts fresh. It returns `{ engine, restored }` — `restored` is `true` when state was loaded from the server.
+#### Persistence strategies
 
-### Persistence strategies
+The `strategy` option controls when saves occur:
 
-| Strategy | Saves when |
-|---|---|
-| `"onNext"` *(default)* | `next()` completes navigation to a new step |
-| `"onEveryChange"` | Any settled `stateChanged` or `resumed` event |
-| `"onSubPathComplete"` | A sub-path finishes and the parent resumes |
-| `"onComplete"` | The entire path completes |
-| `"manual"` | Never — call `store.save()` yourself |
+| Strategy | When it saves | Use case |
+|---|---|---|
+| `"onNext"` *(default)* | After `next()` completes | Multi-step forms — 1 save per step |
+| `"onEveryChange"` | Every settled `stateChanged` event | Real-time saves — add `debounceMs` for text inputs |
+| `"onSubPathComplete"` | When a sub-path finishes | Nested wizard checkpoints |
+| `"onComplete"` | When the wizard completes | Audit trail / record-keeping |
+| `"manual"` | Never (call `store.save()` yourself) | Custom logic |
 
-The strategy type is `ObserverStrategy`, exported from `@daltonr/pathwrite-core`. The matching logic is `matchesStrategy(strategy, event)`, also from core.
+**The default is `"onNext"`** — it saves once after each navigation, which produces one API call per step for typical text forms without needing any debounce configuration.
 
-See `PERSISTENCE_STRATEGY_GUIDE.md` and `AUTO_PERSISTENCE_SUMMARY.md` for details.
+For detailed strategy comparisons and API call counts, see `PERSISTENCE_STRATEGY_GUIDE.md`.
 
-### Building your own observer with ObserverStrategy
+### Advanced Patterns: Multi-Store Scenarios
 
-`ObserverStrategy` and `matchesStrategy` live in core so any observer — not just HTTP persistence — can share the same trigger logic without reimplementing it:
+Because `restoreOrStart` and `httpPersistence` accept any `PathStore` implementation, you can load from one backend and save to another. This enables several useful patterns:
+
+#### Migration: read from old backend, write to new
 
 ```typescript
-import {
-  type ObserverStrategy,
-  matchesStrategy,
-  type PathObserver,
-} from "@daltonr/pathwrite-core";
+const legacyStore = new HttpStore({ baseUrl: "/api/v1" });
+const newStore = new HttpStore({ baseUrl: "/api/v2" });
 
-function auditLogObserver(strategy: ObserverStrategy): PathObserver {
-  return (event, engine) => {
-    if (matchesStrategy(strategy, event)) {
-      const state = engine.exportState();
-      if (state) auditLog.record(state);
-    }
-  };
-}
-
-const engine = new PathEngine({
+const { engine } = await restoreOrStart({
+  store: legacyStore,  // restore from v1 API if state exists
+  key: "user:123:onboarding",
+  path: myPath,
   observers: [
-    httpPersistence({ store, key: "user:123:onboarding", strategy: "onNext" }),
-    auditLogObserver("onComplete"),
-    (event) => console.log(`[wizard] ${event.type}`),
+    httpPersistence({ store: newStore, key: "user:123:onboarding" })  // all future saves go to v2
   ],
 });
 ```
 
+On the first load, existing state is read from the legacy API. All subsequent saves go to the new API. Once all users have been migrated, the legacy read path can be removed.
+
+#### Performance: read from cache, write to both cache and persistent storage
+
+```typescript
+const cache = new RedisStore({ host: "localhost" });
+const persistent = new MongoStore({ uri: "mongodb://..." });
+
+const { engine } = await restoreOrStart({
+  store: cache,  // fast load from Redis
+  key: "user:123:onboarding",
+  path: myPath,
+  observers: [
+    httpPersistence({ store: cache, key: "user:123:onboarding" }),        // keep cache fresh
+    httpPersistence({ store: persistent, key: "user:123:onboarding" }),   // backup to MongoDB
+  ],
+});
+```
+
+Two observers means every state change is saved to both stores. The load path checks only the cache (fast). If cache misses, you can fall back to `persistent.load()` before calling `restoreOrStart`.
+
+#### Offline-first: read from server, write locally
+
+```typescript
+const remote = new HttpStore({ baseUrl: "/api/wizard" });
+const local = new LocalStorageStore();
+
+const { engine } = await restoreOrStart({
+  store: remote,  // try to load from server first (may fail if offline)
+  key: "user:123:onboarding",
+  path: myPath,
+  observers: [
+    httpPersistence({ store: local, key: "user:123:onboarding" }),  // save to localStorage
+  ],
+});
+```
+
+State is always saved locally. On next page load, you can reverse the pattern: load from `local` (always available), save to both `local` and `remote` (when online).
+
+---
 
