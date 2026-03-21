@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-react
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix TypeScript contravariance: `start()` and `startSubPath()` now accept `PathDefinition<any>` at their public boundaries, so a typed `PathDefinition<MyData>` can be passed directly without casting. The Angular shell `[path]` input, React `PathShellProps.path`, and Vue `PathShell` path prop are updated consistently.
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
