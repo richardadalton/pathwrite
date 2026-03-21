@@ -30,8 +30,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => void;
-  /** Push a sub-path onto the stack. Requires an active path. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData) => void;
+  /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
+  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => void;
   /** Advance one step. Completes the path on the last step. */
   next: () => void;
   /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
@@ -96,8 +96,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   );
 
   const startSubPath = useCallback(
-    (path: PathDefinition<any>, initialData: PathData = {}) =>
-      engine.startSubPath(path, initialData),
+    (path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>) =>
+      engine.startSubPath(path, initialData, meta),
     [engine]
   );
 

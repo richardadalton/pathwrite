@@ -41,7 +41,7 @@ export class MyComponent {
 | Method | Description |
 |--------|-------------|
 | `start(definition, data?)` | Start or re-start a path. |
-| `startSubPath(definition, data?)` | Push a sub-path. Requires an active path. |
+| `startSubPath(definition, data?, meta?)` | Push a sub-path. Requires an active path. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | Advance one step. Completes the path on the last step. |
 | `previous()` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel()` | Cancel the active path (or sub-path). |

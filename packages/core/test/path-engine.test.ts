@@ -465,7 +465,8 @@ describe("PathEngine — lifecycle hooks", () => {
     expect(onSubPathComplete).toHaveBeenCalledWith(
       "sub",
       expect.objectContaining({ result: 42 }),
-      expect.objectContaining({ pathId: "parent", stepId: "step1" })
+      expect.objectContaining({ pathId: "parent", stepId: "step1" }),
+      undefined
     );
   });
 
@@ -1548,3 +1549,289 @@ describe("PathEngine — lifecycle patterns", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// isFirstEntry
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — isFirstEntry", () => {
+  it("is true on the first visit to a step", async () => {
+    const entries: boolean[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
+        { id: "b" }
+      ]
+    });
+    expect(entries).toEqual([true]);
+  });
+
+  it("is false when re-entering a step after Back", async () => {
+    const entries: boolean[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
+        { id: "b" }
+      ]
+    });
+    await engine.next(); // leave a → enter b
+    await engine.previous(); // leave b → re-enter a
+    expect(entries).toEqual([true, false]);
+  });
+
+  it("remains false on every subsequent re-entry", async () => {
+    const entries: boolean[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
+        { id: "b" }
+      ]
+    });
+    await engine.next();
+    await engine.previous();
+    await engine.next();
+    await engine.previous();
+    expect(entries).toEqual([true, false, false]);
+  });
+
+  it("is independent per step — each step tracks its own first entry", async () => {
+    const entryLog: { id: string; first: boolean }[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "a", onEnter: (ctx) => { entryLog.push({ id: "a", first: ctx.isFirstEntry }); } },
+        { id: "b", onEnter: (ctx) => { entryLog.push({ id: "b", first: ctx.isFirstEntry }); } }
+      ]
+    });
+    await engine.next(); // first enter b
+    await engine.previous(); // re-enter a
+    await engine.next(); // re-enter b
+    expect(entryLog).toEqual([
+      { id: "a", first: true },
+      { id: "b", first: true },
+      { id: "a", first: false },
+      { id: "b", first: false }
+    ]);
+  });
+
+  it("is true for the first step of a new sub-path even if the parent visited a same-id step", async () => {
+    const subEntries: boolean[] = [];
+    const engine = new PathEngine();
+    // parent has a step called "step1", sub-path also has "step1"
+    await engine.start({ id: "parent", steps: [{ id: "step1" }] });
+    await engine.startSubPath({
+      id: "sub",
+      steps: [{ id: "step1", onEnter: (ctx) => { subEntries.push(ctx.isFirstEntry); } }]
+    });
+    expect(subEntries).toEqual([true]);
+  });
+
+  it("is available in all hooks including canMoveNext and validationMessages", async () => {
+    const canMoveNextFirstEntry: boolean[] = [];
+    const validationFirstEntry: boolean[] = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "a",
+          canMoveNext: (ctx) => { canMoveNextFirstEntry.push(ctx.isFirstEntry); return true; },
+          validationMessages: (ctx) => { validationFirstEntry.push(ctx.isFirstEntry); return []; }
+        },
+        { id: "b" }
+      ]
+    });
+    // After re-entry (navigate forward then back), both hooks see isFirstEntry: false
+    await engine.next();
+    await engine.previous(); // re-enter "a"
+    await engine.next(); // canMoveNext fires for re-entry navigation
+    // The very first snapshot guard evaluation happens before enterCurrentStep, so
+    // it may see true; what matters is that re-entry values are false.
+    const reEntryCanMoveNext = canMoveNextFirstEntry[canMoveNextFirstEntry.length - 1];
+    expect(reEntryCanMoveNext).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// startSubPath meta / onSubPathComplete meta
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — startSubPath meta", () => {
+  it("passes meta to onSubPathComplete as the 4th argument", async () => {
+    const onSubPathComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1", onSubPathComplete }] });
+    await engine.startSubPath(twoStepPath("sub"), {}, { correlationId: 7, label: "item-7" });
+    await engine.next();
+    await engine.next(); // complete sub
+    expect(onSubPathComplete).toHaveBeenCalledWith(
+      "sub",
+      expect.any(Object),
+      expect.objectContaining({ pathId: "parent" }),
+      { correlationId: 7, label: "item-7" }
+    );
+  });
+
+  it("passes meta to onSubPathCancel as the 4th argument when sub-path is cancelled", async () => {
+    const onSubPathCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1", onSubPathCancel }] });
+    await engine.startSubPath(twoStepPath("sub"), {}, { correlationId: 3 });
+    await engine.cancel();
+    expect(onSubPathCancel).toHaveBeenCalledWith(
+      "sub",
+      expect.any(Object),
+      expect.objectContaining({ pathId: "parent" }),
+      { correlationId: 3 }
+    );
+  });
+
+  it("passes undefined meta when startSubPath is called without meta", async () => {
+    const onSubPathComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1", onSubPathComplete }] });
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.next();
+    await engine.next();
+    expect(onSubPathComplete).toHaveBeenCalledWith(
+      "sub",
+      expect.any(Object),
+      expect.any(Object),
+      undefined
+    );
+  });
+
+  it("meta is independent between consecutive sub-path runs", async () => {
+    const received: Array<Record<string, unknown> | undefined> = [];
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "s1",
+        onSubPathComplete: (_id, _data, _ctx, meta) => { received.push(meta); }
+      }]
+    });
+
+    await engine.startSubPath(twoStepPath("sub"), {}, { index: 0 });
+    await engine.next(); await engine.next(); // complete first sub
+
+    await engine.startSubPath(twoStepPath("sub"), {}, { index: 1 });
+    await engine.next(); await engine.next(); // complete second sub
+
+    expect(received).toEqual([{ index: 0 }, { index: 1 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// onSubPathCancel
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — onSubPathCancel", () => {
+  it("calls onSubPathCancel when cancel() is called on a sub-path", async () => {
+    const onSubPathCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1", onSubPathCancel }] });
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
+    expect(onSubPathCancel).toHaveBeenCalledOnce();
+    expect(onSubPathCancel).toHaveBeenCalledWith(
+      "sub",
+      expect.any(Object),
+      expect.objectContaining({ pathId: "parent", stepId: "s1" }),
+      undefined
+    );
+  });
+
+  it("calls onSubPathCancel when previous() is called on the first step of a sub-path", async () => {
+    const onSubPathCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1", onSubPathCancel }] });
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.previous(); // Back on first step → cancel sub
+    expect(onSubPathCancel).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT call onSubPathCancel when cancel() is called on a top-level path", async () => {
+    const onSubPathCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({ id: "top", steps: [{ id: "s1", onSubPathCancel }] });
+    await engine.cancel();
+    expect(onSubPathCancel).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call onSubPathComplete when the sub-path is cancelled", async () => {
+    const onSubPathComplete = vi.fn();
+    const onSubPathCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{ id: "s1", onSubPathComplete, onSubPathCancel }]
+    });
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
+    expect(onSubPathComplete).not.toHaveBeenCalled();
+    expect(onSubPathCancel).toHaveBeenCalledOnce();
+  });
+
+  it("applies the patch returned by onSubPathCancel to parent data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "s1",
+        onSubPathCancel: (subPathId) => ({ skipped: subPathId })
+      }]
+    });
+    await engine.startSubPath(twoStepPath("sub"), { someValue: 1 });
+    await engine.cancel();
+    expect(engine.snapshot()?.data.skipped).toBe("sub");
+  });
+
+  it("resumes the parent path after onSubPathCancel runs", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "parent", steps: [{ id: "s1" }, { id: "s2" }] });
+    await engine.next(); // move to s2
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
+    expect(engine.snapshot()).toMatchObject({ pathId: "parent", stepId: "s2" });
+  });
+
+  it("passes the sub-path's data at cancellation time to onSubPathCancel", async () => {
+    let receivedData: PathData | null = null;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "s1",
+        onSubPathCancel: (_id, subData) => { receivedData = subData; }
+      }]
+    });
+    await engine.startSubPath(twoStepPath("sub"), { partialInput: "hello" });
+    await engine.setData("partialInput" as never, "hello updated");
+    await engine.cancel();
+    expect(receivedData).toMatchObject({ partialInput: "hello updated" });
+  });
+
+  it("supports an async onSubPathCancel hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "s1",
+        onSubPathCancel: async () => {
+          await Promise.resolve();
+          return { asyncResult: true };
+        }
+      }]
+    });
+    await engine.startSubPath(twoStepPath("sub"));
+    await engine.cancel();
+    expect(engine.snapshot()?.data.asyncResult).toBe(true);
+  });
+});

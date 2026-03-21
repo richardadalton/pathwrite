@@ -127,9 +127,10 @@ const myPath: PathDefinition = {
 | `canMoveNext` | function | — | Return `false` to block forward navigation. |
 | `canMovePrevious` | function | — | Return `false` to block backward navigation. |
 | `validationMessages` | function | — | Returns a `string[]` explaining why the step is not yet valid. Evaluated synchronously on every snapshot; displayed by the default shell below the step body. Async functions default to `[]`. |
-| `onEnter` | function | — | Called on arrival at a step. Can return a partial data patch. |
+| `onEnter` | function | — | Called on arrival at a step. Can return a partial data patch. Receives `ctx.isFirstEntry` — use it to guard one-time initialisation so that navigating Back and re-entering the step does not reset data. |
 | `onLeave` | function | — | Called on departure (only when the guard allows). Can return a partial data patch. |
-| `onSubPathComplete` | function | — | Called when a sub-path launched from this step finishes. Can return a partial data patch. |
+| `onSubPathComplete` | function | — | Called on the parent step when a sub-path completes naturally. Receives `(subPathId, subPathData, ctx, meta?)`. Can return a partial data patch. |
+| `onSubPathCancel` | function | — | Called on the parent step when a sub-path is cancelled (explicit `cancel()` or Back on first step). Receives `(subPathId, subPathData, ctx, meta?)`. Can return a partial data patch. |
 
 > **`validationMessages` must be synchronous.** The snapshot is built synchronously, so
 > async `validationMessages` functions are called but their result is ignored — the
@@ -145,13 +146,23 @@ Every hook receives a **`PathStepContext`** object:
 
 ```typescript
 interface PathStepContext<TData> {
-  readonly pathId: string;   // ID of the currently active path
-  readonly stepId: string;   // ID of the current step
-  readonly data:   Readonly<TData>; // snapshot copy — mutating it has no effect
+  readonly pathId:      string;         // ID of the currently active path
+  readonly stepId:      string;         // ID of the current step
+  readonly data:        Readonly<TData>; // snapshot copy — mutating it has no effect
+  readonly isFirstEntry: boolean;       // true only on the very first visit to this step
 }
 ```
 
 > **Important:** `ctx.data` is a **copy**. To update data, return a partial patch from the hook. The engine merges it automatically.
+
+> **`ctx.isFirstEntry`** is `true` the first time a step is entered within the current path instance and `false` on every subsequent re-entry (e.g. after navigating Back then Forward). Use it inside `onEnter` to guard one-time initialisation:
+>
+> ```typescript
+> onEnter: (ctx) => {
+>   if (!ctx.isFirstEntry) return; // don't reset data on Back/re-entry
+>   return { approvals: [], currentIndex: 0 };
+> }
+> ```
 
 ### Hook execution order (moving forward)
 
@@ -376,14 +387,19 @@ This requires an active path. The parent's current step is preserved on an inter
 
 ### Receiving the result
 
-Define `onSubPathComplete` on the parent step that launches the sub-path. It is called when the sub-path **completes** (not when cancelled):
+Define `onSubPathComplete` on the parent step that launches the sub-path. It is called when the sub-path **completes** (not when cancelled). The hook receives:
+
+| Argument | Description |
+|----------|-------------|
+| `subPathId` | ID of the sub-path that just finished. |
+| `subPathData` | Final data of the sub-path. |
+| `ctx` | Parent step context (includes `isFirstEntry`). |
+| `meta?` | The correlation object passed to `startSubPath()` — see below. |
 
 ```typescript
 {
   id: "subjects-list",
-  onSubPathComplete: (subPathId, subData, ctx) => {
-    if (subPathId !== "subject-subpath") return;
-
+  onSubPathComplete: (subPathId, subData, ctx, meta) => {
     return {
       subjects: [
         ...ctx.data.subjects,
@@ -394,6 +410,24 @@ Define `onSubPathComplete` on the parent step that launches the sub-path. It is 
 }
 ```
 
+### Reacting to a cancelled sub-path
+
+Define `onSubPathCancel` on the parent step to react when a sub-path is cancelled (either via `cancel()` or when the user presses Back on the sub-path's first step). It receives the same four arguments as `onSubPathComplete`. Use it to record a "skipped" or "declined" outcome:
+
+```typescript
+{
+  id: "run-approvals",
+  onSubPathComplete: (subPathId, subData, ctx, meta) => ({
+    approvals: [...ctx.data.approvals, { index: meta?.index, result: subData.decision }]
+  }),
+  onSubPathCancel: (subPathId, subData, ctx, meta) => ({
+    approvals: [...ctx.data.approvals, { index: meta?.index, result: "skipped" }]
+  })
+}
+```
+
+If `onSubPathCancel` is not defined, cancelling a sub-path simply restores the parent's state unchanged.
+
 ### Stack behaviour
 
 ```
@@ -401,6 +435,13 @@ engine.start(mainPath)              stack: []          active: main
 engine.startSubPath(subPath)        stack: [main]      active: sub
   engine.next()  // sub completes
   onSubPathComplete fires on parent step
+                                    stack: []          active: main (restored)
+```
+
+```
+engine.startSubPath(subPath)        stack: [main]      active: sub
+  engine.cancel()  // sub cancelled
+  onSubPathCancel fires on parent step (if defined)
                                     stack: []          active: main (restored)
 ```
 
@@ -416,26 +457,31 @@ completes or is cancelled and the parent is restored.
 ### Back on the first step of a sub-path
 
 Calling `previous()` (or clicking Back in the shell) when on the **first step of a
-sub-path** cancels the sub-path and returns to the parent. The `onSubPathComplete`
-hook is **not** called in this case — Back cancels, it does not complete. The parent
-step's data is left unchanged.
+sub-path** cancels the sub-path and returns to the parent. `onSubPathCancel` is
+called if defined; `onSubPathComplete` is **not** called.
 
-### Correlating `onSubPathComplete` to a collection item
+### Correlating sub-paths to collection items
 
-When running a sub-path per item in a collection, include a correlation key in the
-sub-path's `initialData` and read it back in `onSubPathComplete`:
+Pass a `meta` object as the third argument to `startSubPath()`. It is returned
+unchanged as the fourth argument of both `onSubPathComplete` and `onSubPathCancel`.
+Use it to identify which collection item triggered the sub-path without cluttering
+the sub-path's own data:
 
 ```typescript
-// Launch one sub-path per approver, carrying the index in data
+// Launch one sub-path per approver, carrying the index as meta
 for (let i = 0; i < approvers.length; i++) {
-  facade.startSubPath(approvalSubPath, { approverIndex: i, approverName: approvers[i].name });
+  engine.startSubPath(approvalSubPath, { approverName: approvers[i].name }, { index: i });
 }
 
-// In the parent step:
-onSubPathComplete: (subPathId, subData, ctx) => {
-  const i = subData.approverIndex as number;
+// In the parent step — no index in subData needed:
+onSubPathComplete: (subPathId, subData, ctx, meta) => {
   const approvals = [...(ctx.data.approvals as unknown[])];
-  approvals[i] = subData.decision;
+  approvals[meta!.index as number] = subData.decision;
+  return { approvals };
+},
+onSubPathCancel: (subPathId, subData, ctx, meta) => {
+  const approvals = [...(ctx.data.approvals as unknown[])];
+  approvals[meta!.index as number] = "skipped";
   return { approvals };
 }
 ```
@@ -560,7 +606,7 @@ public constructor() {
 | `stateSignal` | `Signal<PathSnapshot \| null>` — pre-wired signal, updated in sync with `state$` |
 | `events$` | `Observable<PathEvent>` — all engine events |
 | `start(def, data?)` | Start or restart a path |
-| `startSubPath(def, data?)` | Push a sub-path |
+| `startSubPath(def, data?, meta?)` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel` unchanged — use it for collection correlation. |
 | `next()` | Advance one step |
 | `previous()` | Go back one step |
 | `cancel()` | Cancel the active path or sub-path |
@@ -726,7 +772,7 @@ function NavBar() {
 |---|---|---|
 | `snapshot` | `PathSnapshot \| null` | Triggers a React re-render on every change |
 | `start` | `(def, data?) => void` | Start or restart a path |
-| `startSubPath` | `(def, data?) => void` | Push a sub-path |
+| `startSubPath` | `(def, data?, meta?) => void` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel`. |
 | `next` | `() => void` | Advance one step |
 | `previous` | `() => void` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel` | `() => void` | Cancel the active path or sub-path |
@@ -801,7 +847,7 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 |---|---|---|
 | `snapshot` | `DeepReadonly<Ref<PathSnapshot \| null>>` | Reactive ref. Triggers re-renders on change. |
 | `start` | `(def, data?) => Promise<void>` | Start or restart a path |
-| `startSubPath` | `(def, data?) => Promise<void>` | Push a sub-path |
+| `startSubPath` | `(def, data?, meta?) => Promise<void>` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel`. |
 | `next` | `() => Promise<void>` | Advance one step |
 | `previous` | `() => Promise<void>` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel` | `() => Promise<void>` | Cancel the active path or sub-path |
@@ -1160,7 +1206,7 @@ await engine.start(path, { apiKey: "" });
 | Method | Returns | Description |
 |---|---|---|
 | `start(def, data?)` | `Promise<void>` | Start or restart. Throws if definition has no steps. |
-| `startSubPath(def, data?)` | `Promise<void>` | Push sub-path. Throws if no path is active. |
+| `startSubPath(def, data?, meta?)` | `Promise<void>` | Push sub-path. Throws if no path is active. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | `Promise<void>` | Advance. Completes path past the last step. |
 | `previous()` | `Promise<void>` | Go back. No-op when already on the first step of a top-level path. Pops a sub-path back to its parent. |
 | `cancel()` | `Promise<void>` | Cancel. Pops sub-path silently; completes top-level with `cancelled` event. |

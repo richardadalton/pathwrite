@@ -4,6 +4,14 @@ export interface PathStepContext<TData extends PathData = PathData> {
   readonly pathId: string;
   readonly stepId: string;
   readonly data: Readonly<TData>;
+  /**
+   * `true` the first time this step is entered within the current path
+   * instance. `false` on all subsequent re-entries (e.g. navigating back
+   * then forward again). Use inside `onEnter` to distinguish initialisation
+   * from re-entry so you don't accidentally overwrite data the user has
+   * already filled in.
+   */
+  readonly isFirstEntry: boolean;
 }
 
 export interface PathStep<TData extends PathData = PathData> {
@@ -22,10 +30,31 @@ export interface PathStep<TData extends PathData = PathData> {
   validationMessages?: (ctx: PathStepContext<TData>) => string[] | Promise<string[]>;
   onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  /**
+   * Called on the parent step when a sub-path completes naturally (user
+   * reached the last step). Receives the sub-path ID, its final data, the
+   * parent step context, and the optional `meta` object that was passed to
+   * `startSubPath()` for correlation (e.g. a collection item index).
+   */
   onSubPathComplete?: (
     subPathId: string,
     subPathData: PathData,
-    ctx: PathStepContext<TData>
+    ctx: PathStepContext<TData>,
+    meta?: Record<string, unknown>
+  ) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  /**
+   * Called on the parent step when a sub-path is cancelled — either via an
+   * explicit `cancel()` call or by pressing Back on the sub-path's first step.
+   * Receives the sub-path ID, its data at time of cancellation, the parent
+   * step context, and the optional `meta` passed to `startSubPath()`.
+   * Return a patch to update the parent path's data (e.g. to record a
+   * "skipped" or "declined" outcome).
+   */
+  onSubPathCancel?: (
+    subPathId: string,
+    subPathData: PathData,
+    ctx: PathStepContext<TData>,
+    meta?: Record<string, unknown>
   ) => Partial<TData> | void | Promise<Partial<TData> | void>;
 }
 
@@ -82,6 +111,8 @@ interface ActivePath {
   definition: PathDefinition;
   currentStepIndex: number;
   data: PathData;
+  visitedStepIds: Set<string>;
+  subPathMeta?: Record<string, unknown>;
 }
 
 export class PathEngine {
@@ -104,10 +135,21 @@ export class PathEngine {
     return this._startAsync(path, initialData);
   }
 
-  /** Starts a sub-path on top of the currently active path. Throws if no path is running. */
-  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
+  /**
+   * Starts a sub-path on top of the currently active path. Throws if no path
+   * is running.
+   *
+   * @param path        The sub-path definition to start.
+   * @param initialData Data to seed the sub-path with.
+   * @param meta        Optional correlation object returned unchanged to the
+   *                    parent step's `onSubPathComplete` / `onSubPathCancel`
+   *                    hooks. Use to identify which collection item triggered
+   *                    the sub-path without embedding that information in the
+   *                    sub-path's own data.
+   */
+  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
     this.requireActivePath();
-    return this.start(path, initialData);
+    return this._startAsync(path, initialData, meta);
   }
 
   public next(): Promise<void> {
@@ -120,18 +162,19 @@ export class PathEngine {
     return this._previousAsync(active);
   }
 
-  /** Cancel is synchronous (no hooks). Returns a resolved Promise for API consistency. */
+  /** Cancel is synchronous for top-level paths (no hooks). Sub-path cancellation
+   *  is async when an `onSubPathCancel` hook is present. Returns a Promise for
+   *  API consistency. */
   public cancel(): Promise<void> {
     const active = this.requireActivePath();
     if (this._isNavigating) return Promise.resolve();
 
     const cancelledPathId = active.definition.id;
     const cancelledData = { ...active.data };
+    const cancelledMeta = active.subPathMeta;
 
     if (this.pathStack.length > 0) {
-      this.activePath = this.pathStack.pop() ?? null;
-      this.emitStateChanged();
-      return Promise.resolve();
+      return this._cancelSubPathAsync(cancelledPathId, cancelledData, cancelledMeta);
     }
 
     this.activePath = null;
@@ -219,7 +262,7 @@ export class PathEngine {
   // Private async helpers
   // ---------------------------------------------------------------------------
 
-  private async _startAsync(path: PathDefinition, initialData: PathData): Promise<void> {
+  private async _startAsync(path: PathDefinition, initialData: PathData, subPathMeta?: Record<string, unknown>): Promise<void> {
     if (this._isNavigating) return;
 
     if (this.activePath !== null) {
@@ -229,7 +272,9 @@ export class PathEngine {
     this.activePath = {
       definition: path,
       currentStepIndex: 0,
-      data: { ...initialData }
+      data: { ...initialData },
+      visitedStepIds: new Set(),
+      subPathMeta
     };
 
     this._isNavigating = true;
@@ -374,10 +419,51 @@ export class PathEngine {
     }
   }
 
+  private async _cancelSubPathAsync(
+    cancelledPathId: string,
+    cancelledData: PathData,
+    cancelledMeta?: Record<string, unknown>
+  ): Promise<void> {
+    // Pop the stack BEFORE emitting so snapshot() always reflects the parent
+    // path (which has a valid currentStepIndex) rather than the cancelled
+    // sub-path (which may have currentStepIndex = -1).
+    this.activePath = this.pathStack.pop() ?? null;
+
+    this._isNavigating = true;
+    this.emitStateChanged();
+
+    try {
+      const parent = this.activePath;
+
+      if (parent) {
+        const parentStep = this.getCurrentStep(parent);
+        if (parentStep.onSubPathCancel) {
+          const ctx: PathStepContext = {
+            pathId: parent.definition.id,
+            stepId: parentStep.id,
+            data: { ...parent.data },
+            isFirstEntry: !parent.visitedStepIds.has(parentStep.id)
+          };
+          this.applyPatch(
+            await parentStep.onSubPathCancel(cancelledPathId, cancelledData, ctx, cancelledMeta)
+          );
+        }
+      }
+
+      this._isNavigating = false;
+      this.emitStateChanged();
+    } catch (err) {
+      this._isNavigating = false;
+      this.emitStateChanged();
+      throw err;
+    }
+  }
+
   private async finishActivePath(): Promise<void> {
     const finished = this.requireActivePath();
     const finishedPathId = finished.definition.id;
     const finishedData = { ...finished.data };
+    const finishedMeta = finished.subPathMeta;
 
     if (this.pathStack.length > 0) {
       this.activePath = this.pathStack.pop()!;
@@ -388,10 +474,11 @@ export class PathEngine {
         const ctx: PathStepContext = {
           pathId: parent.definition.id,
           stepId: parentStep.id,
-          data: { ...parent.data }
+          data: { ...parent.data },
+          isFirstEntry: !parent.visitedStepIds.has(parentStep.id)
         };
         this.applyPatch(
-          await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx)
+          await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta)
         );
       }
 
@@ -460,7 +547,8 @@ export class PathEngine {
       const ctx: PathStepContext = {
         pathId: active.definition.id,
         stepId: step.id,
-        data: { ...active.data }
+        data: { ...active.data },
+        isFirstEntry: !active.visitedStepIds.has(step.id)
       };
       const skip = await step.shouldSkip(ctx);
       if (!skip) break;
@@ -472,11 +560,16 @@ export class PathEngine {
     const active = this.activePath;
     if (!active) return;
     const step = this.getCurrentStep(active);
+    const isFirstEntry = !active.visitedStepIds.has(step.id);
+    // Mark as visited before calling onEnter so re-entrant calls see the
+    // correct isFirstEntry value.
+    active.visitedStepIds.add(step.id);
     if (!step.onEnter) return;
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      data: { ...active.data }
+      data: { ...active.data },
+      isFirstEntry
     };
     return step.onEnter(ctx);
   }
@@ -489,7 +582,8 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      data: { ...active.data }
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(step.id)
     };
     return step.onLeave(ctx);
   }
@@ -502,7 +596,8 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      data: { ...active.data }
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(step.id)
     };
     return step.canMoveNext(ctx);
   }
@@ -515,7 +610,8 @@ export class PathEngine {
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
-      data: { ...active.data }
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(step.id)
     };
     return step.canMovePrevious(ctx);
   }
@@ -530,14 +626,15 @@ export class PathEngine {
     active: ActivePath
   ): boolean {
     if (!guard) return true;
+    const step = this.getCurrentStep(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
-      stepId: this.getCurrentStep(active).id,
-      data: { ...active.data }
+      stepId: step.id,
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(step.id)
     };
     const result = guard(ctx);
     if (typeof result === "boolean") return result;
-    // Async guard — default to true (optimistic); the engine will enforce the real result on navigation.
     return true;
   }
 
@@ -551,14 +648,15 @@ export class PathEngine {
     active: ActivePath
   ): string[] {
     if (!fn) return [];
+    const step = this.getCurrentStep(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
-      stepId: this.getCurrentStep(active).id,
-      data: { ...active.data }
+      stepId: step.id,
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(step.id)
     };
     const result = fn(ctx);
     if (Array.isArray(result)) return result;
-    // Async hook — default to empty; consumers should keep validationMessages synchronous.
     return [];
   }
 }

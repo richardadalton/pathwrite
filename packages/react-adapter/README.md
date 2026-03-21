@@ -86,7 +86,7 @@ function NavButtons() {
 |----------|------|-------------|
 | `snapshot` | `PathSnapshot \| null` | Current snapshot. `null` when no path is active. Triggers a React re-render on change. |
 | `start(definition, data?)` | `function` | Start or re-start a path. |
-| `startSubPath(definition, data?)` | `function` | Push a sub-path. Requires an active path. |
+| `startSubPath(definition, data?, meta?)` | `function` | Push a sub-path. Requires an active path. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | `function` | Advance one step. Completes the path on the last step. |
 | `previous()` | `function` | Go back one step. No-op when already on the first step of a top-level path. |
 | `cancel()` | `function` | Cancel the active path (or sub-path). |
