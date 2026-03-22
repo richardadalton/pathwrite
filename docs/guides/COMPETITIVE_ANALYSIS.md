@@ -3,12 +3,16 @@
 ## TL;DR: Nothing Does Exactly What Pathwrite Does
 
 After analyzing the ecosystem, **there is no package that combines all of Pathwrite's capabilities**:
-- Multi-framework support (React, Vue, Angular) with unified API
+
+**Pathwrite is a general-purpose state orchestration library** that provides:
+- Multi-framework support (React, Vue, Angular, Svelte) with unified API
 - Headless architecture with optional shell components
 - Built-in persistence with configurable strategies
 - Guards + lifecycle hooks + conditional logic
 - Sub-path/nested workflows
 - Zero dependencies in core
+
+It **happens to be excellent at wizards**, but is equally capable of handling single-page forms, multi-page workflows, state machines, and backend orchestration.
 
 The closest is **XState**, but it solves a different problem with a different approach.
 
@@ -67,12 +71,12 @@ XState is a **hierarchical finite state machine** library. It's powerful and wel
 | Feature | XState | Pathwrite |
 |---------|--------|-----------|
 | **Core Model** | Formal state machine (states + transitions + guards) | Ordered steps with lifecycle hooks |
-| **Primary Use** | Complex UI state, app-level state machines | Wizards, forms, workflows |
-| **Learning Curve** | Steep (state machine concepts, send/actions/context) | Gentle (steps are just pages) |
+| **Primary Use** | Complex UI state, app-level state machines | General-purpose orchestration (forms, wizards, workflows, state machines) |
+| **Learning Curve** | Steep (state machine concepts, send/actions/context) | Gentle (steps are intuitive, hooks are familiar) |
 | **Persistence** | Manual (you implement actors/services) | Built-in with strategies |
 | **Guards** | Transition guards (`cond`) | Step guards + validation hooks |
 | **Nested States** | Hierarchical states (parallel, history states) | Sub-paths (simpler model) |
-| **Framework Support** | React, Vue, Svelte via adapters | React, Vue, Angular with unified API |
+| **Framework Support** | React, Vue, Svelte via adapters | React, Vue, Angular, Svelte with unified API |
 | **Visualization** | Visual editor, state diagrams | None (but steps are linear/obvious) |
 | **Bundle Size** | ~26 KB (minified) | Core: ~15 KB |
 
@@ -141,13 +145,14 @@ const { engine } = await restoreOrStart({
 **When to use XState over Pathwrite:**
 - Complex branching logic (parallel states, history states)
 - Need formal verification or state diagrams
-- Building a state machine for complex UI interactions (not forms/wizards)
+- Building a state machine for complex UI interactions (not sequential flows)
 
 **When to use Pathwrite over XState:**
-- Building wizards, multi-step forms, onboarding
-- Want built-in persistence
-- Need multi-framework support out of the box
-- Team prefers simpler mental model
+- Building any sequential or step-based flow (wizards, forms, onboarding, workflows)
+- Want built-in persistence out of the box
+- Need multi-framework support with unified API
+- Prefer a simpler, more intuitive mental model
+- Working with single-page or multi-page forms
 
 #### **robot3** (Lightweight State Machine)
 - **What it does**: Minimal state machine (~1KB)
@@ -157,7 +162,7 @@ const { engine } = await restoreOrStart({
   - No built-in validation
   - No lifecycle hooks
 
-**Verdict**: XState is the only serious alternative for complex state orchestration, but it's solving a broader problem with more complexity. Pathwrite is purpose-built for forms/wizards/workflows.
+**Verdict**: XState is the only serious alternative for complex state orchestration, but it's solving a broader problem with more complexity. Pathwrite is a general-purpose orchestration library with a simpler mental model, purpose-built to handle sequential flows including forms, wizards, workflows, and state machines.
 
 ---
 
@@ -218,7 +223,7 @@ const { engine } = await restoreOrStart({
 ### 1. **Multi-Framework with Unified API**
 No other solution provides:
 ```typescript
-// Same path definition works in React, Vue, Angular
+// Same path definition works in React, Vue, Angular, and Svelte
 const path = { id: "signup", steps: [...] };
 
 // React
@@ -229,6 +234,9 @@ const path = { id: "signup", steps: [...] };
 
 // Angular
 <pw-shell [path]="path"></pw-shell>
+
+// Svelte
+<PathShell {path} />
 ```
 
 ### 2. **Built-In Persistence with Strategies**
@@ -292,7 +300,7 @@ This composability pattern is unique to Pathwrite.
 
 | Feature | Pathwrite | XState | react-step-wizard | Formik | vue-form-wizard |
 |---------|-----------|--------|-------------------|--------|-----------------|
-| **Multi-framework** | ✅ R/V/A | ✅ R/V/S | ❌ React only | ❌ React only | ❌ Vue only |
+| **Multi-framework** | ✅ R/V/A/S | ✅ R/V/S | ❌ React only | ❌ React only | ❌ Vue only |
 | **Headless** | ✅ | ✅ | ❌ | ✅ | ❌ |
 | **Built-in persistence** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Lifecycle hooks** | ✅ onEnter/onLeave | ✅ entry/exit | ❌ | ✅ onSubmit | ❌ |
@@ -302,10 +310,10 @@ This composability pattern is unique to Pathwrite.
 | **Non-linear navigation** | ✅ goToStep | ✅ send | ⚠️ limited | N/A | ❌ |
 | **Sub-paths/nesting** | ✅ startSubPath | ✅ hierarchical | ❌ | ❌ | ❌ |
 | **Observer pattern** | ✅ | ⚠️ actors | ❌ | ❌ | ❌ |
-| **Zero dependencies** | ✅ core | ❌ | ❌ | ❌ | ❌ |
+| Zero dependencies** | ✅ core | ❌ | ❌ | ❌ | ❌ |
 | **Bundle size (min)** | ~15 KB core | ~26 KB | ~5 KB | ~13 KB | ~20 KB |
 | **Learning curve** | Low | High | Low | Low | Low |
-| **Primary use case** | Wizards, workflows, forms | State machines | Basic wizards | Single forms | Basic wizards |
+| **Primary use case** | General orchestration (wizards, workflows, forms, state machines) | State machines | Basic wizards | Single forms | Basic wizards |
 
 ---
 
@@ -317,10 +325,10 @@ This composability pattern is unique to Pathwrite.
 3. **Wizard UI components** - Basic step rendering (react-step-wizard)
 
 ### What's Missing (Pathwrite's Gap)
-A framework that combines:
+A general-purpose orchestration framework that combines:
 - ✅ Multi-step orchestration
 - ✅ Built-in persistence
-- ✅ Framework adapters (React/Vue/Angular)
+- ✅ Framework adapters (React/Vue/Angular/Svelte)
 - ✅ Headless + optional shell
 - ✅ Lifecycle hooks + guards + validation
 - ✅ Simple mental model (steps, not state machines)
@@ -334,6 +342,7 @@ A framework that combines:
 
 | Use Case | Best Existing Solution | Why Pathwrite is Better |
 |----------|------------------------|-------------------------|
+| **Single-page form** | Formik, React Hook Form | Can use single-step path with guards, validation hooks, persistence |
 | **Multi-step form** | react-step-wizard | Built-in persistence, validation, guards, multi-framework |
 | **Checkout flow** | Custom state management | Auto-persistence, declarative guards, headless UI |
 | **Onboarding wizard** | Custom implementation | Conditional steps, sub-paths, persistence |
@@ -352,16 +361,22 @@ A framework that combines:
 - **Wizard components**: Solve basic UI rendering
 
 ### Pathwrite's Position
-**"The missing layer between form libraries and state machines"**
+**"General-purpose state orchestration for web applications"**
+
+Pathwrite handles any sequential flow with lifecycle management:
+- Single-page forms (with validation, guards, persistence)
+- Multi-step forms and wizards
+- Workflows and processes
+- State machines with simpler mental models
 
 Or:
 
-**"State orchestration for web applications - multi-step forms, workflows, and beyond"**
+**"The missing layer between form libraries and state machines"**
 
 ### Target Audience
-1. **Teams building multi-step forms** who are frustrated with:
-   - react-step-wizard (too basic)
-   - XState (too complex)
+1. **Teams building any sequential flow** who are frustrated with:
+   - Form libraries (single-page only)
+   - XState (too complex for simple flows)
    - Custom solutions (reinventing the wheel)
 
 2. **Teams needing persistence** for:
@@ -370,8 +385,8 @@ Or:
    - Resume-after-crash
 
 3. **Full-stack developers** who want:
-   - Same tool for frontend wizards and backend workflows
-   - Framework flexibility (not locked to React/Vue/Angular)
+   - Same tool for frontend forms/wizards and backend workflows
+   - Framework flexibility (not locked to React/Vue/Angular/Svelte)
 
 ---
 
@@ -382,7 +397,7 @@ Or:
 There is no package that:
 1. Does multi-step orchestration with lifecycle hooks
 2. Has built-in persistence strategies
-3. Works across React, Vue, and Angular
+3. Works across React, Vue, Angular, and Svelte
 4. Is headless with optional shell components
 5. Has zero dependencies in core
 6. Supports sub-paths/nested workflows
@@ -395,16 +410,17 @@ There is no package that:
 
 ### Pathwrite's Unique Value
 
-Pathwrite is **purpose-built for the common case** of:
-- Multi-step forms
-- Wizards
-- Checkout flows
-- Onboarding
-- Workflows
+Pathwrite is **a general-purpose orchestration library** that excels at:
+- Single-page forms (with guards, validation, persistence)
+- Multi-step forms and wizards
+- Checkout flows and onboarding
+- Workflows and state machines
 
 While XState is a **general-purpose state machine** that can do anything but requires more expertise.
 
-**Pathwrite is to wizards what React Hook Form is to single-page forms** - it solves a specific problem elegantly, with minimal boilerplate and maximum developer experience.
+**Pathwrite bridges the gap between form libraries (too limited) and state machines (too complex)** - it solves sequential flows elegantly, with minimal boilerplate and maximum developer experience.
+
+The fact that it happens to be excellent at wizards doesn't mean that's all it does - it's fundamentally a state orchestration engine that works for any step-based flow.
 
 ---
 

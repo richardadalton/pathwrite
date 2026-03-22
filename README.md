@@ -1,6 +1,6 @@
 # Pathwrite
 
-A headless, framework-agnostic path engine for the web, with first-class Angular, React, and Vue adapters — plus optional default UI shell components for rapid prototyping.
+A headless, framework-agnostic path engine for the web, with first-class Angular, React, Vue, and Svelte adapters — plus optional default UI shell components for rapid prototyping.
 
 ## Documentation
 
@@ -18,6 +18,7 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 | [`@daltonr/pathwrite-angular`](packages/angular-adapter) | Angular `@Injectable` facade over the core engine. Exposes state and events as RxJS observables; integrates with signals via `toSignal`. Includes optional `<pw-shell>` component. |
 | [`@daltonr/pathwrite-react`](packages/react-adapter) | React hooks over the core engine. Exposes state via `useSyncExternalStore` with stable action callbacks, an optional context provider, and an optional `<PathShell>` component. |
 | [`@daltonr/pathwrite-vue`](packages/vue-adapter) | Vue 3 composable over the core engine. Exposes state as a reactive `shallowRef` with automatic cleanup via `onScopeDispose`. Includes optional `<PathShell>` component. |
+| [`@daltonr/pathwrite-svelte`](packages/svelte-adapter) | Svelte store over the core engine. Exposes state as a Svelte store with automatic cleanup. Includes optional `<PathShell>` component. |
 | [`@daltonr/pathwrite-store-http`](packages/store-http) | REST API storage adapter with auto-persistence. Configurable strategies for saving wizard state to your backend. |
 
 ## Apps
@@ -39,6 +40,7 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 - **Observable + signal friendly** — the Angular adapter exposes `state$` and `events$` as `Observable`, compatible with both the `async` pipe and `toSignal`.
 - **Hook friendly** — the React adapter uses `useSyncExternalStore` for tear-free reads and provides referentially stable action callbacks.
 - **Composable friendly** — the Vue adapter uses `shallowRef` + `onScopeDispose` for clean, idiomatic Vue 3 integration.
+- **Store friendly** — the Svelte adapter exposes state as a Svelte store with automatic cleanup and reactivity.
 - **Batteries included, removable** — each adapter ships optional default UI shell components (`<PathShell>` / `<pw-shell>`) that render progress indicators, step content, and navigation buttons. Use them to get started quickly; replace them with custom UI whenever you need full control.
 
 ## Quick start
@@ -98,15 +100,34 @@ import { PathShell } from "@daltonr/pathwrite-vue";
 </pw-shell>
 ```
 
+### Svelte
+
+```svelte
+<script>
+  import { PathShell } from "@daltonr/pathwrite-svelte";
+</script>
+
+<PathShell path={myPath} initialData={{ name: '' }} onComplete={handleDone}>
+  <svelte:fragment slot="details">
+    <DetailsForm />
+  </svelte:fragment>
+  <svelte:fragment slot="review">
+    <ReviewPanel />
+  </svelte:fragment>
+</PathShell>
+```
+
 ### Styling
 
 Import the optional stylesheet from whichever adapter you are using. All visual values are CSS custom properties (`--pw-*`), so you can theme without overriding selectors:
 
 ```css
-/* React / Vue — import in your entry file or global stylesheet */
+/* React / Vue / Svelte — import in your entry file or global stylesheet */
 @import "@daltonr/pathwrite-react/styles.css";
 /* or */
 @import "@daltonr/pathwrite-vue/styles.css";
+/* or */
+@import "@daltonr/pathwrite-svelte/styles.css";
 
 /* Angular — add to the styles array in angular.json */
 /* "node_modules/@daltonr/pathwrite-angular/dist/index.css" */
