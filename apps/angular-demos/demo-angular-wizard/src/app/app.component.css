@@ -1,0 +1,145 @@
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.page-header {
+  margin-bottom: 28px;
+}
+
+.page-header__badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.03em;
+}
+
+.page-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  color: #1f2937;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #5b677a;
+}
+
+/* ── Result panels ────────────────────────────────────────────────────────── */
+.result-panel {
+  border-radius: 12px;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.result-icon {
+  font-size: 40px;
+  margin-bottom: 14px;
+}
+
+.result-panel h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.result-panel p {
+  margin: 0 0 24px;
+  font-size: 15px;
+}
+
+.success-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.success-panel h2 { color: #15803d; }
+.success-panel p  { color: #166534; }
+
+.cancel-panel {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+
+.cancel-panel h2 { color: #374151; }
+.cancel-panel p  { color: #6b7280; }
+
+/* ── Completion summary ───────────────────────────────────────────────────── */
+.summary {
+  background: #fff;
+  border: 1px solid #d1fae5;
+  border-radius: 10px;
+  padding: 4px 0;
+  margin: 0 auto 28px;
+  max-width: 420px;
+  text-align: left;
+}
+
+.summary-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0fdf4;
+}
+
+.summary-section:last-child { border-bottom: none; }
+
+.summary-section__title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #15803d;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 4px 12px;
+  font-size: 14px;
+  margin-bottom: 6px;
+  align-items: start;
+}
+
+.summary-row:last-child { margin-bottom: 0; }
+
+.summary-key {
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #c2d0e5;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: #f3f4f6; }
+

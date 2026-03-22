@@ -1,0 +1,17 @@
+/*
+ * Demo Angular Wizard — Application Styles
+ *
+ * The Pathwrite shell CSS is imported via angular.json from:
+ * node_modules/@daltonr/pathwrite-angular/dist/index.css
+ */
+
+/* ── Base resets ────────────────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+* { box-sizing: border-box; }
+
