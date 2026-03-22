@@ -306,7 +306,7 @@ export class MyComponent {
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 
 ### Outputs
 

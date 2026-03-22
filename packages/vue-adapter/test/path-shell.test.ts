@@ -100,6 +100,46 @@ describe("PathShell (Vue) — rendering", () => {
     expect(wrapper.find(".pw-shell__header").exists()).toBe(false);
     wrapper.unmount();
   });
+
+  it("hides progress automatically for a single-step path", async () => {
+    const singleStepPath: PathDefinition = { id: "single", steps: [{ id: "only" }] };
+    const TestHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path: singleStepPath }, { only: () => h("div", "Only step") });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__header").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("still shows progress for a multi-step path", async () => {
+    const wrapper = mountShell();
+    await settled();
+    expect(wrapper.find(".pw-shell__header").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("still shows progress for a single-step sub-path (nestingLevel > 0)", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const subPath: PathDefinition = { id: "sub", steps: [{ id: "sub-only", title: "Sub Step" }] };
+    const parentPath: PathDefinition = { id: "parent", steps: [{ id: "parent-step" }] };
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+    await engine.startSubPath(subPath, {});
+
+    const TestHost = defineComponent({
+      setup() {
+        return () =>
+          h(PathShell, { path: subPath, engine }, { "sub-only": () => h("div", "Sub content") });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__header").exists()).toBe(true);
+    wrapper.unmount();
+  });
 });
 
 // ---------------------------------------------------------------------------

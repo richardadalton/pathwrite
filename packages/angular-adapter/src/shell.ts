@@ -153,7 +153,7 @@ export class PathShellFooterDirective {
         <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
       </ng-container>
       <ng-template #defaultHeader>
-        <div class="pw-shell__header" *ngIf="!hideProgress">
+        <div class="pw-shell__header" *ngIf="!hideProgress && (s.stepCount > 1 || s.nestingLevel > 0)">
           <div class="pw-shell__steps">
             <div
               *ngFor="let step of s.steps; let i = index"
@@ -238,7 +238,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
   @Input() cancelLabel = "Cancel";
   /** Hide the Cancel button entirely. */
   @Input() hideCancel = false;
-  /** Hide the step progress indicator in the header. */
+  /** Hide the step progress indicator in the header. Also hidden automatically when the path has only one step. */
   @Input() hideProgress = false;
 
   @Output() completed = new EventEmitter<PathData>();

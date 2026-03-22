@@ -9,7 +9,7 @@ Each item notes which demos raised it and where the change would live.
 
 ## Priority 1 — Raised by all four demos
 
-### 1.1 Field-level validation (`fieldMessages` API)
+### 1.1 Field-level validation (`fieldMessages` API) ✅ Done
 
 **Problem:**  
 `validationMessages` returns a flat string array for the whole step, rendered as a summary box.
@@ -18,20 +18,18 @@ duplicate their validation logic inside the step template.
 
 **Raised by:** Angular · React · Vue · Svelte
 
-**Proposed API (core `PathStep`):**
-```typescript
-fieldMessages?: (ctx: StepContext<T>) => Record<string, string>;
-// e.g. { email: "Please enter a valid email address." }
-```
+**Resolved:**  
+`fieldMessages?: (ctx: StepContext<T>) => Record<string, string>` added to `PathStep`.
+`snapshot.fieldMessages` is now populated on every snapshot — adapters render it as a labelled
+error list. `canMoveNext` is auto-derived from `fieldMessages` when not explicitly set
+(step is blocked while any key has a non-empty message). `FieldErrors` type exported from all
+packages.
 
-Adapters would expose `snapshot.fieldMessages` so step components can render inline errors
-themselves. The shell could optionally render them automatically if field names are declared.
-
-**Where:** `packages/core` (engine) + all four adapter shells
+**Where:** `packages/core` + all four adapter shells
 
 ---
 
-### 1.2 Auto-hide progress for single-step forms
+### 1.2 Auto-hide progress for single-step forms ✅ Done
 
 **Problem:**  
 A single-step path renders a progress bar with one dot at 100%. It conveys nothing.
@@ -39,11 +37,15 @@ Developers must remember to pass `hideProgress` / `[hideProgress]="true"` / `hid
 
 **Raised by:** Angular · React · Vue · Svelte
 
-**Proposed change:**  
-In the shell: if `path.steps.length === 1`, treat `hideProgress` as implicitly `true` unless
-explicitly overridden.
+**Resolved:**  
+All four adapter shells now automatically hide the default progress header when
+`stepCount === 1 && nestingLevel === 0` (top-level single-step paths). Sub-paths
+(`nestingLevel > 0`) always show their header even with one step, so the user retains
+orientation within a nested flow. Custom header overrides (`renderHeader`, `#header` slot,
+`pwShellHeader`) are never auto-hidden. The `hideProgress` prop still works as an explicit
+override when needed.
 
-**Where:** `packages/core` shell logic, or each adapter's `PathShell` component
+**Where:** All four adapter `PathShell` components
 
 ---
 
@@ -205,8 +207,8 @@ step IDs as valid prop names (so IDEs can autocomplete them).
 
 | # | Feature | Impact | Scope | Demos |
 |---|---|---|---|---|
-| 1.1 | Field-level `fieldMessages` API | High | core + all shells | All 4 |
-| 1.2 | Auto-hide progress for single-step paths | Low | shell logic | All 4 |
+| 1.1 ✅ | Field-level `fieldMessages` API | High | core + all shells | All 4 |
+| 1.2 ✅ | Auto-hide progress for single-step paths | Low | shell logic | All 4 |
 | 2.1 | `restart()` on shell + document reset patterns | Medium | all shells + docs | All 4 |
 | 2.2 | `snapshot.hasAttemptedNext` flag | Medium | core engine | All 4 |
 | 2.3 | `footerLayout: "wizard" \| "form"` | Low–Medium | shell CSS + all shells | All 4 |

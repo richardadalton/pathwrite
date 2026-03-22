@@ -77,7 +77,6 @@ export default function App() {
         <PathShell
           path={contactFormPath}
           initialData={{ name: "", email: "", subject: "", message: "" }}
-          hideProgress
           completeLabel="Send Message"
           cancelLabel="Discard"
           onComplete={handleComplete}

@@ -234,7 +234,7 @@ export interface PathShellProps {
   cancelLabel?: string;
   /** If true, hide the Cancel button. Defaults to `false`. */
   hideCancel?: boolean;
-  /** If true, hide the progress indicator. Defaults to `false`. */
+  /** If true, hide the progress indicator. Also hidden automatically when the path has only one step. Defaults to `false`. */
   hideProgress?: boolean;
   /** Optional extra CSS class on the root element. */
   className?: string;
@@ -340,7 +340,7 @@ export function PathShell({
       // Header — progress indicator
       !hideProgress && (renderHeader
         ? renderHeader(snapshot)
-        : defaultHeader(snapshot)),
+        : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
       // Validation messages — labeled by field name

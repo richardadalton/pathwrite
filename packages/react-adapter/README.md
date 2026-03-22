@@ -206,7 +206,7 @@ import { PathShell } from "@daltonr/pathwrite-react";
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `className` | `string` | — | Extra CSS class on the root element. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Render prop to replace the progress header. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Render prop to replace the navigation footer. |

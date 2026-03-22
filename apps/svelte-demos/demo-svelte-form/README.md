@@ -17,7 +17,7 @@ Same contact form as `demo-angular-form`, `demo-react-form`, and `demo-vue-form`
 | `validationMessages` | Surfaces per-rule errors in the shell's built-in orange message area |
 | `oncomplete` callback | Fires when the user clicks "Send Message" (Svelte 5 uses callbacks, not events) |
 | `oncancel` callback | Fires when the user clicks "Discard" |
-| `hideProgress` | No progress bar for a single-step form |
+| Auto-hidden progress | Single-step paths hide the progress header automatically — no `hideProgress` prop needed |
 | `completeLabel` / `cancelLabel` | Re-labelled to "Send Message" / "Discard" |
 | `$state` runes | Svelte 5 reactivity for `isSubmitted` / `isCancelled` / `submittedData` |
 | `$derived` rune | Reactive character count in `ContactStep.svelte` |
@@ -62,7 +62,6 @@ export const contactFormPath: PathDefinition<ContactData> = {
 ```svelte
 <PathShell
   path={contactFormPath}
-  hideProgress
   completeLabel="Send Message"
   cancelLabel="Discard"
   oncomplete={handleComplete}

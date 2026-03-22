@@ -102,7 +102,7 @@
     {#if !hideProgress}
       {#if header}
         {@render header(snap)}
-      {:else}
+      {:else if snap.stepCount > 1 || snap.nestingLevel > 0}
         <div class="pw-shell__header">
           <div class="pw-shell__steps">
             {#each snap.steps as step, i}

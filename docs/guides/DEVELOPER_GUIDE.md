@@ -978,7 +978,7 @@ function CoursePath() {
 | `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `className` | `string` | — | Extra CSS class on the root element. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation footer. |
@@ -1031,7 +1031,7 @@ Step content is provided via **named slots** matching each step's `id`.
 | `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 
 #### Vue events
 
@@ -1092,7 +1092,7 @@ export class MyComponent { ... }
 | `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 
 #### Angular outputs
 

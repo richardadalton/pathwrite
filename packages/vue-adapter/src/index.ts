@@ -253,7 +253,7 @@ export const PathShell = defineComponent({
         !props.hideProgress && (
           slots.header
             ? slots.header({ snapshot: snap })
-            : renderVueHeader(snap)
+            : (snap.stepCount > 1 || snap.nestingLevel > 0) && renderVueHeader(snap)
         ),
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),

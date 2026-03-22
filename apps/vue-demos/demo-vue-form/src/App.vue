@@ -71,7 +71,6 @@ function tryAgain() {
       v-if="!isSubmitted && !isCancelled"
       :path="contactFormPath"
       :initial-data="{ name: '', email: '', subject: '', message: '' }"
-      hide-progress
       complete-label="Send Message"
       cancel-label="Discard"
       @complete="handleComplete"

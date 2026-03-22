@@ -77,6 +77,43 @@ describe("PathShell — rendering", () => {
     const { container } = await act(async () => renderShell({ hideProgress: true }));
     expect(container.querySelector(".pw-shell__header")).toBeNull();
   });
+
+  it("hides progress automatically for a single-step path", async () => {
+    const singleStepPath: PathDefinition = { id: "single", steps: [{ id: "only" }] };
+    const { container } = await act(async () =>
+      render(createElement(PathShell, {
+        path: singleStepPath,
+        steps: { only: createElement("div", null, "Only step") }
+      } as any))
+    );
+    expect(container.querySelector(".pw-shell__header")).toBeNull();
+  });
+
+  it("still shows progress for a multi-step path", async () => {
+    const { container } = await act(async () => renderShell());
+    expect(container.querySelector(".pw-shell__header")).toBeTruthy();
+  });
+
+  it("still shows progress for a single-step sub-path (nestingLevel > 0)", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const subPath: PathDefinition = { id: "sub", steps: [{ id: "sub-only", title: "Sub Step" }] };
+    const parentPath: PathDefinition = {
+      id: "parent",
+      steps: [{ id: "parent-step", title: "Parent Step" }]
+    };
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+    await engine.startSubPath(subPath, {});
+
+    const { container } = await act(async () =>
+      render(createElement(PathShell, {
+        engine,
+        path: subPath,
+        steps: { "sub-only": createElement("div", null, "Sub content") }
+      } as any))
+    );
+    expect(container.querySelector(".pw-shell__header")).toBeTruthy();
+  });
 });
 
 // ---------------------------------------------------------------------------

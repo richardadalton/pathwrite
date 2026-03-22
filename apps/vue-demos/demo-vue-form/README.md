@@ -17,7 +17,7 @@ Same contact form as `demo-angular-form`, `demo-react-form`, and `demo-svelte-fo
 | `validationMessages` | Surfaces per-rule errors in the shell's built-in orange message area |
 | `@complete` event | Fires when the user clicks "Send Message" |
 | `@cancel` event | Fires when the user clicks "Discard" |
-| `hide-progress` | No progress bar for a single-step form |
+| Auto-hidden progress | Single-step paths hide the progress header automatically — no `hide-progress` prop needed |
 | `complete-label` / `cancel-label` | Re-labelled to "Send Message" / "Discard" |
 | `ref()` / `v-if` | `isSubmitted` / `isCancelled` refs and `v-if` blocks toggle between form and result panels |
 
@@ -61,7 +61,6 @@ export const contactFormPath: PathDefinition<ContactData> = {
 ```vue
 <PathShell
   :path="contactFormPath"
-  hide-progress
   complete-label="Send Message"
   cancel-label="Discard"
   @complete="handleComplete"

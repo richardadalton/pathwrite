@@ -252,7 +252,7 @@ Default UI shell with progress indicator and navigation buttons.
 | `completeLabel` | `string` | `"Complete"` | Complete button label |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label |
 | `hideCancel` | `boolean` | `false` | Hide cancel button |
-| `hideProgress` | `boolean` | `false` | Hide progress indicator |
+| `hideProgress` | `boolean` | `false` | Hide progress indicator. Also hidden automatically for single-step top-level paths. |
 
 > **`path` vs `engine`:** Pass `path` for simple wizards where PathShell manages the engine. Pass `engine` when you create the engine yourself (e.g., via `restoreOrStart()` for persistence). These are mutually exclusive — don't pass both.
 
