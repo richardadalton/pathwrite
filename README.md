@@ -150,7 +150,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-235 tests across six test files:
+489 tests across eight test files:
 
 | Suite | Tests |
 |-------|-------|
@@ -203,3 +203,18 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `usePath` (Vue) — sub-path | 2 |
 | `usePath` (Vue) — goToStep | 1 |
 | `usePath` (Vue) — scope disposal | 2 |
+| `usePath` (Svelte) — snapshot | 12 |
+| `usePath` (Svelte) — events | 4 |
+| `usePath` (Svelte) — navigation | 5 |
+| `usePath` (Svelte) — sub-path | 2 |
+| `usePath` (Svelte) — goToStep | 1 |
+| `usePath` (Svelte) — goToStepChecked | 2 |
+| `usePath` (Svelte) — cleanup | 3 |
+| `usePath` (Svelte) — restart() | 4 |
+| `usePath` (Svelte) — external engine | 6 |
+| `getPathContext / setPathContext` (Svelte) | 3 |
+| `bindData` (Svelte) | 5 |
+| `usePath` (Svelte) — guards and validation | 4 |
+| `HttpStore` | 10 |
+| `httpPersistence` | 20 |
+| `restoreOrStart` | 7 |
