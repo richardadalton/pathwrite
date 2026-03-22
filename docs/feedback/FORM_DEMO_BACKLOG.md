@@ -1,0 +1,238 @@
+# Form Demo Backlog
+
+Consolidated from feedback recorded across all four form demos:
+`demo-angular-form`, `demo-react-form`, `demo-vue-form`, `demo-svelte-form` (v0.5.0).
+
+Each item notes which demos raised it and where the change would live.
+
+---
+
+## Priority 1 — Raised by all four demos
+
+### 1.1 Field-level validation (`fieldMessages` API) ✅ Done
+
+**Problem:**  
+`validationMessages` returns a flat string array for the whole step, rendered as a summary box.
+Per-field inline errors (e.g. a red hint directly under a failing input) require developers to
+duplicate their validation logic inside the step template.
+
+**Raised by:** Angular · React · Vue · Svelte
+
+**Resolved:**  
+`fieldMessages?: (ctx: StepContext<T>) => Record<string, string>` added to `PathStep`.
+`snapshot.fieldMessages` is now populated on every snapshot — adapters render it as a labelled
+error list. `canMoveNext` is auto-derived from `fieldMessages` when not explicitly set
+(step is blocked while any key has a non-empty message). `FieldErrors` type exported from all
+packages.
+
+**Where:** `packages/core` + all four adapter shells
+
+---
+
+### 1.2 Auto-hide progress for single-step forms ✅ Done
+
+**Problem:**  
+A single-step path renders a progress bar with one dot at 100%. It conveys nothing.
+Developers must remember to pass `hideProgress` / `[hideProgress]="true"` / `hide-progress` manually.
+
+**Raised by:** Angular · React · Vue · Svelte
+
+**Resolved:**  
+All four adapter shells now automatically hide the default progress header when
+`stepCount === 1 && nestingLevel === 0` (top-level single-step paths). Sub-paths
+(`nestingLevel > 0`) always show their header even with one step, so the user retains
+orientation within a nested flow. Custom header overrides (`renderHeader`, `#header` slot,
+`pwShellHeader`) are never auto-hidden. The `hideProgress` prop still works as an explicit
+override when needed.
+
+**Where:** All four adapter `PathShell` components
+
+---
+
+## Priority 2 — Raised by most demos
+
+### 2.1 `restart()` on shell + document reset patterns ✅ Done
+
+**Problem:**  
+The only documented reset pattern was unmount/remount via a conditional flag. The `restart()`
+action existed on the engine but wasn't accessible from outside the shell without reaching into
+`usePathContext()` inside a step component.
+
+**Raised by:** Angular · React · Vue · Svelte (all noted the two-pattern gap)
+
+**Resolved:**  
+- **Angular**: `public restart(): Promise<void>` added to `PathShellComponent`. Call via `#shell` template reference.
+- **Vue**: `expose({ restart })` added to `PathShell` setup. Call via Vue template `ref`.
+- **Svelte**: `export function restart()` added to `PathShell.svelte`. Call via `bind:this`.
+- **React**: Function components have no instance. The idiomatic equivalent is changing the `key` prop, which forces a fresh mount. Documented with code examples.
+
+Both patterns (toggle-mount and in-place `restart()`) are documented in the Developer Guide and each adapter README with guidance on when to use each.
+
+**Where:** `packages/angular-adapter/src/shell.ts`, `packages/vue-adapter/src/index.ts`,
+`packages/svelte-adapter/src/PathShell.svelte` + all READMEs + Developer Guide
+
+---
+
+### 2.2 `snapshot.hasAttemptedNext` flag (touched / dirty tracking) ✅ Done
+
+**Problem:**  
+`fieldMessages` is evaluated on every snapshot, including the very first one before the
+user has typed anything. The shell hides them until a navigation is attempted, but
+`snapshot.fieldMessages` is populated from the start — which surprises developers who
+read it directly, and makes it impossible for step templates to independently control when
+to show inline errors.
+
+**Raised by:** Angular (explicitly) — implicit in the other demos' field-level validation requests
+
+**Resolved:**  
+`hasAttemptedNext: boolean` added to `PathSnapshot`. It's `false` on step entry and becomes
+`true` after the user calls `next()` at least once (regardless of whether navigation succeeded).
+Resets to `false` when entering any new step.
+
+All four adapter shells gate their automatic `fieldMessages` rendering with this flag:
+errors are only shown after the first Next attempt. Step templates can use the same flag
+for custom inline error display:
+
+```typescript
+{#if snapshot.hasAttemptedNext && snapshot.fieldMessages.email}
+  <span class="error">{snapshot.fieldMessages.email}</span>
+{/if}
+```
+
+**Where:** `packages/core` (engine snapshot type + state machine) + all four adapter shells
+
+---
+
+### 2.3 Footer layout for form vs wizard mode ✅ Done
+
+**Problem:**  
+The default shell footer puts both Cancel and Submit on the right, side-by-side. For a
+wizard this is fine. For a standalone form it is unconventional — Cancel is typically on the
+left (or rendered as a text link), with Submit as the sole right-side action.
+
+Because the back button is hidden on the first/only step, the footer's left side is empty,
+making the layout feel unbalanced.
+
+**Raised by:** Angular (explicitly) — the same layout is used across all adapters
+
+**Resolved:**  
+`footerLayout?: "wizard" | "form" | "auto"` prop added to all four adapter shells.
+
+**Default behavior (`"auto"`):**
+- Single-step top-level paths (`stepCount === 1 && nestingLevel === 0`) → `"form"` layout
+- Multi-step or nested paths → `"wizard"` layout
+
+This auto-detection matches the existing `hideProgress` behavior, so single-step forms
+automatically get the appropriate layout without manual configuration.
+
+**Layout modes:**
+- `"wizard"`: Back button on left, Cancel and Submit together on right
+- `"form"`: Cancel on left, Submit alone on right. Back button never shown.
+- `"auto"` (default): Automatically chooses based on path structure
+
+The prop still allows explicit override when needed (e.g., forcing "wizard" layout for a
+single-step path within a larger flow).
+
+**Where:** All four adapter shells (`PathShell` / `<pw-shell>`)
+
+---
+
+## Priority 3 — Smaller scope / framework-specific
+
+### 3.1 `createFormPath()` helper in core ✅ Done
+
+**Problem:**  
+Creating a single-step `PathDefinition` for a form use case requires understanding the full
+`PathDefinition` API (`steps`, `onEnter`, `canMoveNext`, `validationMessages`). For developers
+using Pathwrite purely as a form engine this feels like learning too much upfront.
+
+**Raised by:** Angular
+
+**Resolved:**  
+A `createFormPath()` helper has been added to `@daltonr/pathwrite-core` that simplifies
+single-step form creation with a streamlined API focused on validation.
+
+**Where:** `packages/core` (or developer guide only, as a documented pattern)
+
+---
+
+### 3.2 Fix CSS package import resolution (Vite) ✅ Done
+
+**Problem:**  
+`import '@daltonr/pathwrite-react/styles.css'` (the documented pattern) fails at build time
+with Vite:
+```
+Rollup failed to resolve import "@daltonr/pathwrite-react/styles.css"
+```
+The workaround was to copy the shell CSS into the app directly.
+
+**Raised by:** React
+
+**Resolved:**  
+Added an additional `"./dist/index.css": "./dist/index.css"` export to all four adapter
+`package.json` files. Some bundlers (particularly Vite) require explicit exports for deep
+imports even when a shorter alias (`./styles.css`) is provided. Both import paths now work:
+- `import '@daltonr/pathwrite-react/styles.css'` ✅ (documented, recommended)
+- `import '@daltonr/pathwrite-react/dist/index.css'` ✅ (also works)
+
+The root cause was that demo apps had stale copies of packages in their local `node_modules`
+instead of using workspace symlinks. Proper workspace configuration ensures demos always use
+the local development versions.
+
+**Where:** All adapter `package.json` exports
+
+---
+
+### 3.3 Angular: `injectPath()` signal-based API
+
+**Problem:**  
+Angular's data-access pattern (`#shell` template reference + `shell.facade.setData()`) is the
+most verbose and least discoverable of the four adapters. It requires Pathwrite-specific
+knowledge that doesn't map to Angular conventions modern developers expect.
+
+**Raised by:** React (observing the Angular gap) · Angular feedback (items 3 and 7)
+
+**Proposed change:**  
+An `injectPath<T>()` function for use in signal-based Angular components:
+```typescript
+// Inside a component, no template ref needed
+const path = injectPath<ContactData>();
+// path.snapshot()  — signal
+// path.setData(key, value)
+// path.snapshot().fieldMessages  (once 1.1 lands)
+```
+
+**Where:** `packages/angular-adapter`
+
+---
+
+### 3.4 Document "prop name = step ID" convention for Svelte snippets
+
+**Problem:**  
+The Svelte snippet prop pattern (`contact={ContactStep}`) requires knowing that the prop name
+must match the step ID. This isn't self-evident to developers new to the adapter.
+
+**Raised by:** Svelte
+
+**Proposed change:**  
+Add a prominent callout in the Svelte adapter docs and/or a TypeScript type that surfaces the
+step IDs as valid prop names (so IDEs can autocomplete them).
+
+**Where:** `packages/svelte-adapter` README + type definitions
+
+---
+
+## Summary
+
+| # | Feature | Impact | Scope | Demos |
+|---|---|---|---|---|
+| 1.1 ✅ | Field-level `fieldMessages` API | High | core + all shells | All 4 |
+| 1.2 ✅ | Auto-hide progress for single-step paths | Low | shell logic | All 4 |
+| 2.1 ✅ | `restart()` on shell + document reset patterns | Medium | all shells + docs | All 4 |
+| 2.2 ✅ | `snapshot.hasAttemptedNext` flag | Medium | core engine | All 4 |
+| 2.3 ✅ | `footerLayout: "wizard" \| "form" \| "auto"` | Low–Medium | all shells | All 4 |
+| 3.1 ✅ | `createFormPath()` helper | Low | core or docs | Angular |
+| 3.2 ✅ | Fix CSS import resolution (Vite) | Medium | package exports | React |
+| 3.3 ✅ | Angular `injectPath()` signal API | High (Angular only) | angular-adapter | Angular |
+| 3.4 ✅ | Step content mapping docs | Low | all adapter READMEs | All 4 (Svelte surfaced) |
+

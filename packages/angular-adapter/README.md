@@ -87,6 +87,128 @@ facade.snapshot()?.data.name; // typed as string (or whatever MyData defines)
 
 ---
 
+## `injectPath()` — Recommended API for Components
+
+**New in v0.6.0** — `injectPath()` provides an ergonomic, signal-based API for accessing the path engine inside Angular components. This is the **recommended approach** for step components and forms — it mirrors React's `usePathContext()` and Vue's `usePath()` for consistency across frameworks.
+
+### Quick start
+
+```typescript
+import { Component } from "@angular/core";
+import { PathFacade, injectPath } from "@daltonr/pathwrite-angular";
+
+@Component({
+  selector: "app-contact-step",
+  standalone: true,
+  providers: [PathFacade],  // ← Required: provide at this component or a parent
+  template: `
+    @if (path.snapshot(); as s) {
+      <h2>{{ s.activeStep?.title }}</h2>
+      <input 
+        type="text" 
+        [value]="name"
+        (input)="updateName($any($event.target).value)"
+      />
+      <button (click)="path.next()">Next</button>
+    }
+  `
+})
+export class ContactStepComponent {
+  protected readonly path = injectPath<ContactData>();
+  protected name = "";
+
+  protected updateName(value: string): void {
+    this.name = value;
+    this.path.setData("name", value);  // ← No facade or template ref needed
+  }
+}
+```
+
+### API
+
+`injectPath()` returns an object with:
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `snapshot` | `Signal<PathSnapshot \| null>` | Current path snapshot as a signal. `null` when no path is active. |
+| `start(path, data?)` | `Promise<void>` | Start or restart a path. |
+| `restart(path, data?)` | `Promise<void>` | Tear down and restart fresh. |
+| `startSubPath(path, data?, meta?)` | `Promise<void>` | Push a sub-path onto the stack. |
+| `next()` | `Promise<void>` | Advance one step. |
+| `previous()` | `Promise<void>` | Go back one step. |
+| `cancel()` | `Promise<void>` | Cancel the active path. |
+| `setData(key, value)` | `Promise<void>` | Update a single data field. Type-safe when `TData` is specified. |
+| `goToStep(stepId)` | `Promise<void>` | Jump to a step by ID (no guard checks). |
+| `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
+
+### Type safety
+
+Pass your data type as a generic to get full type checking:
+
+```typescript
+interface ContactData {
+  name: string;
+  email: string;
+}
+
+const path = injectPath<ContactData>();
+
+path.setData("name", "Jane");   // ✅ OK
+path.setData("foo", 123);       // ❌ Type error: "foo" not in ContactData
+path.snapshot()?.data.name;     // ✅ Typed as string
+```
+
+### Requirements
+
+- **Angular 16+** (signals required)
+- `PathFacade` must be provided in the injector tree (either at the component or a parent component)
+
+### Compared to manual facade injection
+
+**Before** (manual facade injection + template reference):
+```typescript
+@Component({
+  providers: [PathFacade],
+  template: `
+    <pw-shell #shell ...>
+      <ng-template pwStep="contact">
+        <input (input)="shell.facade.setData('name', $any($event.target).value)" />
+      </ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent {
+  protected readonly facade = inject(PathFacade);
+}
+```
+
+**After** (with `injectPath()`):
+```typescript
+@Component({
+  providers: [PathFacade],
+  template: `
+    <input (input)="updateName($any($event.target).value)" />
+    <button (click)="path.next()">Next</button>
+  `
+})
+export class MyStepComponent {
+  protected readonly path = injectPath<MyData>();
+
+  protected updateName(value: string): void {
+    this.path.setData("name", value);  // ← Clean, no template ref
+  }
+}
+```
+
+The `injectPath()` approach:
+- **No template references** — access the engine directly from the component class
+- **Signal-native** — `path.snapshot()` returns the reactive signal directly
+- **Type-safe** — generic parameter flows through to all methods
+- **Framework-consistent** — matches React's `usePathContext()` and Vue's `usePath()`
+- **Less Angular-specific knowledge** — just `inject()` and signals, patterns Angular developers already know
+
+---
+
 ## Angular Forms integration — `syncFormGroup`
 
 `syncFormGroup` eliminates the boilerplate of manually wiring an Angular
@@ -254,6 +376,38 @@ export class MyComponent {
 ```
 
 Each `<ng-template pwStep="<stepId>">` is rendered when the active step matches `stepId`. The shell handles all navigation internally.
+
+> **⚠️ Important: `pwStep` Values Must Match Step IDs**
+>
+> The string value passed to the `pwStep` directive **must exactly match** the corresponding step's `id`:
+>
+> ```typescript
+> const myPath: PathDefinition = {
+>   id: 'signup',
+>   steps: [
+>     { id: 'details' },  // ← Step ID
+>     { id: 'review' }    // ← Step ID
+>   ]
+> };
+> ```
+>
+> ```html
+> <pw-shell [path]="myPath">
+>   <ng-template pwStep="details">  <!-- ✅ Matches "details" step -->
+>     <app-details-form />
+>   </ng-template>
+>   <ng-template pwStep="review">   <!-- ✅ Matches "review" step -->
+>     <app-review-panel />
+>   </ng-template>
+>   <ng-template pwStep="foo">      <!-- ❌ No step with id "foo" -->
+>     <app-foo-panel />
+>   </ng-template>
+> </pw-shell>
+> ```
+>
+> If a `pwStep` value doesn't match any step ID, that template will never be rendered (silent — no error message).
+>
+> **💡 Tip:** Use your IDE's "Go to Definition" on the step ID in your path definition, then copy-paste the exact string when creating the `pwStep` directive. This ensures perfect matching and avoids typos.
 
 ### Context sharing
 

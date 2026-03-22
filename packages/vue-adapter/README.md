@@ -139,6 +139,38 @@ The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated resu
 </PathShell>
 ```
 
+> **⚠️ Important: Slot Names Must Match Step IDs**
+>
+> The slot names **must exactly match** the step IDs from your path definition:
+>
+> ```typescript
+> const myPath: PathDefinition = {
+>   id: 'signup',
+>   steps: [
+>     { id: 'details' },  // ← Step ID
+>     { id: 'review' }    // ← Step ID
+>   ]
+> };
+> ```
+>
+> ```vue
+> <PathShell :path="myPath">
+>   <template #details>  <!-- ✅ Matches "details" step -->
+>     <DetailsForm />
+>   </template>
+>   <template #review>   <!-- ✅ Matches "review" step -->
+>     <ReviewPanel />
+>   </template>
+>   <template #foo>      <!-- ❌ No step with id "foo" -->
+>     <FooPanel />
+>   </template>
+> </PathShell>
+> ```
+>
+> If a slot name doesn't match any step ID, that slot will never be rendered (silent — no error message).
+>
+> **💡 Tip:** Use your IDE's "Go to Definition" on the step ID in your path definition, then copy-paste the exact string when creating the slot. This ensures perfect matching and avoids typos.
+
 ### Props
 
 | Prop | Type | Default | Description |

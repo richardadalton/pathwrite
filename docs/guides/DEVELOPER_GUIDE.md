@@ -577,6 +577,49 @@ export class MyComponent {
 }
 ```
 
+### `injectPath()` — Recommended for Components (Angular 16+)
+
+**New in v0.6.0** — `injectPath()` provides an ergonomic, signal-based API for accessing the path engine inside Angular components. This is the **recommended approach** for step components and forms.
+
+```typescript
+import { Component } from "@angular/core";
+import { PathFacade, injectPath } from "@daltonr/pathwrite-angular";
+
+@Component({
+  selector: "app-contact-step",
+  standalone: true,
+  providers: [PathFacade],  // ← Required at this component or a parent
+  template: `
+    @if (path.snapshot(); as s) {
+      <input (input)="updateName($any($event.target).value)" />
+      <button (click)="path.next()">Next</button>
+    }
+  `
+})
+export class ContactStepComponent {
+  protected readonly path = injectPath<ContactData>();
+
+  protected updateName(value: string): void {
+    this.path.setData("name", value);  // ← No template ref needed
+  }
+}
+```
+
+**Returns:**
+- `snapshot: Signal<PathSnapshot | null>` — reactive signal for current state
+- All navigation actions: `next()`, `previous()`, `setData()`, `cancel()`, etc.
+- Full TypeScript type safety when generic is specified
+
+This mirrors React's `usePathContext()` and Vue's `usePath()` for consistency across frameworks, while feeling Angular-native (uses `inject()`, returns signals, no RxJS required).
+
+**Compared to manual facade injection:**
+- ✅ No template references (`#shell`)
+- ✅ Signal-native — `path.snapshot()` is the reactive signal directly
+- ✅ Type-safe — generic parameter flows through to all methods
+- ✅ Framework-consistent — less Angular-specific knowledge required
+
+See the [Angular adapter README](../../packages/angular-adapter/README.md) for complete documentation.
+
 ### Reactive state with signals (recommended)
 
 `PathFacade` ships a pre-wired `stateSignal` — no `toSignal()` call required:

@@ -189,6 +189,36 @@ import { PathShell } from "@daltonr/pathwrite-react";
 />
 ```
 
+> **⚠️ Important: `steps` Keys Must Match Step IDs**
+>
+> The keys in the `steps` object **must exactly match** the step IDs from your path definition:
+>
+> ```typescript
+> const myPath: PathDefinition = {
+>   id: 'signup',
+>   steps: [
+>     { id: 'details' },  // ← Step ID
+>     { id: 'review' }    // ← Step ID
+>   ]
+> };
+> ```
+>
+> ```tsx
+> <PathShell
+>   path={myPath}
+>   steps={{
+>     details: <DetailsForm />,  // ✅ Matches "details" step
+>     review: <ReviewPanel />,   // ✅ Matches "review" step
+>     foo: <FooPanel />          // ❌ No step with id "foo"
+>   }}
+> />
+> ```
+>
+> If a key doesn't match any step ID, PathShell will render:  
+> **`No content for step "foo"`**
+>
+> **💡 Tip:** Use your IDE's "Go to Definition" on the step ID in your path definition, then copy-paste the exact string when creating the `steps` object. This ensures perfect matching and avoids typos.
+
 ### Props
 
 | Prop | Type | Default | Description |

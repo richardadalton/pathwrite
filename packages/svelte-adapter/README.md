@@ -105,6 +105,39 @@ npm install @daltonr/pathwrite-svelte
 
 Each step is a **Svelte 5 snippet** whose name matches the step ID. PathShell collects them automatically and renders the active one.
 
+> **⚠️ Important: Snippet Names Must Match Step IDs**
+>
+> When passing step content to `<PathShell>`, each snippet's name **must exactly match** the corresponding step's `id`:
+>
+> ```typescript
+> const myPath = {
+>   id: 'signup',
+>   steps: [
+>     { id: 'details' },  // ← Step ID
+>     { id: 'review' }    // ← Step ID
+>   ]
+> };
+> ```
+>
+> ```svelte
+> <PathShell path={myPath}>
+>   {#snippet details()}  <!-- ✅ Matches "details" step -->
+>     <DetailsForm />
+>   {/snippet}
+>   {#snippet review()}   <!-- ✅ Matches "review" step -->
+>     <ReviewPanel />
+>   {/snippet}
+>   {#snippet foo()}      <!-- ❌ No step with id "foo" -->
+>     <FooPanel />
+>   {/snippet}
+> </PathShell>
+> ```
+>
+> If a snippet name doesn't match any step ID, PathShell will render:  
+> **`No content for step "foo"`**
+>
+> **💡 Tip:** Use your IDE's "Go to Definition" on the step ID in your path definition, then copy-paste the exact string when creating the snippet. This ensures perfect matching and avoids typos.
+
 ---
 
 ## Simple vs Persisted
