@@ -4,6 +4,11 @@
   import type { PathDefinition, PathData, PathEngine, PathSnapshot } from './index.svelte.js';
   import type { Snippet } from 'svelte';
 
+  /** Converts a camelCase or lowercase field key to a display label. */
+  function formatFieldKey(key: string): string {
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+  }
+
   interface Props {
     path?: PathDefinition<any>;
     engine?: PathEngine;
@@ -125,11 +130,13 @@
       {/if}
     </div>
 
-    <!-- Validation messages -->
-    {#if snap.validationMessages.length > 0}
+    <!-- Validation messages — labeled by field name -->
+    {#if Object.keys(snap.fieldMessages).length > 0}
       <ul class="pw-shell__validation">
-        {#each snap.validationMessages as msg}
-          <li class="pw-shell__validation-item">{msg}</li>
+        {#each Object.entries(snap.fieldMessages) as [key, msg]}
+          <li class="pw-shell__validation-item">
+            {#if key !== '_'}<span class="pw-shell__validation-label">{formatFieldKey(key)}</span>{/if}{msg}
+          </li>
         {/each}
       </ul>
     {/if}

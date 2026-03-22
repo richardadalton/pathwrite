@@ -386,23 +386,32 @@ describe("PathFacade — generic typing <TData>", () => {
 });
 
 // ---------------------------------------------------------------------------
-// validationMessages
+// fieldMessages
 // ---------------------------------------------------------------------------
 
-describe("PathFacade — validationMessages", () => {
-  it("is an empty array when the step has no validationMessages hook", async () => {
+describe("PathFacade — fieldMessages", () => {
+  it("is an empty object when the step has no fieldMessages hook", async () => {
     const facade = new PathFacade();
     await facade.start(twoStepPath());
-    expect(facade.snapshot()?.validationMessages).toEqual([]);
+    expect(facade.snapshot()?.fieldMessages).toEqual({});
   });
 
   it("returns messages from the hook", async () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", validationMessages: () => ["Field is required"] }]
+      steps: [{ id: "step1", fieldMessages: () => ({ field: "Field is required" }) }]
     });
-    expect(facade.snapshot()?.validationMessages).toEqual(["Field is required"]);
+    expect(facade.snapshot()?.fieldMessages).toEqual({ field: "Field is required" });
+  });
+
+  it("strips undefined values", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [{ id: "step1", fieldMessages: () => ({ name: "Required", email: undefined }) }]
+    });
+    expect(facade.snapshot()?.fieldMessages).toEqual({ name: "Required" });
   });
 
   it("updates reactively when setData changes data", async () => {
@@ -412,27 +421,37 @@ describe("PathFacade — validationMessages", () => {
       steps: [
         {
           id: "step1",
-          validationMessages: (ctx) =>
-            (ctx.data as PathData).name ? [] : ["Name is required"]
+          fieldMessages: (ctx) => ({
+            name: (ctx.data as PathData).name ? undefined : "Name is required"
+          })
         }
       ]
     });
-    expect(facade.snapshot()?.validationMessages).toEqual(["Name is required"]);
+    expect(facade.snapshot()?.fieldMessages).toEqual({ name: "Name is required" });
 
     await facade.setData("name", "Alice");
-    expect(facade.snapshot()?.validationMessages).toEqual([]);
+    expect(facade.snapshot()?.fieldMessages).toEqual({});
   });
 
   it("is reflected in state$", async () => {
     const facade = new PathFacade();
-    let latest: string[] | undefined;
-    facade.state$.subscribe((s) => { if (s) latest = s.validationMessages; });
+    let latest: Record<string, string> | undefined;
+    facade.state$.subscribe((s) => { if (s) latest = s.fieldMessages; });
 
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", validationMessages: () => ["Required"] }]
+      steps: [{ id: "step1", fieldMessages: () => ({ field: "Required" }) }]
     });
-    expect(latest).toEqual(["Required"]);
+    expect(latest).toEqual({ field: "Required" });
+  });
+
+  it("auto-derives canMoveNext from fieldMessages when canMoveNext is absent", async () => {
+    const facade = new PathFacade();
+    await facade.start({
+      id: "w",
+      steps: [{ id: "step1", fieldMessages: () => ({ name: "Required" }) }]
+    });
+    expect(facade.snapshot()?.canMoveNext).toBe(false);
   });
 });
 

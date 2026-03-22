@@ -1,0 +1,171 @@
+<main class="page">
+  <h1>{{ title }}</h1>
+
+  <!-- ── Completion banner ──────────────────────────────────────────────── -->
+  @if (isCompleted && completedData) {
+    <section class="panel success-panel">
+      <div class="success-icon">🎉</div>
+      <h2>Course Created!</h2>
+      <p><strong>Title:</strong> {{ completedData['title'] }}</p>
+      <p><strong>Description:</strong> {{ completedData['description'] }}</p>
+      <p>
+        <strong>Lessons:</strong>
+        {{ $any(completedData['lessons'])?.length ?? 0 }}
+      </p>
+      <button type="button" (click)="restart()">Create Another</button>
+    </section>
+  }
+
+  <!-- ── Active wizard ─────────────────────────────────────────────────── -->
+  @if (!isCompleted) {
+    <pw-shell
+      #shell
+      [path]="coursePath"
+      [initialData]="{ title: '', description: '', notify: true, lessons: [] }"
+      completeLabel="Publish Course"
+      (completed)="onComplete($event)"
+      (pathEvent)="onPathEvent($event)"
+    >
+
+      <!-- Step 1: Course Details ─────────────────────────────────────── -->
+      <ng-template pwStep="course-details">
+        <div class="step-content">
+          <div class="form-group">
+            <label for="title">Course Title *</label>
+            <input
+              id="title"
+              type="text"
+              [value]="title_"
+              (input)="title_ = $any($event.target).value;
+                       shell.facade.setData('title', title_.trim())"
+              placeholder="e.g. TypeScript Fundamentals"
+              autofocus
+            />
+          </div>
+          <div class="form-group">
+            <label for="desc">Description *</label>
+            <textarea
+              id="desc"
+              [value]="description"
+              (input)="description = $any($event.target).value;
+                       shell.facade.setData('description', description.trim())"
+              placeholder="What will students learn?"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="notify"
+                (change)="notify = $any($event.target).checked;
+                           shell.facade.setData('notify', notify)"
+              />
+              Notify me when students enroll
+            </label>
+          </div>
+          <p class="hint">Both Title and Description are required to continue.</p>
+        </div>
+      </ng-template>
+
+      <!-- Step 2: Lesson List ──────────────────────────────────────────── -->
+      <ng-template pwStep="lesson-details">
+        <div class="step-content">
+          @if (shell.facade.stateSignal(); as s) {
+            @if (($any(s.data['lessons']) ?? []).length === 0) {
+              <p class="empty-hint">No lessons yet — add your first one below.</p>
+            } @else {
+              <ul class="lesson-list">
+                @for (lesson of $any(s.data['lessons']); track lesson) {
+                  <li>{{ lesson }}</li>
+                }
+              </ul>
+            }
+            <button
+              type="button"
+              class="btn-add"
+              [disabled]="s.isNavigating"
+              (click)="shell.facade.startSubPath(addLessonPath)"
+            >+ Add Lesson</button>
+            <p class="hint">Add at least one lesson, then click Next to continue.</p>
+          }
+        </div>
+      </ng-template>
+
+      <!-- Sub-path step: Lesson Name ───────────────────────────────────── -->
+      <ng-template pwStep="lesson-name">
+        <div class="step-content">
+          @if (shell.facade.stateSignal(); as s) {
+            <div class="form-group">
+              <label for="lessonName">Lesson Name *</label>
+              <input
+                id="lessonName"
+                type="text"
+                [value]="lessonName"
+                (input)="lessonName = $any($event.target).value;
+                         shell.facade.setData('lessonName', lessonName.trim())"
+                placeholder="e.g. Introduction to Types"
+                autofocus
+              />
+            </div>
+            <p class="hint sub-hint">
+              Sub-path — nesting level: {{ s.nestingLevel }}.
+              Press Previous to discard this lesson.
+            </p>
+          }
+        </div>
+      </ng-template>
+
+      <!-- Step 3: Review ───────────────────────────────────────────────── -->
+      <ng-template pwStep="review">
+        <div class="step-content">
+          @if (shell.facade.stateSignal(); as s) {
+            <div class="review-grid">
+              <span class="review-label">Title</span>
+              <span>{{ s.data['title'] }}</span>
+
+              <span class="review-label">Description</span>
+              <span>{{ s.data['description'] }}</span>
+
+              <span class="review-label">Notifications</span>
+              <span>{{ s.data['notify'] ? 'On ✓' : 'Off' }}</span>
+
+              <span class="review-label">
+                Lessons ({{ ($any(s.data['lessons']) ?? []).length }})
+              </span>
+              <span>
+                @if (($any(s.data['lessons']) ?? []).length === 0) {
+                  <em>None added</em>
+                } @else {
+                  <ul class="lesson-list">
+                    @for (lesson of $any(s.data['lessons']); track lesson) {
+                      <li>{{ lesson }}</li>
+                    }
+                  </ul>
+                }
+              </span>
+            </div>
+            <p class="hint">Click "Publish Course" to finish.</p>
+          }
+        </div>
+      </ng-template>
+
+    </pw-shell>
+  }
+
+  <!-- ── Event Log ─────────────────────────────────────────────────────── -->
+  <section class="event-log-panel">
+    <h2>Event Log</h2>
+    @if (eventLog.length === 0) {
+      <p class="empty-hint">No events yet.</p>
+    } @else {
+      <ul>
+        @for (entry of eventLog; track entry) {
+          <li>{{ entry }}</li>
+        }
+      </ul>
+    }
+  </section>
+
+</main>
+

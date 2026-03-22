@@ -12,7 +12,8 @@
     "baseUrl": ".",
     "paths": {
       "@daltonr/pathwrite-core": ["../../packages/core/src/index.ts"],
-      "@daltonr/pathwrite-angular": ["../../packages/angular-adapter/src/index.ts"]
+      "@daltonr/pathwrite-angular": ["../../packages/angular-adapter/src/index.ts"],
+      "@daltonr/pathwrite-angular/shell": ["../../packages/angular-adapter/src/shell.ts"]
     }
   },
   "files": [],

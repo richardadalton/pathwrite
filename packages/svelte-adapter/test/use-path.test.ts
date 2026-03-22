@@ -592,24 +592,45 @@ describe("usePath — guards and validation", () => {
     expect(snap(path)?.canMoveNext).toBe(true);
   });
 
-  it("validationMessages appear in snapshot", async () => {
+  it("fieldMessages appear in snapshot", async () => {
     const path = createPath();
     await path.start({
       id: "w",
       steps: [
         {
           id: "s1",
-          validationMessages: ({ data }) =>
-            data.name ? [] : ["Name is required"]
+          fieldMessages: ({ data }) => ({
+            name: data.name ? undefined : "Name is required"
+          })
         },
         { id: "s2" }
       ]
     }, { name: "" });
 
-    expect(snap(path)?.validationMessages).toContain("Name is required");
+    expect(snap(path)?.fieldMessages).toMatchObject({ name: "Name is required" });
 
     await path.setData("name", "Alice");
-    expect(snap(path)?.validationMessages).toHaveLength(0);
+    expect(snap(path)?.fieldMessages).toEqual({});
+  });
+
+  it("fieldMessages auto-derives canMoveNext", async () => {
+    const path = createPath();
+    await path.start({
+      id: "w",
+      steps: [
+        {
+          id: "s1",
+          fieldMessages: ({ data }) => ({
+            name: data.name ? undefined : "Required"
+          })
+        },
+        { id: "s2" }
+      ]
+    }, { name: "" });
+
+    expect(snap(path)?.canMoveNext).toBe(false);
+    await path.setData("name", "Alice");
+    expect(snap(path)?.canMoveNext).toBe(true);
   });
 
   it("next() is blocked when canMoveNext returns false", async () => {

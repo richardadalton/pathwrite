@@ -1,0 +1,127 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Contact Us</h1>
+    <p class="subtitle">Send us a message and we'll get back to you shortly.</p>
+  </div>
+
+  <!-- ── Success ─────────────────────────────────────────────────────────── -->
+  @if (isSubmitted && submittedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">✅</div>
+      <h2>Message Sent!</h2>
+      <p>Thanks <strong>{{ submittedData.name }}</strong>, we've received your message.</p>
+      <div class="submitted-summary">
+        <div class="summary-row">
+          <span class="summary-label">Email</span>
+          <span>{{ submittedData.email }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Subject</span>
+          <span>{{ submittedData.subject }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Message</span>
+          <span>{{ submittedData.message }}</span>
+        </div>
+      </div>
+      <button type="button" class="btn-primary" (click)="tryAgain()">Send Another Message</button>
+    </section>
+  }
+
+  <!-- ── Cancelled ───────────────────────────────────────────────────────── -->
+  @if (isCancelled) {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">✖</div>
+      <h2>Message Discarded</h2>
+      <p>Your message was not sent.</p>
+      <button type="button" class="btn-secondary" (click)="tryAgain()">Try Again</button>
+    </section>
+  }
+
+  <!-- ── Active form ─────────────────────────────────────────────────────── -->
+  @if (!isSubmitted && !isCancelled) {
+    <pw-shell
+      #shell
+      [path]="contactFormPath"
+      [initialData]="{ name: '', email: '', subject: '', message: '' }"
+      [hideProgress]="true"
+      completeLabel="Send Message"
+      cancelLabel="Discard"
+      (completed)="onSubmit($event)"
+      (cancelled)="onCancel()"
+    >
+      <ng-template pwStep="contact">
+        <div class="form-body">
+
+          <!-- Name -->
+          <div class="field">
+            <label for="name">Full Name <span class="required">*</span></label>
+            <input
+              id="name"
+              type="text"
+              [value]="name"
+              (input)="name = $any($event.target).value;
+                       shell.facade.setData('name', name.trim())"
+              placeholder="Jane Smith"
+              autocomplete="name"
+              autofocus
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="field">
+            <label for="email">Email Address <span class="required">*</span></label>
+            <input
+              id="email"
+              type="email"
+              [value]="email"
+              (input)="email = $any($event.target).value;
+                       shell.facade.setData('email', email.trim())"
+              placeholder="jane@example.com"
+              autocomplete="email"
+            />
+          </div>
+
+          <!-- Subject -->
+          <div class="field">
+            <label for="subject">Subject <span class="required">*</span></label>
+            <select
+              id="subject"
+              (change)="subject = $any($event.target).value;
+                        shell.facade.setData('subject', subject)"
+            >
+              <option value="" disabled [selected]="!subject">Select a subject…</option>
+              <option value="General Enquiry">General Enquiry</option>
+              <option value="Bug Report">Bug Report</option>
+              <option value="Feature Request">Feature Request</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Message -->
+          <div class="field">
+            <label for="message">
+              Message <span class="required">*</span>
+              <span class="field-hint">(min 10 characters)</span>
+            </label>
+            <textarea
+              id="message"
+              rows="5"
+              [value]="message"
+              (input)="message = $any($event.target).value;
+                       shell.facade.setData('message', message.trim())"
+              placeholder="How can we help you?"
+            ></textarea>
+            @if (shell.facade.stateSignal(); as s) {
+              <span class="char-count">{{ $any(s.data['message'])?.length ?? 0 }} chars</span>
+            }
+          </div>
+
+        </div>
+      </ng-template>
+    </pw-shell>
+  }
+
+</main>
+

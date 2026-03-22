@@ -11,6 +11,7 @@ import { PathEngine as PathEngineClass } from "@daltonr/pathwrite-core";
 // Re-export core types for convenience
 export type {
   PathData,
+  FieldErrors,
   PathDefinition,
   PathEngine,
   PathEvent,

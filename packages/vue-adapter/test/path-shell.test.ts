@@ -410,15 +410,15 @@ describe("PathShell (Vue) — context sharing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// validationMessages
+// fieldMessages
 // ---------------------------------------------------------------------------
 
-describe("PathShell (Vue) — validationMessages", () => {
-  it("renders the validation list when the current step has messages", async () => {
+describe("PathShell (Vue) — fieldMessages", () => {
+  it("renders labeled messages when the current step has fieldMessages", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", validationMessages: () => ["Name is required", "Email is required"] },
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -433,15 +433,17 @@ describe("PathShell (Vue) — validationMessages", () => {
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
-    expect(wrapper.text()).toContain("Name is required");
-    expect(wrapper.text()).toContain("Email is required");
+    expect(wrapper.text()).toContain("Name");
+    expect(wrapper.text()).toContain("Required");
+    expect(wrapper.text()).toContain("Email");
+    expect(wrapper.text()).toContain("Invalid email address");
     wrapper.unmount();
   });
 
-  it("does not render the validation list when messages is empty", async () => {
+  it("does not render the validation list when fieldMessages is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", validationMessages: () => [] }]
+      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({}) }]
     };
     const TestHost = defineComponent({
       setup() {
@@ -454,11 +456,11 @@ describe("PathShell (Vue) — validationMessages", () => {
     wrapper.unmount();
   });
 
-  it("clears messages when navigating to a step with no hook", async () => {
+  it("clears messages when navigating to a step with no fieldMessages hook", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", validationMessages: () => ["Fill this in"] },
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -478,6 +480,23 @@ describe("PathShell (Vue) — validationMessages", () => {
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
     expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("does not render a label span for the _ key", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({ _: "Form-level error" }) }]
+    };
+    const TestHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path }, { "step-a": () => h("div", "A") });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__validation-label").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Form-level error");
     wrapper.unmount();
   });
 });

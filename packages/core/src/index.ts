@@ -1,5 +1,16 @@
 export type PathData = Record<string, unknown>;
 
+/**
+ * The return type of a `fieldMessages` hook. Each key is a field ID; the value
+ * is an error string, or `undefined` / omitted to indicate no error for that field.
+ *
+ * Use `"_"` as a key for form-level errors that don't belong to a specific field:
+ * ```typescript
+ * { _: "You must accept the terms and conditions." }
+ * ```
+ */
+export type FieldErrors = Record<string, string | undefined>;
+
 export interface SerializedPathState {
   version: 1;
   pathId: string;
@@ -53,12 +64,26 @@ export interface PathStep<TData extends PathData = PathData> {
   canMoveNext?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
   canMovePrevious?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
   /**
-   * Returns a list of human-readable messages explaining why the step is not
-   * yet valid. The shell displays these messages below the step content so
-   * consumers do not need to duplicate guard logic in the template.
-   * Evaluated synchronously on every snapshot; async functions default to `[]`.
+   * Returns a map of field ID → error message explaining why the step is not
+   * yet valid. The shell displays these messages below the step content (labeled
+   * by field name) so consumers do not need to duplicate validation logic in
+   * the template. Return `undefined` for a field to indicate no error.
+   *
+   * When `fieldMessages` is provided and `canMoveNext` is **not**, the engine
+   * automatically derives `canMoveNext` as `true` when all values are `undefined`
+   * (i.e. no messages), eliminating the need to express the same logic twice.
+   *
+   * Evaluated synchronously on every snapshot; async functions default to `{}`.
+   *
+   * @example
+   * ```typescript
+   * fieldMessages: ({ data }) => ({
+   *   name:  !data.name?.trim()        ? "Required."             : undefined,
+   *   email: !isValidEmail(data.email) ? "Invalid email address." : undefined,
+   * })
+   * ```
    */
-  validationMessages?: (ctx: PathStepContext<TData>) => string[] | Promise<string[]>;
+  fieldMessages?: (ctx: PathStepContext<TData>) => FieldErrors;
   onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   /**
@@ -118,12 +143,17 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   nestingLevel: number;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
-  /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. */
+  /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. Auto-derived as `true` when `fieldMessages` is defined and returns no messages, and `canMoveNext` is not explicitly defined. */
   canMoveNext: boolean;
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
   canMovePrevious: boolean;
-  /** Messages from the current step's `validationMessages` hook. Empty array when there are none. */
-  validationMessages: string[];
+  /**
+   * Field-keyed validation messages for the current step. Empty object when there are none.
+   * Use in step templates to render inline per-field errors: `snapshot.fieldMessages['email']`.
+   * The shell also renders these automatically in a labeled summary box.
+   * Use `"_"` as a key for form-level (non-field-specific) errors.
+   */
+  fieldMessages: Record<string, string>;
   data: TData;
 }
 
@@ -470,9 +500,9 @@ export class PathEngine {
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       isNavigating: this._isNavigating,
-      canMoveNext: this.evaluateGuardSync(step.canMoveNext, active),
+      canMoveNext: this.evaluateCanMoveNextSync(step, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
-      validationMessages: this.evaluateValidationMessagesSync(step.validationMessages, active),
+      fieldMessages: this.evaluateFieldMessagesSync(step.fieldMessages, active),
       data: { ...active.data }
     };
   }
@@ -852,14 +882,19 @@ export class PathEngine {
     active: ActivePath,
     step: PathStep
   ): Promise<boolean> {
-    if (!step.canMoveNext) return true;
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: step.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id)
-    };
-    return step.canMoveNext(ctx);
+    if (step.canMoveNext) {
+      const ctx: PathStepContext = {
+        pathId: active.definition.id,
+        stepId: step.id,
+        data: { ...active.data },
+        isFirstEntry: !active.visitedStepIds.has(step.id)
+      };
+      return step.canMoveNext(ctx);
+    }
+    if (step.fieldMessages) {
+      return Object.keys(this.evaluateFieldMessagesSync(step.fieldMessages, active)).length === 0;
+    }
+    return true;
   }
 
   private async canMovePrevious(
@@ -928,21 +963,33 @@ export class PathEngine {
   }
 
   /**
-   * Evaluates a validationMessages function synchronously for inclusion in the snapshot.
-   * If the hook is absent, returns `[]`.
-   * If the hook returns a `Promise`, returns `[]` (async hooks are not supported in snapshots).
-   *
-   * **Note:** Like guards, `validationMessages` is evaluated before `onEnter` runs on first
-   * entry. Write it defensively so it does not throw when fields are absent.
-   *
-   * If the function throws, the error is caught, a `console.warn` is emitted, and `[]`
-   * is returned so validation messages do not block the UI unexpectedly.
+   * Evaluates `canMoveNext` synchronously for inclusion in the snapshot.
+   * When `canMoveNext` is defined, delegates to `evaluateGuardSync`.
+   * When absent but `fieldMessages` is defined, auto-derives: `true` iff no messages.
+   * When neither is defined, returns `true`.
    */
-  private evaluateValidationMessagesSync(
-    fn: ((ctx: PathStepContext) => string[] | Promise<string[]>) | undefined,
+  private evaluateCanMoveNextSync(step: PathStep, active: ActivePath): boolean {
+    if (step.canMoveNext) return this.evaluateGuardSync(step.canMoveNext, active);
+    if (step.fieldMessages) {
+      return Object.keys(this.evaluateFieldMessagesSync(step.fieldMessages, active)).length === 0;
+    }
+    return true;
+  }
+
+  /**
+   * Evaluates a fieldMessages function synchronously for inclusion in the snapshot.
+   * If the hook is absent, returns `{}`.
+   * If the hook returns a `Promise`, returns `{}` (async hooks are not supported in snapshots).
+   * `undefined` values are stripped from the result — only fields with a defined message are included.
+   *
+   * **Note:** Like guards, `fieldMessages` is evaluated before `onEnter` runs on first
+   * entry. Write it defensively so it does not throw when fields are absent.
+   */
+  private evaluateFieldMessagesSync(
+    fn: ((ctx: PathStepContext) => FieldErrors) | undefined,
     active: ActivePath
-  ): string[] {
-    if (!fn) return [];
+  ): Record<string, string> {
+    if (!fn) return {};
     const step = this.getCurrentStep(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
@@ -952,26 +999,32 @@ export class PathEngine {
     };
     try {
       const result = fn(ctx);
-      if (Array.isArray(result)) return result;
-      // Async validationMessages detected - warn and return empty array
-      if (result && typeof result.then === "function") {
+      if (result && typeof result === "object" && typeof (result as unknown as { then?: unknown }).then !== "function") {
+        const filtered: Record<string, string> = {};
+        for (const [key, val] of Object.entries(result)) {
+          if (val !== undefined && val !== null && val !== "") {
+            filtered[key] = val;
+          }
+        }
+        return filtered;
+      }
+      if (result && typeof (result as unknown as { then?: unknown }).then === "function") {
         console.warn(
-          `[pathwrite] Async validationMessages detected on step "${step.id}". ` +
-          `validationMessages in snapshots must be synchronous. ` +
-          `Returning [] as default. ` +
+          `[pathwrite] Async fieldMessages detected on step "${step.id}". ` +
+          `fieldMessages must be synchronous. Returning {} as default. ` +
           `Use synchronous validation or move async checks to canMoveNext.`
         );
       }
-      return [];
+      return {};
     } catch (err) {
       console.warn(
-        `[pathwrite] validationMessages on step "${step.id}" threw an error during snapshot evaluation. ` +
-        `Returning [] as a safe default. ` +
-        `Note: validationMessages is evaluated before onEnter runs on first entry — ` +
+        `[pathwrite] fieldMessages on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `Returning {} as a safe default. ` +
+        `Note: fieldMessages is evaluated before onEnter runs on first entry — ` +
         `ensure it handles missing/undefined data gracefully.`,
         err
       );
-      return [];
+      return {};
     }
   }
 }

@@ -331,15 +331,15 @@ describe("PathShell — context sharing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// validationMessages
+// fieldMessages
 // ---------------------------------------------------------------------------
 
-describe("PathShell — validationMessages", () => {
-  it("renders the validation list when the current step has messages", async () => {
+describe("PathShell — fieldMessages", () => {
+  it("renders labeled messages when the current step has fieldMessages", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", validationMessages: () => ["Name is required", "Email is required"] },
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -349,14 +349,16 @@ describe("PathShell — validationMessages", () => {
         steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
       }))
     );
-    expect(screen.getByText("Name is required")).toBeTruthy();
-    expect(screen.getByText("Email is required")).toBeTruthy();
+    expect(screen.getByText("Name")).toBeTruthy();
+    expect(screen.getByText("Required")).toBeTruthy();
+    expect(screen.getByText("Email")).toBeTruthy();
+    expect(screen.getByText("Invalid email address")).toBeTruthy();
   });
 
-  it("does not render the validation list when messages is empty", async () => {
+  it("does not render the validation list when fieldMessages is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", validationMessages: () => [] }]
+      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({}) }]
     };
     await act(async () =>
       render(createElement(PathShell, {
@@ -367,11 +369,11 @@ describe("PathShell — validationMessages", () => {
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
-  it("clears messages when navigating to a step with no hook", async () => {
+  it("clears messages when navigating to a step with no fieldMessages hook", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", validationMessages: () => ["Fill this in"] },
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -385,6 +387,21 @@ describe("PathShell — validationMessages", () => {
 
     await act(async () => screen.getByText("Next").click());
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
+  });
+
+  it("does not render label span for the _ key", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({ _: "Form-level error" }) }]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: { "step-a": createElement("div", null, "A") }
+      }))
+    );
+    expect(document.querySelector(".pw-shell__validation-label")).toBeNull();
+    expect(screen.getByText("Form-level error")).toBeTruthy();
   });
 });
 

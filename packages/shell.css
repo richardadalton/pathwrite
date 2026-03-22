@@ -204,6 +204,15 @@
   left: 4px;
 }
 
+.pw-shell__validation-label {
+  font-weight: 600;
+  margin-right: 3px;
+}
+
+.pw-shell__validation-label::after {
+  content: ":";
+}
+
 /* ------------------------------------------------------------------ */
 /* Footer — navigation buttons                                        */
 /* ------------------------------------------------------------------ */

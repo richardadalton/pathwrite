@@ -190,6 +190,16 @@ export function usePathContext<TData extends PathData = PathData>(): UsePathRetu
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Converts a camelCase or lowercase field key to a display label.
+ *  e.g. "firstName" → "First Name", "email" → "Email" */
+function formatFieldKey(key: string): string {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
+}
+
+// ---------------------------------------------------------------------------
 // Default UI — PathShell
 // ---------------------------------------------------------------------------
 
@@ -333,10 +343,13 @@ export function PathShell({
         : defaultHeader(snapshot)),
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
-      // Validation messages
-      snapshot.validationMessages.length > 0 && createElement("ul", { className: "pw-shell__validation" },
-        ...snapshot.validationMessages.map((msg, i) =>
-          createElement("li", { key: i, className: "pw-shell__validation-item" }, msg)
+      // Validation messages — labeled by field name
+      Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+        ...Object.entries(snapshot.fieldMessages).map(([key, msg]) =>
+          createElement("li", { key, className: "pw-shell__validation-item" },
+            key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
+            msg
+          )
         )
       ),
       // Footer — navigation buttons
@@ -436,6 +449,7 @@ function cls(...parts: (string | undefined | false | null)[]): string {
 
 export type {
   PathData,
+  FieldErrors,
   PathDefinition,
   PathEvent,
   PathSnapshot,

@@ -1,0 +1,192 @@
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+.page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  color: #1f2937;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #5b677a;
+}
+
+/* ── Form fields ──────────────────────────────────────────────────────────── */
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.required {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.field input[type="text"],
+.field input[type="email"],
+.field select,
+.field textarea {
+  border: 1px solid #c2d0e5;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f2937;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b677a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.char-count {
+  font-size: 12px;
+  color: #9ca3af;
+  align-self: flex-end;
+}
+
+/* ── Result panels ────────────────────────────────────────────────────────── */
+.result-panel {
+  border-radius: 10px;
+  padding: 36px 28px;
+  text-align: center;
+}
+
+.result-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.result-panel h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.result-panel p {
+  margin: 0 0 20px;
+  font-size: 15px;
+}
+
+.success-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.success-panel h2 { color: #15803d; }
+.success-panel p  { color: #166534; }
+
+.cancel-panel {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+
+.cancel-panel h2 { color: #374151; }
+.cancel-panel p  { color: #6b7280; }
+
+/* ── Submitted summary ────────────────────────────────────────────────────── */
+.submitted-summary {
+  background: #fff;
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 0 auto 24px;
+  max-width: 400px;
+  text-align: left;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px 12px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  align-items: start;
+}
+
+.summary-row:last-child { margin-bottom: 0; }
+
+.summary-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #c2d0e5;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary:hover { background: #f3f4f6; }
+

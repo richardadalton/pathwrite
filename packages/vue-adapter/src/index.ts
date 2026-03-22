@@ -118,6 +118,16 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Converts a camelCase or lowercase field key to a display label.
+ *  e.g. "firstName" → "First Name", "email" → "Email" */
+function formatFieldKey(key: string): string {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
+}
+
+// ---------------------------------------------------------------------------
 // Context — provide / inject
 // ---------------------------------------------------------------------------
 
@@ -247,11 +257,14 @@ export const PathShell = defineComponent({
         ),
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
-        // Validation messages
-        snap.validationMessages.length > 0
+        // Validation messages — labeled by field name
+        Object.keys(snap.fieldMessages).length > 0
           ? h("ul", { class: "pw-shell__validation" },
-              snap.validationMessages.map((msg, i) =>
-                h("li", { key: i, class: "pw-shell__validation-item" }, msg)
+              Object.entries(snap.fieldMessages).map(([key, msg]) =>
+                h("li", { key, class: "pw-shell__validation-item" }, [
+                  key !== "_" ? h("span", { class: "pw-shell__validation-label" }, formatFieldKey(key)) : null,
+                  msg
+                ])
               )
             )
           : null,
@@ -339,6 +352,7 @@ function renderVueFooter(
 
 export type {
   PathData,
+  FieldErrors,
   PathDefinition,
   PathEvent,
   PathSnapshot,

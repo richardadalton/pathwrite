@@ -206,6 +206,7 @@ export function syncFormGroup<TData extends PathData = PathData>(
 // Re-export core types for convenience (users don't need to import from @daltonr/pathwrite-core)
 export type {
   PathData,
+  FieldErrors,
   PathDefinition,
   PathEvent,
   PathSnapshot,

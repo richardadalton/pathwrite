@@ -179,9 +179,11 @@ export class PathShellFooterDirective {
         </ng-container>
       </div>
 
-      <!-- Validation messages -->
-      <ul class="pw-shell__validation" *ngIf="s.validationMessages.length > 0">
-        <li *ngFor="let msg of s.validationMessages" class="pw-shell__validation-item">{{ msg }}</li>
+      <!-- Validation messages — labeled by field name -->
+      <ul class="pw-shell__validation" *ngIf="fieldEntries(s).length > 0">
+        <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
+          <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+        </li>
       </ul>
 
       <!-- Footer — custom or default navigation buttons -->
@@ -286,5 +288,16 @@ export class PathShellComponent implements OnInit, OnDestroy {
   public doStart(): void {
     this.started = true;
     this.facade.start(this.path, this.initialData);
+  }
+
+  /** Returns Object.entries(s.fieldMessages) for use in *ngFor. */
+  protected fieldEntries(s: PathSnapshot): [string, string][] {
+    return Object.entries(s.fieldMessages) as [string, string][];
+  }
+
+  /** Converts a camelCase or lowercase field key to a display label.
+   *  e.g. "firstName" → "First Name", "email" → "Email" */
+  protected formatFieldKey(key: string): string {
+    return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
   }
 }
