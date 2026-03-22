@@ -12,6 +12,9 @@
     "@daltonr/pathwrite-demo-angular",
     "@daltonr/pathwrite-demo-angular-course",
     "@daltonr/pathwrite-demo-angular-shell",
-    "@daltonr/pathwrite-demo-lifecycle"
+    "@daltonr/pathwrite-demo-lifecycle",
+    "demo-svelte-onboarding",
+    "demo-vue-wizard",
+    "demo-api-server"
   ]
 }

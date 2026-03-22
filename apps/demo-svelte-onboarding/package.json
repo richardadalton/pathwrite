@@ -1,6 +1,7 @@
 {
   "name": "demo-svelte-onboarding",
   "version": "1.0.1",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",

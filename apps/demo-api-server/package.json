@@ -1,6 +1,7 @@
 {
   "name": "demo-api-server",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "description": "Demo API server for pathwrite store-http",
   "main": "server.js",
