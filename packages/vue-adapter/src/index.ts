@@ -196,7 +196,7 @@ export const PathShell = defineComponent({
     hideProgress: { type: Boolean, default: false }
   },
   emits: ["complete", "cancel", "event"],
-  setup(props, { slots, emit }) {
+  setup(props, { slots, emit, expose }) {
     const pathReturn = usePath({
       engine: props.engine,
       onEvent(event) {
@@ -225,6 +225,10 @@ export const PathShell = defineComponent({
       next, previous, cancel, goToStep, goToStepChecked, setData,
       restart: () => restart(props.path, props.initialData)
     };
+
+    // Expose restart() on the component instance so parent refs can call it:
+    //   const shellRef = ref();  →  shellRef.value.restart()
+    expose({ restart: () => restart(props.path, props.initialData) });
 
     return () => {
       const snap = snapshot.value as PathSnapshot | null;

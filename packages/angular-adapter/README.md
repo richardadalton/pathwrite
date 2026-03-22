@@ -364,6 +364,38 @@ export class MyComponent { ... }
 
 Both directives can be combined. Only the sections you override are replaced — a custom header still shows the default footer, and vice versa.
 
+### Resetting the path
+
+There are two ways to reset `<pw-shell>` to step 1.
+
+**Option 1 — Toggle mount** (simplest, always correct)
+
+Toggle an `@if` flag to destroy and recreate the shell. Every child component resets from scratch:
+
+```html
+@if (isActive) {
+  <pw-shell [path]="myPath" (completed)="isActive = false" (cancelled)="isActive = false">
+    <ng-template pwStep="details"><app-details-form /></ng-template>
+  </pw-shell>
+} @else {
+  <button (click)="isActive = true">Try Again</button>
+}
+```
+
+**Option 2 — Call `restart()` on the shell ref** (in-place, no unmount)
+
+Use the existing `#shell` template reference — `restart()` is a public method:
+
+```html
+<pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+  <ng-template pwStep="details"><app-details-form /></ng-template>
+</pw-shell>
+
+<button (click)="shell.restart()">Try Again</button>
+```
+
+`restart()` resets the path engine to step 1 with the original `[initialData]` without unmounting the component. Use this when you need to keep the shell mounted — for example, to preserve scroll position in a parent container or to drive a CSS transition.
+
 ---
 
 ## Sub-Paths

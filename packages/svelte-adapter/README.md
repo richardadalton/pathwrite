@@ -302,6 +302,46 @@ You can also override the header and footer:
 </PathShell>
 ```
 
+#### Resetting the path
+
+There are two ways to reset `<PathShell>` to step 1.
+
+**Option 1 — Toggle mount** (simplest, always correct)
+
+Toggle a `$state` rune to destroy and recreate the shell:
+
+```svelte
+<script>
+  let isActive = $state(true);
+</script>
+
+{#if isActive}
+  <PathShell path={myPath} oncomplete={() => (isActive = false)}>
+    {#snippet details()}<DetailsStep />{/snippet}
+  </PathShell>
+{:else}
+  <button onclick={() => (isActive = true)}>Try Again</button>
+{/if}
+```
+
+**Option 2 — Call `restart()` on the shell ref** (in-place, no unmount)
+
+Use `bind:this` to get a reference to the shell instance, then call `restart()`:
+
+```svelte
+<script>
+  let shellRef;
+</script>
+
+<PathShell bind:this={shellRef} path={myPath} oncomplete={onDone}>
+  {#snippet details()}<DetailsStep />{/snippet}
+</PathShell>
+
+<button onclick={() => shellRef.restart()}>Try Again</button>
+```
+
+`restart()` resets the path engine to step 1 with the original `initialData` without unmounting the component. Use this when you need to keep the shell mounted — for example, to preserve scroll position or drive a CSS transition.
+
 ### `getPathContext<TData>()`
 
 Get the path context from a parent `<PathShell>`. Use this inside step components.

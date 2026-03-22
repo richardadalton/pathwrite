@@ -194,6 +194,42 @@ Use the `#header` and `#footer` slots to replace the built-in progress bar or na
 
 `actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`.
 
+### Resetting the path
+
+There are two ways to reset `<PathShell>` to step 1.
+
+**Option 1 — Toggle mount** (simplest, always correct)
+
+Use `v-if` to destroy and recreate the shell:
+
+```vue
+<PathShell v-if="isActive" :path="myPath" @complete="isActive = false" @cancel="isActive = false">
+  <template #details><DetailsForm /></template>
+</PathShell>
+<button v-else @click="isActive = true">Try Again</button>
+```
+
+**Option 2 — Call `restart()` on the shell ref** (in-place, no unmount)
+
+Use a Vue template ref to call `restart()` on the shell instance:
+
+```vue
+<script setup>
+import { ref } from 'vue';
+const shellRef = ref();
+</script>
+
+<template>
+  <PathShell ref="shellRef" :path="myPath" @complete="onDone">
+    <template #details><DetailsForm /></template>
+  </PathShell>
+
+  <button @click="shellRef.restart()">Try Again</button>
+</template>
+```
+
+`restart()` resets the path engine to step 1 with the original `:initial-data` without unmounting the component. Use this when you need to keep the shell mounted — for example, to preserve scroll position or drive a CSS transition.
+
 ### Context sharing
 
 `<PathShell>` automatically provides its engine instance to child components via Vue's `provide` / `inject`. Step children can call `usePathContext()` to access the snapshot and actions without prop drilling:

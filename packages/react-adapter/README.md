@@ -235,6 +235,39 @@ Use `renderHeader` and `renderFooter` to replace the built-in progress bar or na
 
 `PathShellActions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`.
 
+### Resetting the path
+
+Use the `key` prop to reset `<PathShell>` to step 1. Changing `key` forces React to discard the old component and mount a fresh one — this is idiomatic React and requires no new API:
+
+```tsx
+const [formKey, setFormKey] = useState(0);
+
+<PathShell
+  key={formKey}
+  path={myPath}
+  initialData={{ name: "" }}
+  onComplete={handleDone}
+  steps={{ details: <DetailsForm /> }}
+/>
+
+<button onClick={() => setFormKey(k => k + 1)}>Try Again</button>
+```
+
+Incrementing `formKey` discards the old shell and mounts a completely fresh one — path engine, child component state, and DOM are all reset.
+
+If your "Try Again" button is inside the success/cancelled panel you conditionally render after completion, the pattern is even simpler:
+
+```tsx
+const [isActive, setIsActive] = useState(true);
+
+{isActive
+  ? <PathShell path={myPath} onComplete={() => setIsActive(false)} steps={...} />
+  : <SuccessPanel onRetry={() => setIsActive(true)} />
+}
+```
+
+React function components have no instance, so there is no `ref.restart()` method. The `key` prop achieves the same result and is the React-idiomatic way to reset any component tree.
+
 ### Context sharing
 
 `<PathShell>` provides a path context automatically — step components rendered inside it can call `usePathContext()` without a separate `<PathProvider>`:

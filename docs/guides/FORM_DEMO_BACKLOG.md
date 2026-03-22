@@ -51,22 +51,25 @@ override when needed.
 
 ## Priority 2 — Raised by most demos
 
-### 2.1 Expose `restart()` on `<pw-shell>` / `<PathShell>`
+### 2.1 `restart()` on shell + document reset patterns ✅ Done
 
 **Problem:**  
-The only documented reset pattern is to unmount and remount the shell via a conditional flag
-(`@if`, `v-if`, `$state`, `useState`). This works, but is not obvious. The `restart()` action
-exists on the engine but isn't accessible from outside the shell without reaching into
-`usePathContext()` / `getPathContext()` inside a step component.
+The only documented reset pattern was unmount/remount via a conditional flag. The `restart()`
+action existed on the engine but wasn't accessible from outside the shell without reaching into
+`usePathContext()` inside a step component.
 
 **Raised by:** Angular · React · Vue · Svelte (all noted the two-pattern gap)
 
-**Proposed changes:**
-- Expose a `restart()` method on the shell component ref (Angular: `shell.restart()`)
-- Or add a `[restartTrigger]` / `:restart-trigger` input that, when its value changes, restarts the path without destroying the component
-- Document both patterns (toggle mount vs `restart()`) with guidance on when to use each
+**Resolved:**  
+- **Angular**: `public restart(): Promise<void>` added to `PathShellComponent`. Call via `#shell` template reference.
+- **Vue**: `expose({ restart })` added to `PathShell` setup. Call via Vue template `ref`.
+- **Svelte**: `export function restart()` added to `PathShell.svelte`. Call via `bind:this`.
+- **React**: Function components have no instance. The idiomatic equivalent is changing the `key` prop, which forces a fresh mount. Documented with code examples.
 
-**Where:** All four adapter shells
+Both patterns (toggle-mount and in-place `restart()`) are documented in the Developer Guide and each adapter README with guidance on when to use each.
+
+**Where:** `packages/angular-adapter/src/shell.ts`, `packages/vue-adapter/src/index.ts`,
+`packages/svelte-adapter/src/PathShell.svelte` + all READMEs + Developer Guide
 
 ---
 
@@ -209,7 +212,7 @@ step IDs as valid prop names (so IDEs can autocomplete them).
 |---|---|---|---|---|
 | 1.1 ✅ | Field-level `fieldMessages` API | High | core + all shells | All 4 |
 | 1.2 ✅ | Auto-hide progress for single-step paths | Low | shell logic | All 4 |
-| 2.1 | `restart()` on shell + document reset patterns | Medium | all shells + docs | All 4 |
+| 2.1 ✅ | `restart()` on shell + document reset patterns | Medium | all shells + docs | All 4 |
 | 2.2 | `snapshot.hasAttemptedNext` flag | Medium | core engine | All 4 |
 | 2.3 | `footerLayout: "wizard" \| "form"` | Low–Medium | shell CSS + all shells | All 4 |
 | 3.1 | `createFormPath()` helper | Low | core or docs | Angular |

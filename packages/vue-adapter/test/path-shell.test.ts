@@ -143,6 +143,54 @@ describe("PathShell (Vue) — rendering", () => {
 });
 
 // ---------------------------------------------------------------------------
+// restart() via component ref (expose)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — restart via component ref", () => {
+  it("exposes restart() on the component instance", async () => {
+    const wrapper = mount(PathShell, {
+      attachTo: document.body,
+      props: { path: threeStepPath() },
+      slots: {
+        "step-a": () => h("div", "Content A"),
+        "step-b": () => h("div", "Content B"),
+        "step-c": () => h("div", "Content C"),
+      }
+    });
+    await settled();
+    expect(typeof (wrapper.vm as any).restart).toBe("function");
+    wrapper.unmount();
+  });
+
+  it("restarts the path from step 1 when restart() is called via the component ref", async () => {
+    const wrapper = mount(PathShell, {
+      attachTo: document.body,
+      props: { path: threeStepPath() },
+      slots: {
+        "step-a": () => h("div", "Content A"),
+        "step-b": () => h("div", "Content B"),
+        "step-c": () => h("div", "Content C"),
+      }
+    });
+    await settled();
+
+    // Navigate to step B
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
+    await settled();
+    expect(wrapper.text()).toContain("Content B");
+
+    // Restart via the component ref (simulating what shellRef.value.restart() does)
+    await (wrapper.vm as any).restart();
+    await settled();
+
+    // Should be back at step A
+    expect(wrapper.text()).toContain("Content A");
+    expect(wrapper.text()).not.toContain("Content B");
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------
 

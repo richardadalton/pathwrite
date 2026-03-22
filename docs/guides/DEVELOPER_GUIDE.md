@@ -1121,6 +1121,131 @@ Use the `pwShellFooter` directive to replace the default navigation buttons. The
 
 `actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
 
+### Resetting the path
+
+There are two ways to reset a `<PathShell>` back to step 1.
+
+---
+
+**Option 1 — Toggle mount** (all frameworks, always works)
+
+Destroy and recreate the shell using a conditional flag. Everything resets — the path engine, all child component state, scroll position within the shell — because the component is unmounted and remounted from scratch.
+
+**React** — use the built-in `key` prop. Changing `key` forces a fresh mount without needing a separate boolean flag:
+
+```tsx
+const [formKey, setFormKey] = useState(0);
+
+<PathShell key={formKey} path={myPath} steps={{ ... }} />
+
+<button onClick={() => setFormKey(k => k + 1)}>Try Again</button>
+```
+
+**Vue:**
+```vue
+<PathShell v-if="isActive" :path="myPath" @complete="isActive = false" />
+<button v-else @click="isActive = true">Try Again</button>
+```
+
+**Svelte:**
+```svelte
+{#if isActive}
+  <PathShell path={myPath} oncomplete={() => (isActive = false)} />
+{:else}
+  <button onclick={() => (isActive = true)}>Try Again</button>
+{/if}
+```
+
+**Angular:**
+```html
+@if (isActive) {
+  <pw-shell [path]="myPath" (completed)="isActive = false"></pw-shell>
+} @else {
+  <button (click)="isActive = true">Try Again</button>
+}
+```
+
+Use this pattern when you want the entire component tree to start fresh. For most form and wizard reset flows this is the right choice.
+
+---
+
+**Option 2 — Call `restart()` on the shell ref** (Angular, Vue, Svelte)
+
+Call `restart()` on a shell component reference to reset the path engine in-place, without unmounting the component. The path restarts from step 1 with the original `initialData`. Child component state and DOM scroll position are preserved.
+
+**Angular** — `#shell` already gives a component reference:
+
+```html
+<pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+  <ng-template pwStep="details"><app-details-form /></ng-template>
+</pw-shell>
+
+<button (click)="shell.restart()">Try Again</button>
+```
+
+**Vue:**
+```vue
+<script setup>
+import { ref } from 'vue';
+const shellRef = ref();
+</script>
+
+<template>
+  <PathShell ref="shellRef" :path="myPath" @complete="onDone">
+    <template #details><DetailsForm /></template>
+  </PathShell>
+
+  <button @click="shellRef.restart()">Try Again</button>
+</template>
+```
+
+**Svelte:**
+```svelte
+<script>
+  let shellRef;
+</script>
+
+<PathShell bind:this={shellRef} path={myPath} oncomplete={onDone}>
+  {#snippet details()}<DetailsForm />{/snippet}
+</PathShell>
+
+<button onclick={() => shellRef.restart()}>Try Again</button>
+```
+
+**React** does not expose `restart()` on a ref because function components have no instance. Use the `key` prop pattern above — it is equally clean and achieves the same result.
+
+Use this pattern when you need to keep the shell mounted (e.g. to preserve a parent scroll position, or to drive a CSS transition on the shell element itself).
+
+---
+
+**Restarting from inside a step component**
+
+`restart()` is also available through the context API from within any step component:
+
+```tsx
+// React — requires the path definition
+const { restart } = usePathContext();
+restart(myPath, initialData);
+```
+
+```ts
+// Vue — requires the path definition
+const { restart } = usePathContext();
+restart(myPath, initialData);
+```
+
+```ts
+// Svelte — no-arg, already bound to the shell's current path and initialData
+const { restart } = getPathContext();
+restart();
+```
+
+```ts
+// Angular
+const facade = inject(PathFacade);
+facade.restart(myPath, initialData);
+```
+
 ### Styling with CSS custom properties
 
 Import the optional stylesheet from your adapter package for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:

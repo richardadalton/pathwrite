@@ -85,6 +85,19 @@
 
   let snap = $derived(pathReturn.snapshot);
   let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restart(path, initialData) });
+
+  /**
+   * Restart the active path from step 1 with the original `initialData`,
+   * without unmounting the shell. Use with `bind:this`:
+   *
+   * ```svelte
+   * <PathShell bind:this={shellRef} path={myPath} />
+   * <button onclick={() => shellRef.restart()}>Try Again</button>
+   * ```
+   */
+  export function restart(): Promise<void> {
+    return pathReturn.restart(path, initialData);
+  }
 </script>
 
 <div class="pw-shell">

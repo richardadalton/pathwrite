@@ -290,6 +290,19 @@ export class PathShellComponent implements OnInit, OnDestroy {
     this.facade.start(this.path, this.initialData);
   }
 
+  /**
+   * Restart the active path from step 1 with the original `initialData`,
+   * without unmounting the shell. Call this via a `#shell` template reference:
+   *
+   * ```html
+   * <pw-shell #shell [path]="myPath" ...></pw-shell>
+   * <button (click)="shell.restart()">Try Again</button>
+   * ```
+   */
+  public restart(): Promise<void> {
+    return this.facade.restart(this.path, this.initialData);
+  }
+
   /** Returns Object.entries(s.fieldMessages) for use in *ngFor. */
   protected fieldEntries(s: PathSnapshot): [string, string][] {
     return Object.entries(s.fieldMessages) as [string, string][];
