@@ -9,18 +9,6 @@
   margin-bottom: 28px;
 }
 
-.page-header__badge {
-  display: inline-block;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  margin-bottom: 10px;
-  letter-spacing: 0.03em;
-}
-
 .page-header h1 {
   margin: 0 0 6px;
   font-size: 26px;
@@ -142,4 +130,5 @@
 }
 
 .btn-secondary:hover { background: #f3f4f6; }
+
 
