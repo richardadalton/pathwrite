@@ -29,6 +29,8 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 | [`demo-angular`](apps/demo-angular) | Minimal Angular host rendering path state and events. |
 | [`demo-angular-course`](apps/demo-angular-course) | Full Angular course-path demo with a subject-entry sub-path. |
 | [`demo-angular-shell`](apps/demo-angular-shell) | Angular demo using the `<pw-shell>` default UI — same wizard, zero boilerplate. |
+| [`demo-vue-wizard`](apps/demo-vue-wizard) | Vue 3 onboarding wizard with auto-persistence and validation. |
+| [`demo-svelte-onboarding`](apps/demo-svelte-onboarding) | Svelte onboarding wizard with PathShell component and HTTP persistence. |
 | [`demo-lifecycle`](apps/demo-lifecycle) | Backend document lifecycle (Draft → Review → Approved → Published) with guards, sub-paths, and conditional skipping — no UI. |
 
 ## Design principles
@@ -53,6 +55,8 @@ npm run demo:lifecycle       # lifecycle state-machine demo (no UI)
 npm run demo:angular         # Angular demo (localhost:4200)
 npm run demo:angular:course  # course path demo (localhost:4200)
 npm run demo:angular:shell   # shell UI demo (localhost:4200)
+npm run demo:vue             # Vue wizard demo (localhost:5173)
+npm run demo:svelte          # Svelte onboarding demo (localhost:5174)
 ```
 
 ## Default UI shell
@@ -105,17 +109,21 @@ import { PathShell } from "@daltonr/pathwrite-vue";
 ```svelte
 <script>
   import { PathShell } from "@daltonr/pathwrite-svelte";
+  import DetailsForm from "./DetailsForm.svelte";
+  import ReviewPanel from "./ReviewPanel.svelte";
 </script>
 
-<PathShell path={myPath} initialData={{ name: '' }} onComplete={handleDone}>
-  <svelte:fragment slot="details">
+<PathShell {path} initialData={{ name: '' }} oncomplete={handleDone}>
+  {#snippet details()}
     <DetailsForm />
-  </svelte:fragment>
-  <svelte:fragment slot="review">
+  {/snippet}
+  {#snippet review()}
     <ReviewPanel />
-  </svelte:fragment>
+  {/snippet}
 </PathShell>
 ```
+
+Steps are declared as Svelte 5 snippets, keyed by step ID. Step components access path data via `getPathContext()` from `@daltonr/pathwrite-svelte`.
 
 ### Styling
 

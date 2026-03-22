@@ -245,3 +245,6 @@ export function bindData<TData extends PathData, K extends string & keyof TData>
   };
 }
 
+// Export PathShell component
+export { default as PathShell } from "./PathShell.svelte";
+

@@ -43,20 +43,20 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css && cp src/PathShell.svelte dist/PathShell.svelte",
+    "build": "mkdir -p dist && tsc -p tsconfig.json && cp ../shell.css dist/index.css && cp src/PathShell.svelte dist/PathShell.svelte",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
   },
   "peerDependencies": {
-    "svelte": ">=4.0.0"
+    "svelte": ">=5.0.0"
   },
   "dependencies": {
     "@daltonr/pathwrite-core": "^0.4.0"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^3.0.0",
-    "@testing-library/svelte": "^4.0.0",
-    "svelte": "^4.2.0"
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@testing-library/svelte": "^5.0.0",
+    "svelte": "^5.0.0"
   }
 }
 

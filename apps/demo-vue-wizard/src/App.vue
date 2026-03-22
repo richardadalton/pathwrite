@@ -2,7 +2,7 @@
 import { ref, shallowRef, onUnmounted } from 'vue';
 import { PathShell } from '@daltonr/pathwrite-vue';
 import type { PathEngine } from '@daltonr/pathwrite-vue';
-import { createPersistedEngine } from '@daltonr/pathwrite-store-http';
+import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
 import { onboardingWizard, type OnboardingData } from './wizard';
 
 // ─── Reactive state ───────────────────────────────────────────────────────────
@@ -18,6 +18,9 @@ const initialData: OnboardingData = {
   interests: [], bio: '', notifications: true,
 };
 
+const store = new HttpStore({ baseUrl: 'http://localhost:3001/api/wizard' });
+const key = 'demo-user:onboarding';
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init(clearFirst = false) {
@@ -26,19 +29,23 @@ async function init(clearFirst = false) {
 
   try {
     if (clearFirst) {
-      // Load and immediately delete any saved state before starting fresh
-      const { HttpStore } = await import('@daltonr/pathwrite-store-http');
-      const store = new HttpStore({ baseUrl: 'http://localhost:3001/api/wizard' });
-      await store.delete('demo-user:onboarding');
+      // Delete any saved state before starting fresh
+      await store.delete(key);
     }
 
-    const result = await createPersistedEngine({
-      baseUrl: 'http://localhost:3001/api/wizard',
-      key: 'demo-user:onboarding',
+    const result = await restoreOrStart({
+      store,
+      key,
       path: onboardingWizard,
       initialData,
-      strategy: 'onNext',
-      onSaveError: (err) => console.warn('[persistence] save failed:', err.message),
+      observers: [
+        httpPersistence({
+          store,
+          key,
+          strategy: 'onNext',
+          onSaveError: (err) => console.warn('[persistence] save failed:', err.message)
+        })
+      ]
     });
 
     engine.value = result.engine;

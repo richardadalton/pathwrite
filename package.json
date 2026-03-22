@@ -23,7 +23,9 @@
     "demo:angular": "npm run -w @daltonr/pathwrite-demo-angular start",
     "demo:angular:course": "npm run -w @daltonr/pathwrite-demo-angular-course start",
     "demo:angular:shell": "npm run -w @daltonr/pathwrite-demo-angular-shell start",
-    "demo:lifecycle": "npm run -w @daltonr/pathwrite-demo-lifecycle demo"
+    "demo:lifecycle": "npm run -w @daltonr/pathwrite-demo-lifecycle demo",
+    "demo:vue": "npm run -w demo-vue-wizard dev",
+    "demo:svelte": "npm run -w demo-svelte-onboarding dev"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

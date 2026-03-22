@@ -1,12 +1,14 @@
 # @daltonr/pathwrite-svelte
 
-Svelte adapter for [@daltonr/pathwrite-core](../core) — reactive stores with lifecycle hooks, guards, and optional `<PathShell>` default UI.
+Svelte 5 adapter for [@daltonr/pathwrite-core](../core) — reactive stores with lifecycle hooks, guards, and optional `<PathShell>` default UI.
 
 ## Installation
 
 ```bash
 npm install @daltonr/pathwrite-svelte
 ```
+
+> **Requires Svelte 5.** This adapter uses runes (`$props`, `$derived`, `$state`) and snippets (`{#snippet}`, `{@render}`).
 
 ## Quick Start
 
@@ -31,7 +33,7 @@ npm install @daltonr/pathwrite-svelte
     start(myPath, { name: '', email: '' });
   });
   
-  $: snap = $snapshot;
+  let snap = $derived($snapshot);
 </script>
 
 {#if snap}
@@ -41,13 +43,13 @@ npm install @daltonr/pathwrite-svelte
     <input
       type="text"
       value={snap.data.name || ''}
-      on:input={(e) => setData('name', e.currentTarget.value)}
+      oninput={(e) => setData('name', e.currentTarget.value)}
       placeholder="Name"
     />
     <input
       type="email"
       value={snap.data.email || ''}
-      on:input={(e) => setData('email', e.currentTarget.value)}
+      oninput={(e) => setData('email', e.currentTarget.value)}
       placeholder="Email"
     />
   {:else if snap.stepId === 'review'}
@@ -55,20 +57,20 @@ npm install @daltonr/pathwrite-svelte
     <p>Email: {snap.data.email}</p>
   {/if}
   
-  <button on:click={previous} disabled={snap.isFirstStep || snap.isNavigating}>
+  <button onclick={previous} disabled={snap.isFirstStep || snap.isNavigating}>
     Previous
   </button>
-  <button on:click={next} disabled={!snap.canMoveNext || snap.isNavigating}>
+  <button onclick={next} disabled={!snap.canMoveNext || snap.isNavigating}>
     {snap.isLastStep ? 'Complete' : 'Next'}
   </button>
 {/if}
 ```
 
-### Option 2: Use `<PathShell>` component
+### Option 2: Use `<PathShell>` with snippets
 
 ```svelte
 <script lang="ts">
-  import PathShell from '@daltonr/pathwrite-svelte/PathShell.svelte';
+  import { PathShell } from '@daltonr/pathwrite-svelte';
   import '@daltonr/pathwrite-svelte/styles.css';
   
   import DetailsForm from './DetailsForm.svelte';
@@ -90,12 +92,108 @@ npm install @daltonr/pathwrite-svelte
 <PathShell
   path={signupPath}
   initialData={{ name: '', email: '' }}
-  onComplete={handleComplete}
+  oncomplete={handleComplete}
 >
-  <DetailsForm slot="details" />
-  <ReviewPanel slot="review" />
+  {#snippet details()}
+    <DetailsForm />
+  {/snippet}
+  {#snippet review()}
+    <ReviewPanel />
+  {/snippet}
 </PathShell>
 ```
+
+Each step is a **Svelte 5 snippet** whose name matches the step ID. PathShell collects them automatically and renders the active one.
+
+---
+
+## Simple vs Persisted
+
+PathShell supports two modes. Pick the one that fits your use case:
+
+### Simple — PathShell manages the engine
+
+Pass `path` and `initialData`. PathShell creates and starts the engine for you:
+
+```svelte
+<PathShell
+  path={signupPath}
+  initialData={{ name: '' }}
+  oncomplete={handleComplete}
+>
+  {#snippet details()}
+    <DetailsForm />
+  {/snippet}
+</PathShell>
+```
+
+**Use this when:** you don't need persistence, restoration, or custom observers. Quick prototypes, simple forms, one-off wizards.
+
+### Persisted — you create the engine
+
+Create the engine yourself with `restoreOrStart()` and pass it via `engine`. PathShell subscribes to it but does not start or own it:
+
+```svelte
+<script>
+  import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+
+  let engine = $state(null);
+
+  onMount(async () => {
+    const result = await restoreOrStart({
+      store: new HttpStore({ baseUrl: '/api/wizard' }),
+      key: 'user:onboarding',
+      path: signupPath,
+      initialData: { name: '' },
+      observers: [
+        httpPersistence({ store, key: 'user:onboarding', strategy: 'onNext' })
+      ]
+    });
+    engine = result.engine;
+  });
+</script>
+
+{#if engine}
+  <PathShell {engine} oncomplete={handleComplete}>
+    {#snippet details()}
+      <DetailsForm />
+    {/snippet}
+  </PathShell>
+{/if}
+```
+
+**Use this when:** you need auto-persistence, restore-on-reload, or custom observers. Production apps, checkout flows, anything where losing progress matters.
+
+> **Don't pass both.** `path` and `engine` are mutually exclusive. If you pass `engine`, PathShell will not call `start()` — it assumes the engine is already running.
+
+---
+
+## ⚠️ Step Components Must Use `getPathContext()`
+
+Step components rendered inside `<PathShell>` access the path engine via `getPathContext()` — **not** Svelte's raw `getContext()`.
+
+```svelte
+<script lang="ts">
+  // ✅ Correct — always use getPathContext()
+  import { getPathContext } from '@daltonr/pathwrite-svelte';
+  const { snapshot, setData } = getPathContext();
+
+  // ❌ Wrong — this will silently return undefined
+  // import { getContext } from 'svelte';
+  // const { snapshot, setData } = getContext('pathContext');
+</script>
+
+{#if $snapshot}
+  <input
+    value={$snapshot.data.name || ''}
+    oninput={(e) => setData('name', e.currentTarget.value)}
+  />
+{/if}
+```
+
+`getPathContext()` uses a `Symbol` key internally and throws a clear error if called outside a `<PathShell>`. Using `getContext()` with a string key will fail silently.
+
+---
 
 ## API
 
@@ -145,8 +243,8 @@ Default UI shell with progress indicator and navigation buttons.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `path` | `PathDefinition` | *required* | Path definition |
-| `engine` | `PathEngine` | `undefined` | External engine |
+| `path` | `PathDefinition` | — | Path definition (for self-managed engine) |
+| `engine` | `PathEngine` | — | External engine (for persistence — see below) |
 | `initialData` | `PathData` | `{}` | Initial data |
 | `autoStart` | `boolean` | `true` | Auto-start on mount |
 | `backLabel` | `string` | `"Previous"` | Previous button label |
@@ -156,21 +254,53 @@ Default UI shell with progress indicator and navigation buttons.
 | `hideCancel` | `boolean` | `false` | Hide cancel button |
 | `hideProgress` | `boolean` | `false` | Hide progress indicator |
 
+> **`path` vs `engine`:** Pass `path` for simple wizards where PathShell manages the engine. Pass `engine` when you create the engine yourself (e.g., via `restoreOrStart()` for persistence). These are mutually exclusive — don't pass both.
+
 #### Callbacks
 
 | Callback | Type | Description |
 |----------|------|-------------|
-| `onComplete` | `(data) => void` | Called when path completes |
-| `onCancel` | `(data) => void` | Called when path is cancelled |
-| `onEvent` | `(event) => void` | Called for every event |
+| `oncomplete` | `(data) => void` | Called when path completes |
+| `oncancel` | `(data) => void` | Called when path is cancelled |
+| `onevent` | `(event) => void` | Called for every event |
 
-#### Slots
+#### Snippets
 
-| Slot | Props | Description |
-|------|-------|-------------|
-| `{stepId}` | `snapshot` | Step content (use step ID as slot name) |
-| `header` | `snapshot` | Custom header/progress |
-| `footer` | `snapshot`, `actions` | Custom footer/navigation |
+Step content is provided as Svelte 5 snippets. The snippet name must match the step ID:
+
+```svelte
+<PathShell path={myPath}>
+  {#snippet details()}
+    <DetailsStep />
+  {/snippet}
+  {#snippet review()}
+    <ReviewStep />
+  {/snippet}
+</PathShell>
+```
+
+You can also override the header and footer:
+
+```svelte
+<PathShell path={myPath}>
+  {#snippet header(snap)}
+    <h2>Step {snap.stepIndex + 1} of {snap.stepCount}</h2>
+  {/snippet}
+
+  {#snippet details()}
+    <DetailsStep />
+  {/snippet}
+
+  {#snippet footer(snap, actions)}
+    <button onclick={actions.previous} disabled={snap.isFirstStep}>
+      ← Back
+    </button>
+    <button onclick={actions.next} disabled={!snap.canMoveNext}>
+      {snap.isLastStep ? 'Finish' : 'Continue →'}
+    </button>
+  {/snippet}
+</PathShell>
+```
 
 ### `getPathContext<TData>()`
 
@@ -181,13 +311,15 @@ Get the path context from a parent `<PathShell>`. Use this inside step component
   import { getPathContext } from '@daltonr/pathwrite-svelte';
   
   const { snapshot, next, setData } = getPathContext();
-  
-  let name = '';
-  $: if ($snapshot) name = $snapshot.data.name || '';
 </script>
 
-<input bind:value={name} on:input={() => setData('name', name)} />
-<button on:click={next}>Next</button>
+{#if $snapshot}
+  <input
+    value={$snapshot.data.name || ''}
+    oninput={(e) => setData('name', e.currentTarget.value)}
+  />
+  <button onclick={next}>Next</button>
+{/if}
 ```
 
 ### `bindData(snapshot, setData, key)`
@@ -266,58 +398,42 @@ Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state pers
 ```svelte
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { usePath } from '@daltonr/pathwrite-svelte';
+  import { PathShell } from '@daltonr/pathwrite-svelte';
   import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+  import DetailsForm from './DetailsForm.svelte';
+  import ReviewPanel from './ReviewPanel.svelte';
   
   const store = new HttpStore({ baseUrl: '/api/wizard' });
-  let engineReady = false;
-  let pathEngine;
+  const key = 'user:123:signup';
+  
+  let engine = $state(null);
+  let restored = $state(false);
   
   onMount(async () => {
-    const { engine } = await restoreOrStart({
+    const result = await restoreOrStart({
       store,
-      key: 'user:123:signup',
+      key,
       path: signupPath,
       initialData: { name: '', email: '' },
       observers: [
-        httpPersistence({ store, key: 'user:123:signup', strategy: 'onNext' })
+        httpPersistence({ store, key, strategy: 'onNext' })
       ]
     });
-    pathEngine = engine;
-    engineReady = true;
+    engine = result.engine;
+    restored = result.restored;
   });
-  
-  $: if (engineReady) {
-    const { snapshot } = usePath({ engine: pathEngine });
-  }
 </script>
-```
 
-## Custom UI with Slots
-
-Override default rendering:
-
-```svelte
-<PathShell path={myPath} initialData={{}}>
-  <!-- Step content -->
-  <StepA slot="stepA" />
-  <StepB slot="stepB" />
-  
-  <!-- Custom header -->
-  <div slot="header" let:snapshot>
-    <h2>Step {snapshot.stepIndex + 1} of {snapshot.stepCount}</h2>
-  </div>
-  
-  <!-- Custom footer -->
-  <div slot="footer" let:snapshot let:actions>
-    <button on:click={actions.previous} disabled={snapshot.isFirstStep}>
-      ← Back
-    </button>
-    <button on:click={actions.next} disabled={!snapshot.canMoveNext}>
-      {snapshot.isLastStep ? 'Finish' : 'Continue →'}
-    </button>
-  </div>
-</PathShell>
+{#if engine}
+  <PathShell {engine} oncomplete={(data) => console.log('Done!', data)}>
+    {#snippet details()}
+      <DetailsForm />
+    {/snippet}
+    {#snippet review()}
+      <ReviewPanel />
+    {/snippet}
+  </PathShell>
+{/if}
 ```
 
 ## TypeScript
