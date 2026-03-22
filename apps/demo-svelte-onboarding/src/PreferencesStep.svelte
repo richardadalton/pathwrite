@@ -1,15 +1,15 @@
 <script>
   import { getPathContext } from '@daltonr/pathwrite-svelte';
 
-  const { snapshot, setData } = getPathContext();
+  const ctx = getPathContext();
 
-  $: data = $snapshot?.data || {};
+  let data = $derived(ctx.snapshot?.data || {});
 
   const roles = ['Developer', 'Designer', 'Product Manager', 'Marketing', 'Other'];
   const availableInterests = ['Coding', 'Design', 'AI/ML', 'DevOps', 'Mobile', 'Web'];
 
   function updateRole(value) {
-    setData('role', value);
+    ctx.setData('role', value);
   }
 
   function toggleInterest(interest) {
@@ -17,10 +17,10 @@
     const updated = current.includes(interest)
       ? current.filter(i => i !== interest)
       : [...current, interest];
-    setData('interests', updated);
+    ctx.setData('interests', updated);
   }
 
-  $: interests = data.interests || [];
+  let interests = $derived(data.interests || []);
 </script>
 
 <div class="step-card">
@@ -31,7 +31,7 @@
     <select
       id="role"
       value={data.role || ''}
-      on:change={(e) => updateRole(e.target.value)}
+      onchange={(e) => updateRole(e.target.value)}
     >
       <option value="">Select a role...</option>
       {#each roles as role}
@@ -49,7 +49,7 @@
             type="checkbox"
             id={interest}
             checked={interests.includes(interest)}
-            on:change={() => toggleInterest(interest)}
+            onchange={() => toggleInterest(interest)}
           />
           <label for={interest}>{interest}</label>
         </div>
@@ -61,4 +61,3 @@
 <style>
   /* Styles are in global style.css */
 </style>
-

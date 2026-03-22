@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "type": "module",
   "license": "MIT",
-  "description": "Svelte adapter for @daltonr/pathwrite-core — stores with reactive bindings, and optional PathShell component.",
+  "description": "Svelte 5 adapter for @daltonr/pathwrite-core — runes-based reactive bindings and optional PathShell component.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
@@ -14,7 +14,7 @@
     "stepper",
     "path",
     "svelte",
-    "store",
+    "runes",
     "multi-step",
     "workflow"
   ],
@@ -23,9 +23,9 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
-      "import": "./dist/index.js"
+      "types": "./dist/index.svelte.d.ts",
+      "svelte": "./dist/index.svelte.js",
+      "import": "./dist/index.svelte.js"
     },
     "./PathShell.svelte": {
       "svelte": "./dist/PathShell.svelte",
@@ -33,9 +33,9 @@
     },
     "./styles.css": "./dist/index.css"
   },
-  "svelte": "./dist/index.js",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "svelte": "./dist/index.svelte.js",
+  "main": "dist/index.svelte.js",
+  "types": "dist/index.svelte.d.ts",
   "files": [
     "dist",
     "src",
@@ -43,7 +43,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "mkdir -p dist && tsc -p tsconfig.json && cp ../shell.css dist/index.css && cp src/PathShell.svelte dist/PathShell.svelte",
+    "build": "svelte-package -i src -o dist && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
   },
@@ -54,9 +54,9 @@
     "@daltonr/pathwrite-core": "^0.4.0"
   },
   "devDependencies": {
+    "@sveltejs/package": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "@testing-library/svelte": "^5.0.0",
     "svelte": "^5.0.0"
   }
 }
-

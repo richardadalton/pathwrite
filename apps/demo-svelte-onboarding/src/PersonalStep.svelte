@@ -1,12 +1,12 @@
 <script>
   import { getPathContext } from '@daltonr/pathwrite-svelte';
 
-  const { snapshot, setData } = getPathContext();
+  const ctx = getPathContext();
 
-  $: data = $snapshot?.data || {};
+  let data = $derived(ctx.snapshot?.data || {});
 
   function updateField(field, value) {
-    setData(field, value);
+    ctx.setData(field, value);
   }
 </script>
 
@@ -20,7 +20,7 @@
       type="text"
       placeholder="Enter your full name"
       value={data.name || ''}
-      on:input={(e) => updateField('name', e.target.value)}
+      oninput={(e) => updateField('name', e.target.value)}
     />
   </div>
 
@@ -31,7 +31,7 @@
       type="email"
       placeholder="you@example.com"
       value={data.email || ''}
-      on:input={(e) => updateField('email', e.target.value)}
+      oninput={(e) => updateField('email', e.target.value)}
     />
   </div>
 </div>
@@ -39,4 +39,3 @@
 <style>
   /* Styles are in global style.css */
 </style>
-

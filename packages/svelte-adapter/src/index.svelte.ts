@@ -1,4 +1,3 @@
-import { writable, derived, readonly, type Readable } from "svelte/store";
 import { onDestroy, getContext, setContext } from "svelte";
 import type {
   PathData,
@@ -42,8 +41,8 @@ export interface UsePathOptions {
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
-  /** Current path snapshot, or `null` when no path is active. Svelte readable store. */
-  snapshot: Readable<PathSnapshot<TData> | null>;
+  /** Current path snapshot, or `null` when no path is active. Reactive via `$state`. */
+  readonly snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
@@ -69,30 +68,33 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 }
 
 // ---------------------------------------------------------------------------
-// usePath - Store-based API for Svelte
+// usePath - Runes-based API for Svelte 5
 // ---------------------------------------------------------------------------
 
 /**
- * Create a Pathwrite engine with Svelte store bindings.
- * Call this from inside a Svelte component to get reactive stores.
+ * Create a Pathwrite engine with Svelte 5 runes-based reactivity.
+ * Call this from inside a Svelte component to get a reactive snapshot.
  * Cleanup is automatic via onDestroy.
+ *
+ * **Note:** `snapshot` is a reactive getter — access it via the returned
+ * object (e.g. `path.snapshot`). Destructuring `snapshot` will lose reactivity.
  *
  * @example
  * ```svelte
  * <script lang="ts">
  *   import { usePath } from '@daltonr/pathwrite-svelte';
- *   
- *   const { snapshot, start, next, previous } = usePath();
- *   
+ *
+ *   const path = usePath();
+ *
  *   onMount(() => {
- *     start(myPath, { name: '' });
+ *     path.start(myPath, { name: '' });
  *   });
  * </script>
  *
- * {#if $snapshot}
- *   <h2>{$snapshot.stepId}</h2>
- *   <button on:click={previous} disabled={$snapshot.isFirstStep}>Previous</button>
- *   <button on:click={next} disabled={!$snapshot.canMoveNext}>Next</button>
+ * {#if path.snapshot}
+ *   <h2>{path.snapshot.stepId}</h2>
+ *   <button onclick={path.previous} disabled={path.snapshot.isFirstStep}>Previous</button>
+ *   <button onclick={path.next} disabled={!path.snapshot.canMoveNext}>Next</button>
  * {/if}
  * ```
  */
@@ -101,26 +103,23 @@ export function usePath<TData extends PathData = PathData>(
 ): UsePathReturn<TData> {
   const engine = options?.engine ?? new PathEngineClass();
 
-  // Writable store for internal updates
-  const _snapshot = writable<PathSnapshot<TData> | null>(
+  // Reactive snapshot via $state rune
+  let _snapshot: PathSnapshot<TData> | null = $state(
     engine.snapshot() as PathSnapshot<TData> | null
   );
 
   // Subscribe to engine events
   const unsubscribe = engine.subscribe((event: PathEvent) => {
     if (event.type === "stateChanged" || event.type === "resumed") {
-      _snapshot.set(event.snapshot as PathSnapshot<TData>);
+      _snapshot = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
-      _snapshot.set(null);
+      _snapshot = null;
     }
     options?.onEvent?.(event);
   });
 
   // Auto-cleanup when component is destroyed
   onDestroy(unsubscribe);
-
-  // Expose as readonly store
-  const snapshot = readonly(_snapshot) as Readable<PathSnapshot<TData> | null>;
 
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
@@ -145,7 +144,7 @@ export function usePath<TData extends PathData = PathData>(
     engine.restart(path, initialData);
 
   return {
-    snapshot,
+    get snapshot() { return _snapshot; },
     start,
     startSubPath,
     next,
@@ -165,7 +164,7 @@ export function usePath<TData extends PathData = PathData>(
 const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
 
 export interface PathContext<TData extends PathData = PathData> {
-  snapshot: Readable<PathSnapshot<TData> | null>;
+  readonly snapshot: PathSnapshot<TData> | null;
   next: () => Promise<void>;
   previous: () => Promise<void>;
   cancel: () => Promise<void>;
@@ -183,12 +182,13 @@ export interface PathContext<TData extends PathData = PathData> {
  * ```svelte
  * <script lang="ts">
  *   import { getPathContext } from '@daltonr/pathwrite-svelte';
- *   
- *   const { snapshot, next, setData } = getPathContext();
+ *
+ *   const ctx = getPathContext();
  * </script>
  *
- * <input bind:value={name} on:input={() => setData('name', name)} />
- * <button on:click={next}>Next</button>
+ * <input value={ctx.snapshot?.data.name}
+ *        oninput={(e) => ctx.setData('name', e.target.value)} />
+ * <button onclick={ctx.next}>Next</button>
  * ```
  */
 export function getPathContext<TData extends PathData = PathData>(): PathContext<TData> {
@@ -216,30 +216,34 @@ export function setPathContext<TData extends PathData = PathData>(ctx: PathConte
 
 /**
  * Create a two-way binding helper for form inputs.
- * Returns a store that syncs with the path data.
+ * Returns an object with a reactive `value` property.
+ *
+ * @param getSnapshot - A getter function returning the current snapshot (e.g. `() => path.snapshot`)
+ * @param setData - The `setData` function from `usePath()`
+ * @param key - The data key to bind
  *
  * @example
  * ```svelte
  * <script lang="ts">
  *   import { usePath, bindData } from '@daltonr/pathwrite-svelte';
- *   
- *   const { snapshot, setData } = usePath();
- *   const name = bindData(snapshot, setData, 'name');
+ *
+ *   const path = usePath();
+ *   const name = bindData(() => path.snapshot, path.setData, 'name');
  * </script>
  *
- * <input bind:value={$name} />
+ * <input value={name.value} oninput={(e) => name.value = e.target.value} />
  * ```
  */
 export function bindData<TData extends PathData, K extends string & keyof TData>(
-  snapshot: Readable<PathSnapshot<TData> | null>,
+  getSnapshot: () => PathSnapshot<TData> | null,
   setData: <Key extends string & keyof TData>(key: Key, value: TData[Key]) => Promise<void>,
   key: K
-): Readable<TData[K]> & { set: (value: TData[K]) => void } {
-  const store = derived(snapshot, ($snap: PathSnapshot<TData> | null) => ($snap?.data[key] ?? undefined) as TData[K]);
-
+): { readonly value: TData[K]; set: (value: TData[K]) => void } {
   return {
-    subscribe: store.subscribe,
-    set: (value: TData[K]) => {
+    get value(): TData[K] {
+      return (getSnapshot()?.data[key] ?? undefined) as TData[K];
+    },
+    set(value: TData[K]) {
       setData(key, value);
     }
   };

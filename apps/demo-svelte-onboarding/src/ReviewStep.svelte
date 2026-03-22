@@ -1,9 +1,9 @@
 <script>
   import { getPathContext } from '@daltonr/pathwrite-svelte';
 
-  const { snapshot } = getPathContext();
+  const ctx = getPathContext();
 
-  $: data = $snapshot?.data || {};
+  let data = $derived(ctx.snapshot?.data || {});
 </script>
 
 <div class="step-card">
@@ -57,4 +57,3 @@
 <style>
   /* Styles are in global style.css */
 </style>
-

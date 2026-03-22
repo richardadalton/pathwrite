@@ -42,10 +42,11 @@ The core engine, all five adapters, persistence layer, documentation, and test s
 
 ### Svelte Adapter (`@daltonr/pathwrite-svelte`)
 - 250 lines of source + PathShell component, 51 tests
-- `usePath()` with Svelte store bindings and external engine support
+- `usePath()` with Svelte 5 runes (`$state`) — no legacy store dependency
 - `PathShell` component with Svelte 5 runes and snippets
 - `getPathContext()` / `setPathContext()` context API
-- `bindData()` two-way binding helper
+- `bindData()` two-way binding helper (getter-based)
+- Built with `@sveltejs/package` — generates `.svelte.js` + `.svelte.d.ts`
 - **Verdict: 1.0 ready**
 
 ### Store HTTP (`@daltonr/pathwrite-store-http`)
@@ -85,7 +86,6 @@ All gaps resolved. ✅
 |------|--------|
 | `[engine]` input on Angular `<pw-shell>` | storage-feedback.md — deferred; `adoptEngine()` is idiomatic Angular |
 | Convenience wrapper for persisted engine setup | svelte-developer-feedback.md |
-| Migrate Svelte `usePath()` internals to Svelte 5 runes (`.svelte.ts`) | svelte-developer-feedback.md |
 | Pass `snapshot`/`setData` as props to Svelte step components | svelte-developer-feedback.md |
 | Framework-specific `usePersistedPath()` composables | storage-feedback.md (closed as non-issue, but could revisit) |
 | Real-browser integration test for fetch | storage-feedback.md (closed) |
@@ -113,10 +113,10 @@ All gaps resolved. ✅
 3. ~~**Add Persistence section to Angular adapter README**~~ ✅ Done — complete example with `restoreOrStart` + `adoptEngine`
 4. ~~**Fix stale `createPersistedEngine` JSDoc in `adoptEngine()`**~~ ✅ Done
 5. ~~**Update PUBLISHING.md**~~ ✅ Done — added `@daltonr/pathwrite-svelte` and `@daltonr/pathwrite-store-http`
+6. ~~**Migrate `usePath()` to Svelte 5 runes**~~ ✅ Done — `$state`-based, built with `@sveltejs/package`
 
 ### Recommended Post-1.0
 
-6. Add convenience persistence wrapper (~half day)
-7. Migrate `usePath()` to Svelte 5 runes (~1 day)
+7. Add convenience persistence wrapper (~half day)
 
 **Ready to publish.**

@@ -1,6 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { get } from "svelte/store";
-import type { Readable } from "svelte/store";
 import { PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -29,8 +27,8 @@ vi.mock("svelte", async () => {
 });
 
 // Import AFTER mocking so the mock is in place
-import { usePath, getPathContext, setPathContext, bindData } from "../src/index";
-import type { UsePathOptions, UsePathReturn, PathContext } from "../src/index";
+import { usePath, getPathContext, setPathContext, bindData } from "../src/index.svelte";
+import type { UsePathOptions, UsePathReturn, PathContext } from "../src/index.svelte";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,9 +46,9 @@ function createPath(options?: UsePathOptions): UsePathReturn {
   return usePath(options);
 }
 
-/** Helper to read a Svelte store's current value */
+/** Helper to read the reactive snapshot value */
 function snap(path: UsePathReturn): PathSnapshot | null {
-  return get(path.snapshot);
+  return path.snapshot;
 }
 
 beforeEach(() => {
@@ -341,11 +339,14 @@ describe("usePath — cleanup", () => {
     }).not.toThrow();
   });
 
-  it("snapshot store is readable (not writable from outside)", () => {
+  it("snapshot is a readonly getter (not directly settable)", () => {
     const path = createPath();
-    // The snapshot should be a Readable, not a Writable
-    expect(typeof path.snapshot.subscribe).toBe("function");
-    expect((path.snapshot as any).set).toBeUndefined();
+    // snapshot should be accessible as a getter
+    expect(path.snapshot).toBeNull();
+    // Attempting to set should be silently ignored or throw in strict mode
+    const descriptor = Object.getOwnPropertyDescriptor(path, "snapshot");
+    expect(descriptor?.get).toBeDefined();
+    expect(descriptor?.set).toBeUndefined();
   });
 });
 
@@ -479,7 +480,7 @@ describe("getPathContext / setPathContext", () => {
     await path.start(twoStepPath());
 
     const ctx: PathContext = {
-      snapshot: path.snapshot,
+      get snapshot() { return path.snapshot; },
       next: path.next,
       previous: path.previous,
       cancel: path.cancel,
@@ -499,7 +500,7 @@ describe("getPathContext / setPathContext", () => {
     await path.start(twoStepPath());
 
     setPathContext({
-      snapshot: path.snapshot,
+      get snapshot() { return path.snapshot; },
       next: path.next,
       previous: path.previous,
       cancel: path.cancel,
@@ -510,10 +511,10 @@ describe("getPathContext / setPathContext", () => {
     });
 
     const ctx = getPathContext();
-    expect(get(ctx.snapshot)?.stepId).toBe("step1");
+    expect(ctx.snapshot?.stepId).toBe("step1");
 
     await ctx.next();
-    expect(get(ctx.snapshot)?.stepId).toBe("step2");
+    expect(ctx.snapshot?.stepId).toBe("step2");
   });
 });
 
@@ -526,45 +527,46 @@ describe("bindData", () => {
     const path = usePath<{ name: string }>();
     await path.start(twoStepPath(), { name: "Alice" });
 
-    const name = bindData(path.snapshot, path.setData, "name");
-    expect(get(name)).toBe("Alice");
+    const name = bindData(() => path.snapshot, path.setData, "name");
+    expect(name.value).toBe("Alice");
   });
 
   it("updates when the snapshot data changes", async () => {
     const path = usePath<{ name: string }>();
     await path.start(twoStepPath(), { name: "Alice" });
 
-    const name = bindData(path.snapshot, path.setData, "name");
-    expect(get(name)).toBe("Alice");
+    const name = bindData(() => path.snapshot, path.setData, "name");
+    expect(name.value).toBe("Alice");
 
     await path.setData("name", "Bob");
-    expect(get(name)).toBe("Bob");
+    expect(name.value).toBe("Bob");
   });
 
   it("calls setData when set() is invoked", async () => {
     const path = usePath<{ name: string }>();
     await path.start(twoStepPath(), { name: "Alice" });
 
-    const name = bindData(path.snapshot, path.setData, "name");
+    const name = bindData(() => path.snapshot, path.setData, "name");
     name.set("Charlie");
 
     // Wait for async setData to complete
     await new Promise((r) => setTimeout(r, 10));
-    expect(get(name)).toBe("Charlie");
+    expect(name.value).toBe("Charlie");
   });
 
   it("returns undefined when snapshot is null", () => {
     const path = usePath<{ name: string }>();
-    const name = bindData(path.snapshot, path.setData, "name");
-    expect(get(name)).toBeUndefined();
+    const name = bindData(() => path.snapshot, path.setData, "name");
+    expect(name.value).toBeUndefined();
   });
 
-  it("has subscribe but no set on the returned store (read interface)", async () => {
+  it("has value getter and set method on the returned object", async () => {
     const path = usePath<{ name: string }>();
     await path.start(twoStepPath(), { name: "Alice" });
 
-    const name = bindData(path.snapshot, path.setData, "name");
-    expect(typeof name.subscribe).toBe("function");
+    const name = bindData(() => path.snapshot, path.setData, "name");
+    const descriptor = Object.getOwnPropertyDescriptor(name, "value");
+    expect(descriptor?.get).toBeDefined();
     expect(typeof name.set).toBe("function");
   });
 });
@@ -639,5 +641,4 @@ describe("usePath — guards and validation", () => {
     expect(snap(path)?.stepId).toBe("s3"); // s2 was skipped
   });
 });
-
 

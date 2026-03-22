@@ -8,6 +8,9 @@ out-tsc/
 # Angular cache
 .angular/
 
+# Svelte package cache
+.svelte-kit/
+
 # IDE
 .idea/
 *.iml

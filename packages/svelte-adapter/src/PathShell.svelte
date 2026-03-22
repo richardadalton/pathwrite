@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { usePath, setPathContext } from './index.js';
-  import type { PathDefinition, PathData, PathEngine, PathSnapshot } from './index.js';
+  import { usePath, setPathContext } from './index.svelte.js';
+  import type { PathDefinition, PathData, PathEngine, PathSnapshot } from './index.svelte.js';
   import type { Snippet } from 'svelte';
 
   interface Props {
@@ -55,11 +55,11 @@
     }
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
-    snapshot,
+    get snapshot() { return pathReturn.snapshot; },
     next,
     previous,
     cancel,
@@ -78,7 +78,7 @@
     }
   });
 
-  let snap = $derived($snapshot);
+  let snap = $derived(pathReturn.snapshot);
   let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restart(path, initialData) });
 </script>
 

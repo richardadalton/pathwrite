@@ -1,16 +1,16 @@
 <script>
   import { getPathContext } from '@daltonr/pathwrite-svelte';
 
-  const { snapshot, setData } = getPathContext();
+  const ctx = getPathContext();
 
-  $: data = $snapshot?.data || {};
+  let data = $derived(ctx.snapshot?.data || {});
 
   function updateBio(value) {
-    setData('bio', value);
+    ctx.setData('bio', value);
   }
 
   function updateNotifications(checked) {
-    setData('notifications', checked);
+    ctx.setData('notifications', checked);
   }
 </script>
 
@@ -23,7 +23,7 @@
       id="bio"
       placeholder="Tell us a bit about yourself..."
       value={data.bio || ''}
-      on:input={(e) => updateBio(e.target.value)}
+      oninput={(e) => updateBio(e.target.value)}
     />
   </div>
 
@@ -34,7 +34,7 @@
         <input
           type="checkbox"
           checked={data.notifications ?? true}
-          on:change={(e) => updateNotifications(e.target.checked)}
+          onchange={(e) => updateNotifications(e.target.checked)}
         />
         <span class="toggle-slider"></span>
       </label>
@@ -46,4 +46,3 @@
 <style>
   /* Styles are in global style.css */
 </style>
-
