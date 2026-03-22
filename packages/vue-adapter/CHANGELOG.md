@@ -1,5 +1,11 @@
 # @daltonr/pathwrite-vue
 
+## 0.5.0
+
+### Patch Changes
+
+- @daltonr/pathwrite-core@0.5.0
+
 ## 0.4.0 - 2026-03-21
 
 ### Documentation
@@ -18,6 +24,7 @@
 - **CSS custom properties reference** — Complete list of all `--pw-*` theming variables with defaults
 
 ### Updated dependencies
+
 - @daltonr/pathwrite-core@0.4.0
 
 ## 0.3.1
@@ -40,8 +47,6 @@
 
 - Updated dependencies
   - @daltonr/pathwrite-core@0.3.1
-
-
 
 ### Minor Changes
 

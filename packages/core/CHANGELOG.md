@@ -1,5 +1,7 @@
 # @daltonr/pathwrite-core
 
+## 0.5.0
+
 ## 0.4.0 - 2026-03-21
 
 ### Documentation
@@ -37,9 +39,6 @@ No code changes in this release. All features listed were already implemented in
   `.pw-shell__btn` style and was visually indistinguishable from a generic button.
   All three adapters copy `shell.css` at build time so no adapter source changes are
   required for this fix.
-
-
-
 
 ### Minor Changes
 

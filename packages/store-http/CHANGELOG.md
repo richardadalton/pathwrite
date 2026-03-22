@@ -1,5 +1,11 @@
 # @daltonr/pathwrite-store-http
 
+## 0.5.0
+
+### Patch Changes
+
+- @daltonr/pathwrite-core@0.5.0
+
 ## 0.4.0 - 2026-03-21
 
 ### Added
@@ -18,5 +24,5 @@
 - **Comprehensive documentation** — 800+ line README with testing guidance, migration patterns, and server-side examples
 
 ### Dependencies
-- @daltonr/pathwrite-core@0.4.0
 
+- @daltonr/pathwrite-core@0.4.0

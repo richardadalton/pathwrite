@@ -1,5 +1,23 @@
 # @daltonr/pathwrite-svelte
 
+## 0.5.0
+
+### Minor Changes
+
+- Migrate Svelte adapter to Svelte 5 runes
+
+  **Breaking changes to `@daltonr/pathwrite-svelte`:**
+
+  - `usePath()` snapshot is now a reactive getter instead of a Svelte store. Access via `path.snapshot` (not `$snapshot`). Cannot be destructured.
+  - `bindData()` takes a getter function `() => path.snapshot` instead of a `Readable` store. Returns `{ value, set }` instead of a store.
+  - `PathContext.snapshot` is a reactive getter, not a `Readable`.
+  - Build now uses `@sveltejs/package` (generates `.svelte.js` + `.svelte.d.ts`).
+  - No more dependency on `svelte/store`.
+
+### Patch Changes
+
+- @daltonr/pathwrite-core@0.5.0
+
 ## 0.4.0 (2026-03-21)
 
 ### Features
@@ -22,4 +40,3 @@
 ### Breaking Changes
 
 None (initial release)
-
