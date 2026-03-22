@@ -14,7 +14,7 @@ The core engine, all five adapters, persistence layer, documentation, and test s
 ## ✅ What's Ready
 
 ### Core Engine (`@daltonr/pathwrite-core`)
-- **978 lines of source**, 209 tests — mature and well-tested
+- **978 lines of source**, 192 tests — mature and well-tested
 - Full feature set: guards, hooks, sub-paths, skipping, serialization/restoration
 - Async guard support with sync snapshot fallback
 - Guard error resilience with helpful warnings
@@ -23,25 +23,25 @@ The core engine, all five adapters, persistence layer, documentation, and test s
 - **Verdict: 1.0 ready**
 
 ### React Adapter (`@daltonr/pathwrite-react`)
-- 448 lines of source, 70 tests (usePath + PathShell)
+- 448 lines of source, 80 tests (usePath + PathShell)
 - `usePath()` hook with external engine support
 - `PathShell` component with steps prop and slot overrides
 - **Verdict: 1.0 ready**
 
 ### Vue Adapter (`@daltonr/pathwrite-vue`)
-- 351 lines of source, 61 tests (usePath + PathShell)
+- 351 lines of source, 68 tests (usePath + PathShell)
 - `usePath()` composable with external engine support
 - `PathShell` component with named slots
 - **Verdict: 1.0 ready**
 
 ### Angular Adapter (`@daltonr/pathwrite-angular`)
-- 508 lines of source (index.ts + shell.ts), 61 tests
+- 508 lines of source (index.ts + shell.ts), 63 tests
 - `PathFacade` service with `adoptEngine()` for external engines
 - `<pw-shell>` component with ng-template directives
 - **Verdict: 1.0 ready**
 
 ### Svelte Adapter (`@daltonr/pathwrite-svelte`)
-- 250 lines of source + PathShell component, 51 tests
+- 250 lines of source + PathShell component, 52 tests
 - `usePath()` with Svelte 5 runes (`$state`) — no legacy store dependency
 - `PathShell` component with Svelte 5 runes and snippets
 - `getPathContext()` / `setPathContext()` context API
@@ -63,8 +63,8 @@ The core engine, all five adapters, persistence layer, documentation, and test s
 - **Verdict: 1.0 ready**
 
 ### Test Suite
-- 489 tests, all passing, across 8 test files
-- Core: 209 | Angular: 61 | React: 70 | Vue: 61 | Svelte: 51 | Store-HTTP: 37
+- 492 tests, all passing, across 8 test files
+- Core: 192 | Angular: 63 | React: 80 | Vue: 68 | Svelte: 52 | Store-HTTP: 37
 - **Verdict: Full coverage across core and all 5 adapters**
 
 ### Demo Apps
@@ -96,11 +96,11 @@ All gaps resolved. ✅
 
 | Area | Status | Blocking 1.0? |
 |------|--------|----------------|
-| Core engine | ✅ 209 tests, feature-complete | No |
-| React adapter | ✅ 70 tests, PathShell works | No |
-| Vue adapter | ✅ 61 tests, PathShell works | No |
-| Angular adapter | ✅ 61 tests, persistence documented | No |
-| Svelte adapter | ✅ 51 tests, PathShell works | No |
+| Core engine | ✅ 192 tests, feature-complete | No |
+| React adapter | ✅ 80 tests, PathShell works | No |
+| Vue adapter | ✅ 68 tests, PathShell works | No |
+| Angular adapter | ✅ 63 tests, persistence documented | No |
+| Svelte adapter | ✅ 52 tests, PathShell works | No |
 | Store HTTP | ✅ 37 tests, API stable | No |
 | Documentation | ✅ All READMEs current, publishing guide complete | No |
 | Demo apps | ✅ 7 apps across 4 frameworks | No |
@@ -108,7 +108,7 @@ All gaps resolved. ✅
 
 ### All Items Resolved
 
-1. ~~**Write Svelte adapter tests**~~ ✅ Done — 51 tests
+1. ~~**Write Svelte adapter tests**~~ ✅ Done — 52 tests
 2. ~~**Add `[engine]` input to Angular `<pw-shell>`**~~ ✅ Reclassified — `adoptEngine()` is idiomatic Angular
 3. ~~**Add Persistence section to Angular adapter README**~~ ✅ Done — complete example with `restoreOrStart` + `adoptEngine`
 4. ~~**Fix stale `createPersistedEngine` JSDoc in `adoptEngine()`**~~ ✅ Done

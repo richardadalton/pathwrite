@@ -150,59 +150,84 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-489 tests across eight test files:
+492 tests across eight test files:
 
 | Suite | Tests |
 |-------|-------|
-| `PathEngine` — navigation | 8 |
+| `PathEngine` — navigation | 10 |
 | `PathEngine` — snapshot | 9 |
 | `PathEngine` — snapshot canMoveNext / canMovePrevious | 7 |
 | `PathEngine` — setData | 4 |
 | `PathEngine` — events | 8 |
+| `PathEngine` — stateChanged cause field | 8 |
 | `PathEngine` — lifecycle hooks | 13 |
 | `PathEngine` — sub-paths | 5 |
 | `PathEngine` — subscriptions | 3 |
 | `PathEngine` — shouldSkip | 9 |
 | `PathEngine` — stepTitle | 3 |
-| `PathEngine` — goToStep | 9 |
-| `PathEngine` — stepMeta | 3 |
-| `PathEngine` — progress indicator | 8 |
-| `PathEngine` — async hooks and guards | 11 |
+| `PathEngine` — fieldMessages | 12 |
+| `PathEngine` — hasAttemptedNext | 6 |
 | `PathEngine` — errors | 4 |
+| `PathEngine` — async hooks and guards | 11 |
 | `PathEngine` — lifecycle patterns | 10 |
+| `PathEngine` — isFirstEntry | 6 |
+| `PathEngine` — startSubPath meta | 4 |
+| `PathEngine` — onSubPathCancel | 8 |
+| `PathEngine` — guard error resilience | 6 |
+| `PathEngine` — restart() | 8 |
+| `PathEngine` — exportState / fromState | 19 |
+| `matchesStrategy` | 19 |
 | `PathFacade` — state$ | 8 |
 | `PathFacade` — snapshot() | 3 |
 | `PathFacade` — events$ | 5 |
 | `PathFacade` — navigation methods | 5 |
 | `PathFacade` — sub-path | 2 |
 | `PathFacade` — goToStep | 2 |
+| `PathFacade` — goToStepChecked | 7 |
+| `PathFacade` — generic typing <TData> | 5 |
+| `PathFacade` — fieldMessages | 6 |
 | `PathFacade` — ngOnDestroy | 2 |
-| `PathShell` (React) — rendering | 7 |
-| `PathShell` (React) — navigation | 6 |
+| `PathFacade` — stateSignal | 5 |
+| `syncFormGroup` | 7 |
+| `PathFacade` — adoptEngine | 6 |
+| `PathShell` (React) — rendering | 10 |
+| `PathShell` (React) — navigation | 7 |
+| `PathShell` (React) — restart via actions | 2 |
 | `PathShell` (React) — custom labels | 2 |
 | `PathShell` (React) — progress | 3 |
 | `PathShell` (React) — render props | 2 |
 | `PathShell` (React) — autoStart false | 2 |
 | `PathShell` (React) — context sharing | 2 |
+| `PathShell` (React) — fieldMessages | 6 |
+| `PathShell` (React) — footerLayout | 4 |
 | `usePath` (React) — snapshot | 8 |
 | `usePath` (React) — events | 5 |
-| `usePath` (React) — navigation | 5 |
+| `usePath` (React) — navigation | 6 |
 | `usePath` (React) — sub-path | 2 |
 | `usePath` (React) — goToStep | 2 |
+| `usePath` (React) — goToStepChecked | 3 |
 | `PathProvider + usePathContext` | 4 |
 | `usePath` (React) — cleanup | 1 |
-| `PathShell` (Vue) — rendering | 7 |
+| `usePath` (React) — restart() | 4 |
+| `usePath` (React) — external engine | 5 |
+| `PathShell` (Vue) — rendering | 10 |
+| `PathShell` (Vue) — restart via component ref | 2 |
 | `PathShell` (Vue) — navigation | 6 |
+| `PathShell` (Vue) — restart via actions | 2 |
 | `PathShell` (Vue) — custom labels | 2 |
 | `PathShell` (Vue) — progress | 3 |
 | `PathShell` (Vue) — autoStart false | 2 |
 | `PathShell` (Vue) — context sharing | 2 |
+| `PathShell` (Vue) — fieldMessages | 5 |
 | `usePath` (Vue) — snapshot | 8 |
 | `usePath` (Vue) — events | 4 |
-| `usePath` (Vue) — navigation | 4 |
+| `usePath` (Vue) — navigation | 5 |
 | `usePath` (Vue) — sub-path | 2 |
 | `usePath` (Vue) — goToStep | 1 |
+| `usePath` (Vue) — goToStepChecked | 2 |
 | `usePath` (Vue) — scope disposal | 2 |
+| `usePath` (Vue) — restart() | 4 |
+| `usePath` (Vue) — external engine | 6 |
 | `usePath` (Svelte) — snapshot | 12 |
 | `usePath` (Svelte) — events | 4 |
 | `usePath` (Svelte) — navigation | 5 |
@@ -214,7 +239,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `usePath` (Svelte) — external engine | 6 |
 | `getPathContext / setPathContext` (Svelte) | 3 |
 | `bindData` (Svelte) | 5 |
-| `usePath` (Svelte) — guards and validation | 4 |
+| `usePath` (Svelte) — guards and validation | 5 |
 | `HttpStore` | 10 |
 | `httpPersistence` | 20 |
 | `restoreOrStart` | 7 |
