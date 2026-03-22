@@ -31,7 +31,8 @@
       "svelte": "./dist/PathShell.svelte",
       "import": "./dist/PathShell.svelte"
     },
-    "./styles.css": "./dist/index.css"
+    "./styles.css": "./dist/index.css",
+    "./dist/index.css": "./dist/index.css"
   },
   "svelte": "./dist/index.svelte.js",
   "main": "dist/index.svelte.js",

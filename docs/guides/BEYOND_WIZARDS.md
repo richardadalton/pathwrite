@@ -19,35 +19,61 @@ A "wizard" is just one UI manifestation of this architecture.
 
 ### 1. Single-Page Forms
 
-A path with **1 step** = a full-featured form:
+A path with **1 step** = a full-featured form with automatic UI adaptations:
 
 ```typescript
 const contactForm: PathDefinition = {
   id: "contact-form",
   steps: [{
     id: "form",
-    validationMessages: (ctx) => {
-      const errors = [];
-      if (!ctx.data.name?.trim()) errors.push("Name is required");
-      if (!ctx.data.email?.includes("@")) errors.push("Valid email required");
-      if (!ctx.data.message?.trim()) errors.push("Message is required");
-      return errors;
-    },
-    canMoveNext: (ctx) => 
-      ctx.data.name && ctx.data.email && ctx.data.message
+    title: "Contact Us",
+    fieldMessages: (ctx) => ({
+      name: !ctx.data.name?.trim() ? "Name is required" : undefined,
+      email: !ctx.data.email?.includes("@") ? "Valid email required" : undefined,
+      message: !ctx.data.message?.trim() ? "Message is required" : undefined
+    })
+    // Note: canMoveNext auto-derives from fieldMessages when not explicitly set
   }]
 };
 
-// You get:
-// ✅ Validation
-// ✅ Auto-persistence (crash recovery)
+// Usage:
+<PathShell 
+  path={contactForm} 
+  initialData={{ name: "", email: "", message: "" }}
+  onComplete={(data) => submitToBackend(data)}
+/>
+
+// You automatically get:
+// ✅ Field-level validation with labeled errors
+// ✅ Submit button disabled while invalid
+// ✅ Errors hidden until first submit attempt (hasAttemptedNext)
+// ✅ Progress indicator auto-hidden (single-step form)
+// ✅ Form-style footer layout (Cancel left, Submit right)
+// ✅ Auto-persistence (with HTTP store: crash recovery)
 // ✅ Type-safe data binding
-// ✅ Event streaming
-// ✅ Submit handling via completed event
+// ✅ Event streaming for analytics
 ```
 
-**Benefits over traditional forms:**
-- Automatic draft saving (strategy: "onEveryChange" + debounce)
+**Why this works better than traditional forms:**
+- **Zero configuration** for common behavior (see auto-detection below)
+- **Consistent API** across React, Vue, Svelte, Angular
+- **Built-in persistence** (strategy: "onEveryChange" + debounce for drafts)
+- **Field errors auto-render** (no manual error display code)
+
+**Auto-detection for single-step forms:**
+When `stepCount === 1 && nestingLevel === 0`:
+- Progress header automatically hidden (user doesn't need to see "Step 1 of 1")
+- Footer switches to "form" layout (Cancel on left, Submit on right)
+- No Back button clutter
+
+Override when needed:
+```tsx
+<PathShell 
+  path={form} 
+  hideProgress={false}      // Force show progress
+  footerLayout="wizard"     // Force wizard layout
+/>
+```
 - User can close browser and resume
 - Full audit trail via observers
 - No manual form state management

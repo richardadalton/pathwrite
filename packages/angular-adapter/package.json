@@ -29,7 +29,8 @@
       "types": "./dist/shell.d.ts",
       "import": "./dist/shell.js"
     },
-    "./styles.css": "./dist/index.css"
+    "./styles.css": "./dist/index.css",
+    "./dist/index.css": "./dist/index.css"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

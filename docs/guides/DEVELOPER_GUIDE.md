@@ -21,6 +21,7 @@
 17. [Testing](#17-testing)
 18. [Design Decisions](#18-design-decisions)
 19. [Observers & Persistence](#19-observers--persistence)
+20. [Forms with Pathwrite](#20-forms-with-pathwrite)
 
 ---
 
@@ -1386,7 +1387,7 @@ await engine.start(path, { apiKey: "" });
 | `cancel()` | `Promise<void>` | Cancel. Pops sub-path silently; completes top-level with `cancelled` event. |
 | `setData(key, value)` | `Promise<void>` | Update one data value. Emits `stateChanged`. |
 | `goToStep(stepId)` | `Promise<void>` | Jump to step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
-| `goToStepChecked(stepId)` | `Promise<void>` | Jump to step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
+| `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
 | `snapshot()` | `PathSnapshot \| null` | Synchronous snapshot read. |
 | `subscribe(listener)` | `() => void` | Subscribe to events. Returns the unsubscribe function. |
 
@@ -1909,7 +1910,7 @@ The `strategy` option controls when the observer saves state to your backend. Th
 |---|---|---|
 | `"onNext"` *(default)* | After `next()` navigation completes | Multi-step forms (1 save per step) |
 | `"onEveryChange"` | Every settled `stateChanged` event | Real-time autosave (use with `debounceMs`) |
-| `"onSubPathComplete"` | A sub-path completes and parent resumes | Nested wizard checkpoints |
+| `"onSubPathComplete"` | A sub-path completes and the parent resumes | Nested wizard checkpoints |
 | `"onComplete"` | The path completes | Audit trail / final submission only |
 | `"manual"` | Never — you call `store.save()` yourself | Custom save logic |
 
@@ -2054,7 +2055,7 @@ Two observers means every state change is saved to both stores. The load path ch
 #### Offline-first: read from server, write locally
 
 ```typescript
-const remote = new HttpStore({ baseUrl: "/api/wizard" });
+const remote = new HttpStore({ baseUrl: "/api/forms" });
 const local = new LocalStorageStore();
 
 const { engine } = await restoreOrStart({
@@ -2071,3 +2072,463 @@ State is always saved locally. On next page load, you can reverse the pattern: l
 
 ---
 
+## 20. Forms with Pathwrite
+
+While Pathwrite excels at multi-step wizards, it's also a powerful choice for **single-step forms**. A path with one step gives you field-level validation, automatic error handling, crash recovery, and consistent cross-framework APIs — without learning a separate form library.
+
+### Why use Pathwrite for forms?
+
+✅ **Type-safe data binding** with TypeScript generics  
+✅ **Field-level validation** with automatic error rendering  
+✅ **Smart error timing** (show after first submit attempt)  
+✅ **Auto-persistence** with crash recovery (HTTP stores)  
+✅ **Consistent API** across React, Vue, Svelte, Angular  
+✅ **Zero configuration** for common behaviors  
+✅ **Event streaming** for analytics and side effects  
+
+### Quick Start
+
+A single-step `PathDefinition` is all you need:
+
+```typescript
+const contactForm: PathDefinition = {
+  id: "contact-form",
+  steps: [{
+    id: "contact",
+    title: "Contact Us",
+    fieldMessages: ({ data }) => ({
+      name: !data.name?.trim() ? "Name is required" : undefined,
+      email: !data.email?.includes("@") ? "Valid email address required" : undefined,
+      message: !data.message?.trim() ? "Message is required" : undefined
+    })
+    // canMoveNext auto-derives from fieldMessages - no need to define it!
+  }]
+};
+```
+
+**React:**
+```tsx
+<PathShell 
+  path={contactForm} 
+  initialData={{ name: "", email: "", message: "" }}
+  onComplete={(data) => submitToBackend(data)}
+/>
+```
+
+**Vue:**
+```vue
+<PathShell 
+  :path="contactForm" 
+  :initial-data="{ name: '', email: '', message: '' }"
+  @complete="submitToBackend"
+>
+  <template #contact>
+    <ContactFormFields />
+  </template>
+</PathShell>
+```
+
+**Angular:**
+```html
+<pw-shell [path]="contactForm" [initialData]="{}" (completed)="submit($event)">
+  <ng-template pwStep="contact">
+    <app-contact-form />
+  </ng-template>
+</pw-shell>
+```
+
+**Svelte:**
+```svelte
+<PathShell 
+  path={contactForm} 
+  initialData={{ name: "", email: "", message: "" }}
+  oncomplete={submitToBackend}
+>
+  {#snippet contact()}
+    <ContactFormFields />
+  {/snippet}
+</PathShell>
+```
+
+### What you get automatically
+
+With the code above, single-step forms **automatically**:
+
+1. **Hide the progress indicator** (no "Step 1 of 1" clutter)
+2. **Use form-style footer** (Cancel on left, Submit on right)
+3. **Block submission while invalid** (canMoveNext derived from fieldMessages)
+4. **Hide errors initially** (shown after first submit attempt via hasAttemptedNext)
+5. **Render field errors with labels** (camelCase → Title Case: "firstName" → "First Name")
+6. **Disable submit during validation** (isNavigating flag)
+
+**Auto-detection rule:** When `stepCount === 1 && nestingLevel === 0`, the shell assumes form mode.
+
+Override when needed:
+```tsx
+<PathShell 
+  path={form}
+  hideProgress={false}       // Force show progress
+  footerLayout="wizard"      // Force wizard layout
+/>
+```
+
+### Field Validation Patterns
+
+#### Basic Validation
+
+```typescript
+fieldMessages: ({ data }) => ({
+  email: !data.email?.includes("@") ? "Invalid email" : undefined,
+  age: (data.age < 18) ? "Must be 18 or older" : undefined,
+  terms: !data.terms ? "You must accept the terms" : undefined
+})
+```
+
+#### Multiple Errors per Field
+
+Return the first error encountered:
+
+```typescript
+fieldMessages: ({ data }) => ({
+  password: !data.password 
+    ? "Password is required"
+    : data.password.length < 8
+    ? "Password must be at least 8 characters"
+    : !/[A-Z]/.test(data.password)
+    ? "Password must contain an uppercase letter"
+    : undefined
+})
+```
+
+#### Form-Level Errors
+
+Use `"_"` as the key for errors that don't belong to a specific field:
+
+```typescript
+fieldMessages: ({ data }) => ({
+  _: data.password !== data.confirmPassword 
+    ? "Passwords do not match" 
+    : undefined
+})
+```
+
+The shell renders this without a label.
+
+#### Conditional Validation
+
+Only validate certain fields based on other fields:
+
+```typescript
+fieldMessages: ({ data }) => ({
+  country: !data.country ? "Required" : undefined,
+  state: data.country === "US" && !data.state 
+    ? "State is required for US addresses" 
+    : undefined,
+  province: data.country === "CA" && !data.province 
+    ? "Province is required for Canadian addresses" 
+    : undefined
+})
+```
+
+#### Async Validation
+
+For async validation (checking username availability, validating addresses, etc.), perform it in `canMoveNext` and store the result in `data`:
+
+```typescript
+{
+  id: "signup",
+  fieldMessages: ({ data }) => ({
+    username: !data.username ? "Required" : undefined,
+    _: data.usernameAvailable === false ? "Username is already taken" : undefined
+  }),
+  canMoveNext: async ({ data }) => {
+    if (!data.username) return false;
+    
+    // Check availability (only if not already checked)
+    if (data.usernameAvailable === undefined) {
+      const available = await checkUsernameAvailability(data.username);
+      // Update data with result
+      await engine.setData("usernameAvailable", available);
+      return available;
+    }
+    
+    return data.usernameAvailable !== false;
+  }
+}
+```
+
+### Using Form Data in Step Templates
+
+Access and update form data via context:
+
+**React:**
+```tsx
+function ContactFormFields() {
+  const { snapshot, setData } = usePathContext();
+  
+  return (
+    <>
+      <input 
+        value={snapshot.data.name || ""} 
+        onChange={(e) => setData("name", e.target.value)}
+        className={snapshot.fieldMessages.name ? "error" : ""}
+      />
+      {snapshot.hasAttemptedNext && snapshot.fieldMessages.name && (
+        <span className="error">{snapshot.fieldMessages.name}</span>
+      )}
+      
+      <input 
+        value={snapshot.data.email || ""} 
+        onChange={(e) => setData("email", e.target.value)}
+      />
+      {snapshot.hasAttemptedNext && snapshot.fieldMessages.email && (
+        <span className="error">{snapshot.fieldMessages.email}</span>
+      )}
+    </>
+  );
+}
+```
+
+**Vue:**
+```vue
+<script setup>
+const { snapshot, setData } = usePathContext();
+</script>
+
+<template>
+  <input 
+    :value="snapshot.data.name || ''" 
+    @input="setData('name', $event.target.value)"
+    :class="{ error: snapshot.fieldMessages.name }"
+  />
+  <span v-if="snapshot.hasAttemptedNext && snapshot.fieldMessages.name" class="error">
+    {{ snapshot.fieldMessages.name }}
+  </span>
+</template>
+```
+
+### Default Values and Data Initialization
+
+Use `onEnter` to set defaults or fetch initial data:
+
+```typescript
+{
+  id: "profile",
+  onEnter: async ({ data, isFirstEntry }) => {
+    // Only fetch on first entry, not when navigating back
+    if (isFirstEntry) {
+      const user = await fetchCurrentUser();
+      return {
+        name: user.name,
+        email: user.email,
+        phone: user.phone || ""  // Provide default for optional fields
+      };
+    }
+  },
+  fieldMessages: ({ data }) => ({
+    name: !data.name ? "Required" : undefined,
+    email: !data.email?.includes("@") ? "Invalid email" : undefined
+  })
+}
+```
+
+### Multi-Section Forms (Still Single-Step)
+
+You can have a complex, multi-section form as a single step by organizing your template:
+
+```typescript
+const registrationForm: PathDefinition = {
+  id: "registration",
+  steps: [{
+    id: "signup",
+    fieldMessages: ({ data }) => ({
+      // Personal info section
+      firstName: !data.firstName ? "Required" : undefined,
+      lastName: !data.lastName ? "Required" : undefined,
+      email: !data.email?.includes("@") ? "Invalid email" : undefined,
+      
+      // Company info section
+      companyName: !data.companyName ? "Required" : undefined,
+      role: !data.role ? "Required" : undefined,
+      
+      // Preferences section
+      newsletter: undefined,  // Optional
+      notifications: undefined  // Optional
+    })
+  }]
+};
+```
+
+Your template can render these in tabs, accordions, or separate sections — it's all one step from Pathwrite's perspective.
+
+### When NOT to use Pathwrite for forms
+
+Consider traditional form libraries when:
+
+❌ **Very simple forms** (1-2 fields, no validation)  
+❌ **Deeply nested field structures** (arrays of objects with arrays)  
+❌ **Need field-level touched/dirty tracking** per field (Pathwrite has step-level `hasAttemptedNext`)  
+❌ **Complex field dependencies** (use specialized form libraries)  
+
+**Better for Pathwrite:**
+
+✅ Forms with 5+ fields and validation  
+✅ Forms that need crash recovery / auto-save  
+✅ Forms that are part of a larger wizard  
+✅ Forms that need consistency across frameworks  
+✅ Forms with async validation or external API calls  
+
+### Integration with Existing Form Libraries
+
+You can use Pathwrite alongside traditional form libraries by storing the form library's state in Pathwrite's data:
+
+```typescript
+// React Hook Form + Pathwrite
+function MyForm() {
+  const { snapshot, setData } = usePathContext();
+  const { register, handleSubmit, formState } = useForm({
+    defaultValues: snapshot.data.formState || {}
+  });
+  
+  // Sync form state to Pathwrite for persistence
+  useEffect(() => {
+    setData("formState", formState);
+  }, [formState]);
+  
+  return <form onSubmit={handleSubmit(onSubmit)}>...</form>;
+}
+```
+
+### Complete Example with Persistence
+
+A production-ready form with auto-save:
+
+```typescript
+// form-definition.ts
+export const contactForm: PathDefinition = {
+  id: "contact-form",
+  steps: [{
+    id: "contact",
+    title: "Contact Us",
+    onEnter: ({ isFirstEntry }) => {
+      // Set defaults only on first entry
+      if (isFirstEntry) {
+        return {
+          name: "",
+          email: "",
+          message: "",
+          subscribe: false
+        };
+      }
+    },
+    fieldMessages: ({ data }) => ({
+      name: !data.name?.trim() ? "Name is required" : undefined,
+      email: !data.email?.includes("@") ? "Valid email address required" : undefined,
+      message: !data.message?.trim() 
+        ? "Message is required" 
+        : data.message.length < 10
+        ? "Message must be at least 10 characters"
+        : undefined
+    })
+  }]
+};
+
+// React component
+import { PathShell } from "@daltonr/pathwrite-react";
+import { HttpStore, httpPersistence } from "@daltonr/pathwrite-store-http";
+
+function ContactPage() {
+  const store = new HttpStore({ baseUrl: "/api/forms" });
+  const userId = getCurrentUserId();
+  
+  const engine = useMemo(() => {
+    const eng = new PathEngine({
+      observers: [
+        httpPersistence({
+          store,
+          key: `contact:${userId}`,
+          strategy: "onEveryChange",
+          debounceMs: 1000  // Auto-save after 1 second of inactivity
+        })
+      ]
+    });
+    return eng;
+  }, [userId]);
+  
+  const handleComplete = async (data: PathData) => {
+    try {
+      await submitContactForm(data);
+      toast.success("Message sent!");
+      // Clear the saved draft
+      await store.delete(`contact:${userId}`);
+    } catch (error) {
+      toast.error("Failed to send message");
+    }
+  };
+  
+  return (
+    <PathShell
+      engine={engine}
+      path={contactForm}
+      initialData={{}}
+      onComplete={handleComplete}
+      hideCancel={true}  // No cancel needed for standalone forms
+    >
+      {/* Step content */}
+    </PathShell>
+  );
+}
+```
+
+### Form Styling Tips
+
+The shell renders validation messages with these CSS classes:
+
+```css
+.pw-shell__validation {
+  /* Validation message container */
+}
+
+.pw-shell__validation-item {
+  /* Individual validation message */
+}
+
+.pw-shell__validation-label {
+  /* Field name label (e.g., "Email:") */
+}
+```
+
+Hide the automatic shell validation and render inline instead:
+
+```css
+.pw-shell__validation {
+  display: none;
+}
+```
+
+Then in your template:
+```tsx
+<input 
+  value={snapshot.data.email} 
+  onChange={(e) => setData("email", e.target.value)}
+/>
+{snapshot.hasAttemptedNext && snapshot.fieldMessages.email && (
+  <span className="inline-error">{snapshot.fieldMessages.email}</span>
+)}
+```
+
+### Summary
+
+Forms with Pathwrite give you:
+
+- **One API** for both forms and wizards
+- **Auto-detection** for appropriate UI behavior
+- **Field validation** with labeled error rendering
+- **Smart error timing** (after first submit)
+- **Crash recovery** with HTTP stores
+- **Cross-framework consistency**
+- **Type safety** with generics
+
+For simple forms, the pattern is just as concise as traditional form libraries, but you get persistence, validation, and cross-framework APIs for free.
+
+See also: [Beyond Wizards guide](./BEYOND_WIZARDS.md) for more use cases beyond forms and wizards.
