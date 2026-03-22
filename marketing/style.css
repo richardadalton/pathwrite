@@ -215,6 +215,7 @@ a:hover { color: #c4b5fd; }
 .usecase-card__icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
 .usecase-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
 .usecase-card p { font-size: 0.88rem; color: var(--color-text-muted); line-height: 1.6; }
+.usecase-card code { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-accent); background: var(--color-code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; }
 
 /* ===== PERSISTENCE SECTION ===== */
 .persistence-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; align-items: start; }
@@ -265,4 +266,5 @@ a:hover { color: #c4b5fd; }
 @media (max-width: 768px) {
   .footer__inner { flex-direction: column; gap: 0.75rem; text-align: center; }
 }
+
 
