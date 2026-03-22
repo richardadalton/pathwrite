@@ -17,6 +17,83 @@ interface ContactData {
   selector: "app-contact-step",
   standalone: true,
   providers: [PathFacade],  // ← Required for injectPath() to work
+  styles: [`
+    .form-body {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .required {
+      color: #dc2626;
+      font-size: 13px;
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .field input[type="text"],
+    .field input[type="email"],
+    .field select,
+    .field textarea {
+      border: 1px solid #c2d0e5;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #1f2937;
+      background: #fff;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .field select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b677a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: #9ca3af;
+      align-self: flex-end;
+    }
+  `],
   template: `
     <div class="form-body">
 

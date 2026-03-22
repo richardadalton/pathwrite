@@ -29,7 +29,12 @@ body {
   color: #5b677a;
 }
 
-/* ── pw-shell overrides ───────────────────────────────────────────────────── */
+/*
+ * Pathwrite shell CSS is imported from @daltonr/pathwrite-vue/styles.css
+ * in main.ts. The overrides below adjust the shell layout for this demo.
+ */
+
+/* ── pw-shell overrides for form layout ──────────────────────────────────── */
 .pw-shell {
   padding: 0;
   gap: 0;

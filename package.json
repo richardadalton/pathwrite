@@ -13,7 +13,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "tsc -b packages/core packages/react-adapter packages/vue-adapter packages/store-http && npm run build -w packages/svelte-adapter && npm run build -w packages/angular-adapter",
+    "build": "npm run build -w packages/core && npm run build -w packages/react-adapter && npm run build -w packages/vue-adapter && npm run build -w packages/store-http && npm run build -w packages/svelte-adapter && npm run build -w packages/angular-adapter",
     "clean": "npm run clean -ws --if-present && rm -rf packages/*/dist packages/*/*.tsbuildinfo",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -7,14 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@daltonr/pathwrite-demo-console",
-    "@daltonr/pathwrite-demo-angular",
-    "@daltonr/pathwrite-demo-angular-course",
-    "@daltonr/pathwrite-demo-angular-shell",
-    "@daltonr/pathwrite-demo-lifecycle",
-    "demo-svelte-onboarding",
-    "demo-vue-wizard",
-    "demo-api-server"
-  ]
+  "ignore": []
 }

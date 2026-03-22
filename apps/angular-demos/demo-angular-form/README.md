@@ -1,6 +1,6 @@
 # demo-angular-form
 
-A Pathwrite demo showing how to use a **single-step Path as a standalone form** with Angular (`@daltonr/pathwrite-angular` v0.5.0).
+A Pathwrite demo showing how to use a **single-step Path as a standalone form** with Angular (`@daltonr/pathwrite-angular` v0.6.0).
 
 Same contact form as `demo-react-form`, `demo-vue-form`, and `demo-svelte-form` — built side-by-side to compare all four adapters.
 
@@ -36,6 +36,25 @@ src/
     ├── app.component.html      – template: pw-shell, ng-template step content, result panels
     └── app.component.css       – component styles
 ```
+
+---
+
+## CSS Configuration
+
+The Pathwrite shell styles are imported via `angular.json`:
+
+```json
+{
+  "styles": [
+    "node_modules/@daltonr/pathwrite-angular/dist/index.css",
+    "src/styles.css"
+  ]
+}
+```
+
+This loads the complete shell CSS with all CSS custom properties (`--pw-*` variables) for theming. The `styles.css` file contains only app-specific styles.
+
+**Note:** Angular requires CSS to be declared in the build configuration, unlike React/Vue/Svelte which use direct imports.
 
 ---
 

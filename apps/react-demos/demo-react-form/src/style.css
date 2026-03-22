@@ -30,6 +30,10 @@ body {
 }
 
 /* ── pw-shell overrides for form layout ──────────────────────────────────── */
+/*
+ * Pathwrite shell CSS is imported from @daltonr/pathwrite-react/styles.css
+ * in main.tsx. The overrides below adjust the shell layout for this demo.
+ */
 .pw-shell {
   /* Remove default padding/gap — let the body card handle it */
   padding: 0;

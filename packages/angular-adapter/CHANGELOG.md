@@ -1,5 +1,11 @@
 # @daltonr/pathwrite-angular
 
+## 0.6.1
+
+### Patch Changes
+
+- @daltonr/pathwrite-core@0.6.1
+
 ## 0.5.0
 
 ### Patch Changes

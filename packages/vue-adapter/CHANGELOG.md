@@ -1,5 +1,12 @@
 # @daltonr/pathwrite-vue
 
+## 0.6.1
+
+### Patch Changes
+
+- Fix missing `styles.css` in published packages. The `dist/index.css` file was not included when `@daltonr/pathwrite-react` and `@daltonr/pathwrite-vue` were published at v0.6.0 due to the root build script using `tsc -b` instead of the full package build script. This meant `import "@daltonr/pathwrite-react/styles.css"` and `import "@daltonr/pathwrite-vue/styles.css"` would fail with a module resolution error.
+  - @daltonr/pathwrite-core@0.6.1
+
 ## 0.5.0
 
 ### Patch Changes
