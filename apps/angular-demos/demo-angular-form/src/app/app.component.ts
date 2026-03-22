@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
-import { PathDefinition, PathData, FieldErrors } from "@daltonr/pathwrite-core";
+import { PathDefinition, PathData, FieldErrors } from "@daltonr/pathwrite-angular";
 import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
+import { ContactStepComponent } from "./contact-step.component";
 
 interface ContactData extends PathData {
   name: string;
@@ -16,17 +17,11 @@ function isValidEmail(value: string): boolean {
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [PathShellComponent, PathStepDirective],
+  imports: [PathShellComponent, PathStepDirective, ContactStepComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css"
 })
 export class AppComponent {
-  // ── Local form state (two-way synced to the engine via setData) ─────────
-  public name = "";
-  public email = "";
-  public subject = "";
-  public message = "";
-
   // ── Page state ──────────────────────────────────────────────────────────
   protected isSubmitted = false;
   protected isCancelled = false;
@@ -67,12 +62,8 @@ export class AppComponent {
   }
 
   protected tryAgain(): void {
-    // Reset all local form state and page flags — pw-shell will re-mount
-    // inside the @if block and auto-start a fresh path.
-    this.name = "";
-    this.email = "";
-    this.subject = "";
-    this.message = "";
+    // Reset page flags — pw-shell will re-mount inside the @if block
+    // and auto-start a fresh path
     this.isSubmitted = false;
     this.isCancelled = false;
     this.submittedData = null;

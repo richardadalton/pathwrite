@@ -42,7 +42,6 @@
   <!-- ── Active form ─────────────────────────────────────────────────────── -->
   @if (!isSubmitted && !isCancelled) {
     <pw-shell
-      #shell
       [path]="contactFormPath"
       [initialData]="{ name: '', email: '', subject: '', message: '' }"
       completeLabel="Send Message"
@@ -50,74 +49,12 @@
       (completed)="onSubmit($event)"
       (cancelled)="onCancel()"
     >
+      <!--
+        Uses the new ContactStepComponent with injectPath() API (v0.6.0).
+        No #shell reference or shell.facade.setData() needed!
+      -->
       <ng-template pwStep="contact">
-        <div class="form-body">
-
-          <!-- Name -->
-          <div class="field">
-            <label for="name">Full Name <span class="required">*</span></label>
-            <input
-              id="name"
-              type="text"
-              [value]="name"
-              (input)="name = $any($event.target).value;
-                       shell.facade.setData('name', name.trim())"
-              placeholder="Jane Smith"
-              autocomplete="name"
-              autofocus
-            />
-          </div>
-
-          <!-- Email -->
-          <div class="field">
-            <label for="email">Email Address <span class="required">*</span></label>
-            <input
-              id="email"
-              type="email"
-              [value]="email"
-              (input)="email = $any($event.target).value;
-                       shell.facade.setData('email', email.trim())"
-              placeholder="jane@example.com"
-              autocomplete="email"
-            />
-          </div>
-
-          <!-- Subject -->
-          <div class="field">
-            <label for="subject">Subject <span class="required">*</span></label>
-            <select
-              id="subject"
-              (change)="subject = $any($event.target).value;
-                        shell.facade.setData('subject', subject)"
-            >
-              <option value="" disabled [selected]="!subject">Select a subject…</option>
-              <option value="General Enquiry">General Enquiry</option>
-              <option value="Bug Report">Bug Report</option>
-              <option value="Feature Request">Feature Request</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <!-- Message -->
-          <div class="field">
-            <label for="message">
-              Message <span class="required">*</span>
-              <span class="field-hint">(min 10 characters)</span>
-            </label>
-            <textarea
-              id="message"
-              rows="5"
-              [value]="message"
-              (input)="message = $any($event.target).value;
-                       shell.facade.setData('message', message.trim())"
-              placeholder="How can we help you?"
-            ></textarea>
-            @if (shell.facade.stateSignal(); as s) {
-              <span class="char-count">{{ $any(s.data['message'])?.length ?? 0 }} chars</span>
-            }
-          </div>
-
-        </div>
+        <app-contact-step />
       </ng-template>
     </pw-shell>
   }

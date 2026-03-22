@@ -6,11 +6,12 @@ interface ContactData {
   email: string;
   subject: string;
   message: string;
+  [key: string]: unknown;  // Required for PathData constraint
 }
 
 /**
- * Demonstrates the modern `injectPath()` API for accessing the path engine.
- * No template references needed — just inject and use signals.
+ * Demonstrates the modern `injectPath()` API (new in v0.6.0) for accessing
+ * the path engine. No template references needed — just inject and use signals.
  */
 @Component({
   selector: "app-contact-step",
@@ -83,7 +84,7 @@ interface ContactData {
   `
 })
 export class ContactStepComponent {
-  // ── Signal-based path access (modern Angular pattern) ────────────────────
+  // ── Signal-based path access (modern Angular pattern, new in v0.6.0) ────
   protected readonly path = injectPath<ContactData>();
 
   // ── Local form state (two-way synced to engine via setData) ──────────────

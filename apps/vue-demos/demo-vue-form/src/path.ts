@@ -5,6 +5,7 @@ export interface ContactData {
   email: string;
   subject: string;
   message: string;
+  [key: string]: unknown;  // Required for PathData constraint
 }
 
 function isValidEmail(value: string): boolean {
