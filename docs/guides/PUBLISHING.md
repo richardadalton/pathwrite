@@ -90,6 +90,19 @@ After publishing, push the version commit and tag(s):
 git push --follow-tags
 ```
 
+### 4. Update demo dependencies (important!)
+
+The demo apps under `apps/` install packages from npm independently. After a release, run `npm install` in any demo that references the published packages so they get the new version with all built assets:
+
+```bash
+cd apps/angular-demos/demo-angular-form && npm install && cd -
+cd apps/react-demos/demo-react-form && npm install && cd -
+cd apps/vue-demos/demo-vue-form && npm install && cd -
+cd apps/svelte-demos/demo-svelte-form && npm install && cd -
+```
+
+> **Why?** Angular's `angular.json` `styles` array resolves paths relative to the project's own `node_modules/`. If the demo hasn't been reinstalled after a release, it won't have the new package version locally and CSS assets won't be found.
+
 ## Dry Run
 
 To verify what _would_ be published without actually uploading anything:
@@ -142,4 +155,10 @@ npm run release
 
 # 6. Push commit + tags
 git push --follow-tags
+
+# 7. Update demo apps (so they pick up the new package assets)
+cd apps/angular-demos/demo-angular-form && npm install && cd -
+cd apps/react-demos/demo-react-form && npm install && cd -
+cd apps/vue-demos/demo-vue-form && npm install && cd -
+cd apps/svelte-demos/demo-svelte-form && npm install && cd -
 ```
