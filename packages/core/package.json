@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-core",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "license": "MIT",
   "description": "Headless path engine — deterministic state machine with stack-based sub-path orchestration. Zero dependencies.",
