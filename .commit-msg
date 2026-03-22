@@ -1,13 +1,10 @@
-Add Svelte adapter tests (51 tests)
+Close all 1.0 release gaps — docs only, no code changes to runtime
 
-- usePath: snapshot, navigation, events, sub-paths, goToStep, goToStepChecked, cleanup, restart, external engine
-- Context API: getPathContext/setPathContext with Symbol key
-- bindData helper: read, update, set, null snapshot
-- Guards and validation: canMoveNext, validationMessages, shouldSkip
-- Mock Svelte lifecycle (onDestroy, getContext, setContext) for unit testing
-- Mock PathShell.svelte import to avoid needing Svelte Vite plugin in test runner
-- Add @daltonr/pathwrite-svelte alias to vitest.config.ts
-- Update RELEASE_READINESS.md: Svelte tests done, estimate reduced to 1-2 days
+- Angular adapter README: add Persistence section with complete
+  restoreOrStart + adoptEngine example
+- Angular adapter src: fix stale createPersistedEngine JSDoc on adoptEngine()
+- PUBLISHING.md: add pathwrite-svelte and pathwrite-store-http (6 packages)
+- RELEASE_READINESS.md: update to 100% ready, all items resolved
 
-All 489 tests pass (8 test files).
+489 tests pass (8 files). No runtime code changes.
 

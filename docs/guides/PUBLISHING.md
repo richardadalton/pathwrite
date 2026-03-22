@@ -4,7 +4,7 @@ This document describes how to version and publish the Pathwrite packages to npm
 
 ## Packages
 
-All four public packages are published under the `@daltonr` scope:
+All six public packages are published under the `@daltonr` scope:
 
 | Package | npm |
 |---------|-----|
@@ -12,6 +12,8 @@ All four public packages are published under the `@daltonr` scope:
 | `@daltonr/pathwrite-angular` | [npmjs.com/package/@daltonr/pathwrite-angular](https://www.npmjs.com/package/@daltonr/pathwrite-angular) |
 | `@daltonr/pathwrite-react` | [npmjs.com/package/@daltonr/pathwrite-react](https://www.npmjs.com/package/@daltonr/pathwrite-react) |
 | `@daltonr/pathwrite-vue` | [npmjs.com/package/@daltonr/pathwrite-vue](https://www.npmjs.com/package/@daltonr/pathwrite-vue) |
+| `@daltonr/pathwrite-svelte` | [npmjs.com/package/@daltonr/pathwrite-svelte](https://www.npmjs.com/package/@daltonr/pathwrite-svelte) |
+| `@daltonr/pathwrite-store-http` | [npmjs.com/package/@daltonr/pathwrite-store-http](https://www.npmjs.com/package/@daltonr/pathwrite-store-http) |
 
 Demo/app packages are **never** published (they are listed in the changeset `ignore` config).
 

@@ -66,7 +66,7 @@ export class MyComponent {
 
 | Method | Description |
 |--------|-------------|
-| `adoptEngine(engine)` | Adopt an externally-managed `PathEngine` (e.g. from `createPersistedEngine()`). The facade immediately reflects the engine's current state and forwards all subsequent events. The caller is responsible for the engine's lifecycle. |
+| `adoptEngine(engine)` | Adopt an externally-managed `PathEngine` (e.g. from `restoreOrStart()`). The facade immediately reflects the engine's current state and forwards all subsequent events. The caller is responsible for the engine's lifecycle. |
 | `start(definition, data?)` | Start or re-start a path. |
 | `restart(definition, data?)` | Tear down any active path (without firing hooks) and start the given path fresh. Safe to call at any time. Use for "Start over" / retry flows. |
 | `startSubPath(definition, data?, meta?)` | Push a sub-path. Requires an active path. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
@@ -633,6 +633,79 @@ Use it to distinguish initialization from re-entry:
 **Important:** `onEnter` fires every time you enter the step. If you want "initialize once" behavior, either:
 1. Use `isFirstEntry` to conditionally return data
 2. Provide `initialData` to `start()` instead of using `onEnter`
+
+---
+
+## Persistence
+
+Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state persistence. The engine is created externally via `restoreOrStart()`, then handed to the facade via `adoptEngine()`.
+
+### Simple persistence example
+
+```typescript
+import { Component, inject, OnInit } from '@angular/core';
+import { PathFacade, PathShellComponent, PathStepDirective } from '@daltonr/pathwrite-angular';
+import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+import { signupPath } from './signup-path';
+
+@Component({
+  selector: 'app-signup-wizard',
+  standalone: true,
+  imports: [PathShellComponent, PathStepDirective],
+  providers: [PathFacade],
+  template: `
+    @if (ready) {
+      <pw-shell [path]="path" [autoStart]="false" (completed)="onComplete($event)">
+        <ng-template pwStep="details"><app-details-form /></ng-template>
+        <ng-template pwStep="review"><app-review-panel /></ng-template>
+      </pw-shell>
+    } @else {
+      <p>Loading…</p>
+    }
+  `
+})
+export class SignupWizardComponent implements OnInit {
+  private readonly facade = inject(PathFacade);
+
+  path = signupPath;
+  ready = false;
+
+  async ngOnInit() {
+    const store = new HttpStore({ baseUrl: '/api/wizard' });
+    const key = 'user:signup';
+
+    const { engine, restored } = await restoreOrStart({
+      store,
+      key,
+      path: this.path,
+      initialData: { name: '', email: '' },
+      observers: [
+        httpPersistence({ store, key, strategy: 'onNext' })
+      ]
+    });
+
+    // Hand the running engine to the facade — it immediately
+    // reflects the engine's current state and forwards all events.
+    this.facade.adoptEngine(engine);
+    this.ready = true;
+
+    if (restored) {
+      console.log('Progress restored — resuming from', engine.snapshot()?.stepId);
+    }
+  }
+
+  onComplete(data: any) {
+    console.log('Wizard completed:', data);
+  }
+}
+```
+
+### Key points
+
+- **`adoptEngine()`** connects the facade to an externally-created engine. No `@ViewChild` or shell reference needed — inject `PathFacade` directly.
+- **`[autoStart]="false"`** prevents the shell from calling `start()` on its own — the engine is already running.
+- **The facade is the same one the shell uses** (provided in the component's `providers`), so the shell's template bindings, progress indicator, and navigation buttons all work automatically.
+- **`restoreOrStart()`** handles the load-or-create logic: if saved state exists on the server, it restores the engine mid-flow; otherwise it starts fresh.
 
 ---
 
