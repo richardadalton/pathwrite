@@ -212,9 +212,31 @@ a:hover { color: #c4b5fd; }
   padding: 1.75rem; transition: all 0.2s;
 }
 .usecase-card:hover { border-color: var(--color-primary); }
+.usecase-card--highlight {
+  border-color: var(--color-primary); background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, var(--color-bg-card) 100%);
+  grid-column: 1 / -1;
+}
+@media (min-width: 640px) {
+  .usecase-card--highlight { grid-column: span 2; }
+}
 .usecase-card__icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
 .usecase-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
 .usecase-card p { font-size: 0.88rem; color: var(--color-text-muted); line-height: 1.6; }
+.usecase-card code { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-accent); background: var(--color-code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+/* ===== INSIGHT SECTION (One Step = A Form) ===== */
+.section--insight {
+  padding: 5rem 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, var(--color-bg) 50%, rgba(34, 211, 238, 0.04) 100%);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.insight-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; }
+@media (max-width: 768px) { .insight-layout { grid-template-columns: 1fr; } }
+.insight-text .section__title { margin-bottom: 1.25rem; }
+.insight-body { font-size: 1.05rem; color: var(--color-text-muted); line-height: 1.75; margin-bottom: 1rem; }
+.insight-body strong { color: var(--color-text); }
+.insight-body em { color: var(--color-primary-light); font-style: normal; }
 
 /* ===== PERSISTENCE SECTION ===== */
 .persistence-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; align-items: start; }
