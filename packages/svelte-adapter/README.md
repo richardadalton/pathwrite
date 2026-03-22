@@ -253,6 +253,7 @@ Default UI shell with progress indicator and navigation buttons.
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label |
 | `hideCancel` | `boolean` | `false` | Hide cancel button |
 | `hideProgress` | `boolean` | `false` | Hide progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back button. |
 
 > **`path` vs `engine`:** Pass `path` for simple wizards where PathShell manages the engine. Pass `engine` when you create the engine yourself (e.g., via `restoreOrStart()` for persistence). These are mutually exclusive — don't pass both.
 

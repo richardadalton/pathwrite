@@ -979,6 +979,7 @@ function CoursePath() {
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
 | `className` | `string` | — | Extra CSS class on the root element. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation footer. |
@@ -1032,6 +1033,7 @@ Step content is provided via **named slots** matching each step's `id`.
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
 
 #### Vue events
 
@@ -1093,6 +1095,7 @@ export class MyComponent { ... }
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
 
 #### Angular outputs
 

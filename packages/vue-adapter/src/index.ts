@@ -193,7 +193,14 @@ export const PathShell = defineComponent({
     completeLabel: { type: String, default: "Complete" },
     cancelLabel: { type: String, default: "Cancel" },
     hideCancel: { type: Boolean, default: false },
-    hideProgress: { type: Boolean, default: false }
+    hideProgress: { type: Boolean, default: false },
+    /**
+     * Footer layout mode:
+     * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
+     * - "wizard": Back button on left, Cancel and Submit together on right.
+     * - "form": Cancel on left, Submit alone on right. Back button never shown.
+     */
+    footerLayout: { type: String as PropType<"wizard" | "form" | "auto">, default: "auto" }
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
@@ -262,7 +269,7 @@ export const PathShell = defineComponent({
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
         // Validation messages — labeled by field name
-        Object.keys(snap.fieldMessages).length > 0
+        snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0
           ? h("ul", { class: "pw-shell__validation" },
               Object.entries(snap.fieldMessages).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__validation-item" }, [
@@ -318,11 +325,28 @@ function renderVueHeader(snapshot: PathSnapshot): VNode {
 function renderVueFooter(
   snapshot: PathSnapshot,
   actions: PathShellActions,
-  props: { backLabel: string; nextLabel: string; completeLabel: string; cancelLabel: string; hideCancel: boolean }
+  props: { backLabel: string; nextLabel: string; completeLabel: string; cancelLabel: string; hideCancel: boolean; footerLayout: "wizard" | "form" | "auto" }
 ): VNode {
+  // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
+  const resolvedLayout = props.footerLayout === "auto"
+    ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
+    : props.footerLayout;
+  
+  const isFormMode = resolvedLayout === "form";
+  
   return h("div", { class: "pw-shell__footer" }, [
     h("div", { class: "pw-shell__footer-left" }, [
-      !snapshot.isFirstStep
+      // Form mode: Cancel on the left
+      isFormMode && !props.hideCancel
+        ? h("button", {
+            type: "button",
+            class: "pw-shell__btn pw-shell__btn--cancel",
+            disabled: snapshot.isNavigating,
+            onClick: actions.cancel
+          }, props.cancelLabel)
+        : null,
+      // Wizard mode: Back on the left
+      !isFormMode && !snapshot.isFirstStep
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--back",
@@ -332,7 +356,8 @@ function renderVueFooter(
         : null
     ]),
     h("div", { class: "pw-shell__footer-right" }, [
-      !props.hideCancel
+      // Wizard mode: Cancel on the right
+      !isFormMode && !props.hideCancel
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--cancel",
@@ -340,10 +365,11 @@ function renderVueFooter(
             onClick: actions.cancel
           }, props.cancelLabel)
         : null,
+      // Both modes: Submit on the right
       h("button", {
         type: "button",
         class: "pw-shell__btn pw-shell__btn--next",
-        disabled: snapshot.isNavigating || !snapshot.canMoveNext,
+        disabled: snapshot.isNavigating,
         onClick: actions.next
       }, snapshot.isLastStep ? props.completeLabel : props.nextLabel)
     ])

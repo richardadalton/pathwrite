@@ -73,33 +73,37 @@ Both patterns (toggle-mount and in-place `restart()`) are documented in the Deve
 
 ---
 
-### 2.2 `snapshot.hasAttemptedNext` flag (touched / dirty tracking)
+### 2.2 `snapshot.hasAttemptedNext` flag (touched / dirty tracking) ✅ Done
 
 **Problem:**  
-`validationMessages` is evaluated on every snapshot, including the very first one before the
+`fieldMessages` is evaluated on every snapshot, including the very first one before the
 user has typed anything. The shell hides them until a navigation is attempted, but
-`snapshot.validationMessages` is populated from the start — which surprises developers who
+`snapshot.fieldMessages` is populated from the start — which surprises developers who
 read it directly, and makes it impossible for step templates to independently control when
 to show inline errors.
 
 **Raised by:** Angular (explicitly) — implicit in the other demos' field-level validation requests
 
-**Proposed change:**  
-Add a `hasAttemptedNext` (or `isDirty`) flag to the engine snapshot:
+**Resolved:**  
+`hasAttemptedNext: boolean` added to `PathSnapshot`. It's `false` on step entry and becomes
+`true` after the user calls `next()` at least once (regardless of whether navigation succeeded).
+Resets to `false` when entering any new step.
+
+All four adapter shells gate their automatic `fieldMessages` rendering with this flag:
+errors are only shown after the first Next attempt. Step templates can use the same flag
+for custom inline error display:
 
 ```typescript
-snapshot.hasAttemptedNext: boolean;
-// true after the user has clicked the primary action at least once
+{#if snapshot.hasAttemptedNext && snapshot.fieldMessages.email}
+  <span class="error">{snapshot.fieldMessages.email}</span>
+{/if}
 ```
 
-Step templates can then gate their inline error display on this flag, matching standard
-form UX ("show errors only after first submit attempt").
-
-**Where:** `packages/core` (engine snapshot type + state machine)
+**Where:** `packages/core` (engine snapshot type + state machine) + all four adapter shells
 
 ---
 
-### 2.3 Footer layout for form vs wizard mode
+### 2.3 Footer layout for form vs wizard mode ✅ Done
 
 **Problem:**  
 The default shell footer puts both Cancel and Submit on the right, side-by-side. For a
@@ -111,14 +115,25 @@ making the layout feel unbalanced.
 
 **Raised by:** Angular (explicitly) — the same layout is used across all adapters
 
-**Proposed change:**
-```typescript
-// PathShell input
-footerLayout?: "wizard" | "form";  // default: "wizard"
-```
-In `"form"` mode: Cancel moves to the left, Submit stays right, back button is never shown.
+**Resolved:**  
+`footerLayout?: "wizard" | "form" | "auto"` prop added to all four adapter shells.
 
-**Where:** `packages/shell.css` + all four adapter shells
+**Default behavior (`"auto"`):**
+- Single-step top-level paths (`stepCount === 1 && nestingLevel === 0`) → `"form"` layout
+- Multi-step or nested paths → `"wizard"` layout
+
+This auto-detection matches the existing `hideProgress` behavior, so single-step forms
+automatically get the appropriate layout without manual configuration.
+
+**Layout modes:**
+- `"wizard"`: Back button on left, Cancel and Submit together on right
+- `"form"`: Cancel on left, Submit alone on right. Back button never shown.
+- `"auto"` (default): Automatically chooses based on path structure
+
+The prop still allows explicit override when needed (e.g., forcing "wizard" layout for a
+single-step path within a larger flow).
+
+**Where:** All four adapter shells (`PathShell` / `<pw-shell>`)
 
 ---
 
@@ -213,8 +228,8 @@ step IDs as valid prop names (so IDEs can autocomplete them).
 | 1.1 ✅ | Field-level `fieldMessages` API | High | core + all shells | All 4 |
 | 1.2 ✅ | Auto-hide progress for single-step paths | Low | shell logic | All 4 |
 | 2.1 ✅ | `restart()` on shell + document reset patterns | Medium | all shells + docs | All 4 |
-| 2.2 | `snapshot.hasAttemptedNext` flag | Medium | core engine | All 4 |
-| 2.3 | `footerLayout: "wizard" \| "form"` | Low–Medium | shell CSS + all shells | All 4 |
+| 2.2 ✅ | `snapshot.hasAttemptedNext` flag | Medium | core engine | All 4 |
+| 2.3 ✅ | `footerLayout: "wizard" \| "form" \| "auto"` | Low–Medium | all shells | All 4 |
 | 3.1 | `createFormPath()` helper | Low | core or docs | Angular |
 | 3.2 | Fix CSS import resolution (Vite) | Medium | package exports | React |
 | 3.3 | Angular `injectPath()` signal API | High (Angular only) | angular-adapter | Angular |

@@ -153,6 +153,7 @@ The snapshot includes `canMoveNext` and `canMovePrevious` — the evaluated resu
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back button. |
 
 ### Emits
 

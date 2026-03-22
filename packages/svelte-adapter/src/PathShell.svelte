@@ -20,6 +20,13 @@
     cancelLabel?: string;
     hideCancel?: boolean;
     hideProgress?: boolean;
+    /**
+     * Footer layout mode:
+     * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
+     * - "wizard": Back button on left, Cancel and Submit together on right.
+     * - "form": Cancel on left, Submit alone on right. Back button never shown.
+     */
+    footerLayout?: "wizard" | "form" | "auto";
     // Callback props replace event dispatching in Svelte 5
     oncomplete?: (data: PathData) => void;
     oncancel?: (data: PathData) => void;
@@ -42,6 +49,7 @@
     cancelLabel = 'Cancel',
     hideCancel = false,
     hideProgress = false,
+    footerLayout = 'auto',
     oncomplete,
     oncancel,
     onevent,
@@ -85,6 +93,13 @@
 
   let snap = $derived(pathReturn.snapshot);
   let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restart(path, initialData) });
+
+  // Auto-detect footer layout: single-step top-level paths use "form", everything else uses "wizard"
+  let resolvedFooterLayout = $derived(
+    footerLayout === 'auto' && snap
+      ? (snap.stepCount === 1 && snap.nestingLevel === 0 ? 'form' : 'wizard')
+      : (footerLayout === 'auto' ? 'wizard' : footerLayout)
+  );
 
   /**
    * Restart the active path from step 1 with the original `initialData`,
@@ -144,7 +159,7 @@
     </div>
 
     <!-- Validation messages — labeled by field name -->
-    {#if Object.keys(snap.fieldMessages).length > 0}
+    {#if snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0}
       <ul class="pw-shell__validation">
         {#each Object.entries(snap.fieldMessages) as [key, msg]}
           <li class="pw-shell__validation-item">
@@ -160,7 +175,18 @@
     {:else}
       <div class="pw-shell__footer">
         <div class="pw-shell__footer-left">
-          {#if !snap.isFirstStep}
+          {#if resolvedFooterLayout === 'form' && !hideCancel}
+            <!-- Form mode: Cancel on the left -->
+            <button
+              type="button"
+              class="pw-shell__btn pw-shell__btn--cancel"
+              disabled={snap.isNavigating}
+              onclick={cancel}
+            >
+              {cancelLabel}
+            </button>
+          {:else if resolvedFooterLayout === 'wizard' && !snap.isFirstStep}
+            <!-- Wizard mode: Back on the left -->
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--back"
@@ -172,7 +198,8 @@
           {/if}
         </div>
         <div class="pw-shell__footer-right">
-          {#if !hideCancel}
+          {#if resolvedFooterLayout === 'wizard' && !hideCancel}
+            <!-- Wizard mode: Cancel on the right -->
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
@@ -182,10 +209,11 @@
               {cancelLabel}
             </button>
           {/if}
+          <!-- Both modes: Submit on the right -->
           <button
             type="button"
             class="pw-shell__btn pw-shell__btn--next"
-            disabled={snap.isNavigating || !snap.canMoveNext}
+            disabled={snap.isNavigating}
             onclick={next}
           >
             {snap.isLastStep ? completeLabel : nextLabel}

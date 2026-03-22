@@ -372,7 +372,7 @@ describe("PathShell — context sharing", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathShell — fieldMessages", () => {
-  it("renders labeled messages when the current step has fieldMessages", async () => {
+  it("does not render messages before the user has attempted to proceed", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
@@ -386,10 +386,59 @@ describe("PathShell — fieldMessages", () => {
         steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
       }))
     );
+    // Errors must be hidden on initial render — "punish late, reward early"
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
+  });
+
+  it("renders labeled messages after clicking Next when navigation is blocked", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    // Next button is always enabled — clicking it sets hasAttemptedNext; navigation is blocked
+    await act(async () => screen.getByText("Next").click());
     expect(screen.getByText("Name")).toBeTruthy();
     expect(screen.getByText("Required")).toBeTruthy();
     expect(screen.getByText("Email")).toBeTruthy();
     expect(screen.getByText("Invalid email address")).toBeTruthy();
+  });
+
+  it("clears messages in real-time as data becomes valid after an attempt", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldMessages: (ctx) => ({
+            name: (ctx.data as { name: string }).name ? undefined : "Required"
+          })
+        }
+      ]
+    };
+    let setDataFn: ((key: string, value: unknown) => void) | undefined;
+    function StepA() {
+      const ctx = usePathContext();
+      setDataFn = ctx.setData as (key: string, value: unknown) => void;
+      return createElement("div", null, "A");
+    }
+    await act(async () =>
+      render(createElement(PathShell, { path, steps: { "step-a": createElement(StepA) } }))
+    );
+    await act(async () => screen.getByText("Complete").click()); // trigger attempt (single-step uses "Complete")
+    expect(screen.getByText("Required")).toBeTruthy();
+
+    await act(async () => setDataFn!("name", "Alice")); // fix the field
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
   it("does not render the validation list when fieldMessages is empty", async () => {
@@ -403,15 +452,16 @@ describe("PathShell — fieldMessages", () => {
         steps: { "step-a": createElement("div", null, "A") }
       }))
     );
+    await act(async () => screen.getByText("Complete").click()); // attempt with no messages (single-step uses "Complete")
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
-  it("clears messages when navigating to a step with no fieldMessages hook", async () => {
+  it("resets hasAttemptedNext when navigating to a new step", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B" }
+        { id: "step-b", title: "Step B", fieldMessages: () => ({ other: "Also required" }) }
       ]
     };
     await act(async () =>
@@ -420,9 +470,10 @@ describe("PathShell — fieldMessages", () => {
         steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
       }))
     );
-    expect(screen.getByText("Fill this in")).toBeTruthy();
-
+    // Navigate to step B (canMoveNext: () => true lets navigation succeed)
     await act(async () => screen.getByText("Next").click());
+    expect(screen.getByText("B")).toBeTruthy(); // now on step B
+    // step-b has fieldMessages but hasAttemptedNext is false — errors not shown yet
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
@@ -437,8 +488,74 @@ describe("PathShell — fieldMessages", () => {
         steps: { "step-a": createElement("div", null, "A") }
       }))
     );
+    // Trigger hasAttemptedNext — navigation blocked (canMoveNext=false from fieldMessages)
+    await act(async () => screen.getByText("Complete").click()); // single-step uses "Complete"
     expect(document.querySelector(".pw-shell__validation-label")).toBeNull();
     expect(screen.getByText("Form-level error")).toBeTruthy();
   });
 });
 
+// ---------------------------------------------------------------------------
+// footerLayout
+// ---------------------------------------------------------------------------
+
+describe("PathShell — footerLayout", () => {
+  it("auto mode uses wizard layout for multi-step paths", async () => {
+    await act(async () => renderShell({ path: threeStepPath() }));
+    // Next button on right, Back button hidden on first step
+    const footer = document.querySelector(".pw-shell__footer")!;
+    const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
+    const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
+    expect(leftButtons.length).toBe(0); // no back on first step
+    expect(rightButtons.length).toBe(2); // Cancel + Next
+  });
+
+  it("auto mode uses form layout for single-step top-level paths", async () => {
+    const singleStepPath: PathDefinition = {
+      id: "form",
+      steps: [{ id: "contact", title: "Contact Form" }]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: singleStepPath,
+        steps: { contact: createElement("div", null, "Form Content") }
+      }))
+    );
+    const footer = document.querySelector(".pw-shell__footer")!;
+    const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
+    const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
+    expect(leftButtons.length).toBe(1); // Cancel on left in form mode
+    expect(rightButtons.length).toBe(1); // Only Next on right
+    expect(leftButtons[0].textContent).toBe("Cancel");
+    expect(rightButtons[0].textContent).toBe("Complete");
+  });
+
+  it("explicit wizard mode overrides auto-detection", async () => {
+    const singleStepPath: PathDefinition = {
+      id: "form",
+      steps: [{ id: "contact", title: "Contact Form" }]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: singleStepPath,
+        steps: { contact: createElement("div", null, "Form Content") },
+        footerLayout: "wizard"
+      }))
+    );
+    const footer = document.querySelector(".pw-shell__footer")!;
+    const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
+    const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
+    expect(leftButtons.length).toBe(0); // No back on first step in wizard mode
+    expect(rightButtons.length).toBe(2); // Cancel + Next on right
+  });
+
+  it("explicit form mode overrides auto-detection", async () => {
+    await act(async () => renderShell({ path: threeStepPath(), footerLayout: "form" }));
+    const footer = document.querySelector(".pw-shell__footer")!;
+    const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
+    const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
+    expect(leftButtons.length).toBe(1); // Cancel on left in form mode
+    expect(rightButtons.length).toBe(1); // Only Next on right
+    expect(leftButtons[0].textContent).toBe("Cancel");
+  });
+});

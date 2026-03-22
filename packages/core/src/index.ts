@@ -148,6 +148,24 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
   canMovePrevious: boolean;
   /**
+   * True after the user has clicked Next / Submit on this step at least once,
+   * regardless of whether navigation succeeded. Resets to `false` when entering
+   * a new step.
+   *
+   * Use this to gate inline field-error display so errors are hidden on first
+   * render and only appear after the user has attempted to proceed:
+   *
+   * ```svelte
+   * {#if snapshot.hasAttemptedNext && snapshot.fieldMessages.email}
+   *   <span class="error">{snapshot.fieldMessages.email}</span>
+   * {/if}
+   * ```
+   *
+   * The shell itself uses this flag to gate its own automatic `fieldMessages`
+   * summary rendering — errors are never shown before the first Next attempt.
+   */
+  hasAttemptedNext: boolean;
+  /**
    * Field-keyed validation messages for the current step. Empty object when there are none.
    * Use in step templates to render inline per-field errors: `snapshot.fieldMessages['email']`.
    * The shell also renders these automatically in a labeled summary box.
@@ -272,6 +290,8 @@ export class PathEngine {
   private readonly pathStack: ActivePath[] = [];
   private readonly listeners = new Set<(event: PathEvent) => void>();
   private _isNavigating = false;
+  /** True after the user has called next() on the current step at least once. Resets on step entry. */
+  private _hasAttemptedNext = false;
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -500,6 +520,7 @@ export class PathEngine {
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       isNavigating: this._isNavigating,
+      hasAttemptedNext: this._hasAttemptedNext,
       canMoveNext: this.evaluateCanMoveNextSync(step, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
       fieldMessages: this.evaluateFieldMessagesSync(step.fieldMessages, active),
@@ -592,6 +613,9 @@ export class PathEngine {
   private async _nextAsync(active: ActivePath): Promise<void> {
     if (this._isNavigating) return;
 
+    // Record that the user has attempted to advance — used by shells and step
+    // templates to gate error display ("punish late, reward early").
+    this._hasAttemptedNext = true;
     this._isNavigating = true;
     this.emitStateChanged("next");
 
@@ -847,6 +871,8 @@ export class PathEngine {
   }
 
   private async enterCurrentStep(): Promise<Partial<PathData> | void> {
+    // Each step starts fresh — errors are not shown until the user attempts to proceed.
+    this._hasAttemptedNext = false;
     const active = this.activePath;
     if (!active) return;
     const step = this.getCurrentStep(active);

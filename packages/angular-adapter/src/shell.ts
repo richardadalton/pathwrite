@@ -180,7 +180,7 @@ export class PathShellFooterDirective {
       </div>
 
       <!-- Validation messages — labeled by field name -->
-      <ul class="pw-shell__validation" *ngIf="fieldEntries(s).length > 0">
+      <ul class="pw-shell__validation" *ngIf="s.hasAttemptedNext && fieldEntries(s).length > 0">
         <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
           <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
         </li>
@@ -193,8 +193,17 @@ export class PathShellFooterDirective {
       <ng-template #defaultFooter>
         <div class="pw-shell__footer">
           <div class="pw-shell__footer-left">
+            <!-- Form mode: Cancel on the left -->
             <button
-              *ngIf="!s.isFirstStep"
+              *ngIf="getResolvedFooterLayout(s) === 'form' && !hideCancel"
+              type="button"
+              class="pw-shell__btn pw-shell__btn--cancel"
+              [disabled]="s.isNavigating"
+              (click)="facade.cancel()"
+            >{{ cancelLabel }}</button>
+            <!-- Wizard mode: Back on the left -->
+            <button
+              *ngIf="getResolvedFooterLayout(s) === 'wizard' && !s.isFirstStep"
               type="button"
               class="pw-shell__btn pw-shell__btn--back"
               [disabled]="s.isNavigating || !s.canMovePrevious"
@@ -202,17 +211,19 @@ export class PathShellFooterDirective {
             >{{ backLabel }}</button>
           </div>
           <div class="pw-shell__footer-right">
+            <!-- Wizard mode: Cancel on the right -->
             <button
-              *ngIf="!hideCancel"
+              *ngIf="getResolvedFooterLayout(s) === 'wizard' && !hideCancel"
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
               [disabled]="s.isNavigating"
               (click)="facade.cancel()"
             >{{ cancelLabel }}</button>
+            <!-- Both modes: Submit on the right -->
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--next"
-              [disabled]="s.isNavigating || !s.canMoveNext"
+              [disabled]="s.isNavigating"
               (click)="facade.next()"
             >{{ s.isLastStep ? completeLabel : nextLabel }}</button>
           </div>
@@ -240,6 +251,13 @@ export class PathShellComponent implements OnInit, OnDestroy {
   @Input() hideCancel = false;
   /** Hide the step progress indicator in the header. Also hidden automatically when the path has only one step. */
   @Input() hideProgress = false;
+  /**
+   * Footer layout mode:
+   * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
+   * - "wizard": Back button on left, Cancel and Submit together on right.
+   * - "form": Cancel on left, Submit alone on right. Back button never shown.
+   */
+  @Input() footerLayout: "wizard" | "form" | "auto" = "auto";
 
   @Output() completed = new EventEmitter<PathData>();
   @Output() cancelled = new EventEmitter<PathData>();
@@ -306,6 +324,13 @@ export class PathShellComponent implements OnInit, OnDestroy {
   /** Returns Object.entries(s.fieldMessages) for use in *ngFor. */
   protected fieldEntries(s: PathSnapshot): [string, string][] {
     return Object.entries(s.fieldMessages) as [string, string][];
+  }
+
+  /** Resolves "auto" footerLayout based on snapshot. Single-step top-level → "form", otherwise → "wizard". */
+  protected getResolvedFooterLayout(s: PathSnapshot): "wizard" | "form" {
+    return this.footerLayout === "auto"
+      ? (s.stepCount === 1 && s.nestingLevel === 0 ? "form" : "wizard")
+      : this.footerLayout;
   }
 
   /** Converts a camelCase or lowercase field key to a display label.

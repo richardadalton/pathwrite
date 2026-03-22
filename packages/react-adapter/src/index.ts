@@ -236,6 +236,13 @@ export interface PathShellProps {
   hideCancel?: boolean;
   /** If true, hide the progress indicator. Also hidden automatically when the path has only one step. Defaults to `false`. */
   hideProgress?: boolean;
+  /**
+   * Footer layout mode:
+   * - `"auto"` (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
+   * - `"wizard"`: Back button on left, Cancel and Submit together on right.
+   * - `"form"`: Cancel on left, Submit alone on right. Back button never shown.
+   */
+  footerLayout?: "wizard" | "form" | "auto";
   /** Optional extra CSS class on the root element. */
   className?: string;
   /** Render prop to replace the entire header (progress area). Receives the snapshot. */
@@ -286,6 +293,7 @@ export function PathShell({
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
+  footerLayout = "auto",
   className,
   renderHeader,
   renderFooter,
@@ -344,7 +352,7 @@ export function PathShell({
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
       // Validation messages — labeled by field name
-      Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+      snapshot.hasAttemptedNext && Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
         ...Object.entries(snapshot.fieldMessages).map(([key, msg]) =>
           createElement("li", { key, className: "pw-shell__validation-item" },
             key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
@@ -356,7 +364,7 @@ export function PathShell({
       renderFooter
         ? renderFooter(snapshot, actions)
         : defaultFooter(snapshot, actions, {
-            backLabel, nextLabel, completeLabel, cancelLabel, hideCancel
+            backLabel, nextLabel, completeLabel, cancelLabel, hideCancel, footerLayout
           })
     )
   );
@@ -402,6 +410,7 @@ interface FooterLabels {
   completeLabel: string;
   cancelLabel: string;
   hideCancel: boolean;
+  footerLayout: "wizard" | "form" | "auto";
 }
 
 function defaultFooter(
@@ -409,9 +418,24 @@ function defaultFooter(
   actions: PathShellActions,
   labels: FooterLabels
 ): ReactElement {
+  // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
+  const resolvedLayout = labels.footerLayout === "auto"
+    ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
+    : labels.footerLayout;
+  
+  const isFormMode = resolvedLayout === "form";
+  
   return createElement("div", { className: "pw-shell__footer" },
     createElement("div", { className: "pw-shell__footer-left" },
-      !snapshot.isFirstStep && createElement("button", {
+      // Form mode: Cancel on the left
+      isFormMode && !labels.hideCancel && createElement("button", {
+        type: "button",
+        className: "pw-shell__btn pw-shell__btn--cancel",
+        disabled: snapshot.isNavigating,
+        onClick: actions.cancel
+      }, labels.cancelLabel),
+      // Wizard mode: Back on the left
+      !isFormMode && !snapshot.isFirstStep && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--back",
         disabled: snapshot.isNavigating || !snapshot.canMovePrevious,
@@ -419,16 +443,18 @@ function defaultFooter(
       }, labels.backLabel)
     ),
     createElement("div", { className: "pw-shell__footer-right" },
-      !labels.hideCancel && createElement("button", {
+      // Wizard mode: Cancel on the right
+      !isFormMode && !labels.hideCancel && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--cancel",
         disabled: snapshot.isNavigating,
         onClick: actions.cancel
       }, labels.cancelLabel),
+      // Both modes: Submit on the right
       createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--next",
-        disabled: snapshot.isNavigating || !snapshot.canMoveNext,
+        disabled: snapshot.isNavigating,
         onClick: actions.next
       }, snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
     )

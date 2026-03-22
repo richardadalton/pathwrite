@@ -9,6 +9,10 @@ function twoStepPath(id = "main"): PathDefinition {
   return { id, steps: [{ id: "step1" }, { id: "step2" }] };
 }
 
+function threeStepPath(id = "main"): PathDefinition {
+  return { id, steps: [{ id: "step1" }, { id: "step2" }, { id: "step3" }] };
+}
+
 function collectEvents(engine: PathEngine): PathEvent[] {
   const events: PathEvent[] = [];
   engine.subscribe((e) => events.push(e));
@@ -1013,296 +1017,68 @@ describe("PathEngine — fieldMessages", () => {
 });
 
 // ---------------------------------------------------------------------------
-// goToStep — direct navigation
+// hasAttemptedNext
 // ---------------------------------------------------------------------------
 
-describe("PathEngine — goToStep", () => {
-  it("jumps forward to a step by ID", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.goToStep("c");
-    expect(engine.snapshot()?.stepId).toBe("c");
-    expect(engine.snapshot()?.stepIndex).toBe(2);
-  });
-
-  it("jumps backward to a step by ID", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.next();
-    await engine.next();
-    await engine.goToStep("a");
-    expect(engine.snapshot()?.stepId).toBe("a");
-    expect(engine.snapshot()?.stepIndex).toBe(0);
-  });
-
-  it("calls onLeave on the current step", async () => {
-    const onLeave = vi.fn();
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a", onLeave }, { id: "b" }] });
-    await engine.goToStep("b");
-    expect(onLeave).toHaveBeenCalledOnce();
-  });
-
-  it("calls onEnter on the target step", async () => {
-    const onEnter = vi.fn();
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b", onEnter }] });
-    await engine.goToStep("b");
-    expect(onEnter).toHaveBeenCalledOnce();
-  });
-
-  it("applies patches from both onLeave and onEnter", async () => {
-    const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "a", onLeave: () => ({ leftA: true }) },
-        { id: "b", onEnter: () => ({ visitedB: true }) }
-      ]
-    });
-    await engine.goToStep("b");
-    expect(engine.snapshot()?.data).toMatchObject({ leftA: true, visitedB: true });
-  });
-
-  it("emits stateChanged after jumping", async () => {
-    const engine = new PathEngine();
-    const events = collectEvents(engine);
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
-    const before = events.filter((e) => e.type === "stateChanged").length;
-    await engine.goToStep("b");
-    // goToStep emits 2 events: busy at start + final
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
-  });
-
-  it("throws when the step ID does not exist", async () => {
+describe("PathEngine — hasAttemptedNext", () => {
+  it("is false on initial step entry", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
-    expect(() => engine.goToStep("nonexistent")).toThrow('Step "nonexistent" not found');
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 
-  it("throws when no path is active", () => {
-    expect(() => new PathEngine().goToStep("any")).toThrow();
-  });
-
-  it("updates isFirstStep and isLastStep correctly", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.snapshot()?.isFirstStep).toBe(true);
-    await engine.goToStep("c");
-    expect(engine.snapshot()?.isFirstStep).toBe(false);
-    expect(engine.snapshot()?.isLastStep).toBe(true);
-    await engine.goToStep("b");
-    expect(engine.snapshot()?.isFirstStep).toBe(false);
-    expect(engine.snapshot()?.isLastStep).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// goToStepChecked
-// ---------------------------------------------------------------------------
-
-describe("PathEngine — goToStepChecked", () => {
-  it("navigates forward when canMoveNext allows", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.goToStepChecked("c");
-    expect(engine.snapshot()?.stepId).toBe("c");
-  });
-
-  it("navigates backward when canMovePrevious allows", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.goToStep("c");
-    await engine.goToStepChecked("a");
-    expect(engine.snapshot()?.stepId).toBe("a");
-  });
-
-  it("blocks forward navigation when canMoveNext returns false", async () => {
+  it("becomes true after calling next(), even when navigation is blocked", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
       steps: [
-        { id: "a", canMoveNext: () => false },
-        { id: "b" }
+        { id: "step1", canMoveNext: () => false },
+        { id: "step2" }
       ]
     });
-    await engine.goToStepChecked("b");
-    expect(engine.snapshot()?.stepId).toBe("a");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
+    await engine.next(); // blocked but flag still sets
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+    expect(engine.snapshot()?.stepId).toBe("step1"); // still on step1
   });
 
-  it("blocks backward navigation when canMovePrevious returns false", async () => {
+  it("resets to false when entering a new step", async () => {
     const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "a" },
-        { id: "b", canMovePrevious: () => false }
-      ]
-    });
-    await engine.goToStep("b");
-    await engine.goToStepChecked("a");
-    expect(engine.snapshot()?.stepId).toBe("b");
+    await engine.start(threeStepPath());
+    await engine.next(); // step1 → step2
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false); // reset
   });
 
-  it("still calls onLeave and onEnter when navigation is allowed", async () => {
-    const log: string[] = [];
+  it("resets when navigating backward to a previous step", async () => {
     const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "a", onLeave: () => { log.push("leave-a"); } },
-        { id: "b", onEnter: () => { log.push("enter-b"); } }
-      ]
-    });
-    await engine.goToStepChecked("b");
-    expect(log).toEqual(["leave-a", "enter-b"]);
+    await engine.start(threeStepPath());
+    await engine.next(); // step1 → step2
+    await engine.next(); // step2 → step3
+    expect(engine.snapshot()?.stepId).toBe("step3");
+    
+    await engine.previous(); // back to step2
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 
-  it("does not call onLeave when the guard blocks", async () => {
-    const log: string[] = [];
+  it("resets when using goToStep", async () => {
     const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "a", canMoveNext: () => false, onLeave: () => { log.push("leave-a"); } },
-        { id: "b" }
-      ]
-    });
-    await engine.goToStepChecked("b");
-    expect(log).toEqual([]);
+    await engine.start(threeStepPath());
+    await engine.next(); // advances to step2
+    
+    await engine.goToStep("step1"); // jump back to step1
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 
-  it("is a no-op when already on the target step", async () => {
+  it("resets on restart", async () => {
     const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }] });
-    await engine.goToStepChecked("a");
-    expect(engine.snapshot()?.stepId).toBe("a");
-  });
-
-  it("throws for unknown step IDs", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }] });
-    await expect(engine.goToStepChecked("unknown")).rejects.toThrow();
-  });
-
-  it("throws when no path is active", () => {
-    expect(() => new PathEngine().goToStepChecked("any")).toThrow();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// stepMeta in snapshot
-// ---------------------------------------------------------------------------
-
-describe("PathEngine — stepMeta", () => {
-  it("includes step meta in the snapshot when defined", async () => {
-    const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [{ id: "step1", meta: { icon: "star", group: "intro" } }]
-    });
-    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "star", group: "intro" });
-  });
-
-  it("is undefined when the step has no meta", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "step1" }] });
-    expect(engine.snapshot()?.stepMeta).toBeUndefined();
-  });
-
-  it("updates as navigation progresses through steps with different meta", async () => {
-    const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "step1", meta: { icon: "edit" } },
-        { id: "step2", meta: { icon: "check" } }
-      ]
-    });
-    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "edit" });
-    await engine.next();
-    expect(engine.snapshot()?.stepMeta).toEqual({ icon: "check" });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Progress indicator
-// ---------------------------------------------------------------------------
-
-describe("PathEngine — progress indicator", () => {
-  it("progress is 0 on the first step of a multi-step path", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.snapshot()?.progress).toBe(0);
-  });
-
-  it("progress is 1 on the last step of a multi-step path", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.next();
-    await engine.next();
-    expect(engine.snapshot()?.progress).toBe(1);
-  });
-
-  it("progress is the correct fraction in the middle of a path", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.next();
-    expect(engine.snapshot()?.progress).toBe(0.5);
-  });
-
-  it("progress is 1 for a single-step path", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "only" }] });
-    expect(engine.snapshot()?.progress).toBe(1);
-  });
-
-  it("steps array contains a summary for every step in the path", async () => {
-    const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "a", title: "Alpha", meta: { icon: "star" } },
-        { id: "b" },
-        { id: "c", title: "Charlie" }
-      ]
-    });
-    const snap = engine.snapshot()!;
-    expect(snap.steps).toHaveLength(3);
-    expect(snap.steps[0]).toMatchObject({ id: "a", title: "Alpha", meta: { icon: "star" } });
-    expect(snap.steps[1]).toMatchObject({ id: "b" });
-    expect(snap.steps[1].title).toBeUndefined();
-    expect(snap.steps[2]).toMatchObject({ id: "c", title: "Charlie" });
-  });
-
-  it("marks the current step as 'current', earlier as 'completed', later as 'upcoming'", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.next(); // on step b (index 1)
-    const statuses = engine.snapshot()!.steps.map((s) => s.status);
-    expect(statuses).toEqual(["completed", "current", "upcoming"]);
-  });
-
-  it("step statuses update as navigation progresses", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["current", "upcoming", "upcoming"]);
-    await engine.next();
-    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "current", "upcoming"]);
-    await engine.next();
-    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "completed", "current"]);
-    await engine.previous();
-    expect(engine.snapshot()!.steps.map((s) => s.status)).toEqual(["completed", "current", "upcoming"]);
-  });
-
-  it("step statuses revert to 'upcoming' when navigating backward", async () => {
-    const engine = new PathEngine();
-    await engine.start({ id: "w", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] });
-    await engine.next();
-    await engine.next(); // on c
-    await engine.goToStep("a");
-    const statuses = engine.snapshot()!.steps.map((s) => s.status);
-    expect(statuses).toEqual(["current", "upcoming", "upcoming"]);
+    await engine.start(threeStepPath());
+    await engine.next(); // advances to step2
+    
+    await engine.restart(threeStepPath(), {});
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 });
 

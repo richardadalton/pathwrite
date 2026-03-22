@@ -502,7 +502,7 @@ describe("PathShell (Vue) — context sharing", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathShell (Vue) — fieldMessages", () => {
-  it("renders labeled messages when the current step has fieldMessages", async () => {
+  it("does not render messages before the user has attempted to proceed", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
@@ -512,14 +512,31 @@ describe("PathShell (Vue) — fieldMessages", () => {
     };
     const TestHost = defineComponent({
       setup() {
-        return () =>
-          h(PathShell, { path }, {
-            "step-a": () => h("div", "A"),
-            "step-b": () => h("div", "B")
-          });
+        return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
       }
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("renders labeled messages after clicking Next when navigation is blocked", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    const TestHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
     expect(wrapper.text()).toContain("Name");
     expect(wrapper.text()).toContain("Required");
@@ -540,33 +557,30 @@ describe("PathShell (Vue) — fieldMessages", () => {
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
+    await settled();
     expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
     wrapper.unmount();
   });
 
-  it("clears messages when navigating to a step with no fieldMessages hook", async () => {
+  it("resets hasAttemptedNext when navigating to a new step", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B" }
+        { id: "step-b", title: "Step B", fieldMessages: () => ({ other: "Also required" }) }
       ]
     };
     const TestHost = defineComponent({
       setup() {
-        return () =>
-          h(PathShell, { path }, {
-            "step-a": () => h("div", "A"),
-            "step-b": () => h("div", "B")
-          });
+        return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
       }
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
-    expect(wrapper.text()).toContain("Fill this in");
-
     await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
+    expect(wrapper.text()).toContain("B");
     expect(wrapper.find(".pw-shell__validation").exists()).toBe(false);
     wrapper.unmount();
   });
@@ -582,6 +596,8 @@ describe("PathShell (Vue) — fieldMessages", () => {
       }
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
     await settled();
     expect(wrapper.find(".pw-shell__validation-label").exists()).toBe(false);
     expect(wrapper.text()).toContain("Form-level error");
