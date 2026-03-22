@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { usePathContext } from "@daltonr/pathwrite-vue";
 import type { ContactData } from "./path";
 
 // usePathContext() reaches into PathShell's provided context —
 // no prop drilling or template references needed.
 const { snapshot, setData } = usePathContext<ContactData>();
+
+const errors = computed(() =>
+  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldMessages ?? {}) : {}
+);
 
 const SUBJECTS = [
   "General Enquiry",
@@ -18,7 +23,7 @@ const SUBJECTS = [
   <div v-if="snapshot" class="form-body">
 
     <!-- Name -->
-    <div class="field">
+    <div class="field" :class="{ 'field--error': errors.name }">
       <label for="name">
         Full Name <span class="required">*</span>
       </label>
@@ -31,10 +36,11 @@ const SUBJECTS = [
         autocomplete="name"
         autofocus
       />
+      <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
     </div>
 
     <!-- Email -->
-    <div class="field">
+    <div class="field" :class="{ 'field--error': errors.email }">
       <label for="email">
         Email Address <span class="required">*</span>
       </label>
@@ -46,10 +52,11 @@ const SUBJECTS = [
         placeholder="jane@example.com"
         autocomplete="email"
       />
+      <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
     </div>
 
     <!-- Subject -->
-    <div class="field">
+    <div class="field" :class="{ 'field--error': errors.subject }">
       <label for="subject">
         Subject <span class="required">*</span>
       </label>
@@ -61,10 +68,11 @@ const SUBJECTS = [
         <option value="" disabled selected>Select a subject…</option>
         <option v-for="s in SUBJECTS" :key="s" :value="s">{{ s }}</option>
       </select>
+      <span v-if="errors.subject" class="field-error">{{ errors.subject }}</span>
     </div>
 
     <!-- Message -->
-    <div class="field">
+    <div class="field" :class="{ 'field--error': errors.message }">
       <label for="message">
         Message <span class="required">*</span>
         <span class="field-hint">(min 10 characters)</span>
@@ -79,6 +87,7 @@ const SUBJECTS = [
       <span class="char-count">
         {{ (snapshot.data['message'] as string ?? '').length }} chars
       </span>
+      <span v-if="errors.message" class="field-error">{{ errors.message }}</span>
     </div>
 
   </div>

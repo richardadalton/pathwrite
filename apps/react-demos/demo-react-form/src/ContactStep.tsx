@@ -14,12 +14,13 @@ export function ContactStep() {
   const { snapshot, setData } = usePathContext<ContactData>();
   const data = snapshot?.data ?? ({} as ContactData);
   const messageLen = (data.message ?? "").length;
+  const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldMessages ?? {}) : {};
 
   return (
     <div className="form-body">
 
       {/* Name */}
-      <div className="field">
+      <div className={`field ${errors.name ? "field--error" : ""}`}>
         <label htmlFor="name">
           Full Name <span className="required">*</span>
         </label>
@@ -32,10 +33,11 @@ export function ContactStep() {
           autoComplete="name"
           autoFocus
         />
+        {errors.name && <span className="field-error">{errors.name}</span>}
       </div>
 
       {/* Email */}
-      <div className="field">
+      <div className={`field ${errors.email ? "field--error" : ""}`}>
         <label htmlFor="email">
           Email Address <span className="required">*</span>
         </label>
@@ -47,10 +49,11 @@ export function ContactStep() {
           placeholder="jane@example.com"
           autoComplete="email"
         />
+        {errors.email && <span className="field-error">{errors.email}</span>}
       </div>
 
       {/* Subject */}
-      <div className="field">
+      <div className={`field ${errors.subject ? "field--error" : ""}`}>
         <label htmlFor="subject">
           Subject <span className="required">*</span>
         </label>
@@ -64,10 +67,11 @@ export function ContactStep() {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        {errors.subject && <span className="field-error">{errors.subject}</span>}
       </div>
 
       {/* Message */}
-      <div className="field">
+      <div className={`field ${errors.message ? "field--error" : ""}`}>
         <label htmlFor="message">
           Message <span className="required">*</span>{" "}
           <span className="field-hint">(min 10 characters)</span>
@@ -80,6 +84,7 @@ export function ContactStep() {
           placeholder="How can we help you?"
         />
         <span className="char-count">{messageLen} chars</span>
+        {errors.message && <span className="field-error">{errors.message}</span>}
       </div>
 
     </div>

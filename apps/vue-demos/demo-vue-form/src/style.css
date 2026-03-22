@@ -184,6 +184,28 @@ body {
   align-self: flex-end;
 }
 
+/* ── Inline field errors ──────────────────────────────────────────────────── */
+.field-error {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.field--error input,
+.field--error select,
+.field--error textarea {
+  border-color: #dc2626;
+}
+
+.field--error input:focus,
+.field--error select:focus,
+.field--error textarea:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Hide the shell's summary validation — errors are shown inline at each field */
+.pw-shell__validation { display: none; }
+
 /* ── Result panels ────────────────────────────────────────────────────────── */
 .result-panel {
   border-radius: 10px;

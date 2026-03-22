@@ -1,5 +1,5 @@
-import { Component } from "@angular/core";
-import { PathFacade, injectPath } from "@daltonr/pathwrite-angular";
+import { Component, computed } from "@angular/core";
+import { injectPath } from "@daltonr/pathwrite-angular";
 
 interface ContactData {
   name: string;
@@ -16,7 +16,8 @@ interface ContactData {
 @Component({
   selector: "app-contact-step",
   standalone: true,
-  providers: [PathFacade],  // ← Required for injectPath() to work
+  // No providers: [PathFacade] here — we inherit pw-shell's PathFacade instance
+  // through the injector tree. Adding it here would create a disconnected instance.
   styles: [`
     .form-body {
       display: flex;
@@ -93,12 +94,29 @@ interface ContactData {
       color: #9ca3af;
       align-self: flex-end;
     }
+    .field-error {
+      font-size: 13px;
+      color: #dc2626;
+    }
+
+    .field--error input,
+    .field--error select,
+    .field--error textarea {
+      border-color: #dc2626;
+    }
+
+    .field--error input:focus,
+    .field--error select:focus,
+    .field--error textarea:focus {
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
   `],
   template: `
     <div class="form-body">
 
       <!-- Name -->
-      <div class="field">
+      <div class="field" [class.field--error]="errors()['name']">
         <label for="name">Full Name <span class="required">*</span></label>
         <input
           id="name"
@@ -109,10 +127,13 @@ interface ContactData {
           autocomplete="name"
           autofocus
         />
+        @if (errors()['name']; as msg) {
+          <span class="field-error">{{ msg }}</span>
+        }
       </div>
 
       <!-- Email -->
-      <div class="field">
+      <div class="field" [class.field--error]="errors()['email']">
         <label for="email">Email Address <span class="required">*</span></label>
         <input
           id="email"
@@ -122,10 +143,13 @@ interface ContactData {
           placeholder="jane@example.com"
           autocomplete="email"
         />
+        @if (errors()['email']; as msg) {
+          <span class="field-error">{{ msg }}</span>
+        }
       </div>
 
       <!-- Subject -->
-      <div class="field">
+      <div class="field" [class.field--error]="errors()['subject']">
         <label for="subject">Subject <span class="required">*</span></label>
         <select
           id="subject"
@@ -137,10 +161,13 @@ interface ContactData {
           <option value="Feature Request">Feature Request</option>
           <option value="Other">Other</option>
         </select>
+        @if (errors()['subject']; as msg) {
+          <span class="field-error">{{ msg }}</span>
+        }
       </div>
 
       <!-- Message -->
-      <div class="field">
+      <div class="field" [class.field--error]="errors()['message']">
         <label for="message">
           Message <span class="required">*</span>
           <span class="field-hint">(min 10 characters)</span>
@@ -155,6 +182,9 @@ interface ContactData {
         @if (path.snapshot(); as s) {
           <span class="char-count">{{ (s.data.message || '').length }} chars</span>
         }
+        @if (errors()['message']; as msg) {
+          <span class="field-error">{{ msg }}</span>
+        }
       </div>
 
     </div>
@@ -163,6 +193,10 @@ interface ContactData {
 export class ContactStepComponent {
   // ── Signal-based path access (modern Angular pattern, new in v0.6.0) ────
   protected readonly path = injectPath<ContactData>();
+  protected readonly errors = computed(() => {
+    const s = this.path.snapshot();
+    return s?.hasAttemptedNext ? (s.fieldMessages ?? {}) : {};
+  });
 
   // ── Local form state (two-way synced to engine via setData) ──────────────
   protected name = "";

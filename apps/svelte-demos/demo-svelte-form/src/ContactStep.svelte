@@ -15,13 +15,14 @@
 
   // Derived reactive value for character count
   let messageLen = $derived((ctx.snapshot?.data.message as string ?? "").length);
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? (ctx.snapshot.fieldMessages ?? {}) : {});
 </script>
 
 {#if ctx.snapshot}
   <div class="form-body">
 
     <!-- Name -->
-    <div class="field">
+    <div class="field" class:field--error={errors.name}>
       <label for="name">
         Full Name <span class="required">*</span>
       </label>
@@ -34,10 +35,11 @@
         autocomplete="name"
         autofocus
       />
+      {#if errors.name}<span class="field-error">{errors.name}</span>{/if}
     </div>
 
     <!-- Email -->
-    <div class="field">
+    <div class="field" class:field--error={errors.email}>
       <label for="email">
         Email Address <span class="required">*</span>
       </label>
@@ -49,10 +51,11 @@
         placeholder="jane@example.com"
         autocomplete="email"
       />
+      {#if errors.email}<span class="field-error">{errors.email}</span>{/if}
     </div>
 
     <!-- Subject -->
-    <div class="field">
+    <div class="field" class:field--error={errors.subject}>
       <label for="subject">
         Subject <span class="required">*</span>
       </label>
@@ -66,10 +69,11 @@
           <option value={s}>{s}</option>
         {/each}
       </select>
+      {#if errors.subject}<span class="field-error">{errors.subject}</span>{/if}
     </div>
 
     <!-- Message -->
-    <div class="field">
+    <div class="field" class:field--error={errors.message}>
       <label for="message">
         Message <span class="required">*</span>
         <span class="field-hint">(min 10 characters)</span>
@@ -82,6 +86,7 @@
         placeholder="How can we help you?"
       ></textarea>
       <span class="char-count">{messageLen} chars</span>
+      {#if errors.message}<span class="field-error">{errors.message}</span>{/if}
     </div>
 
   </div>

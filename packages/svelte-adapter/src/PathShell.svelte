@@ -68,7 +68,7 @@
     }
   });
 
-  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart: restartFn } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
@@ -79,7 +79,7 @@
     goToStep,
     goToStepChecked,
     setData,
-    restart: () => restart(path, initialData)
+    restart: () => restartFn(path, initialData)
   });
 
   // Auto-start the path when no external engine is provided
@@ -92,7 +92,7 @@
   });
 
   let snap = $derived(pathReturn.snapshot);
-  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restart(path, initialData) });
+  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData) });
 
   // Auto-detect footer layout: single-step top-level paths use "form", everything else uses "wizard"
   let resolvedFooterLayout = $derived(

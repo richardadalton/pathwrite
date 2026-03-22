@@ -1,5 +1,12 @@
 # @daltonr/pathwrite-svelte
 
+## 0.6.2
+
+### Patch Changes
+
+- Fix duplicate `restart` identifier in PathShell.svelte that caused a build error (`Identifier 'restart' has already been declared`). The destructured `restart` from `usePath()` now uses a local alias (`restartFn`) to avoid colliding with the exported `restart()` function.
+  - @daltonr/pathwrite-core@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @daltonr/pathwrite-vue
 
+## 0.6.2
+
+### Patch Changes
+
+- @daltonr/pathwrite-core@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes
