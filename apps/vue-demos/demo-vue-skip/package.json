@@ -1,0 +1,22 @@
+{
+  "name": "@daltonr/pathwrite-demo-vue-skip",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@daltonr/pathwrite-vue": "0.6.3",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.6.3",
+    "vite": "^8.0.1",
+    "vue-tsc": "^2.1.10"
+  }
+}
+

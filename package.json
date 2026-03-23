@@ -34,6 +34,7 @@
     "demo:vue:form": "npm run -w @daltonr/pathwrite-demo-vue-form start",
     "demo:vue:wizard": "npm run -w @daltonr/pathwrite-demo-vue-wizard start",
     "demo:vue:subwizard": "npm run -w @daltonr/pathwrite-demo-vue-subwizard start",
+    "demo:vue:skip": "npm run -w @daltonr/pathwrite-demo-vue-skip start",
     "demo:svelte:form": "npm run -w @daltonr/pathwrite-demo-svelte-form start",
     "demo:svelte:wizard": "npm run -w @daltonr/pathwrite-demo-svelte-wizard start",
     "demo:svelte:subwizard": "npm run -w @daltonr/pathwrite-demo-svelte-subwizard start"
