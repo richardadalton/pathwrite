@@ -531,7 +531,7 @@ describe("PathShell (Vue) — fieldMessages", () => {
     };
     const TestHost = defineComponent({
       setup() {
-        return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
+        return () => h(PathShell, { path, validationDisplay: "summary" }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
       }
     });
     const wrapper = mount(TestHost, { attachTo: document.body });

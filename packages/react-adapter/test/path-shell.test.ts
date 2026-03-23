@@ -401,6 +401,7 @@ describe("PathShell — fieldMessages", () => {
     await act(async () =>
       render(createElement(PathShell, {
         path,
+        validationDisplay: "summary",
         steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
       }))
     );
@@ -432,7 +433,7 @@ describe("PathShell — fieldMessages", () => {
       return createElement("div", null, "A");
     }
     await act(async () =>
-      render(createElement(PathShell, { path, steps: { "step-a": createElement(StepA) } }))
+      render(createElement(PathShell, { path, validationDisplay: "summary", steps: { "step-a": createElement(StepA) } }))
     );
     await act(async () => screen.getByText("Complete").click()); // trigger attempt (single-step uses "Complete")
     expect(screen.getByText("Required")).toBeTruthy();
@@ -485,6 +486,7 @@ describe("PathShell — fieldMessages", () => {
     await act(async () =>
       render(createElement(PathShell, {
         path,
+        validationDisplay: "summary",
         steps: { "step-a": createElement("div", null, "A") }
       }))
     );

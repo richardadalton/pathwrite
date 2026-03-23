@@ -249,6 +249,13 @@ export interface PathShellProps {
   renderHeader?: (snapshot: PathSnapshot) => ReactNode;
   /** Render prop to replace the entire footer (navigation area). Receives the snapshot and actions. */
   renderFooter?: (snapshot: PathSnapshot, actions: PathShellActions) => ReactNode;
+  /**
+   * Controls whether the shell renders its auto-generated field-error summary box.
+   * - `"summary"` (default): Shell renders the labeled error list below the step body.
+   * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
+   * - `"both"`: Render the shell summary AND whatever the step template renders.
+   */
+  validationDisplay?: "summary" | "inline" | "both";
 }
 
 export interface PathShellActions {
@@ -297,6 +304,7 @@ export function PathShell({
   className,
   renderHeader,
   renderFooter,
+  validationDisplay = "inline",
 }: PathShellProps): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -351,8 +359,8 @@ export function PathShell({
         : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
-      // Validation messages — labeled by field name
-      snapshot.hasAttemptedNext && Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+      // Validation messages — suppressed when validationDisplay="inline"
+      validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
         ...Object.entries(snapshot.fieldMessages).map(([key, msg]) =>
           createElement("li", { key, className: "pw-shell__validation-item" },
             key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),

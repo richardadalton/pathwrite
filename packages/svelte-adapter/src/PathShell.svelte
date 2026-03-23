@@ -27,6 +27,13 @@
      * - "form": Cancel on left, Submit alone on right. Back button never shown.
      */
     footerLayout?: "wizard" | "form" | "auto";
+    /**
+     * Controls whether the shell renders its auto-generated field-error summary box.
+     * - `"summary"` (default): Shell renders the labeled error list below the step body.
+     * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
+     * - `"both"`: Render the shell summary AND whatever the step template renders.
+     */
+    validationDisplay?: "summary" | "inline" | "both";
     // Callback props replace event dispatching in Svelte 5
     oncomplete?: (data: PathData) => void;
     oncancel?: (data: PathData) => void;
@@ -50,6 +57,7 @@
     hideCancel = false,
     hideProgress = false,
     footerLayout = 'auto',
+    validationDisplay = 'inline',
     oncomplete,
     oncancel,
     onevent,
@@ -158,8 +166,8 @@
       {/if}
     </div>
 
-    <!-- Validation messages — labeled by field name -->
-    {#if snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0}
+    <!-- Validation messages — suppressed when validationDisplay="inline" -->
+    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0}
       <ul class="pw-shell__validation">
         {#each Object.entries(snap.fieldMessages) as [key, msg]}
           <li class="pw-shell__validation-item">

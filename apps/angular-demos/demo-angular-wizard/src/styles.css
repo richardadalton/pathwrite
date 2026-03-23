@@ -15,7 +15,5 @@ body {
 
 * { box-sizing: border-box; }
 
-/* Errors are shown inline at each field — suppress the shell's summary list */
-.pw-shell__validation { display: none; }
 
 

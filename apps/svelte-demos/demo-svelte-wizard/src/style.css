@@ -9,7 +9,6 @@ body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, san
 /* ── Shell overrides ─────────────────────────────────────────────────────── */
 .pw-shell { padding: 0; gap: 0; max-width: 100%; }
 .pw-shell__body { background: #fff; border: 1px solid #dbe4f0; border-radius: 10px 10px 0 0; padding: 28px 28px 20px; }
-.pw-shell__validation { display: none; }
 .pw-shell__footer { background: #fff; border: 1px solid #dbe4f0; border-top: none; border-radius: 0 0 10px 10px; padding: 16px 28px; display: flex; justify-content: space-between; gap: 8px; }
 .pw-shell__footer-left, .pw-shell__footer-right { display: flex; gap: 8px; }
 .pw-shell__btn { border: 1px solid #c2d0e5; background: #f8fbff; color: #1f2937; padding: 9px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.15s; }

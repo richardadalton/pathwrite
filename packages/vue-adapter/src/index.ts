@@ -200,7 +200,14 @@ export const PathShell = defineComponent({
      * - "wizard": Back button on left, Cancel and Submit together on right.
      * - "form": Cancel on left, Submit alone on right. Back button never shown.
      */
-    footerLayout: { type: String as PropType<"wizard" | "form" | "auto">, default: "auto" }
+    footerLayout: { type: String as PropType<"wizard" | "form" | "auto">, default: "auto" },
+    /**
+     * Controls whether the shell renders its auto-generated field-error summary box.
+     * - `"summary"` (default): Shell renders the labeled error list below the step body.
+     * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
+     * - `"both"`: Render the shell summary AND whatever the step template renders.
+     */
+    validationDisplay: { type: String as PropType<"summary" | "inline" | "both">, default: "inline" }
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
@@ -268,8 +275,8 @@ export const PathShell = defineComponent({
         ),
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
-        // Validation messages — labeled by field name
-        snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0
+        // Validation messages — suppressed when validationDisplay="inline"
+        props.validationDisplay !== "inline" && snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0
           ? h("ul", { class: "pw-shell__validation" },
               Object.entries(snap.fieldMessages).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__validation-item" }, [

@@ -179,8 +179,8 @@ export class PathShellFooterDirective {
         </ng-container>
       </div>
 
-      <!-- Validation messages — labeled by field name -->
-      <ul class="pw-shell__validation" *ngIf="s.hasAttemptedNext && fieldEntries(s).length > 0">
+      <!-- Validation messages — suppressed when validationDisplay="inline" -->
+      <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && s.hasAttemptedNext && fieldEntries(s).length > 0">
         <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
           <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
         </li>
@@ -258,6 +258,13 @@ export class PathShellComponent implements OnInit, OnDestroy {
    * - "form": Cancel on left, Submit alone on right. Back button never shown.
    */
   @Input() footerLayout: "wizard" | "form" | "auto" = "auto";
+  /**
+   * Controls whether the shell renders its auto-generated field-error summary box.
+   * - `"summary"` (default): Shell renders the labeled error list below the step body.
+   * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
+   * - `"both"`: Render the shell summary AND whatever the step template renders.
+   */
+  @Input() validationDisplay: "summary" | "inline" | "both" = "inline";
 
   @Output() completed = new EventEmitter<PathData>();
   @Output() cancelled = new EventEmitter<PathData>();
