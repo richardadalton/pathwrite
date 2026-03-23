@@ -25,13 +25,14 @@
     "changeset": "changeset",
     "version": "changeset version",
     "publish:dry": "npm run prepublish:check && npm publish --dry-run -w packages/core && npm publish --dry-run -w packages/angular-adapter && npm publish --dry-run -w packages/react-adapter && npm publish --dry-run -w packages/vue-adapter",
-    "demo": "npm run -w @daltonr/pathwrite-demo-console demo",
-    "demo:angular": "npm run -w @daltonr/pathwrite-demo-angular start",
-    "demo:angular:course": "npm run -w @daltonr/pathwrite-demo-angular-course start",
-    "demo:angular:shell": "npm run -w @daltonr/pathwrite-demo-angular-shell start",
-    "demo:lifecycle": "npm run -w @daltonr/pathwrite-demo-lifecycle demo",
-    "demo:vue": "npm run -w demo-vue-wizard dev",
-    "demo:svelte": "npm run -w demo-svelte-onboarding dev"
+    "demo:angular:form": "npm run -w @daltonr/pathwrite-demo-angular-form start",
+    "demo:angular:wizard": "npm run -w @daltonr/pathwrite-demo-angular-wizard start",
+    "demo:react:form": "npm run -w @daltonr/pathwrite-demo-react-form start",
+    "demo:react:wizard": "npm run -w @daltonr/pathwrite-demo-react-wizard start",
+    "demo:vue:form": "npm run -w @daltonr/pathwrite-demo-vue-form start",
+    "demo:vue:wizard": "npm run -w @daltonr/pathwrite-demo-vue-wizard start",
+    "demo:svelte:form": "npm run -w @daltonr/pathwrite-demo-svelte-form start",
+    "demo:svelte:wizard": "npm run -w @daltonr/pathwrite-demo-svelte-wizard start"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
