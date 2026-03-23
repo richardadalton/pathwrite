@@ -277,6 +277,19 @@ a:hover { color: #c4b5fd; }
 }
 .cta__actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
 
+/* ===== DOCS CARDS ===== */
+.docs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+.docs-card {
+  display: block; background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius); padding: 1.5rem; transition: all 0.2s;
+  color: var(--color-text); text-decoration: none;
+}
+.docs-card:hover { border-color: var(--color-primary); background: var(--color-bg-card-hover); color: var(--color-text); }
+.docs-card__icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+.docs-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+.docs-card p { font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; }
+.docs-card code { font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-accent); background: var(--color-code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
 /* ===== FOOTER ===== */
 .footer { padding: 2rem 0; border-top: 1px solid var(--color-border); }
 .footer__inner { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-muted); }

@@ -23,6 +23,7 @@
       <a href="#frameworks">Frameworks</a>
       <a href="#compare">Compare</a>
       <a href="#use-cases">Use Cases</a>
+      <a href="#docs">Docs</a>
       <a href="https://github.com/richardadalton/pathwrite" class="btn btn--sm btn--outline" target="_blank" rel="noopener">GitHub</a>
       <a href="https://www.npmjs.com/package/@daltonr/pathwrite-core" class="btn btn--sm btn--primary" target="_blank" rel="noopener">npm</a>
     </div>
@@ -118,7 +119,7 @@
       <div class="feature-card">
         <div class="feature-card__icon">🛡️</div>
         <h3>Guards &amp; Validation</h3>
-        <p><code>canMoveNext</code>, <code>canMovePrevious</code>, and <code>validationMessages</code> per step. Sync or async. Type-checked.</p>
+        <p><code>canMoveNext</code>, <code>canMovePrevious</code>, and <code>fieldMessages</code> per step. Sync or async. Type-checked. Auto-derived guards from field validation.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card__icon">📦</div>
@@ -143,7 +144,12 @@
       <div class="feature-card">
         <div class="feature-card__icon">🪝</div>
         <h3>Lifecycle Hooks</h3>
-        <p><code>onEnter</code>, <code>onLeave</code>, <code>onComplete</code>, <code>onCancel</code> — async-capable hooks that receive an immutable context snapshot.</p>
+        <p><code>onEnter</code>, <code>onLeave</code>, <code>onSubPathComplete</code>, <code>onSubPathCancel</code> — async-capable hooks that receive an immutable context snapshot with <code>isFirstEntry</code> tracking.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">📝</div>
+        <h3>Forms &amp; Wizards</h3>
+        <p>Single-step forms with <code>fieldMessages</code>, auto-derived guards, smart error timing, and form-mode layout — all with zero extra config.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card__icon">🎨</div>
@@ -483,6 +489,57 @@
     <blockquote class="quote">
       <p>"Define your steps. Wire your UI. Ship your flow.<br />That's it. That's the whole API."</p>
     </blockquote>
+  </div>
+</section>
+
+<!-- ===== DOCUMENTATION ===== -->
+<section class="section section--dark" id="docs">
+  <div class="container">
+    <h2 class="section__title">Comprehensive documentation.</h2>
+    <p class="section__subtitle">21 sections covering every feature. Each adapter has its own README too.</p>
+
+    <div class="docs-grid">
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/docs/guides/DEVELOPER_GUIDE.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">📖</div>
+        <h3>Developer Guide</h3>
+        <p>Complete guide — core concepts, all 4 adapters, shells, persistence, TypeScript generics, testing, and design decisions.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/core/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">⚙️</div>
+        <h3>Core Engine</h3>
+        <p>PathEngine API, step definitions, hooks, guards, sub-paths, and serialization.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/react-adapter/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">⚛️</div>
+        <h3>React Adapter</h3>
+        <p><code>usePath</code>, <code>usePathContext</code>, <code>PathShell</code> — hooks, context, and shell docs.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/vue-adapter/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">💚</div>
+        <h3>Vue Adapter</h3>
+        <p>Composables, reactive refs, named slots, and <code>PathShell</code> integration.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/angular-adapter/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">🅰️</div>
+        <h3>Angular Adapter</h3>
+        <p><code>PathFacade</code>, <code>injectPath()</code>, signals, RxJS, <code>syncFormGroup</code>, and <code>&lt;pw-shell&gt;</code>.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/svelte-adapter/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">🔥</div>
+        <h3>Svelte Adapter</h3>
+        <p>Svelte 5 runes, <code>$state</code> reactivity, snippets, <code>getPathContext()</code>, and <code>PathShell</code>.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/store-http/README.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">💾</div>
+        <h3>HTTP Store</h3>
+        <p>Persistence strategies, <code>restoreOrStart()</code>, debounce, and multi-store patterns.</p>
+      </a>
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/docs/guides/PERSISTENCE_STRATEGY_GUIDE.md" class="docs-card" target="_blank" rel="noopener">
+        <div class="docs-card__icon">📊</div>
+        <h3>Persistence Strategies</h3>
+        <p>Timing diagrams and API call counts for every save strategy.</p>
+      </a>
+    </div>
   </div>
 </section>
 
