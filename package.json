@@ -10,7 +10,6 @@
   },
   "workspaces": [
     "packages/*",
-    "apps/ad-hoc/*",
     "apps/angular-demos/*",
     "apps/react-demos/*",
     "apps/svelte-demos/*",
