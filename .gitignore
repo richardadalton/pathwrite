@@ -1,5 +1,11 @@
 # Dependencies
 node_modules/
+apps/**/node_modules/
+packages/**/node_modules/
+
+# Keep a single workspace lockfile at repo root
+apps/**/package-lock.json
+packages/**/package-lock.json
 
 # Build output
 dist/

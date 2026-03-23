@@ -23,6 +23,7 @@
     "prepublish:check": "npm run clean && npm run build && npm test",
     "release": "npm run prepublish:check && changeset publish",
     "changeset": "changeset",
+    "smoke:demos": "node ./scripts/smoke-demos.mjs",
     "version": "changeset version",
     "publish:dry": "npm run prepublish:check && npm publish --dry-run -w packages/core && npm publish --dry-run -w packages/angular-adapter && npm publish --dry-run -w packages/react-adapter && npm publish --dry-run -w packages/vue-adapter",
     "demo:angular:form": "npm run -w @daltonr/pathwrite-demo-angular-form start",
@@ -48,7 +49,7 @@
     "@types/node": "^22.13.14",
     "svelte": "^5.54.1",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
+    "typescript": "5.4.5",
     "vitest": "^3.0.8"
   }
 }

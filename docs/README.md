@@ -18,12 +18,29 @@ Comprehensive guides for developers using and contributing to Pathwrite:
 - **[REST_API_PERSISTENCE_SUMMARY.md](guides/REST_API_PERSISTENCE_SUMMARY.md)** - REST API persistence implementation
 - **[HTTP_STORE_STATUS.md](guides/HTTP_STORE_STATUS.md)** - HTTP store implementation status
 - **[PUBLISHING.md](guides/PUBLISHING.md)** - Publishing and release process
+- **[DEMO_SMOKE_TESTS.md](guides/DEMO_SMOKE_TESTS.md)** - Smoke test all demo startup scripts
 
 ---
 
 ## 🚀 Quick Start
 
 **New to Pathwrite?** Start with the main [README.md](../README.md) in the project root.
+
+### Clean Clone Setup
+
+From a fresh clone, run:
+
+```zsh
+npm install
+npm run build
+npm run smoke:demos
+```
+
+- `npm install` installs all workspace dependencies.
+- `npm run build` builds local packages used by demos.
+- `npm run smoke:demos` verifies all root demo scripts can start.
+
+For smoke test details and options, see [DEMO_SMOKE_TESTS.md](guides/DEMO_SMOKE_TESTS.md).
 
 **Exploring use cases?** See [BEYOND_WIZARDS.md](guides/BEYOND_WIZARDS.md) for non-wizard applications like:
 - Single-page forms
