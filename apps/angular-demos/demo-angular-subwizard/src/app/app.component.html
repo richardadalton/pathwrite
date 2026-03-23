@@ -1,0 +1,95 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Approval Workflow</h1>
+    <p class="subtitle">Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.</p>
+  </div>
+
+  <!-- Completed -->
+  @if (isCompleted && completedData) {
+    <section class="result-panel"
+      [class.success-panel]="overallStatus(completedData) === 'approved'"
+      [class.reject-panel]="overallStatus(completedData) !== 'approved'">
+      <div class="result-icon">{{ overallStatus(completedData) === 'approved' ? '✅' : '❌' }}</div>
+      <h2>{{ overallStatus(completedData) === 'approved' ? 'Document Approved!' : 'Document Rejected' }}</h2>
+      <p>
+        @if (overallStatus(completedData) === 'approved') {
+          All approvers signed off on <strong>{{ completedData.title }}</strong>.
+        } @else {
+          One or more approvers rejected <strong>{{ completedData.title }}</strong>.
+        }
+      </p>
+
+      <div class="summary">
+        <div class="summary-section">
+          <p class="summary-section__title">Document</p>
+          <div class="summary-row"><span class="summary-key">Title</span><span>{{ completedData.title }}</span></div>
+          <div class="summary-row"><span class="summary-key">Description</span><span>{{ completedData.description }}</span></div>
+        </div>
+        <div class="summary-section">
+          <p class="summary-section__title">Decisions</p>
+          @for (id of completedData.approvers; track id) {
+            <div class="summary-row">
+              <span class="summary-key">{{ getApproverName(id) }}</span>
+              <span [class.text-approved]="getResult(completedData, id)?.decision === 'approved'"
+                    [class.text-rejected]="getResult(completedData, id)?.decision === 'rejected'">
+                {{ getResult(completedData, id)?.decision === 'approved' ? '✓ Approved' : '✗ Rejected' }}
+                @if (getResult(completedData, id)?.comment) {
+                  — <em>{{ getResult(completedData, id)!.comment }}</em>
+                }
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" (click)="startOver()">Start Over</button>
+    </section>
+  }
+
+  <!-- Cancelled -->
+  @if (isCancelled) {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">✖</div>
+      <h2>Workflow Cancelled</h2>
+      <p>No approvals were recorded.</p>
+      <button type="button" class="btn-secondary" (click)="startOver()">Try Again</button>
+    </section>
+  }
+
+  <!-- Active wizard -->
+  @if (!isCompleted && !isCancelled) {
+    <pw-shell
+      [path]="approvalWorkflowPath"
+      [initialData]="initialData"
+      completeLabel="Finalise"
+      cancelLabel="Cancel"
+      (completed)="onComplete($event)"
+      (cancelled)="onCancel()"
+    >
+      <!-- Main wizard steps -->
+      <ng-template pwStep="create-document">
+        <app-create-document-step />
+      </ng-template>
+      <ng-template pwStep="select-approvers">
+        <app-select-approvers-step />
+      </ng-template>
+      <ng-template pwStep="approval-review">
+        <app-approval-review-step />
+      </ng-template>
+      <ng-template pwStep="summary">
+        <app-summary-step />
+      </ng-template>
+
+      <!-- Approval subwizard steps -->
+      <ng-template pwStep="view-document">
+        <app-view-document-step />
+      </ng-template>
+      <ng-template pwStep="decision">
+        <app-decision-step />
+      </ng-template>
+    </pw-shell>
+  }
+
+</main>
+
