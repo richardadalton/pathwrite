@@ -354,14 +354,23 @@ a:hover { color: #c4b5fd; }
   border-top: 1px solid var(--color-border);
 }
 
-.demo-card__source {
-  font-size: 0.78rem;
+.demo-card__sources {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.demo-card__sources-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.demo-card__sources a {
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   text-decoration: none;
-  white-space: nowrap;
   transition: color 0.2s;
 }
-.demo-card__source:hover { color: var(--color-primary-light); }
+.demo-card__sources a:hover { color: var(--color-primary-light); }
 
 .demo-card__tags {
   display: flex;
