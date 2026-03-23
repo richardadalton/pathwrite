@@ -162,3 +162,8 @@ cd apps/react-demos/demo-react-form && npm install && cd -
 cd apps/vue-demos/demo-vue-form && npm install && cd -
 cd apps/svelte-demos/demo-svelte-form && npm install && cd -
 ```
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

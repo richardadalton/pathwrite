@@ -189,3 +189,8 @@ The implementation is done. Just waiting on the core foundation.
 
 **Yes, you can persist to custom REST endpoints.** Install `@daltonr/pathwrite-store-http`, point it at your API, and it handles the save/load cycle. Your backend just stores JSON. No Pathwrite-specific logic required server-side.
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

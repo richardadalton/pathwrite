@@ -622,3 +622,8 @@ Use it to distinguish initialization from re-entry:
 
 ## Design notes
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

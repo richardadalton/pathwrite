@@ -256,3 +256,8 @@ facade.fromState(state, path): void;  // or static factory
 
 **Total:** 1,092 lines of production-ready code, tests, and documentation.
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

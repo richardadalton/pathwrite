@@ -614,3 +614,8 @@ it("reactive snapshot updates on next()", async () => {
 
 Everything in Pathwrite can be tested by calling engine methods and reading the snapshot. No browser, no DOM, no HTTP, no UI.
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

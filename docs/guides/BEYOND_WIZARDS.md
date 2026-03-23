@@ -826,3 +826,8 @@ Consider:
 
 You've created something more powerful than you initially realized!
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

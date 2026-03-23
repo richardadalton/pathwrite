@@ -529,3 +529,8 @@ Throws if:
 
 The restored engine is fully functional — you can continue navigation, modify data, complete or cancel paths normally.
 ```
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

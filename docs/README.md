@@ -96,3 +96,8 @@ When adding new documentation:
 
 
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

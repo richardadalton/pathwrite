@@ -1005,3 +1005,8 @@ Override any `--pw-*` variable to customise the appearance:
 - `--pw-btn-padding` — Button padding (default: `8px 16px`)
 - `--pw-btn-radius` — Button border radius (default: `6px`)
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

@@ -3221,3 +3221,8 @@ Forms with Pathwrite give you:
 For simple forms, the pattern is just as concise as traditional form libraries, but you get persistence, validation, and cross-framework APIs for free.
 
 See also: [Beyond Wizards guide](./BEYOND_WIZARDS.md) for more use cases beyond forms and wizards.
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

@@ -243,3 +243,8 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `HttpStore` | 10 |
 | `httpPersistence` | 20 |
 | `restoreOrStart` | 7 |
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

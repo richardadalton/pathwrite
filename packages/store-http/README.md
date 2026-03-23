@@ -279,3 +279,8 @@ httpPersistence({
 ```
 
 `createPersistedEngine` accepts the same `onSaveSuccess` / `onSaveError` options and passes them through to the persistence observer.
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

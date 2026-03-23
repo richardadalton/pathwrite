@@ -433,3 +433,8 @@ The fact that it happens to be excellent at wizards doesn't mean that's all it d
 - [Angular Material Stepper](https://material.angular.io/components/stepper/overview) - Angular stepper
 - [robot3](https://thisrobot.life/) - Lightweight state machine
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

@@ -137,3 +137,8 @@ Restoration via `PathEngine.fromState(saved, pathDefinitions, { observers })` re
 
 When the path completes, the observer automatically calls `store.delete(key)` to remove the saved state — so a returning user starts fresh rather than restoring a completed wizard. The `"onComplete"` strategy is the exception: it saves a final record and does not delete it.
 
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

@@ -147,3 +147,8 @@ const engine = new PathEngine({
   ],
 });
 ```
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
+

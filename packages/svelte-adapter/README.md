@@ -532,11 +532,16 @@ setData('invalid', 'value');
 
 ## License
 
-MIT
+MIT — © 2026 Devjoy Ltd.
 
 ## See Also
 
 - [@daltonr/pathwrite-core](../core) - Core engine
 - [@daltonr/pathwrite-store-http](../store-http) - HTTP persistence
 - [Documentation](../../docs/guides/DEVELOPER_GUIDE.md)
+
+
+---
+
+© 2026 Devjoy Ltd. MIT License.
 
