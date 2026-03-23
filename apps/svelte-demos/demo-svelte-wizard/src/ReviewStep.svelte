@@ -26,14 +26,14 @@
       <div class="review-card">
         <div class="review-row"><span class="review-key">Job Title</span><span>{d.jobTitle}</span></div>
         {#if d.company}<div class="review-row"><span class="review-key">Company</span><span>{d.company}</span></div>{/if}
-        <div class="review-row"><span class="review-key">Experience</span><span>{EXPERIENCE_LABELS[d.experience as string] ?? d.experience}</span></div>
+        <div class="review-row"><span class="review-key">Experience</span><span>{EXPERIENCE_LABELS[d.experience] ?? d.experience}</span></div>
       </div>
     </div>
 
     <div class="review-section">
       <p class="section-title">Preferences</p>
       <div class="review-card">
-        <div class="review-row"><span class="review-key">Theme</span><span>{THEME_LABELS[d.theme as string] ?? d.theme}</span></div>
+        <div class="review-row"><span class="review-key">Theme</span><span>{THEME_LABELS[d.theme] ?? d.theme}</span></div>
         <div class="review-row">
           <span class="review-key">Notifications</span>
           <span class={d.notifications ? "badge badge--on" : "badge badge--off"}>

@@ -110,10 +110,9 @@ export class PreferencesStepComponent {
     { value: "system", label: "System Default", desc: "Follows your OS setting" },
   ];
 
-  // Read directly from the snapshot signal — no local state, no ngOnInit needed.
-  // Angular tracks the signal read in the template; back-navigation restores
-  // automatically because the engine is the single source of truth.
+  // snapshot() is always non-null while this step component is mounted —
+  // PathShell only renders step content when the snapshot is active.
   protected get data(): OnboardingData {
-    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
+    return this.path.snapshot()!.data;
   }
 }

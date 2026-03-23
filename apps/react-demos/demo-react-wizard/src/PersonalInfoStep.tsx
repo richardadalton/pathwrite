@@ -3,8 +3,11 @@ import type { OnboardingData } from "./onboarding";
 
 export function PersonalInfoStep() {
   const { snapshot, setData } = usePathContext<OnboardingData>();
-  const data   = snapshot?.data ?? {} as OnboardingData;
-  const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldMessages ?? {}) : {};
+  // snapshot is always non-null here — PathShell only renders this component
+  // when the path is active. The non-null assertion (!) is safe; no cast needed.
+  const snap   = snapshot!;
+  const data   = snap.data;
+  const errors = snap.hasAttemptedNext ? snap.fieldMessages : {};
 
   return (
     <div className="form-body">

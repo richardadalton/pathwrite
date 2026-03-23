@@ -39,7 +39,7 @@
         </div>
         <label class="toggle">
           <input type="checkbox"
-            checked={ctx.snapshot.data.notifications as boolean}
+            checked={ctx.snapshot.data.notifications}
             onchange={(e) => ctx.setData("notifications", e.currentTarget.checked)} />
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>

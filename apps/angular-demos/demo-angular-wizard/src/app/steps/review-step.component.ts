@@ -78,7 +78,7 @@ import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "../onboard
           </div>
           <div class="review-row">
             <span class="review-key">Experience</span>
-            <span class="review-value">{{ experienceLabel(s.data['experience']) }}</span>
+            <span class="review-value">{{ experienceLabel(s.data.experience) }}</span>
           </div>
         </div>
       </div>
@@ -89,7 +89,7 @@ import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "../onboard
         <div class="review-card">
           <div class="review-row">
             <span class="review-key">Theme</span>
-            <span class="review-value">{{ themeLabel(s.data['theme']) }}</span>
+            <span class="review-value">{{ themeLabel(s.data.theme) }}</span>
           </div>
           <div class="review-row">
             <span class="review-key">Notifications</span>
@@ -105,12 +105,12 @@ import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "../onboard
 export class ReviewStepComponent {
   protected readonly path = injectPath<OnboardingData>();
 
-  protected experienceLabel(value: unknown): string {
-    return EXPERIENCE_LABELS[value as string] ?? String(value ?? "");
+  protected experienceLabel(value: string): string {
+    return EXPERIENCE_LABELS[value] ?? value;
   }
 
-  protected themeLabel(value: unknown): string {
-    return THEME_LABELS[value as string] ?? String(value ?? "");
+  protected themeLabel(value: string): string {
+    return THEME_LABELS[value] ?? value;
   }
 }
 

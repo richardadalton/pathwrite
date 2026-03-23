@@ -17,15 +17,17 @@
 11. [React Adapter](#11-react-adapter)
     - [Eager JSX evaluation in `<PathShell>`](#eager-jsx-evaluation-in-pathshell)
 12. [Vue Adapter](#12-vue-adapter)
-13. [Default UI Shell](#13-default-ui-shell)
+13. [Svelte Adapter](#13-svelte-adapter)
+14. [Default UI Shell](#14-default-ui-shell)
     - [Cross-adapter API equivalence](#cross-adapter-api-equivalence)
-14. [Using the Core Engine Directly](#14-using-the-core-engine-directly)
-15. [TypeScript Generics](#15-typescript-generics)
-16. [Backend Lifecycle Patterns](#16-backend-lifecycle-patterns)
-17. [Testing](#17-testing)
-18. [Design Decisions](#18-design-decisions)
-19. [Observers & Persistence](#19-observers--persistence)
-20. [Forms with Pathwrite](#20-forms-with-pathwrite)
+15. [Using the Core Engine Directly](#15-using-the-core-engine-directly)
+16. [TypeScript Generics](#16-typescript-generics)
+    - [Accessing typed data in step components](#accessing-typed-data-in-step-components)
+17. [Backend Lifecycle Patterns](#17-backend-lifecycle-patterns)
+18. [Testing](#18-testing)
+19. [Design Decisions](#19-design-decisions)
+20. [Observers & Persistence](#20-observers--persistence)
+21. [Forms with Pathwrite](#21-forms-with-pathwrite)
 
 ---
 
@@ -55,13 +57,31 @@ pathwrite/
 │   ├── angular-adapter/        # @daltonr/pathwrite-angular (+ shell entry point)
 │   ├── react-adapter/          # @daltonr/pathwrite-react (+ PathShell)
 │   ├── vue-adapter/            # @daltonr/pathwrite-vue (+ PathShell)
+│   ├── svelte-adapter/         # @daltonr/pathwrite-svelte (+ PathShell)
+│   ├── store-http/             # @daltonr/pathwrite-store-http (HTTP persistence)
 │   └── shell.css               # Optional shared stylesheet for shell components
 ├── apps/
-│   ├── demo-angular-course/    # Angular demo (multi-step course path, manual UI)
-│   ├── demo-angular-shell/     # Angular demo using <pw-shell> default UI
-│   ├── demo-angular/           # Angular demo (simple)
-│   ├── demo-console/           # Console demo
-│   └── demo-lifecycle/         # Backend lifecycle state machine (no UI)
+│   ├── ad-hoc/
+│   │   ├── demo-angular/           # Angular demo (simple)
+│   │   ├── demo-angular-course/    # Angular demo (multi-step course path, manual UI)
+│   │   ├── demo-angular-shell/     # Angular demo using <pw-shell> default UI
+│   │   ├── demo-api-server/        # Express API server for persistence demos
+│   │   ├── demo-console/           # Console demo
+│   │   ├── demo-lifecycle/         # Backend lifecycle state machine (no UI)
+│   │   ├── demo-svelte-onboarding/ # Svelte onboarding wizard demo
+│   │   └── demo-vue-wizard/        # Vue wizard demo
+│   ├── angular-demos/
+│   │   ├── demo-angular-form/      # Angular form demo
+│   │   └── demo-angular-wizard/    # Angular wizard demo
+│   ├── react-demos/
+│   │   ├── demo-react-form/        # React form demo
+│   │   └── demo-react-wizard/      # React wizard demo
+│   ├── svelte-demos/
+│   │   ├── demo-svelte-form/       # Svelte form demo
+│   │   └── demo-svelte-wizard/     # Svelte wizard demo
+│   └── vue-demos/
+│       ├── demo-vue-form/          # Vue form demo
+│       └── demo-vue-wizard/        # Vue wizard demo
 ├── vitest.config.ts            # Root test config (runs all packages)
 └── package.json                # npm workspaces root
 ```
@@ -668,15 +688,17 @@ See the [Angular adapter README](../../packages/angular-adapter/README.md) for c
 
 The recommended pattern for step components is a typed `data` getter that reads directly from the snapshot signal. This eliminates local state variables, `ngOnInit` restore logic, and dual-update event handlers — the engine is the single source of truth.
 
+**Key insight:** `snapshot()` is always non-null while a step component is mounted — `PathShell` only renders step content when the path is active. The non-null assertion (`!`) is therefore safe and eliminates the need for casts or fallbacks.
+
 ```typescript
 export class PersonalInfoStepComponent {
   protected readonly path = injectPath<OnboardingData>();
 
-  // One getter replaces all local state + ngOnInit + per-field update methods.
-  // Angular tracks the signal read during template evaluation, so any engine
-  // update (including back-navigation) triggers a re-render automatically.
+  // snapshot()! is safe — PathShell guarantees a non-null snapshot while
+  // this component is rendered. The generic on injectPath<OnboardingData>()
+  // means data is already typed; no cast needed.
   protected get data(): OnboardingData {
-    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
+    return this.path.snapshot()!.data;
   }
 }
 ```
@@ -925,7 +947,7 @@ function NavBar() {
 
 `usePathContext()` throws if called outside a `<PathProvider>`.
 
-> **Tip:** `<PathShell>` (see [§13](#13-default-ui-shell)) also provides context automatically — step children rendered inside `<PathShell>` can call `usePathContext()` to access the same engine instance without a separate `<PathProvider>`.
+> **Tip:** `<PathShell>` (see [§14](#14-default-ui-shell)) also provides context automatically — step children rendered inside `<PathShell>` can call `usePathContext()` to access the same engine instance without a separate `<PathProvider>`.
 
 ### `usePath` return value
 
@@ -939,7 +961,7 @@ function NavBar() {
 | `cancel` | `() => void` | Cancel the active path or sub-path |
 | `goToStep` | `(stepId) => void` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked` | `(stepId) => void` | Jump to a step by ID, checking the current step's guard first. |
-| `setData` | `(key, value) => void` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
+| `setData` | `(key, value) => void` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§16](#16-typescript-generics)). |
 | `restart` | `(def, data?) => void` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
 
 All action functions are **referentially stable** — safe in dependency arrays and as props.
@@ -1045,7 +1067,7 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 | `cancel` | `() => Promise<void>` | Cancel the active path or sub-path |
 | `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked` | `(stepId) => Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
-| `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§15](#15-typescript-generics)). |
+| `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§16](#16-typescript-generics)). |
 | `restart` | `(def, data?) => Promise<void>` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
 
 ### Design notes
@@ -1057,7 +1079,7 @@ const progress    = computed(() => snapshot.value?.progress ?? 0);
 
 ### `usePathContext` — accessing the engine from child components
 
-When using `<PathShell>` (see [§13](#13-default-ui-shell)), step child components can call `usePathContext()` to access the same engine instance. This is powered by Vue's `provide` / `inject`:
+When using `<PathShell>` (see [§14](#14-default-ui-shell)), step child components can call `usePathContext()` to access the same engine instance. This is powered by Vue's `provide` / `inject`:
 
 ```vue
 <script setup>
@@ -1071,7 +1093,151 @@ const { snapshot, setData, next } = usePathContext();
 
 ---
 
-## 13. Default UI Shell
+## 13. Svelte Adapter
+
+> **Requires Svelte 5.** The adapter uses runes (`$state`, `$derived`, `$props`) and snippets (`{#snippet}`, `{@render}`).
+
+### Setup
+
+Call `usePath()` inside a Svelte component's `<script>` block. Each call creates an isolated engine instance. Cleanup is automatic via `onDestroy`.
+
+```svelte
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { usePath } from '@daltonr/pathwrite-svelte';
+
+  const path = usePath({
+    onEvent(event) {
+      if (event.type === 'completed') console.log('Done!', event.data);
+    }
+  });
+
+  onMount(() => {
+    path.start(myPath, { name: '' });
+  });
+</script>
+```
+
+> **Do not destructure `snapshot`.** The `snapshot` property is a reactive getter backed by a `$state` rune. Destructuring it captures the current value and loses reactivity. Always access it via the returned object:
+>
+> ```svelte
+> <!-- ✅ Reactive — re-evaluates on every state change -->
+> {#if path.snapshot}
+>   <h2>{path.snapshot.stepId}</h2>
+> {/if}
+>
+> <!-- ❌ Not reactive — captured once, never updates -->
+> <script>
+>   const { snapshot } = usePath();  // snapshot is frozen at the initial value
+> </script>
+> ```
+
+### Reactive state in templates
+
+`path.snapshot` is reactive via Svelte 5's `$state` rune. Use it directly in templates:
+
+```svelte
+{#if path.snapshot}
+  <h2>{path.snapshot.stepTitle ?? path.snapshot.stepId}</h2>
+  <p>Step {path.snapshot.stepIndex + 1} of {path.snapshot.stepCount}</p>
+
+  {#if path.snapshot.stepId === 'details'}
+    <input
+      value={path.snapshot.data.name ?? ''}
+      oninput={(e) => path.setData('name', e.currentTarget.value)}
+    />
+  {/if}
+
+  <button onclick={path.previous}
+          disabled={path.snapshot.isNavigating || !path.snapshot.canMovePrevious}>
+    Back
+  </button>
+  <button onclick={path.next}
+          disabled={path.snapshot.isNavigating || !path.snapshot.canMoveNext}>
+    {path.snapshot.isLastStep ? 'Finish' : 'Next'}
+  </button>
+  <button onclick={path.cancel}>Cancel</button>
+{:else}
+  <button onclick={() => path.start(myPath, { name: '' })}>Start Path</button>
+{/if}
+```
+
+### Derived values
+
+Use `$derived` to create computed values from the snapshot:
+
+```svelte
+<script lang="ts">
+  const path = usePath();
+
+  let isActive   = $derived(path.snapshot !== null);
+  let subjects   = $derived((path.snapshot?.data.subjects as any[]) ?? []);
+  let progress   = $derived(path.snapshot?.progress ?? 0);
+</script>
+```
+
+### `usePath` return value
+
+| Property | Type | Description |
+|---|---|---|
+| `snapshot` | `PathSnapshot \| null` | Reactive getter backed by `$state`. Re-evaluates on every change. |
+| `start` | `(def, data?) => Promise<void>` | Start or restart a path |
+| `startSubPath` | `(def, data?, meta?) => Promise<void>` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel`. |
+| `next` | `() => Promise<void>` | Advance one step |
+| `previous` | `() => Promise<void>` | Go back one step. No-op when already on the first step of a top-level path. |
+| `cancel` | `() => Promise<void>` | Cancel the active path or sub-path |
+| `goToStep` | `(stepId) => Promise<void>` | Jump to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
+| `goToStepChecked` | `(stepId) => Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
+| `setData` | `(key, value) => Promise<void>` | Update a single data value. When `TData` is provided, `key` and `value` are type-checked against your data shape (see [§16](#16-typescript-generics)). |
+| `restart` | `(def, data?) => Promise<void>` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
+
+### Design notes
+
+- **`$state` rune** — the engine produces a new snapshot object on every change. The adapter stores it in a `$state` variable and exposes it as a getter so Svelte's fine-grained reactivity tracks reads automatically.
+- **`onDestroy`** — the adapter unsubscribes from the engine when the component is destroyed. No manual cleanup needed.
+- **No stores, no RxJS** — the adapter is pure Svelte 5 runes. There are no Svelte stores (`writable`, `readable`) — the `$state` rune replaces them entirely.
+
+### `getPathContext` — accessing the engine from step components
+
+When using `<PathShell>` (see [§14](#14-default-ui-shell)), step child components can call `getPathContext()` to access the same engine instance. This is powered by Svelte's `setContext` / `getContext` with a `Symbol` key:
+
+```svelte
+<script lang="ts">
+  import { getPathContext } from '@daltonr/pathwrite-svelte';
+
+  const ctx = getPathContext();
+</script>
+
+{#if ctx.snapshot}
+  <input value={ctx.snapshot.data.name ?? ''}
+         oninput={(e) => ctx.setData('name', e.currentTarget.value)} />
+  <button onclick={ctx.next}>Next</button>
+{/if}
+```
+
+`getPathContext()` throws if called outside a `<PathShell>`.
+
+> **Use `getPathContext()`, not raw `getContext()`.** The context key is a private `Symbol`, so calling Svelte's `getContext()` with a string key will silently return `undefined`. Always import and use `getPathContext()` from `@daltonr/pathwrite-svelte`.
+
+### `bindData` — two-way binding helper
+
+`bindData` creates a lightweight binding object for form inputs. It reads from the snapshot and writes via `setData`:
+
+```svelte
+<script lang="ts">
+  import { usePath, bindData } from '@daltonr/pathwrite-svelte';
+
+  const path = usePath();
+  const name = bindData(() => path.snapshot, path.setData, 'name');
+</script>
+
+<!-- Read with name.value, write with name.set() -->
+<input value={name.value} oninput={(e) => name.set(e.currentTarget.value)} />
+```
+
+---
+
+## 14. Default UI Shell
 
 Every adapter ships an optional **shell component** that renders a complete wizard UI — progress indicator, step content area, and navigation buttons — out of the box. You define only the per-step content; the shell handles the chrome.
 
@@ -1088,6 +1254,7 @@ All shell components automatically provide their engine instance to child compon
   `ngTemplateOutletInjector`. Step components can therefore call
   `inject(PathFacade)` directly and receive the same instance the shell uses —
   no additional provider setup needed.
+- **Svelte**: `PathShell` calls `setContext()` with a private `Symbol` key. Step children can call `getPathContext()`.
 
 This means step content components can read `snapshot.data`, call `setData()`, or trigger navigation without prop drilling.
 
@@ -1291,6 +1458,90 @@ Use the `pwShellFooter` directive to replace the default navigation buttons. The
 
 `actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
 
+### Svelte — `<PathShell>`
+
+```svelte
+<script lang="ts">
+  import { PathShell } from '@daltonr/pathwrite-svelte';
+  import '@daltonr/pathwrite-svelte/styles.css';
+  import DetailsForm from './DetailsForm.svelte';
+  import ReviewPanel from './ReviewPanel.svelte';
+
+  const signupPath = {
+    id: 'signup',
+    steps: [
+      { id: 'details', title: 'Your Details' },
+      { id: 'review', title: 'Review' }
+    ]
+  };
+</script>
+
+<PathShell
+  path={signupPath}
+  initialData={{ name: '', email: '' }}
+  oncomplete={(data) => console.log('Done!', data)}
+>
+  {#snippet details()}
+    <DetailsForm />
+  {/snippet}
+  {#snippet review()}
+    <ReviewPanel />
+  {/snippet}
+</PathShell>
+```
+
+Step content is provided as **Svelte 5 snippets** whose names match the step `id`. The shell collects all snippets via `...rest` props and renders the active one with `{@render}`.
+
+#### Svelte props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `path` | `PathDefinition` | — | Path definition (for self-managed engine). |
+| `engine` | `PathEngine` | — | External engine (for persistence — mutually exclusive with `path`). |
+| `initialData` | `PathData` | `{}` | Initial data. |
+| `autoStart` | `boolean` | `true` | Auto-start on mount. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"inline"` | Controls field-error rendering. `"summary"`: shell renders error list. `"inline"`: suppress summary, handle in template. `"both"`: render both. |
+
+#### Svelte callbacks
+
+| Callback | Type | Description |
+|---|---|---|
+| `oncomplete` | `(data: PathData) => void` | Called when the path completes. |
+| `oncancel` | `(data: PathData) => void` | Called when the path is cancelled. |
+| `onevent` | `(event: PathEvent) => void` | Called for every engine event. |
+
+#### Svelte snippets
+
+Step content snippets are named after the step `id`. The shell also supports `header` and `footer` snippets for customisation:
+
+```svelte
+<PathShell path={myPath}>
+  {#snippet header(snap)}
+    <h2>Step {snap.stepIndex + 1} of {snap.stepCount}</h2>
+  {/snippet}
+
+  {#snippet details()}
+    <DetailsStep />
+  {/snippet}
+
+  {#snippet footer(snap, actions)}
+    <button onclick={actions.previous} disabled={snap.isFirstStep}>
+      ← Back
+    </button>
+    <button onclick={actions.next} disabled={!snap.canMoveNext}>
+      {snap.isLastStep ? 'Finish' : 'Continue →'}
+    </button>
+  {/snippet}
+</PathShell>
+```
+
 ### Resetting the path
 
 There are two ways to reset a `<PathShell>` back to step 1.
@@ -1420,11 +1671,13 @@ facade.restart(myPath, initialData);
 
 Import the optional stylesheet from your adapter package for sensible defaults. Every visual value is a CSS custom property, so you can theme without overriding selectors:
 
-**React / Vue** — import in your entry file or global stylesheet:
+**React / Vue / Svelte** — import in your entry file or global stylesheet:
 ```css
 @import "@daltonr/pathwrite-react/styles.css";
 /* or */
 @import "@daltonr/pathwrite-vue/styles.css";
+/* or */
+@import "@daltonr/pathwrite-svelte/styles.css";
 ```
 
 **Angular** — add to the `styles` array in `angular.json`:
@@ -1547,7 +1800,7 @@ The four shell components follow their framework's idiomatic conventions, so pro
 
 ---
 
-## 14. Using the Core Engine Directly
+## 15. Using the Core Engine Directly
 
 ```typescript
 import { PathEngine, PathDefinition } from "@daltonr/pathwrite-core";
@@ -1596,7 +1849,7 @@ All navigation methods return a `Promise`. If `isNavigating` is `true` when a na
 
 ---
 
-## 15. TypeScript Generics
+## 16. TypeScript Generics
 
 All core types accept an optional generic `TData` for full type safety in hooks and guards:
 
@@ -1624,7 +1877,7 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 
 ### Adapter-level generics
 
-The React and Vue adapters also accept an optional generic on `usePath` and `usePathContext`. This narrows `snapshot.data` so you can read typed values without manual assertions:
+The React, Vue, and Svelte adapters also accept an optional generic on `usePath`, `usePathContext`, and `getPathContext`. This narrows `snapshot.data` so you can read typed values without manual assertions:
 
 ```tsx
 // React
@@ -1634,6 +1887,10 @@ snapshot?.data.courseName; // string — no cast needed
 // Vue
 const { snapshot, setData } = usePath<CourseData>();
 snapshot.value?.data.courseName; // string — no cast needed
+
+// Svelte
+const path = usePath<CourseData>();
+path.snapshot?.data.courseName; // string — no cast needed
 ```
 
 The Angular adapter uses a generic on `PathFacade` itself. Because `PathFacade` is injected via Angular's DI (which cannot carry generics at runtime), narrow it with a cast at the injection site:
@@ -1658,6 +1915,72 @@ setData("courseName", "Biology"); // ✓
 
 The generic is a **type-level assertion** — it narrows `snapshot.data` and `setData` for convenience but is not enforced at runtime. Define your data shape once in a `PathDefinition<TData>` and use the same generic at the adapter level to keep the types consistent throughout.
 
+### Accessing typed data in step components
+
+Step components are only rendered while `PathShell` has a non-null snapshot. This means `snapshot` (or `snapshot()` in Angular) is **guaranteed non-null** inside any step component. Use a non-null assertion (`!`) instead of optional chaining with a fallback — it eliminates casts entirely.
+
+**Angular** — `injectPath<T>()` with `snapshot()!.data`:
+
+```typescript
+export class PersonalInfoStepComponent {
+  protected readonly path = injectPath<OnboardingData>();
+
+  // snapshot()! is safe — PathShell guarantees non-null while mounted.
+  // The generic narrows .data to OnboardingData; no cast needed.
+  protected get data(): OnboardingData {
+    return this.path.snapshot()!.data;
+  }
+}
+```
+
+**React** — `usePathContext<T>()` with `snapshot!`:
+
+```tsx
+function PersonalInfoStep() {
+  const { snapshot, setData } = usePathContext<OnboardingData>();
+  // snapshot! is safe — PathShell only renders this component when active.
+  const data = snapshot!.data;          // OnboardingData — no cast needed
+  const name = data.firstName;          // string
+  setData("firstName", "Alice");        // key and value are type-checked
+}
+```
+
+**Vue** — `usePathContext<T>()` with `snapshot.value` inside `v-if`:
+
+```vue
+<script setup lang="ts">
+const { snapshot, setData } = usePathContext<OnboardingData>();
+</script>
+
+<template>
+  <!-- Inside v-if="snapshot", snapshot is non-null -->
+  <div v-if="snapshot">
+    <input :value="snapshot.data.firstName"
+           @input="setData('firstName', ($event.target as HTMLInputElement).value)" />
+  </div>
+</template>
+```
+
+**Svelte** — `getPathContext<T>()` with `{#if ctx.snapshot}`:
+
+```svelte
+<script lang="ts">
+  const ctx = getPathContext<OnboardingData>();
+</script>
+
+{#if ctx.snapshot}
+  <!-- ctx.snapshot.data is OnboardingData — dot notation works -->
+  <input value={ctx.snapshot.data.firstName}
+         oninput={(e) => ctx.setData("firstName", e.currentTarget.value)} />
+{/if}
+```
+
+> **Why not `?? {}` with a cast?** The pattern `snapshot?.data ?? {} as T` produces
+> a union type (`T | {}`) that TypeScript cannot automatically narrow, forcing an
+> `as T` cast. Since PathShell guarantees a non-null snapshot for step content, the
+> `!` assertion is both safer (it will throw at runtime if the assumption is ever
+> violated) and cleaner (no cast needed).
+
 **Passing typed path definitions to `start()` and `startSubPath()`**: All adapters
 accept `PathDefinition<any>` at their public boundaries, so a typed
 `PathDefinition<CourseData>` can be passed directly — no cast required:
@@ -1679,7 +2002,7 @@ start(path);
 
 ---
 
-## 16. Backend Lifecycle Patterns
+## 17. Backend Lifecycle Patterns
 
 `@daltonr/pathwrite-core` is not limited to UI wizards. Because the engine is headless, it can model any ordered state transition — document lifecycles, approval workflows, onboarding pipelines — with no UI at all.
 
@@ -1822,7 +2145,7 @@ npm run demo:lifecycle
 
 ---
 
-## 17. Testing
+## 18. Testing
 
 ```bash
 npm test            # run all tests once
@@ -1995,9 +2318,60 @@ it("renders step content and navigates", async () => {
 });
 ```
 
+### Testing with the Svelte adapter
+
+The Svelte adapter uses `onDestroy` for cleanup, which requires a component context. In unit tests, mock Svelte's lifecycle to capture and control cleanup:
+
+```typescript
+import { vi, beforeEach, describe, it, expect } from "vitest";
+
+let destroyCallbacks: Array<() => void> = [];
+
+vi.mock("svelte", async () => {
+  const actual = await vi.importActual<typeof import("svelte")>("svelte");
+  return {
+    ...actual,
+    onDestroy: (fn: () => void) => { destroyCallbacks.push(fn); },
+    getContext: () => undefined,
+    setContext: () => {},
+  };
+});
+
+import { usePath } from "@daltonr/pathwrite-svelte";
+
+beforeEach(() => { destroyCallbacks = []; });
+
+it("advances to the next step", async () => {
+  const path = usePath();
+  await path.start({ id: "test", steps: [{ id: "a" }, { id: "b" }] });
+  expect(path.snapshot?.stepId).toBe("a");
+  await path.next();
+  expect(path.snapshot?.stepId).toBe("b");
+});
+
+it("cleans up on destroy", async () => {
+  const path = usePath();
+  await path.start({ id: "test", steps: [{ id: "a" }] });
+  expect(destroyCallbacks).toHaveLength(1);
+  destroyCallbacks[0](); // simulate component unmount
+});
+```
+
+> **Why mock `onDestroy`?** `usePath()` calls `onDestroy()` internally, which requires a running component context. Mocking it lets you test the adapter's logic without mounting a Svelte component.
+
+### Testing the Svelte shell
+
+Because Svelte 5 components require the Svelte compiler, shell integration tests typically run within a Vite-based test setup with the Svelte plugin. For unit tests that don't need the rendered component, mock the `.svelte` import:
+
+```typescript
+vi.mock("../src/PathShell.svelte", () => ({ default: {} }));
+```
+
+For full integration tests, use a test runner configured with `@sveltejs/vite-plugin-svelte` and test the shell by mounting it in a DOM environment.
+
 ---
 
-## 18. Design Decisions
+## 19. Design Decisions
 
 ### Headless first, shells optional
 Pathwrite owns no HTML or CSS at its core. The snapshot gives you everything you need to render a path; how you render it is entirely up to you. The engine works equally well driving a UI wizard, a backend document lifecycle, or any ordered state transition with constraints. The optional shell components are a convenience layer — they use the same public API you would use to build custom UI.
@@ -2018,7 +2392,7 @@ All navigation methods return `Promise<void>` even when synchronous. Concurrent 
 There is no special "sub-path" type. `startSubPath` pushes the current path onto a stack and starts the provided definition as the new active path. The stack can be arbitrarily deep.
 
 ### No RxJS in core
-`@daltonr/pathwrite-core` has zero dependencies. The Angular adapter introduces RxJS because Angular apps already depend on it. The React adapter uses only React's built-in `useSyncExternalStore`. The Vue adapter uses only Vue's built-in `shallowRef` and `onScopeDispose`. Each adapter is a thin translation layer from `subscribe` + `snapshot()` into the framework's native reactivity model.
+`@daltonr/pathwrite-core` has zero dependencies. The Angular adapter introduces RxJS because Angular apps already depend on it. The React adapter uses only React's built-in `useSyncExternalStore`. The Vue adapter uses only Vue's built-in `shallowRef` and `onScopeDispose`. The Svelte adapter uses only Svelte 5's built-in `$state` runes and `onDestroy`. Each adapter is a thin translation layer from `subscribe` + `snapshot()` into the framework's native reactivity model.
 
 ### Shell as an optional layer, not a core feature
 The default UI shell components (`<PathShell>` / `<pw-shell>`) are an optional convenience layer exported alongside the headless adapter API. They use the exact same `usePath` / `PathFacade` that you would use to build custom UI. This ensures there is no hidden API — everything the shell does, you can do yourself. The Angular shell is in a separate entry point (`@daltonr/pathwrite-angular/shell`) to avoid pulling the Angular compiler into headless-only imports.
@@ -2028,7 +2402,7 @@ Shell components render structural HTML with BEM-style `pw-shell__*` CSS classes
 
 ---
 
-## 19. Observers & Persistence
+## 20. Observers & Persistence
 
 ### PathObserver
 
@@ -2273,7 +2647,7 @@ State is always saved locally. On next page load, you can reverse the pattern: l
 
 ---
 
-## 20. Forms with Pathwrite
+## 21. Forms with Pathwrite
 
 While Pathwrite excels at multi-step wizards, it's also a powerful choice for **single-step forms**. A path with one step gives you field-level validation, automatic error handling, crash recovery, and consistent cross-framework APIs — without learning a separate form library.
 
@@ -2514,6 +2888,34 @@ const { snapshot, setData } = usePathContext();
     {{ snapshot.fieldMessages.name }}
   </span>
 </template>
+```
+
+**Svelte:**
+```svelte
+<script lang="ts">
+  import { getPathContext } from '@daltonr/pathwrite-svelte';
+
+  const ctx = getPathContext();
+</script>
+
+{#if ctx.snapshot}
+  <input
+    value={ctx.snapshot.data.name || ''}
+    oninput={(e) => ctx.setData('name', e.currentTarget.value)}
+    class={ctx.snapshot.fieldMessages.name ? 'error' : ''}
+  />
+  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldMessages.name}
+    <span class="error">{ctx.snapshot.fieldMessages.name}</span>
+  {/if}
+
+  <input
+    value={ctx.snapshot.data.email || ''}
+    oninput={(e) => ctx.setData('email', e.currentTarget.value)}
+  />
+  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldMessages.email}
+    <span class="error">{ctx.snapshot.fieldMessages.email}</span>
+  {/if}
+{/if}
 ```
 
 ### Default Values and Data Initialization

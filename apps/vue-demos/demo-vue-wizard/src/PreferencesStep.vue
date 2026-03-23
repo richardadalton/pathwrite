@@ -20,7 +20,7 @@ const THEME_OPTIONS = [
       <div class="radio-group">
         <label v-for="opt in THEME_OPTIONS" :key="opt.value" class="radio-option">
           <input type="radio" name="theme" :value="opt.value"
-            :checked="snapshot.data['theme'] === opt.value"
+            :checked="snapshot.data.theme === opt.value"
             @change="setData('theme', opt.value)" />
           <span class="radio-option-label">{{ opt.label }}</span>
           <span class="radio-option-desc">{{ opt.desc }}</span>
@@ -36,7 +36,7 @@ const THEME_OPTIONS = [
           <span>Receive updates, tips, and product announcements</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" :checked="snapshot.data['notifications'] as boolean"
+          <input type="checkbox" :checked="snapshot.data.notifications"
             @change="setData('notifications', ($event.target as HTMLInputElement).checked)" />
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>

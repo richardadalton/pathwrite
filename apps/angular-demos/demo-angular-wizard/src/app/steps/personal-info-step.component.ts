@@ -95,13 +95,13 @@ export class PersonalInfoStepComponent {
   protected readonly path = injectPath<OnboardingData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? (s.fieldMessages ?? {}) : {};
+    return s?.hasAttemptedNext ? s.fieldMessages : {};
   });
 
-  // Read directly from the snapshot signal — no local state, no ngOnInit needed.
-  // Angular tracks the signal read in the template; back-navigation restores
-  // automatically because the engine is the single source of truth.
+  // snapshot() is always non-null while this step component is mounted —
+  // PathShell only renders step content when the snapshot is active.
+  // The non-null assertion (!) is safe here; no cast or fallback needed.
   protected get data(): OnboardingData {
-    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
+    return this.path.snapshot()!.data;
   }
 }

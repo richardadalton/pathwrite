@@ -9,9 +9,11 @@ const THEME_OPTIONS = [
 
 export function PreferencesStep() {
   const { snapshot, setData } = usePathContext<OnboardingData>();
-  const data = snapshot?.data ?? {} as OnboardingData;
-  const theme         = (data.theme         as string)  ?? "system";
-  const notifications = (data.notifications as boolean) ?? true;
+  // snapshot is always non-null here — PathShell only renders this component
+  // when the path is active. The non-null assertion (!) is safe; no cast needed.
+  const data          = snapshot!.data;
+  const theme         = data.theme         ?? "system";
+  const notifications = data.notifications ?? true;
 
   return (
     <div className="form-body">

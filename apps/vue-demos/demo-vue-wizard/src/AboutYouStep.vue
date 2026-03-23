@@ -5,7 +5,7 @@ import type { OnboardingData } from "./onboarding";
 
 const { snapshot, setData } = usePathContext<OnboardingData>();
 const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldMessages ?? {}) : {}
+  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldMessages : {}
 );
 
 const EXPERIENCE_OPTIONS = [
@@ -22,7 +22,7 @@ const EXPERIENCE_OPTIONS = [
 
     <div class="field" :class="{ 'field--error': errors.jobTitle }">
       <label for="jobTitle">Job Title <span class="required">*</span></label>
-      <input id="jobTitle" type="text" :value="snapshot.data['jobTitle']" autofocus
+      <input id="jobTitle" type="text" :value="snapshot.data.jobTitle" autofocus
         @input="setData('jobTitle', ($event.target as HTMLInputElement).value.trim())"
         placeholder="e.g. Frontend Developer" autocomplete="organization-title" />
       <span v-if="errors.jobTitle" class="field-error">{{ errors.jobTitle }}</span>
@@ -30,14 +30,14 @@ const EXPERIENCE_OPTIONS = [
 
     <div class="field">
       <label for="company">Company <span class="optional">(optional)</span></label>
-      <input id="company" type="text" :value="snapshot.data['company']"
+      <input id="company" type="text" :value="snapshot.data.company"
         @input="setData('company', ($event.target as HTMLInputElement).value.trim())"
         placeholder="e.g. Acme Corp" autocomplete="organization" />
     </div>
 
     <div class="field" :class="{ 'field--error': errors.experience }">
       <label for="experience">Experience Level <span class="required">*</span></label>
-      <select id="experience" :value="snapshot.data['experience']"
+      <select id="experience" :value="snapshot.data.experience"
         @change="setData('experience', ($event.target as HTMLSelectElement).value)">
         <option value="" disabled>Select your level…</option>
         <option v-for="o in EXPERIENCE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -46,4 +46,3 @@ const EXPERIENCE_OPTIONS = [
     </div>
   </div>
 </template>
-

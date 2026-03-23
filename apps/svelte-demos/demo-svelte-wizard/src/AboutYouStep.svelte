@@ -3,7 +3,7 @@
   import type { OnboardingData } from "./onboarding";
 
   const ctx = getPathContext<OnboardingData>();
-  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? (ctx.snapshot.fieldMessages ?? {}) : {});
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldMessages : {});
 
   const EXPERIENCE_OPTIONS = [
     { value: "junior", label: "Junior (0–2 years)" },
