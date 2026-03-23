@@ -1,6 +1,26 @@
 node_modules/
-dist/
 .DS_Store
 *.tsbuildinfo
 .idea/
+
+# Ignore dist/ in root and packages (but not in apps/)
+/dist/
+packages/*/dist/
+
+# Demo apps — only track dist/ output and feedback.md
+apps/**/.angular/
+apps/**/.vite/
+apps/**/src/
+apps/**/public/
+apps/**/.editorconfig
+apps/**/.gitignore
+apps/**/angular.json
+apps/**/tsconfig*.json
+apps/**/package.json
+apps/**/package-lock.json
+apps/**/vite.config.*
+apps/**/svelte.config.*
+apps/**/eslint.config.*
+apps/**/*.config.ts
+apps/**/*.config.js
 
