@@ -114,6 +114,42 @@ describe("PathShell — rendering", () => {
     );
     expect(container.querySelector(".pw-shell__header")).toBeTruthy();
   });
+
+  it("renders root progress bar when a sub-path is active", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const parentPath: PathDefinition = {
+      id: "parent",
+      steps: [{ id: "p1", title: "Parent 1" }, { id: "p2", title: "Parent 2" }]
+    };
+    const subPath: PathDefinition = {
+      id: "sub",
+      steps: [{ id: "s1", title: "Sub 1" }, { id: "s2", title: "Sub 2" }]
+    };
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+    await engine.startSubPath(subPath, {});
+
+    const { container } = await act(async () =>
+      render(createElement(PathShell, {
+        engine,
+        path: subPath,
+        steps: {
+          s1: createElement("div", null, "Sub step 1"),
+          s2: createElement("div", null, "Sub step 2")
+        }
+      } as any))
+    );
+
+    // Root progress bar should be present
+    expect(container.querySelector(".pw-shell__root-progress")).toBeTruthy();
+    // Sub-path header should also be present
+    expect(container.querySelector(".pw-shell__header")).toBeTruthy();
+  });
+
+  it("does not render root progress bar at the top level", async () => {
+    const { container } = await act(async () => renderShell());
+    expect(container.querySelector(".pw-shell__root-progress")).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------

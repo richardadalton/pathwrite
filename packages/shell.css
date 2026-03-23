@@ -78,6 +78,75 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Root progress — persistent top-level bar visible during sub-paths   */
+/* ------------------------------------------------------------------ */
+.pw-shell__root-progress {
+  background: var(--pw-color-bg);
+  border: 1px solid var(--pw-color-border);
+  border-radius: var(--pw-shell-radius);
+  padding: 20px 24px 16px;
+}
+
+.pw-shell__root-progress .pw-shell__steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.pw-shell__root-progress .pw-shell__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+/* Merge root progress + sub-path header into a single card */
+.pw-shell__root-progress + .pw-shell__header {
+  margin-top: calc(-1 * var(--pw-shell-gap));
+  border-top: 1px solid var(--pw-color-border);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  padding: 12px 24px 12px;
+  opacity: 0.6;
+}
+
+.pw-shell__root-progress:has(+ .pw-shell__header) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-bottom: 12px;
+}
+
+.pw-shell__root-progress + .pw-shell__header .pw-shell__steps {
+  margin-bottom: 6px;
+}
+
+.pw-shell__root-progress + .pw-shell__header .pw-shell__step-dot {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
+.pw-shell__root-progress + .pw-shell__header .pw-shell__step-label {
+  font-size: 10px;
+}
+
+.pw-shell__root-progress + .pw-shell__header .pw-shell__track {
+  height: 3px;
+}
+
+/* Split layout — disable the merged-card effect */
+.pw-shell--progress-split .pw-shell__root-progress + .pw-shell__header {
+  margin-top: 0;
+  border-top: 1px solid var(--pw-color-border);
+  border-radius: var(--pw-shell-radius);
+}
+.pw-shell--progress-split .pw-shell__root-progress:has(+ .pw-shell__header) {
+  border-radius: var(--pw-shell-radius);
+  padding-bottom: 16px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Header — progress indicator                                        */
 /* ------------------------------------------------------------------ */
 .pw-shell__header {

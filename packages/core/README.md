@@ -449,9 +449,19 @@ function ReviewStep() {
 ### What the Shell Renders During Sub-Paths
 
 When a sub-path is active:
-- Progress bar shows sub-path steps (parent steps disappear)
+- The **root progress bar** stays visible (compact, muted) above the sub-path's progress bar so users always see their place in the main flow
+- The main progress bar shows the sub-path's steps
 - Back button on sub-path's first step cancels the sub-path
 - Completing the sub-path returns to parent (parent step re-renders)
+
+The snapshot includes `rootProgress` (type `RootProgress`) when `nestingLevel > 0`:
+
+```typescript
+if (snapshot.rootProgress) {
+  // { pathId, stepIndex, stepCount, progress, steps }
+  console.log(`Main flow: step ${snapshot.rootProgress.stepIndex + 1} of ${snapshot.rootProgress.stepCount}`);
+}
+```
 
 ### Nesting Levels
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { usePath, setPathContext } from './index.svelte.js';
-  import type { PathDefinition, PathData, PathEngine, PathSnapshot } from './index.svelte.js';
+  import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
   import type { Snippet } from 'svelte';
 
   /** Converts a camelCase or lowercase field key to a display label. */
@@ -34,6 +34,14 @@
      * - `"both"`: Render the shell summary AND whatever the step template renders.
      */
     validationDisplay?: "summary" | "inline" | "both";
+    /**
+     * Controls how progress bars are arranged when a sub-path is active.
+     * - "merged" (default): Root and sub-path bars in one card.
+     * - "split": Root and sub-path bars as separate cards.
+     * - "rootOnly": Only the root bar — sub-path bar hidden.
+     * - "activeOnly": Only the active (sub-path) bar — root bar hidden.
+     */
+    progressLayout?: ProgressLayout;
     // Callback props replace event dispatching in Svelte 5
     oncomplete?: (data: PathData) => void;
     oncancel?: (data: PathData) => void;
@@ -58,6 +66,7 @@
     hideProgress = false,
     footerLayout = 'auto',
     validationDisplay = 'inline',
+    progressLayout = 'merged',
     oncomplete,
     oncancel,
     onevent,
@@ -123,7 +132,7 @@
   }
 </script>
 
-<div class="pw-shell">
+<div class="pw-shell {progressLayout !== 'merged' ? `pw-shell--progress-${progressLayout}` : ''}">
   {#if !snap}
     <div class="pw-shell__empty">
       <p>No active path.</p>
@@ -134,8 +143,27 @@
       {/if}
     </div>
   {:else}
+    <!-- Root progress: persistent top-level bar visible during sub-paths -->
+    {#if !hideProgress && snap.rootProgress && progressLayout !== 'activeOnly'}
+      <div class="pw-shell__root-progress">
+        <div class="pw-shell__steps">
+          {#each snap.rootProgress.steps as step, i}
+            <div class="pw-shell__step pw-shell__step--{step.status}">
+              <span class="pw-shell__step-dot">
+                {step.status === 'completed' ? '✓' : i + 1}
+              </span>
+              <span class="pw-shell__step-label">{step.title ?? step.id}</span>
+            </div>
+          {/each}
+        </div>
+        <div class="pw-shell__track">
+          <div class="pw-shell__track-fill" style="width: {snap.rootProgress.progress * 100}%"></div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Header: progress indicator (overridable via header snippet) -->
-    {#if !hideProgress}
+    {#if !hideProgress && progressLayout !== 'rootOnly'}
       {#if header}
         {@render header(snap)}
       {:else if snap.stepCount > 1 || snap.nestingLevel > 0}

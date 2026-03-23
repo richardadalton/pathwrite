@@ -19,7 +19,9 @@ import {
   PathDefinition,
   PathEngine,
   PathEvent,
-  PathSnapshot
+  PathSnapshot,
+  ProgressLayout,
+  RootProgress
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -207,7 +209,15 @@ export const PathShell = defineComponent({
      * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
      * - `"both"`: Render the shell summary AND whatever the step template renders.
      */
-    validationDisplay: { type: String as PropType<"summary" | "inline" | "both">, default: "inline" }
+    validationDisplay: { type: String as PropType<"summary" | "inline" | "both">, default: "inline" },
+    /**
+     * Controls how progress bars are arranged when a sub-path is active.
+     * - "merged" (default): Root and sub-path bars in one card.
+     * - "split": Root and sub-path bars as separate cards.
+     * - "rootOnly": Only the root bar — sub-path bar hidden.
+     * - "activeOnly": Only the active (sub-path) bar — root bar hidden.
+     */
+    progressLayout: { type: String as PropType<ProgressLayout>, default: "merged" }
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
@@ -266,9 +276,20 @@ export const PathShell = defineComponent({
       const stepSlot = slots[snap.stepId];
       const stepContent = stepSlot ? stepSlot({ snapshot: snap }) : null;
 
-      return h("div", { class: "pw-shell" }, [
-        // Header — progress
-        !props.hideProgress && (
+      const showRoot = !props.hideProgress && !!snap.rootProgress && props.progressLayout !== "activeOnly";
+      const showActive = !props.hideProgress && (
+        slots.header
+          ? true
+          : (snap.stepCount > 1 || snap.nestingLevel > 0) && props.progressLayout !== "rootOnly");
+      const shellClass = props.progressLayout !== "merged"
+        ? ["pw-shell", `pw-shell--progress-${props.progressLayout}`]
+        : "pw-shell";
+
+      return h("div", { class: shellClass }, [
+        // Root progress — persistent top-level bar visible during sub-paths
+        showRoot && renderVueRootProgress(snap.rootProgress!),
+        // Header — progress (active path)
+        showActive && (
           slots.header
             ? slots.header({ snapshot: snap })
             : (snap.stepCount > 1 || snap.nestingLevel > 0) && renderVueHeader(snap)
@@ -294,6 +315,36 @@ export const PathShell = defineComponent({
     };
   }
 });
+
+// ---------------------------------------------------------------------------
+// Root progress (compact top-level bar visible during sub-paths)
+// ---------------------------------------------------------------------------
+
+function renderVueRootProgress(root: RootProgress): VNode {
+  return h("div", { class: "pw-shell__root-progress" }, [
+    h("div", { class: "pw-shell__steps" },
+      root.steps.map((step, i) =>
+        h("div", {
+          key: step.id,
+          class: ["pw-shell__step", `pw-shell__step--${step.status}`]
+        }, [
+          h("span", { class: "pw-shell__step-dot" },
+            step.status === "completed" ? "✓" : String(i + 1)
+          ),
+          h("span", { class: "pw-shell__step-label" },
+            step.title ?? step.id
+          )
+        ])
+      )
+    ),
+    h("div", { class: "pw-shell__track" },
+      h("div", {
+        class: "pw-shell__track-fill",
+        style: { width: `${root.progress * 100}%` }
+      })
+    )
+  ]);
+}
 
 // ---------------------------------------------------------------------------
 // Default header (progress indicator)
@@ -395,6 +446,8 @@ export type {
   PathSnapshot,
   PathStep,
   PathStepContext,
+  ProgressLayout,
+  RootProgress,
   SerializedPathState
 } from "@daltonr/pathwrite-core";
 

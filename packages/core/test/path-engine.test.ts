@@ -667,6 +667,64 @@ describe("PathEngine — sub-paths", () => {
     await engine.next(); // complete level1 → back to root
     expect(engine.snapshot()?.pathId).toBe("root");
   });
+
+  it("rootProgress is undefined at the top level", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("root"));
+    expect(engine.snapshot()?.rootProgress).toBeUndefined();
+  });
+
+  it("rootProgress reflects the root path when a sub-path is active", async () => {
+    const engine = new PathEngine();
+    const root: PathDefinition = {
+      id: "root",
+      steps: [
+        { id: "a", title: "Alpha" },
+        { id: "b", title: "Beta" },
+        { id: "c", title: "Gamma" }
+      ]
+    };
+    await engine.start(root);
+    await engine.next(); // advance root to step b
+    await engine.startSubPath(twoStepPath("sub"));
+
+    const snap = engine.snapshot()!;
+    expect(snap.nestingLevel).toBe(1);
+    expect(snap.rootProgress).toBeDefined();
+    expect(snap.rootProgress!.pathId).toBe("root");
+    expect(snap.rootProgress!.stepIndex).toBe(1);
+    expect(snap.rootProgress!.stepCount).toBe(3);
+    expect(snap.rootProgress!.progress).toBeCloseTo(0.5);
+    expect(snap.rootProgress!.steps).toHaveLength(3);
+    expect(snap.rootProgress!.steps[0]).toMatchObject({ id: "a", status: "completed" });
+    expect(snap.rootProgress!.steps[1]).toMatchObject({ id: "b", status: "current" });
+    expect(snap.rootProgress!.steps[2]).toMatchObject({ id: "c", status: "upcoming" });
+  });
+
+  it("rootProgress always shows the root path, even when deeply nested", async () => {
+    const engine = new PathEngine();
+    const root: PathDefinition = {
+      id: "root",
+      steps: [{ id: "r1", title: "Root 1" }, { id: "r2", title: "Root 2" }]
+    };
+    await engine.start(root);
+    await engine.startSubPath(twoStepPath("level1"));
+    await engine.startSubPath(twoStepPath("level2"));
+
+    const snap = engine.snapshot()!;
+    expect(snap.nestingLevel).toBe(2);
+    expect(snap.rootProgress!.pathId).toBe("root");
+    expect(snap.rootProgress!.stepIndex).toBe(0);
+  });
+
+  it("rootProgress disappears after returning to the root path", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("root"));
+    await engine.startSubPath(twoStepPath("sub"));
+    expect(engine.snapshot()?.rootProgress).toBeDefined();
+    await engine.cancel(); // pop back to root
+    expect(engine.snapshot()?.rootProgress).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

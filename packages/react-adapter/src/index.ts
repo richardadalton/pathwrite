@@ -13,7 +13,9 @@ import {
   PathDefinition,
   PathEngine,
   PathEvent,
-  PathSnapshot
+  PathSnapshot,
+  ProgressLayout,
+  RootProgress
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -256,6 +258,14 @@ export interface PathShellProps {
    * - `"both"`: Render the shell summary AND whatever the step template renders.
    */
   validationDisplay?: "summary" | "inline" | "both";
+  /**
+   * Controls how progress bars are arranged when a sub-path is active.
+   * - `"merged"` (default): Root and sub-path bars in one card.
+   * - `"split"`: Root and sub-path bars as separate cards.
+   * - `"rootOnly"`: Only the root bar — sub-path bar hidden.
+   * - `"activeOnly"`: Only the active (sub-path) bar — root bar hidden.
+   */
+  progressLayout?: ProgressLayout;
 }
 
 export interface PathShellActions {
@@ -305,6 +315,7 @@ export function PathShell({
   renderHeader,
   renderFooter,
   validationDisplay = "inline",
+  progressLayout = "merged",
 }: PathShellProps): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -351,10 +362,17 @@ export function PathShell({
     restart: () => restart(pathDef, initialData)
   };
 
+  const showRoot = !hideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
+  const showActive = !hideProgress && (renderHeader
+    ? true
+    : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
+
   return createElement(PathContext.Provider, { value: pathReturn },
-    createElement("div", { className: cls("pw-shell", className) },
-      // Header — progress indicator
-      !hideProgress && (renderHeader
+    createElement("div", { className: cls("pw-shell", progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`, className) },
+      // Root progress — persistent top-level bar visible during sub-paths
+      showRoot && defaultRootProgress(snapshot.rootProgress!),
+      // Header — progress indicator (active path)
+      showActive && (renderHeader
         ? renderHeader(snapshot)
         : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
       // Body — step content
@@ -374,6 +392,36 @@ export function PathShell({
         : defaultFooter(snapshot, actions, {
             backLabel, nextLabel, completeLabel, cancelLabel, hideCancel, footerLayout
           })
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Root progress (compact top-level bar visible during sub-paths)
+// ---------------------------------------------------------------------------
+
+function defaultRootProgress(root: RootProgress): ReactElement {
+  return createElement("div", { className: "pw-shell__root-progress" },
+    createElement("div", { className: "pw-shell__steps" },
+      ...root.steps.map((step, i) =>
+        createElement("div", {
+          key: step.id,
+          className: cls("pw-shell__step", `pw-shell__step--${step.status}`)
+        },
+          createElement("span", { className: "pw-shell__step-dot" },
+            step.status === "completed" ? "✓" : String(i + 1)
+          ),
+          createElement("span", { className: "pw-shell__step-label" },
+            step.title ?? step.id
+          )
+        )
+      )
+    ),
+    createElement("div", { className: "pw-shell__track" },
+      createElement("div", {
+        className: "pw-shell__track-fill",
+        style: { width: `${root.progress * 100}%` }
+      })
     )
   );
 }
@@ -489,6 +537,8 @@ export type {
   PathSnapshot,
   PathStep,
   PathStepContext,
+  ProgressLayout,
+  RootProgress,
   SerializedPathState
 } from "@daltonr/pathwrite-core";
 

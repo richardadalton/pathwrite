@@ -307,6 +307,8 @@ export type {
   PathSnapshot,
   PathStep,
   PathStepContext,
+  ProgressLayout,
+  RootProgress,
   SerializedPathState
 } from "@daltonr/pathwrite-core";
 

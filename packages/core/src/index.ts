@@ -129,6 +129,33 @@ export interface StepSummary {
   status: StepStatus;
 }
 
+/**
+ * Controls how the shell renders progress bars when a sub-path is active.
+ *
+ * | Value          | Behaviour                                                              |
+ * |----------------|------------------------------------------------------------------------|
+ * | `"merged"`     | Root and sub-path bars in one card (default)                           |
+ * | `"split"`      | Root and sub-path bars as separate cards                               |
+ * | `"rootOnly"`   | Only the root bar — sub-path bar hidden                                |
+ * | `"activeOnly"` | Only the active (sub-path) bar — root bar hidden (pre-v0.7 behaviour) |
+ */
+export type ProgressLayout = "merged" | "split" | "rootOnly" | "activeOnly";
+
+/**
+ * Summary of the root (top-level) path's progress. Present on `PathSnapshot`
+ * only when `nestingLevel > 0` — i.e. a sub-path is active.
+ *
+ * Shells use this to keep the top-level progress bar visible while navigating
+ * a sub-path, so users never lose sight of where they are in the main flow.
+ */
+export interface RootProgress {
+  pathId: string;
+  stepIndex: number;
+  stepCount: number;
+  progress: number;
+  steps: StepSummary[];
+}
+
 export interface PathSnapshot<TData extends PathData = PathData> {
   pathId: string;
   stepId: string;
@@ -141,6 +168,12 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   isFirstStep: boolean;
   isLastStep: boolean;
   nestingLevel: number;
+  /**
+   * Progress summary of the root (top-level) path. Only present when
+   * `nestingLevel > 0`. Shells use this to render a persistent top-level
+   * progress bar above the sub-path's own progress bar.
+   */
+  rootProgress?: RootProgress;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
   /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. Auto-derived as `true` when `fieldMessages` is defined and returns no messages, and `canMoveNext` is not explicitly defined. */
@@ -498,6 +531,28 @@ export class PathEngine {
     const { steps } = active.definition;
     const stepCount = steps.length;
 
+    // Build rootProgress from the bottom of the stack (the top-level path)
+    let rootProgress: RootProgress | undefined;
+    if (this.pathStack.length > 0) {
+      const root = this.pathStack[0];
+      const rootSteps = root.definition.steps;
+      const rootStepCount = rootSteps.length;
+      rootProgress = {
+        pathId: root.definition.id,
+        stepIndex: root.currentStepIndex,
+        stepCount: rootStepCount,
+        progress: rootStepCount <= 1 ? 1 : root.currentStepIndex / (rootStepCount - 1),
+        steps: rootSteps.map((s, i) => ({
+          id: s.id,
+          title: s.title,
+          meta: s.meta,
+          status: i < root.currentStepIndex ? "completed" as const
+            : i === root.currentStepIndex ? "current" as const
+            : "upcoming" as const
+        }))
+      };
+    }
+
     return {
       pathId: active.definition.id,
       stepId: step.id,
@@ -519,6 +574,7 @@ export class PathEngine {
         active.currentStepIndex === stepCount - 1 &&
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
+      rootProgress,
       isNavigating: this._isNavigating,
       hasAttemptedNext: this._hasAttemptedNext,
       canMoveNext: this.evaluateCanMoveNextSync(step, active),

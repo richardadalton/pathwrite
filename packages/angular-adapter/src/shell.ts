@@ -21,7 +21,9 @@ import {
   PathData,
   PathDefinition,
   PathEvent,
-  PathSnapshot
+  PathSnapshot,
+  ProgressLayout,
+  RootProgress
 } from "@daltonr/pathwrite-core";
 import { PathFacade } from "./index";
 
@@ -147,13 +149,30 @@ export class PathShellFooterDirective {
     </div>
 
     <!-- Active path -->
-    <div class="pw-shell" *ngIf="facade.state$ | async as s">
+    <div class="pw-shell" [ngClass]="progressLayout !== 'merged' ? 'pw-shell--progress-' + progressLayout : ''" *ngIf="facade.state$ | async as s">
+      <!-- Root progress — persistent top-level bar visible during sub-paths -->
+      <div class="pw-shell__root-progress" *ngIf="!hideProgress && s.rootProgress && progressLayout !== 'activeOnly'">
+        <div class="pw-shell__steps">
+          <div
+            *ngFor="let step of s.rootProgress!.steps; let i = index"
+            class="pw-shell__step"
+            [ngClass]="'pw-shell__step--' + step.status"
+          >
+            <span class="pw-shell__step-dot">{{ step.status === 'completed' ? '✓' : (i + 1) }}</span>
+            <span class="pw-shell__step-label">{{ step.title ?? step.id }}</span>
+          </div>
+        </div>
+        <div class="pw-shell__track">
+          <div class="pw-shell__track-fill" [style.width.%]="s.rootProgress!.progress * 100"></div>
+        </div>
+      </div>
+
       <!-- Header — custom or default progress indicator -->
       <ng-container *ngIf="customHeader; else defaultHeader">
         <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
       </ng-container>
       <ng-template #defaultHeader>
-        <div class="pw-shell__header" *ngIf="!hideProgress && (s.stepCount > 1 || s.nestingLevel > 0)">
+        <div class="pw-shell__header" *ngIf="!hideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'">
           <div class="pw-shell__steps">
             <div
               *ngFor="let step of s.steps; let i = index"
@@ -265,6 +284,14 @@ export class PathShellComponent implements OnInit, OnDestroy {
    * - `"both"`: Render the shell summary AND whatever the step template renders.
    */
   @Input() validationDisplay: "summary" | "inline" | "both" = "inline";
+  /**
+   * Controls how progress bars are arranged when a sub-path is active.
+   * - "merged" (default): Root and sub-path bars in one card.
+   * - "split": Root and sub-path bars as separate cards.
+   * - "rootOnly": Only the root bar — sub-path bar hidden.
+   * - "activeOnly": Only the active (sub-path) bar — root bar hidden.
+   */
+  @Input() progressLayout: ProgressLayout = "merged";
 
   @Output() completed = new EventEmitter<PathData>();
   @Output() cancelled = new EventEmitter<PathData>();

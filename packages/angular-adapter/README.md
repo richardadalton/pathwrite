@@ -798,8 +798,8 @@ onSubPathComplete(subPathId, subPathData, ctx, meta) {
 }
 ```
 
-**3. Progress bar switches during sub-paths**  
-When `snapshot.nestingLevel > 0`, you're in a sub-path. The `steps` array in the snapshot contains the sub-path's steps, not the main path's. The default PathShell progress bar shows sub-path progress. You can check `nestingLevel` to show a breadcrumb or "back to main flow" indicator.
+**3. Root progress bar persists during sub-paths**  
+When `snapshot.nestingLevel > 0`, you're in a sub-path. The shell automatically renders a compact, muted **root progress bar** above the sub-path's own progress bar so users always see their place in the main flow. The `steps` array in the snapshot contains the sub-path's steps. Use `snapshot.rootProgress` (type `RootProgress`) in a custom `pwShellHeader` template to render your own persistent top-level indicator.
 
 **4. Accessing parent path data from sub-path components**  
 There is currently no way to inject a "parent facade" in sub-path step components. If a sub-path step needs parent data (e.g., the document title), pass it via `initialData` when calling `startSubPath`:

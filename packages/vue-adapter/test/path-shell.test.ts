@@ -140,6 +140,42 @@ describe("PathShell (Vue) — rendering", () => {
     expect(wrapper.find(".pw-shell__header").exists()).toBe(true);
     wrapper.unmount();
   });
+
+  it("renders root progress bar when a sub-path is active", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const parentPath: PathDefinition = {
+      id: "parent",
+      steps: [{ id: "p1", title: "Parent 1" }, { id: "p2", title: "Parent 2" }]
+    };
+    const subPath: PathDefinition = {
+      id: "sub",
+      steps: [{ id: "s1", title: "Sub 1" }, { id: "s2", title: "Sub 2" }]
+    };
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+    await engine.startSubPath(subPath, {});
+
+    const TestHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path: subPath, engine }, {
+          s1: () => h("div", "Sub step 1"),
+          s2: () => h("div", "Sub step 2")
+        });
+      }
+    });
+    const wrapper = mount(TestHost, { attachTo: document.body });
+    await settled();
+    expect(wrapper.find(".pw-shell__root-progress").exists()).toBe(true);
+    expect(wrapper.find(".pw-shell__header").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("does not render root progress bar at the top level", async () => {
+    const wrapper = mountShell();
+    await settled();
+    expect(wrapper.find(".pw-shell__root-progress").exists()).toBe(false);
+    wrapper.unmount();
+  });
 });
 
 // ---------------------------------------------------------------------------

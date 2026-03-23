@@ -539,9 +539,60 @@ Nesting is unlimited. `nestingLevel` in the snapshot tells you how deep you are.
 ### What the shell shows while a sub-path is active
 
 When a sub-path is running, the snapshot reflects the **sub-path's** steps — the
-progress bar switches to show the sub-path's step list and `nestingLevel` increments.
-The parent path's steps disappear from the progress indicator until the sub-path
-completes or is cancelled and the parent is restored.
+main progress bar switches to show the sub-path's step list and `nestingLevel`
+increments.
+
+The **root (top-level) progress bar** remains visible above the sub-path's own
+progress bar so users never lose sight of where they are in the overall flow.
+This compact, muted bar is rendered automatically by all four shells (React, Vue,
+Angular, Svelte) whenever `nestingLevel > 0`.
+
+The snapshot exposes this via the `rootProgress` field:
+
+```typescript
+interface RootProgress {
+  pathId: string;
+  stepIndex: number;
+  stepCount: number;
+  progress: number;
+  steps: StepSummary[];
+}
+
+// Available when nestingLevel > 0
+snapshot.rootProgress   // RootProgress | undefined
+```
+
+`rootProgress` always reflects the **root** path (bottom of the stack), even when
+deeply nested (e.g. a sub-path inside a sub-path). It is `undefined` at the top
+level. If you write a custom header via `renderHeader` / `#header` / `pwShellHeader`,
+you can use `snapshot.rootProgress` to render your own persistent top-level
+indicator.
+
+### Controlling progress bar layout with `progressLayout`
+
+All shells accept a `progressLayout` prop to control how the two bars are
+arranged when a sub-path is active:
+
+| Value          | Behaviour                                                              |
+|----------------|------------------------------------------------------------------------|
+| `"merged"`     | Root and sub-path bars in one card (default)                           |
+| `"split"`      | Root and sub-path bars as separate cards                               |
+| `"rootOnly"`   | Only the root bar — sub-path bar hidden                                |
+| `"activeOnly"` | Only the active (sub-path) bar — root bar hidden (pre-v0.7 behaviour) |
+
+```tsx
+// React
+<PathShell path={myPath} progressLayout="split" steps={...} />
+
+// Vue
+<PathShell :path="myPath" progress-layout="rootOnly" />
+
+// Angular
+<pw-shell [path]="myPath" progressLayout="activeOnly">...</pw-shell>
+
+// Svelte
+<PathShell path={myPath} progressLayout="split" />
+```
 
 ### Back on the first step of a sub-path
 
@@ -1731,7 +1782,8 @@ All shell components use BEM-style `pw-shell__*` classes:
 | `.pw-shell` | Root container. |
 | `.pw-shell__empty` | Empty state (no active path). |
 | `.pw-shell__start-btn` | Start button (when `autoStart` is false). |
-| `.pw-shell__header` | Progress indicator wrapper. |
+| `.pw-shell__root-progress` | Root (top-level) progress bar, visible during sub-paths. |
+| `.pw-shell__header` | Progress indicator wrapper (shows the active path's steps). |
 | `.pw-shell__steps` | Step dot container. |
 | `.pw-shell__step` | Individual step wrapper. |
 | `.pw-shell__step--current` | Current step modifier. |
@@ -1751,6 +1803,32 @@ All shell components use BEM-style `pw-shell__*` classes:
 | `.pw-shell__btn--back` | Back button — outlined secondary style (transparent bg, primary border + text). |
 | `.pw-shell__btn--next` | Next / Complete button — primary filled style. |
 | `.pw-shell__btn--cancel` | Cancel button — ghost style (no border, muted text). |
+
+#### Customising the sub-path progress bar
+
+By default, root progress and sub-path progress merge into a single card (the
+sub-path portion is compact and faded). Override with plain CSS:
+
+```css
+/* Separate cards instead of merged */
+.pw-shell__root-progress + .pw-shell__header {
+  margin-top: 0;
+  border-radius: var(--pw-shell-radius);
+}
+.pw-shell__root-progress:has(+ .pw-shell__header) {
+  border-radius: var(--pw-shell-radius);
+}
+
+/* Hide the sub-path bar entirely — only show the root */
+.pw-shell__root-progress + .pw-shell__header { display: none; }
+
+/* Hide the root bar — revert to pre-0.7 behaviour */
+.pw-shell__root-progress { display: none; }
+```
+
+Or replace the header entirely using the adapter's custom header mechanism
+(`renderHeader`, `#header` slot, `pwShellHeader`, or `header` snippet) and use
+`snapshot.rootProgress` to render both bars however you like.
 
 ### When to use the shell vs. going headless
 
