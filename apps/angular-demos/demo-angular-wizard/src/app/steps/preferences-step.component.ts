@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component } from "@angular/core";
 import { injectPath } from "@daltonr/pathwrite-angular";
 import type { OnboardingData } from "../onboarding.types";
 
@@ -70,8 +70,8 @@ import type { OnboardingData } from "../onboarding.types";
             <input
               type="radio" name="theme"
               [value]="opt.value"
-              [checked]="theme === opt.value"
-              (change)="updateTheme(opt.value)"
+              [checked]="data.theme === opt.value"
+              (change)="path.setData('theme', opt.value)"
             />
             <span class="radio-option-label">{{ opt.label }}</span>
             <span class="radio-option-desc">{{ opt.desc }}</span>
@@ -91,8 +91,8 @@ import type { OnboardingData } from "../onboarding.types";
         <label class="toggle">
           <input
             type="checkbox"
-            [checked]="notifications"
-            (change)="updateNotifications($any($event.target).checked)"
+            [checked]="data.notifications !== false"
+            (change)="path.setData('notifications', $any($event.target).checked)"
           />
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>
@@ -101,34 +101,19 @@ import type { OnboardingData } from "../onboarding.types";
     </div>
   `
 })
-export class PreferencesStepComponent implements OnInit {
+export class PreferencesStepComponent {
   protected readonly path = injectPath<OnboardingData>();
 
-  protected theme         = "system";
-  protected notifications = true;
-
   protected readonly themeOptions = [
-    { value: "light",  label: "Light",          desc: "Always bright" },
-    { value: "dark",   label: "Dark",            desc: "Easy on the eyes" },
-    { value: "system", label: "System Default",  desc: "Follows your OS setting" },
+    { value: "light",  label: "Light",         desc: "Always bright" },
+    { value: "dark",   label: "Dark",           desc: "Easy on the eyes" },
+    { value: "system", label: "System Default", desc: "Follows your OS setting" },
   ];
 
-  ngOnInit(): void {
-    const data = this.path.snapshot()?.data;
-    if (data) {
-      this.theme         = (data.theme         as string)  ?? "system";
-      this.notifications = (data.notifications as boolean) ?? true;
-    }
-  }
-
-  protected updateTheme(value: string): void {
-    this.theme = value;
-    this.path.setData("theme", value);
-  }
-
-  protected updateNotifications(checked: boolean): void {
-    this.notifications = checked;
-    this.path.setData("notifications", checked);
+  // Read directly from the snapshot signal — no local state, no ngOnInit needed.
+  // Angular tracks the signal read in the template; back-navigation restores
+  // automatically because the engine is the single source of truth.
+  protected get data(): OnboardingData {
+    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
   }
 }
-

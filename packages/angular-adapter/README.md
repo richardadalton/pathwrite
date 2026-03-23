@@ -158,6 +158,53 @@ path.setData("foo", 123);       // ❌ Type error: "foo" not in ContactData
 path.snapshot()?.data.name;     // ✅ Typed as string
 ```
 
+#### Typing `setData` key parameters
+
+`setData` is typed as `setData<K extends string & keyof TData>(key: K, value: TData[K])`.
+The `string &` intersection is necessary because `keyof T` includes `number` and `symbol`
+(all valid JavaScript property key types), but `setData` only accepts string keys.
+
+When writing a reusable update method that receives a field name as a parameter, use
+`string & keyof TData` — not just `keyof TData` — to match the constraint:
+
+```typescript
+// ❌ Type error: keyof ContactData is string | number | symbol
+protected update(field: keyof ContactData, value: string): void {
+  this.path.setData(field, value);
+}
+
+// ✅ Correct: string & keyof ensures the type matches setData's signature
+protected update(field: string & keyof ContactData, value: string): void {
+  this.path.setData(field, value);
+}
+```
+
+Inline string literals are always fine — this pattern only matters when passing a key as a variable.
+
+#### Reading step data without local state
+
+Rather than mirroring engine data into local component state, use a typed getter that reads
+directly from the snapshot signal. Angular tracks the signal read during template evaluation,
+so any engine update (including back-navigation) triggers a re-render automatically:
+
+```typescript
+export class PersonalInfoStepComponent {
+  protected readonly path = injectPath<OnboardingData>();
+
+  // No local state, no ngOnInit, no dual-update event handlers.
+  protected get data(): OnboardingData {
+    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
+  }
+}
+```
+
+Template reads from `data`; writes go directly to the engine:
+
+```html
+<input [value]="data.firstName ?? ''"
+       (input)="path.setData('firstName', $any($event.target).value.trim())" />
+```
+
 ### Requirements
 
 - **Angular 16+** (signals required)

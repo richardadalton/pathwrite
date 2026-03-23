@@ -1,4 +1,4 @@
-import { Component, OnInit, computed } from "@angular/core";
+import { Component, computed } from "@angular/core";
 import { injectPath } from "@daltonr/pathwrite-angular";
 import type { OnboardingData } from "../onboarding.types";
 
@@ -49,8 +49,8 @@ import type { OnboardingData } from "../onboarding.types";
         <label for="jobTitle">Job Title <span class="required">*</span></label>
         <input
           id="jobTitle" type="text"
-          [value]="jobTitle"
-          (input)="updateText('jobTitle', $any($event.target).value)"
+          [value]="data.jobTitle ?? ''"
+          (input)="path.setData('jobTitle', $any($event.target).value.trim())"
           placeholder="e.g. Frontend Developer"
           autocomplete="organization-title"
           autofocus
@@ -67,8 +67,8 @@ import type { OnboardingData } from "../onboarding.types";
         </label>
         <input
           id="company" type="text"
-          [value]="company"
-          (input)="updateText('company', $any($event.target).value)"
+          [value]="data.company ?? ''"
+          (input)="path.setData('company', $any($event.target).value.trim())"
           placeholder="e.g. Acme Corp"
           autocomplete="organization"
         />
@@ -79,13 +79,13 @@ import type { OnboardingData } from "../onboarding.types";
         <label for="experience">Experience Level <span class="required">*</span></label>
         <select
           id="experience"
-          (change)="updateExperience($any($event.target).value)"
+          (change)="path.setData('experience', $any($event.target).value)"
         >
-          <option value="" disabled [selected]="!experience">Select your level…</option>
-          <option value="junior"  [selected]="experience === 'junior'">Junior (0–2 years)</option>
-          <option value="mid"     [selected]="experience === 'mid'">Mid-level (3–5 years)</option>
-          <option value="senior"  [selected]="experience === 'senior'">Senior (6–10 years)</option>
-          <option value="lead"    [selected]="experience === 'lead'">Lead / Principal (10+ years)</option>
+          <option value="" disabled [selected]="!data.experience">Select your level…</option>
+          <option value="junior"  [selected]="data.experience === 'junior'">Junior (0–2 years)</option>
+          <option value="mid"     [selected]="data.experience === 'mid'">Mid-level (3–5 years)</option>
+          <option value="senior"  [selected]="data.experience === 'senior'">Senior (6–10 years)</option>
+          <option value="lead"    [selected]="data.experience === 'lead'">Lead / Principal (10+ years)</option>
         </select>
         @if (errors()['experience']; as msg) {
           <span class="field-error">{{ msg }}</span>
@@ -95,35 +95,17 @@ import type { OnboardingData } from "../onboarding.types";
     </div>
   `
 })
-export class AboutYouStepComponent implements OnInit {
+export class AboutYouStepComponent {
   protected readonly path = injectPath<OnboardingData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? (s.fieldMessages ?? {}) : {};
   });
 
-  protected jobTitle   = "";
-  protected company    = "";
-  protected experience = "";
-
-  ngOnInit(): void {
-    const data = this.path.snapshot()?.data;
-    if (data) {
-      this.jobTitle   = (data.jobTitle   as string) ?? "";
-      this.company    = (data.company    as string) ?? "";
-      this.experience = (data.experience as string) ?? "";
-    }
-  }
-
-  protected updateText(field: string & keyof OnboardingData, raw: string): void {
-    (this as any)[field] = raw;
-    this.path.setData(field, raw.trim());
-  }
-
-  protected updateExperience(value: string): void {
-    this.experience = value;
-    this.path.setData("experience", value);
+  // Read directly from the snapshot signal — no local state, no ngOnInit needed.
+  // Angular tracks the signal read in the template; back-navigation restores
+  // automatically because the engine is the single source of truth.
+  protected get data(): OnboardingData {
+    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
   }
 }
-
-

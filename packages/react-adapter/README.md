@@ -242,6 +242,31 @@ import { PathShell } from "@daltonr/pathwrite-react";
 | `renderHeader` | `(snapshot) => ReactNode` | — | Render prop to replace the progress header. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Render prop to replace the navigation footer. |
 
+### Eager JSX evaluation
+
+The `steps` prop is a plain `Record<string, ReactNode>`. React evaluates every JSX
+expression in the map when `<PathShell>` renders — all step content is instantiated
+up-front, even though only one step is visible at a time.
+
+For most step components this is negligible: the components are not mounted (no
+`useEffect` or lifecycle code runs) for off-screen steps. The cost is JSX object
+creation only.
+
+If a step's JSX expression itself is expensive (e.g. it calls a function inline on
+every render), move that work inside the component:
+
+```tsx
+// ❌ buildList() runs on every PathShell render, even when "review" is not current
+<PathShell steps={{ review: <ReviewStep items={buildList()} /> }} />
+
+// ✅ buildList() only runs when ReviewStep mounts
+<PathShell steps={{ review: <ReviewStep /> }} />
+```
+
+> If you need deferred module loading (code splitting), wrap the component with
+> `React.lazy` and a `<Suspense>` boundary inside the step — not around the `steps`
+> map entry.
+
 ### Customising the header and footer
 
 Use `renderHeader` and `renderFooter` to replace the built-in progress bar or navigation buttons with your own UI. Both receive the current `PathSnapshot`; `renderFooter` also receives a `PathShellActions` object with all navigation callbacks.

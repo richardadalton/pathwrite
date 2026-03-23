@@ -1,4 +1,4 @@
-import { Component, OnInit, computed } from "@angular/core";
+import { Component, computed } from "@angular/core";
 import { injectPath } from "@daltonr/pathwrite-angular";
 import type { OnboardingData } from "../onboarding.types";
 
@@ -46,8 +46,8 @@ import type { OnboardingData } from "../onboarding.types";
           <label for="firstName">First Name <span class="required">*</span></label>
           <input
             id="firstName" type="text"
-            [value]="firstName"
-            (input)="update('firstName', $any($event.target).value)"
+            [value]="data.firstName ?? ''"
+            (input)="path.setData('firstName', $any($event.target).value.trim())"
             placeholder="Jane"
             autocomplete="given-name"
             autofocus
@@ -62,8 +62,8 @@ import type { OnboardingData } from "../onboarding.types";
           <label for="lastName">Last Name <span class="required">*</span></label>
           <input
             id="lastName" type="text"
-            [value]="lastName"
-            (input)="update('lastName', $any($event.target).value)"
+            [value]="data.lastName ?? ''"
+            (input)="path.setData('lastName', $any($event.target).value.trim())"
             placeholder="Smith"
             autocomplete="family-name"
           />
@@ -78,8 +78,8 @@ import type { OnboardingData } from "../onboarding.types";
         <label for="email">Email Address <span class="required">*</span></label>
         <input
           id="email" type="email"
-          [value]="email"
-          (input)="update('email', $any($event.target).value)"
+          [value]="data.email ?? ''"
+          (input)="path.setData('email', $any($event.target).value.trim())"
           placeholder="jane@example.com"
           autocomplete="email"
         />
@@ -91,32 +91,17 @@ import type { OnboardingData } from "../onboarding.types";
     </div>
   `
 })
-export class PersonalInfoStepComponent implements OnInit {
+export class PersonalInfoStepComponent {
   protected readonly path = injectPath<OnboardingData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? (s.fieldMessages ?? {}) : {};
   });
 
-  protected firstName = "";
-  protected lastName  = "";
-  protected email     = "";
-
-  ngOnInit(): void {
-    // Restore field values when navigating back to this step.
-    const data = this.path.snapshot()?.data;
-    if (data) {
-      this.firstName = (data.firstName as string) ?? "";
-      this.lastName  = (data.lastName  as string) ?? "";
-      this.email     = (data.email     as string) ?? "";
-    }
-  }
-
-  protected update(field: string & keyof OnboardingData, raw: string): void {
-    const value = raw.trim();
-    (this as any)[field] = raw;
-    this.path.setData(field, value);
+  // Read directly from the snapshot signal — no local state, no ngOnInit needed.
+  // Angular tracks the signal read in the template; back-navigation restores
+  // automatically because the engine is the single source of truth.
+  protected get data(): OnboardingData {
+    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
   }
 }
-
-

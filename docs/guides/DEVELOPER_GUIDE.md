@@ -8,13 +8,17 @@
 4. [Defining a Path](#4-defining-a-path)
 5. [Step Lifecycle](#5-step-lifecycle)
 6. [Navigation Guards](#6-navigation-guards)
+   - [`fieldMessages` — per-field validation and auto-derived `canMoveNext`](#fieldmessages--per-field-validation-and-auto-derived-canmovenext)
 7. [The PathSnapshot](#7-the-pathsnapshot)
 8. [Events](#8-events)
 9. [Sub-Paths](#9-sub-paths)
 10. [Angular Adapter](#10-angular-adapter)
+    - [Reading and updating step data](#reading-and-updating-step-data)
 11. [React Adapter](#11-react-adapter)
+    - [Eager JSX evaluation in `<PathShell>`](#eager-jsx-evaluation-in-pathshell)
 12. [Vue Adapter](#12-vue-adapter)
 13. [Default UI Shell](#13-default-ui-shell)
+    - [Cross-adapter API equivalence](#cross-adapter-api-equivalence)
 14. [Using the Core Engine Directly](#14-using-the-core-engine-directly)
 15. [TypeScript Generics](#15-typescript-generics)
 16. [Backend Lifecycle Patterns](#16-backend-lifecycle-patterns)
@@ -301,6 +305,46 @@ The values update automatically whenever the snapshot is rebuilt (e.g. after `se
 ```
 
 If all remaining steps are skipped going forward, the path **completes**. If all preceding steps are skipped going backward, the path **cancels**.
+
+### `fieldMessages` — per-field validation and auto-derived `canMoveNext`
+
+`fieldMessages` is a synchronous hook that returns a map of field ID → error string (or `undefined` for no error). The shell displays these messages with human-readable labels below the step body, and the snapshot exposes them as `snapshot.fieldMessages` so step templates can render inline per-field errors.
+
+```typescript
+{
+  id: "details",
+  fieldMessages: ({ data }) => ({
+    firstName: !data.firstName?.trim() ? "First name is required." : undefined,
+    email:     !String(data.email ?? "").includes("@") ? "Valid email required." : undefined,
+  })
+}
+```
+
+> **Auto-derived guard:** When `fieldMessages` is defined and `canMoveNext` is **not**, the
+> engine automatically derives `canMoveNext` as `true` when every field message is `undefined`,
+> and `false` when any message is non-empty.
+>
+> You only need an explicit `canMoveNext` if your guard logic differs from "all fields valid":
+>
+> ```typescript
+> // ✅ No canMoveNext needed — auto-derived from fieldMessages
+> { id: "details", fieldMessages: ({ data }) => ({ name: !data.name ? "Required." : undefined }) }
+>
+> // ✅ Explicit canMoveNext when the guard is more than "all fields valid"
+> { id: "terms", fieldMessages: ..., canMoveNext: (ctx) => ctx.data.agreed === true }
+> ```
+
+`fieldMessages` **must be synchronous**. Async functions are called but their result is discarded (the snapshot defaults to `{}`). If validation depends on async state, load it beforehand, store the result in `data`, and reference it from a synchronous `fieldMessages`.
+
+Use `"_"` as the field key for form-level errors that don't belong to a specific field:
+
+```typescript
+fieldMessages: ({ data }) => ({
+  _: data.password !== data.confirmPassword ? "Passwords do not match." : undefined,
+})
+```
+
+The shell renders `"_"` errors without a label.
 
 ---
 
@@ -620,6 +664,55 @@ This mirrors React's `usePathContext()` and Vue's `usePath()` for consistency ac
 
 See the [Angular adapter README](../../packages/angular-adapter/README.md) for complete documentation.
 
+### Reading and updating step data
+
+The recommended pattern for step components is a typed `data` getter that reads directly from the snapshot signal. This eliminates local state variables, `ngOnInit` restore logic, and dual-update event handlers — the engine is the single source of truth.
+
+```typescript
+export class PersonalInfoStepComponent {
+  protected readonly path = injectPath<OnboardingData>();
+
+  // One getter replaces all local state + ngOnInit + per-field update methods.
+  // Angular tracks the signal read during template evaluation, so any engine
+  // update (including back-navigation) triggers a re-render automatically.
+  protected get data(): OnboardingData {
+    return (this.path.snapshot()?.data ?? {}) as OnboardingData;
+  }
+}
+```
+
+In the template, read from `data` and write directly to the engine:
+
+```html
+<input [value]="data.firstName ?? ''"
+       (input)="path.setData('firstName', $any($event.target).value.trim())" />
+```
+
+#### TypeScript: typing `setData` key parameters
+
+`setData` is typed as `setData<K extends string & keyof TData>(key: K, value: TData[K])`.
+The `string &` intersection is necessary because `keyof TData` includes `number` and `symbol`
+(all valid JavaScript property key types), but `setData` only accepts string keys.
+
+If you write a reusable update method that passes a field name as a parameter, use
+`string & keyof TData` — not just `keyof TData` — to match the `setData` signature:
+
+```typescript
+// ❌ Type error: keyof OnboardingData is string | number | symbol
+protected update(field: keyof OnboardingData, value: string): void {
+  this.path.setData(field, value); // ← TS error
+}
+
+// ✅ Correct: string & keyof ensures the type matches setData's constraint
+protected update(field: string & keyof OnboardingData, value: string): void {
+  this.path.setData(field, value); // ← OK
+}
+```
+
+This pattern only matters when passing a key as a variable. Inline string literals
+(`path.setData("firstName", ...)`) are always fine because TypeScript infers the
+literal type directly.
+
 ### Reactive state with signals (recommended)
 
 `PathFacade` ships a pre-wired `stateSignal` — no `toSignal()` call required:
@@ -850,6 +943,36 @@ function NavBar() {
 | `restart` | `(def, data?) => void` | Tear down any active path (without firing hooks) and start the given path fresh. Safe at any time. Use for "Start over" / retry flows. |
 
 All action functions are **referentially stable** — safe in dependency arrays and as props.
+
+### Eager JSX evaluation in `<PathShell>`
+
+The `steps` prop is a plain `Record<string, ReactNode>`. React evaluates every JSX
+expression in the map when the `<PathShell>` component renders — all step content is
+instantiated up-front, even though only one step is visible at a time.
+
+For most step components this is negligible: the components are not mounted (they are
+not inserted into the DOM) until the shell renders them into the live tree, so no
+`useEffect` or lifecycle code runs for off-screen steps. The cost is JSX evaluation
+only, not a full component lifecycle.
+
+If a step's JSX expression itself is expensive (e.g. it creates large inline data
+structures or calls a function on every render), move that work inside the component
+so it only runs when the component mounts:
+
+```tsx
+// ❌ Evaluated on every PathShell render, even when "review" is not the current step
+<PathShell steps={{ review: <ReviewStep items={buildExpensiveList()} /> }} />
+
+// ✅ buildExpensiveList() only runs when ReviewStep mounts
+<PathShell steps={{ review: <ReviewStep /> }} />
+// (ReviewStep calls buildExpensiveList() inside itself)
+```
+
+> **This is different from lazy mounting.** Steps are not conditionally rendered with
+> `React.lazy` or `Suspense` — the entire `steps` map is evaluated synchronously on
+> every render of the shell. If you need to defer a component's module load (code
+> splitting), wrap it with `React.lazy` and a `<Suspense>` boundary inside the step
+> component itself.
 
 ---
 
@@ -1385,6 +1508,41 @@ All shell components use BEM-style `pw-shell__*` classes:
 | Need to override just the header or footer | Shell with `renderHeader` / `renderFooter` (React) or scoped slots (Vue). |
 
 The shell and the headless API are not mutually exclusive. You can start with `<PathShell>` and migrate individual sections (or the entire component) to custom markup whenever you need more control.
+
+### Cross-adapter API equivalence
+
+The four shell components follow their framework's idiomatic conventions, so props, events, and context access patterns look different even when they do the same thing. This table maps each concept across all four frameworks:
+
+#### Shell component name
+
+| Angular | React | Vue | Svelte |
+|---------|-------|-----|--------|
+| `<pw-shell>` | `<PathShell>` | `<PathShell>` | `<PathShell>` |
+
+#### Completion and cancellation callbacks
+
+| Concept | Angular | React | Vue | Svelte |
+|---------|---------|-------|-----|--------|
+| Path complete | `(completed)="fn($event)"` | `onComplete={fn}` | `@complete="fn"` | `oncomplete={fn}` |
+| Path cancelled | `(cancelled)="fn($event)"` | `onCancel={fn}` | `@cancel="fn"` | `oncancel={fn}` |
+| Every event | `(pathEvent)="fn($event)"` | `onEvent={fn}` | `@event="fn"` | `onevent={fn}` |
+
+#### Step content wiring
+
+| Concept | Angular | React | Vue | Svelte |
+|---------|---------|-------|-----|--------|
+| Register a step | `<ng-template pwStep="id">` | `steps={{ id: <Comp /> }}` | `<template #id>` | `{#snippet id()}` |
+| Custom header | `pwShellHeader` directive | `renderHeader={fn}` | `<template #header="{ snapshot }">` | `{#snippet header(snapshot)}` |
+| Custom footer | `pwShellFooter` directive | `renderFooter={fn}` | `<template #footer="{ snapshot, actions }">` | `{#snippet footer(snapshot, actions)}` |
+
+#### Accessing the engine from a step component
+
+| Concept | Angular | React | Vue | Svelte |
+|---------|---------|-------|-----|--------|
+| Get engine in step | `injectPath<T>()` | `usePathContext<T>()` | `usePathContext<T>()` | `getPathContext<T>()` |
+| Snapshot | `path.snapshot()` (Signal) | `snapshot` (state) | `snapshot.value` (Ref) | `ctx.snapshot` (rune) |
+| Advance | `path.next()` | `next()` | `next()` | `ctx.next()` |
+| Update data | `path.setData(key, val)` | `setData(key, val)` | `setData(key, val)` | `ctx.setData(key, val)` |
 
 
 ---
@@ -2140,14 +2298,22 @@ const contactForm: PathDefinition = {
     id: "contact",
     title: "Contact Us",
     fieldMessages: ({ data }) => ({
-      name: !data.name?.trim() ? "Name is required" : undefined,
-      email: !data.email?.includes("@") ? "Valid email address required" : undefined,
-      message: !data.message?.trim() ? "Message is required" : undefined
+      name:    !data.name?.trim()              ? "Name is required."          : undefined,
+      email:   !data.email?.includes("@")     ? "Valid email address required." : undefined,
+      message: !data.message?.trim()          ? "Message is required."        : undefined,
     })
-    // canMoveNext auto-derives from fieldMessages - no need to define it!
+    // No canMoveNext needed — auto-derived from fieldMessages (see below)
   }]
 };
 ```
+
+> **`canMoveNext` is auto-derived from `fieldMessages`.** When `fieldMessages` is defined
+> and `canMoveNext` is not, the engine treats the step as valid (allows navigation) when
+> every field message is `undefined`, and blocks navigation when any message is non-empty.
+>
+> This means you never need to duplicate the "all fields must be valid" logic in a separate
+> `canMoveNext` — one function does both. Only define `canMoveNext` explicitly when your
+> guard differs from "all fields valid" (e.g. an additional async server check).
 
 **React:**
 ```tsx
