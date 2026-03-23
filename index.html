@@ -429,179 +429,89 @@
 <section class="section section--dark" id="demos">
   <div class="container">
     <h2 class="section__title">See it in action.</h2>
-    <p class="section__subtitle">16 runnable demo apps — four demo types, each built identically in all four frameworks. Clone, run, compare.</p>
+    <p class="section__subtitle">16 live demos — four patterns, each built identically in React, Vue, Angular &amp; Svelte.</p>
 
-    <div class="demos-tabs" id="demo-tabs">
-      <div class="tabs__bar">
-        <button class="tabs__tab tabs__tab--active" data-demo-tab="all" onclick="switchDemoTab('all')">All</button>
-        <button class="tabs__tab" data-demo-tab="react" onclick="switchDemoTab('react')">React</button>
-        <button class="tabs__tab" data-demo-tab="vue" onclick="switchDemoTab('vue')">Vue</button>
-        <button class="tabs__tab" data-demo-tab="angular" onclick="switchDemoTab('angular')">Angular</button>
-        <button class="tabs__tab" data-demo-tab="svelte" onclick="switchDemoTab('svelte')">Svelte</button>
+    <div class="demo-grid">
+
+      <!-- Wizard -->
+      <div class="demo-card">
+        <div class="demo-card__icon">🧙</div>
+        <h3 class="demo-card__title">Linear Wizard</h3>
+        <p class="demo-card__desc">4-step onboarding with guards, per-field validation, lifecycle hooks, and a review step.</p>
+        <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-wizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">⚛️ React</a>
+          <a href="apps/vue-demos/demo-vue-wizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">💚 Vue</a>
+          <a href="apps/angular-demos/demo-angular-wizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">🅰️ Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-wizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">🔥 Svelte</a>
+        </div>
+        <div class="demo-card__meta">
+          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-wizard" class="demo-card__source" target="_blank" rel="noopener">View source ↗</a>
+          <div class="demo-card__tags">
+            <code>PathShell</code> <code>fieldMessages</code> <code>canMoveNext</code>
+          </div>
+        </div>
       </div>
+
+      <!-- Form -->
+      <div class="demo-card">
+        <div class="demo-card__icon">📝</div>
+        <h3 class="demo-card__title">Single-Step Form</h3>
+        <p class="demo-card__desc">Contact form with auto-derived guards, validation messages, smart error timing, and form-mode layout.</p>
+        <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-form/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">⚛️ React</a>
+          <a href="apps/vue-demos/demo-vue-form/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">💚 Vue</a>
+          <a href="apps/angular-demos/demo-angular-form/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">🅰️ Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-form/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">🔥 Svelte</a>
+        </div>
+        <div class="demo-card__meta">
+          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-form" class="demo-card__source" target="_blank" rel="noopener">View source ↗</a>
+          <div class="demo-card__tags">
+            <code>validationMessages</code> <code>completeLabel</code> <code>onComplete</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skip -->
+      <div class="demo-card">
+        <div class="demo-card__icon">⏭️</div>
+        <h3 class="demo-card__title">Conditional Steps</h3>
+        <p class="demo-card__desc">Subscription flow where steps are dynamically skipped based on plan selection and toggle state.</p>
+        <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-skip/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">⚛️ React</a>
+          <a href="apps/vue-demos/demo-vue-skip/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">💚 Vue</a>
+          <a href="apps/angular-demos/demo-angular-skip/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">🅰️ Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-skip/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">🔥 Svelte</a>
+        </div>
+        <div class="demo-card__meta">
+          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-skip" class="demo-card__source" target="_blank" rel="noopener">View source ↗</a>
+          <div class="demo-card__tags">
+            <code>shouldSkip</code> <code>onEnter</code> <code>canMoveNext</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Path -->
+      <div class="demo-card">
+        <div class="demo-card__icon">📦</div>
+        <h3 class="demo-card__title">Sub-Path (Nested)</h3>
+        <p class="demo-card__desc">Approval workflow with nested sub-wizards. Completion or cancellation auto-restores the parent path.</p>
+        <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-subwizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">⚛️ React</a>
+          <a href="apps/vue-demos/demo-vue-subwizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">💚 Vue</a>
+          <a href="apps/angular-demos/demo-angular-subwizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">🅰️ Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-subwizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">🔥 Svelte</a>
+        </div>
+        <div class="demo-card__meta">
+          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-subwizard" class="demo-card__source" target="_blank" rel="noopener">View source ↗</a>
+          <div class="demo-card__tags">
+            <code>startSubPath</code> <code>onSubPathComplete</code>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Wizard Demos -->
-    <div class="demo-type">
-      <div class="demo-type__header">
-        <span class="demo-type__icon">🧙</span>
-        <div>
-          <h3 class="demo-type__title">Linear Wizard</h3>
-          <p class="demo-type__desc">4-step onboarding wizard with guards, per-field validation, lifecycle hooks, and a final review step.</p>
-        </div>
-      </div>
-      <div class="demo-links">
-        <div class="demo-link-row" data-fw="react">
-          <span class="demo-link__fw demo-link__fw--react">⚛️ React</span>
-          <span class="demo-link__name">demo-react-wizard</span>
-          <a href="apps/react-demos/demo-react-wizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-wizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="vue">
-          <span class="demo-link__fw demo-link__fw--vue">💚 Vue</span>
-          <span class="demo-link__name">demo-vue-wizard</span>
-          <a href="apps/vue-demos/demo-vue-wizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/vue-demos/demo-vue-wizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="angular">
-          <span class="demo-link__fw demo-link__fw--angular">🅰️ Angular</span>
-          <span class="demo-link__name">demo-angular-wizard</span>
-          <a href="apps/angular-demos/demo-angular-wizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/angular-demos/demo-angular-wizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="svelte">
-          <span class="demo-link__fw demo-link__fw--svelte">🔥 Svelte</span>
-          <span class="demo-link__name">demo-svelte-wizard</span>
-          <a href="apps/svelte-demos/demo-svelte-wizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/svelte-demos/demo-svelte-wizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-      </div>
-      <div class="demo-type__features">
-        <code>PathShell</code> <code>fieldMessages</code> <code>canMoveNext</code> <code>onEnter</code> <code>usePathContext</code>
-      </div>
-    </div>
-
-    <!-- Form Demos -->
-    <div class="demo-type">
-      <div class="demo-type__header">
-        <span class="demo-type__icon">📝</span>
-        <div>
-          <h3 class="demo-type__title">Single-Step Form</h3>
-          <p class="demo-type__desc">Contact form using a single-step Path — auto-derived guards, validation messages, smart error timing, and form-mode shell layout.</p>
-        </div>
-      </div>
-      <div class="demo-links">
-        <div class="demo-link-row" data-fw="react">
-          <span class="demo-link__fw demo-link__fw--react">⚛️ React</span>
-          <span class="demo-link__name">demo-react-form</span>
-          <a href="apps/react-demos/demo-react-form/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-form" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="vue">
-          <span class="demo-link__fw demo-link__fw--vue">💚 Vue</span>
-          <span class="demo-link__name">demo-vue-form</span>
-          <a href="apps/vue-demos/demo-vue-form/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/vue-demos/demo-vue-form" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="angular">
-          <span class="demo-link__fw demo-link__fw--angular">🅰️ Angular</span>
-          <span class="demo-link__name">demo-angular-form</span>
-          <a href="apps/angular-demos/demo-angular-form/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/angular-demos/demo-angular-form" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="svelte">
-          <span class="demo-link__fw demo-link__fw--svelte">🔥 Svelte</span>
-          <span class="demo-link__name">demo-svelte-form</span>
-          <a href="apps/svelte-demos/demo-svelte-form/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/svelte-demos/demo-svelte-form" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-      </div>
-      <div class="demo-type__features">
-        <code>PathShell</code> <code>validationMessages</code> <code>completeLabel</code> <code>cancelLabel</code> <code>onComplete</code>
-      </div>
-    </div>
-
-    <!-- Skip Demos -->
-    <div class="demo-type">
-      <div class="demo-type__header">
-        <span class="demo-type__icon">⏭️</span>
-        <div>
-          <h3 class="demo-type__title">Conditional Steps (Skip)</h3>
-          <p class="demo-type__desc">Subscription flow where steps are dynamically skipped based on plan selection — free plan skips payment &amp; billing, "same as shipping" toggle skips billing.</p>
-        </div>
-      </div>
-      <div class="demo-links">
-        <div class="demo-link-row" data-fw="react">
-          <span class="demo-link__fw demo-link__fw--react">⚛️ React</span>
-          <span class="demo-link__name">demo-react-skip</span>
-          <a href="apps/react-demos/demo-react-skip/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-skip" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="vue">
-          <span class="demo-link__fw demo-link__fw--vue">💚 Vue</span>
-          <span class="demo-link__name">demo-vue-skip</span>
-          <a href="apps/vue-demos/demo-vue-skip/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/vue-demos/demo-vue-skip" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="angular">
-          <span class="demo-link__fw demo-link__fw--angular">🅰️ Angular</span>
-          <span class="demo-link__name">demo-angular-skip</span>
-          <a href="apps/angular-demos/demo-angular-skip/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/angular-demos/demo-angular-skip" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="svelte">
-          <span class="demo-link__fw demo-link__fw--svelte">🔥 Svelte</span>
-          <span class="demo-link__name">demo-svelte-skip</span>
-          <a href="apps/svelte-demos/demo-svelte-skip/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/svelte-demos/demo-svelte-skip" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-      </div>
-      <div class="demo-type__features">
-        <code>shouldSkip</code> <code>onEnter</code> <code>canMoveNext</code> <code>progress bar auto-adjusts</code>
-      </div>
-    </div>
-
-    <!-- Subwizard Demos -->
-    <div class="demo-type">
-      <div class="demo-type__header">
-        <span class="demo-type__icon">📦</span>
-        <div>
-          <h3 class="demo-type__title">Sub-Path (Nested Wizard)</h3>
-          <p class="demo-type__desc">Approval workflow with nested sub-paths — each approver launches a review sub-wizard. Completion or cancellation auto-restores the parent path.</p>
-        </div>
-      </div>
-      <div class="demo-links">
-        <div class="demo-link-row" data-fw="react">
-          <span class="demo-link__fw demo-link__fw--react">⚛️ React</span>
-          <span class="demo-link__name">demo-react-subwizard</span>
-          <a href="apps/react-demos/demo-react-subwizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/react-demos/demo-react-subwizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="vue">
-          <span class="demo-link__fw demo-link__fw--vue">💚 Vue</span>
-          <span class="demo-link__name">demo-vue-subwizard</span>
-          <a href="apps/vue-demos/demo-vue-subwizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/vue-demos/demo-vue-subwizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="angular">
-          <span class="demo-link__fw demo-link__fw--angular">🅰️ Angular</span>
-          <span class="demo-link__name">demo-angular-subwizard</span>
-          <a href="apps/angular-demos/demo-angular-subwizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/angular-demos/demo-angular-subwizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-        <div class="demo-link-row" data-fw="svelte">
-          <span class="demo-link__fw demo-link__fw--svelte">🔥 Svelte</span>
-          <span class="demo-link__name">demo-svelte-subwizard</span>
-          <a href="apps/svelte-demos/demo-svelte-subwizard/dist/" class="demo-link__btn demo-link__btn--live" target="_blank" rel="noopener">▶ Live Demo</a>
-          <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/svelte-demos/demo-svelte-subwizard" class="demo-link__btn demo-link__btn--source" target="_blank" rel="noopener">Source</a>
-        </div>
-      </div>
-      <div class="demo-type__features">
-        <code>startSubPath</code> <code>onSubPathComplete</code> <code>onSubPathCancel</code> <code>canMoveNext</code>
-      </div>
-    </div>
-
-    <p class="demos-note">All 16 demos are live — built and deployed to this site. Same core path definitions, only the adapter layer differs.</p>
+    <p class="demos-note">All 16 demos are live — same core path definitions, only the adapter layer differs.</p>
   </div>
 </section>
 
@@ -762,18 +672,6 @@
     document.querySelectorAll('#framework-tabs .tabs__panel').forEach(p => p.classList.remove('tabs__panel--active'));
     document.querySelector(`#framework-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
     document.getElementById(`panel-${id}`).classList.add('tabs__panel--active');
-  }
-
-  function switchDemoTab(fw) {
-    document.querySelectorAll('#demo-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
-    document.querySelector(`[data-demo-tab="${fw}"]`).classList.add('tabs__tab--active');
-    document.querySelectorAll('.demo-link-row').forEach(row => {
-      if (fw === 'all' || row.dataset.fw === fw) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
   }
 </script>
 
