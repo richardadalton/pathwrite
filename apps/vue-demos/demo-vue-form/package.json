@@ -9,14 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daltonr/pathwrite-vue": "^0.6.0",
+    "@daltonr/pathwrite-vue": "0.6.3",
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11",
+    "vite": "^8.0.1",
     "vue-tsc": "^2.1.10"
   }
 }
-

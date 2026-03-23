@@ -10,7 +10,11 @@
   },
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/ad-hoc/*",
+    "apps/angular-demos/*",
+    "apps/react-demos/*",
+    "apps/svelte-demos/*",
+    "apps/vue-demos/*"
   ],
   "scripts": {
     "build": "npm run build -w packages/core && npm run build -w packages/react-adapter && npm run build -w packages/vue-adapter && npm run build -w packages/store-http && npm run build -w packages/svelte-adapter && npm run build -w packages/angular-adapter",
