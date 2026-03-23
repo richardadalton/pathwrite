@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-angular
 
+## 0.6.3
+
+### Patch Changes
+
+- 24d12ea: Change default `validationDisplay` from `"summary"` to `"inline"` across all shell components. Documentation updates including full Svelte adapter coverage in the Developer Guide.
+- Updated dependencies [24d12ea]
+  - @daltonr/pathwrite-core@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
