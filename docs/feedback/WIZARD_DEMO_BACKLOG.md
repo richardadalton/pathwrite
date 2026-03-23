@@ -130,32 +130,25 @@ protected readonly firstName = useStepData<OnboardingData, 'firstName'>('firstNa
 
 ---
 
-### 2.2 Svelte: hyphenated step IDs are incompatible with component props
+### 2.2 ~~Svelte: hyphenated step IDs are incompatible with component props~~ ✅ Closed — not a Pathwrite issue
 
-**Problem:**
-Svelte 5 requires component props to be valid JavaScript identifiers. Hyphens are not
-permitted. This forces Svelte to use camelCase step IDs (`personalInfo`, `aboutYou`) while
-Angular, React, and Vue use kebab-case (`personal-info`, `about-you`).
+**Original concern:**
+Svelte 5 component props must be valid JavaScript identifiers, so step IDs with hyphens
+(`personal-info`, `about-you`) can't be passed as individual props. This forced the Svelte
+wizard demo to use camelCase step IDs while the Angular, React, and Vue demos used kebab-case.
 
-The path definitions are not interchangeable across frameworks, which undermines the
-"same core, different adapters" story — the core selling point of Pathwrite.
+**Resolution:**
+This is a Svelte language constraint, not a Pathwrite limitation. A developer building a
+Svelte app owns the path definition and simply uses camelCase step IDs from the start —
+no workaround needed. The concern only arises when trying to share a single path definition
+identically across multiple frameworks simultaneously, which is outside Pathwrite's core use
+case. Each framework's demo is an independent project and can use whatever IDs suit it.
 
-**Raised by:** Svelte (directly)
+Step IDs are arbitrary strings. Choosing `personalInfo` in a Svelte app is no different from
+choosing `personal-info` in an Angular app — it's a project convention, not a constraint
+imposed by Pathwrite.
 
-**Proposed change:**
-Add a `steps` prop to the Svelte `PathShell` as an alternative to individual component props:
-
-```svelte
-<PathShell
-  path={onboardingPath}
-  steps={{ "personal-info": PersonalInfoStep, "about-you": AboutYouStep }}
-/>
-```
-
-This matches React's `steps` record pattern and removes the identifier constraint entirely.
-The existing prop-per-step pattern would continue to work for camelCase IDs.
-
-**Where:** `packages/svelte-adapter/src/PathShell.svelte`
+**No change required.**
 
 ---
 
@@ -306,7 +299,7 @@ wizard demos. They confirm that the current architecture is working well.
 | 1.1 | `validationDisplay` prop on PathShell | Medium | All 4 shells | All 4 |
 | 1.2 | Typed `snapshot.data` accessor | Medium | core | All 4 |
 | 2.1 | Angular back-nav state restore (docs + optional helper) | High (Angular) | angular-adapter + docs | Angular |
-| 2.2 | Svelte `steps` record prop for hyphenated IDs | High (Svelte) | svelte-adapter | Svelte |
+| 2.2 ✅ | ~~Svelte `steps` record prop for hyphenated IDs~~ — closed, not a Pathwrite issue | n/a | n/a | Svelte |
 | 2.3 | `useStepData<T>()` helper to eliminate null checks | Low | All 4 adapters | React · Angular |
 | 3.1 | Document `fieldMessages` auto-deriving `canMoveNext` | Low | docs | Angular |
 | 3.2 | Document `string & keyof TData` Angular pattern | Low | docs | Angular |
