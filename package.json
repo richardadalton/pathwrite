@@ -28,16 +28,19 @@
     "demo:angular:form": "npm run -w @daltonr/pathwrite-demo-angular-form start",
     "demo:angular:wizard": "npm run -w @daltonr/pathwrite-demo-angular-wizard start",
     "demo:angular:subwizard": "npm run -w @daltonr/pathwrite-demo-angular-subwizard start",
+    "demo:angular:skip": "npm run -w @daltonr/pathwrite-demo-angular-skip start",
     "demo:react:form": "npm run -w @daltonr/pathwrite-demo-react-form start",
     "demo:react:wizard": "npm run -w @daltonr/pathwrite-demo-react-wizard start",
     "demo:react:subwizard": "npm run -w @daltonr/pathwrite-demo-react-subwizard start",
+    "demo:react:skip": "npm run -w @daltonr/pathwrite-demo-react-skip start",
     "demo:vue:form": "npm run -w @daltonr/pathwrite-demo-vue-form start",
     "demo:vue:wizard": "npm run -w @daltonr/pathwrite-demo-vue-wizard start",
     "demo:vue:subwizard": "npm run -w @daltonr/pathwrite-demo-vue-subwizard start",
     "demo:vue:skip": "npm run -w @daltonr/pathwrite-demo-vue-skip start",
     "demo:svelte:form": "npm run -w @daltonr/pathwrite-demo-svelte-form start",
     "demo:svelte:wizard": "npm run -w @daltonr/pathwrite-demo-svelte-wizard start",
-    "demo:svelte:subwizard": "npm run -w @daltonr/pathwrite-demo-svelte-subwizard start"
+    "demo:svelte:subwizard": "npm run -w @daltonr/pathwrite-demo-svelte-subwizard start",
+    "demo:svelte:skip": "npm run -w @daltonr/pathwrite-demo-svelte-skip start"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

@@ -1,0 +1,59 @@
+<main class="page">
+  <div class="page-header">
+    <h1>Subscription Flow</h1>
+    <p class="subtitle">Conditional steps demo — <code>shouldSkip</code> hides payment and billing steps for the Free plan.</p>
+  </div>
+
+  @if (isCompleted && completedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">🎉</div>
+      <h2>Subscription Complete!</h2>
+      <p>You're signed up for the <strong>{{ planLabel(completedData.plan) }}</strong> plan.</p>
+      <div class="summary">
+        <div class="summary-section">
+          <p class="summary-section__title">Plan</p>
+          <div class="summary-row"><span class="summary-key">Plan</span><span>{{ planLabel(completedData.plan) }}</span></div>
+        </div>
+        <div class="summary-section">
+          <p class="summary-section__title">Shipping</p>
+          <div class="summary-row"><span class="summary-key">Name</span><span>{{ completedData.shippingName }}</span></div>
+          <div class="summary-row"><span class="summary-key">Address</span><span>{{ completedData.shippingAddress }}, {{ completedData.shippingCity }} {{ completedData.shippingPostcode }}</span></div>
+        </div>
+        @if (completedData.plan === 'paid') {
+          <div class="summary-section">
+            <p class="summary-section__title">Payment</p>
+            <div class="summary-row"><span class="summary-key">Card</span><span>•••• {{ completedData.cardNumber.slice(-4) }}</span></div>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn-primary" (click)="startOver()">Start Over</button>
+    </section>
+  }
+
+  @if (isCancelled) {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">✖</div>
+      <h2>Subscription Cancelled</h2>
+      <p>No subscription was created.</p>
+      <button type="button" class="btn-secondary" (click)="startOver()">Try Again</button>
+    </section>
+  }
+
+  @if (!isCompleted && !isCancelled) {
+    <pw-shell
+      [path]="subscriptionPath"
+      [initialData]="initialData"
+      completeLabel="Subscribe"
+      cancelLabel="Cancel"
+      (completed)="onComplete($event)"
+      (cancelled)="onCancel()"
+    >
+      <ng-template pwStep="select-plan"><app-select-plan-step /></ng-template>
+      <ng-template pwStep="shipping-address"><app-shipping-address-step /></ng-template>
+      <ng-template pwStep="payment"><app-payment-step /></ng-template>
+      <ng-template pwStep="billing-address"><app-billing-address-step /></ng-template>
+      <ng-template pwStep="review"><app-review-step /></ng-template>
+    </pw-shell>
+  }
+</main>
+
