@@ -24,3 +24,6 @@ apps/**/eslint.config.*
 apps/**/*.config.ts
 apps/**/*.config.js
 
+
+# SvelteKit build output
+packages/*/.svelte-kit/
