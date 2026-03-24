@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>How this demo was embedded — Pathwrite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .doc-container{max-width:900px;margin:48px auto;padding:0 1.5rem}
+    .doc-hero{background:var(--color-bg-card);border:1px solid var(--color-border);padding:20px;border-radius:12px;margin-bottom:20px}
+    .doc-hero h1{margin:0 0 8px}
+    .doc-section{background:var(--color-bg);padding:18px;border-radius:8px;border:1px solid var(--color-border);margin-bottom:14px}
+    pre{background:var(--color-code-bg);padding:12px;border-radius:8px;color:var(--color-text);overflow:auto}
+    a.btn-link{display:inline-block;margin-top:12px}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="/" class="nav__logo"><span class="nav__logo-icon">⟡</span> Pathwrite</a>
+    <div class="nav__links">
+      <a href="/">Home</a>
+      <a href="#">Docs</a>
+    </div>
+  </div>
+</nav>
+
+<main class="doc-container">
+  <div class="doc-hero">
+    <h1>How the live demo is embedded</h1>
+    <p class="section__subtitle">Technical notes explaining how the Pathwrite engine was run inline on the gh-pages homepage and how the live demo works.</p>
+  </div>
+
+  <section class="doc-section" id="summary">
+    <h2>Summary</h2>
+    <p>The homepage contains a small, embedded Pathwrite example that runs the core engine directly in the browser (no iframe). It imports <code>@daltonr/pathwrite-core</code> as an ES module from a CDN and creates a <code>PathEngine</code> instance which is driven by a tiny path definition and a rendering loop that updates the DOM from snapshots.</p>
+  </section>
+
+  <section class="doc-section" id="how-it-runs">
+    <h2>How it runs</h2>
+    <ol>
+      <li>Import the engine as an ES module, for example using <code>esm.sh</code>:
+        <pre><code>import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.6.3';</code></pre>
+      </li>
+      <li>Define a small <em>path</em> (steps array) and optionally a <em>sub-path</em>. Steps can include guards (<code>canMoveNext</code>) and conditional skipping (<code>shouldSkip</code>).</li>
+      <li>Create the engine and start it: <code>const engine = new PathEngine(); engine.start(mainPath, {});</code></li>
+      <li>Subscribe to engine events and call a <code>render()</code> function on state changes. In render we call <code>engine.snapshot()</code> and update the stepper, step label and step content from that snapshot.</li>
+      <li>Wire the UI controls to the engine API: <code>engine.next()</code>, <code>engine.previous()</code>, <code>engine.startSubPath()</code>, <code>engine.cancel()</code>, and <code>engine.setData()</code> for interactive inputs.</li>
+    </ol>
+  </section>
+
+  <section class="doc-section" id="key-concepts">
+    <h2>Key concepts demonstrated</h2>
+    <ul>
+      <li><strong>Guards:</strong> a step can expose <code>canMoveNext</code> to block advancing until the user satisfies a condition.</li>
+      <li><strong>Conditional steps:</strong> <code>shouldSkip</code> hides steps dynamically and the stepper updates to reflect only the active steps.</li>
+      <li><strong>Sub-paths:</strong> show how to push a nested path onto the stack, pause the parent, and automatically restore the parent when the sub-path completes or is cancelled.</li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="rendering">
+    <h2>Rendering loop</h2>
+    <p>The demo uses a simple declarative render loop:</p>
+    <pre><code>engine.subscribe(() =&gt; render());
+function render(){
+  const snap = engine.snapshot();
+  // build stepper from snap.steps
+  // set the body content for current step
+  // enable/disable buttons from snap.canMoveNext / snap.isFirstStep
+}</code></pre>
+    <p>This keeps UI logic isolated: the engine manages flow, the page renders snapshots.</p>
+  </section>
+
+  <section class="doc-section" id="wiring">
+    <h2>Wiring controls</h2>
+    <p>Example bindings:</p>
+    <pre><code>nextButton.addEventListener('click', () =&gt; engine.next());
+prevButton.addEventListener('click', () =&gt; engine.previous());
+chip.addEventListener('click', () =&gt; engine.setData('framework','vue'));</code></pre>
+  </section>
+
+  <section class="doc-section" id="notes">
+    <h2>Notes &amp; considerations</h2>
+    <ul>
+      <li><strong>CDN vs vendoring:</strong> The page imports the engine from <code>esm.sh</code>. For offline stability you can instead vendor the built/dist JS and import it locally.</li>
+      <li><strong>Styling:</strong> The demo uses the site's CSS variables so it looks native to the site. Embedding inline gives full control of styles and accessibility.</li>
+      <li><strong>Accessibility:</strong> The demo is a small prototype. For production, add focus management and aria-live regions so screen readers announce step changes.</li>
+    </ul>
+  </section>
+
+  <p><a class="btn btn--ghost" href="/">← Back to homepage</a></p>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <p>&copy; 2026 Devjoy Ltd. MIT License.</p>
+  </div>
+</footer>
+</body>
+</html>
