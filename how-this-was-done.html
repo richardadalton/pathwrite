@@ -56,6 +56,7 @@
       <li><strong>Guards:</strong> a step can expose <code>canMoveNext</code> to block advancing until the user satisfies a condition.</li>
       <li><strong>Conditional steps:</strong> <code>shouldSkip</code> hides steps dynamically and the stepper updates to reflect only the active steps.</li>
       <li><strong>Sub-paths:</strong> show how to push a nested path onto the stack, pause the parent, and automatically restore the parent when the sub-path completes or is cancelled.</li>
+      <li><strong>Direct engine usage:</strong> you don't need to use or build a framework adapter to use Pathwrite — you can work directly with <code>PathEngine</code> in any environment, call its API, and render snapshots into your UI of choice.</li>
     </ul>
   </section>
 
@@ -99,3 +100,4 @@ chip.addEventListener('click', () =&gt; engine.setData('framework','vue'));</cod
 </footer>
 </body>
 </html>
+
