@@ -317,7 +317,7 @@
       <div class="feature-card">
         <div class="feature-card__icon">💾</div>
         <h3>Built-in Persistence</h3>
-        <p>Save state on every step, on data change, or on a custom trigger. Restore seamlessly. Ships with an HTTP store adapter.</p>
+        <p>Save state on every step, on data change, or on a custom trigger. Restore seamlessly. Ships with HTTP and LocalStorage adapters.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card__icon">⏭️</div>
@@ -610,9 +610,28 @@
         </div>
       </div>
 
+      <!-- Storage Demo -->
+      <div class="demo-card">
+        <div class="demo-card__icon">💾</div>
+        <h3 class="demo-card__title">Storage Demo</h3>
+        <p class="demo-card__desc">Team onboarding wizard with switchable storage backends (LocalStorage vs API), session management, and auto-persistence with debouncing.</p>
+        <div class="demo-card__links">
+          <a href="apps/vue-demos/demo-vue-storage/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">💚 Vue</a>
+        </div>
+        <div class="demo-card__meta">
+          <div class="demo-card__sources">
+            <span class="demo-card__sources-label">Source:</span>
+            <a href="https://github.com/richardadalton/pathwrite/tree/main/apps/vue-demos/demo-vue-storage" target="_blank" rel="noopener">Vue</a>
+          </div>
+          <div class="demo-card__tags">
+            <code>LocalStorageStore</code> <code>HttpStore</code> <code>httpPersistence</code> <code>restoreOrStart</code>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <p class="demos-note">All 16 demos are live — same core path definitions, only the adapter layer differs.</p>
+    <p class="demos-note">All demos are live — same core path definitions, only the adapter layer differs.</p>
     <p class="demos-coming-soon">🚀 More demos coming soon</p>
   </div>
 </section>
@@ -661,7 +680,7 @@
         </div>
         <div class="persistence-feature">
           <strong>Pluggable stores</strong>
-          <p>Ships with HTTP. Build your own for localStorage, IndexedDB, or any backend.</p>
+          <p>Ships with LocalStorageStore and HttpStore. Build your own for IndexedDB or any backend.</p>
         </div>
         <div class="persistence-feature">
           <strong>Automatic restore</strong>
