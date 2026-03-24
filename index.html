@@ -24,7 +24,16 @@
     .what-you-get { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px }
     .what-item { background:#f8fafc; padding:10px 12px; border-radius:8px; min-width:180px }
     pre.inline-code { background:#0f172a; color:#fff; padding:12px; border-radius:8px; overflow:auto }
-    @media (min-width:900px){ .hero__inner{display:flex; gap:36px; align-items:center} .hero__title{flex:1} }
+    /* Layout: stack on small screens, two columns on wide screens */
+    .hero__left { }
+    .hero__right { }
+    @media (min-width:900px){
+      .hero__inner{display:flex; gap:36px; align-items:center}
+      .hero__left{flex:1}
+      .hero__right{flex:0 0 420px}
+      .hero-demo{margin-top:0}
+      .hero__title{margin-top:0}
+    }
   </style>
 </head>
 <body>
@@ -53,37 +62,42 @@
 <!-- ===== HERO ===== -->
 <header class="hero">
   <div class="container hero__inner">
-    <div class="hero__badge">v0.6.0 — Angular injectPath() &amp; Form Demos</div>
-    <h1 class="hero__title">
-      Build powerful wizards — with logic and UI included.
-    </h1>
-    <p class="hero__subtitle">
-      Pathwrite gives you a workflow engine plus a complete wizard UI shell. Define steps, guards and validation — and drop-in a ready-to-use UI across React, Vue, Angular and Svelte.
-    </p>
-    <div class="hero__actions">
-      <a href="#get-started" class="btn btn--lg btn--primary">Get Started</a>
-      <a href="#compare" class="btn btn--lg btn--ghost">Why Pathwrite?</a>
-    </div>
-    <!-- Interactive hero demo: small mock of the default UI shell -->
-    <div class="hero-demo" aria-hidden="false">
-      <div class="pw-mock" id="heroMock">
-        <div class="pw-header">Checkout Wizard</div>
-        <div class="pw-steps" id="heroSteps">
-          <div class="pw-step" data-index="0"></div>
-          <div class="pw-step" data-index="1"></div>
-          <div class="pw-step" data-index="2"></div>
-          <div class="pw-step" data-index="3"></div>
-        </div>
-        <div class="pw-content" id="heroContent">Welcome! Click Next to try the shell UI.</div>
-        <div class="pw-controls">
-          <button class="pw-btn" id="heroPrev" disabled>Back</button>
-          <div style="flex:1"></div>
-          <button class="pw-btn primary" id="heroNext">Next</button>
-        </div>
+    <div class="hero__left">
+      <div class="hero__badge">v0.6.0 — Angular injectPath() &amp; Form Demos</div>
+      <h1 class="hero__title">
+        Build powerful wizards — with logic and UI included.
+      </h1>
+      <p class="hero__subtitle">
+        Pathwrite gives you a workflow engine plus a complete wizard UI shell. Define steps, guards and validation — and drop-in a ready-to-use UI across React, Vue, Angular and Svelte.
+      </p>
+      <div class="hero__actions">
+        <a href="#get-started" class="btn btn--lg btn--primary">Get Started</a>
+        <a href="#compare" class="btn btn--lg btn--ghost">Why Pathwrite?</a>
+      </div>
+      <div class="hero__install" style="margin-top:18px">
+        <code>npm install @daltonr/pathwrite-core @daltonr/pathwrite-react</code>
       </div>
     </div>
-    <div class="hero__install">
-      <code>npm install @daltonr/pathwrite-core @daltonr/pathwrite-react</code>
+
+    <div class="hero__right">
+      <!-- Interactive hero demo: small mock of the default UI shell -->
+      <div class="hero-demo" aria-hidden="false">
+        <div class="pw-mock" id="heroMock">
+          <div class="pw-header">Checkout Wizard</div>
+          <div class="pw-steps" id="heroSteps">
+            <div class="pw-step" data-index="0"></div>
+            <div class="pw-step" data-index="1"></div>
+            <div class="pw-step" data-index="2"></div>
+            <div class="pw-step" data-index="3"></div>
+          </div>
+          <div class="pw-content" id="heroContent">Welcome! Click Next to try the shell UI.</div>
+          <div class="pw-controls">
+            <button class="pw-btn" id="heroPrev" disabled>Back</button>
+            <div style="flex:1"></div>
+            <button class="pw-btn primary" id="heroNext">Next</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
