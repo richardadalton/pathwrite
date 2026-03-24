@@ -301,12 +301,12 @@ export interface RestoreOrStartOptions {
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** Path definition to start when no saved state exists. */
-  path: PathDefinition;
+  path: PathDefinition<any>;
   /**
    * Map of all path definitions that may appear in serialized state
    * (active path + any sub-paths). Defaults to `{ [path.id]: path }`.
    */
-  pathDefinitions?: Record<string, PathDefinition>;
+  pathDefinitions?: Record<string, PathDefinition<any>>;
   /** Initial data for a fresh (non-restored) start. Defaults to `{}`. */
   initialData?: PathData;
   /**
@@ -378,4 +378,7 @@ export type {
   ObserverStrategy,
   PathStore,
 } from "@daltonr/pathwrite-core";
+
+export { LocalStorageStore } from "./local-store";
+export type { LocalStorageStoreOptions, StorageAdapter } from "./local-store";
 

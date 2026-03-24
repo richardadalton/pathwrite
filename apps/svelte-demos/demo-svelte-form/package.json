@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daltonr/pathwrite-svelte": "0.6.3"
+    "@daltonr/pathwrite-svelte": "^0.7.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

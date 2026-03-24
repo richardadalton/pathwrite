@@ -30,8 +30,112 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 | [`demo-angular-course`](apps/demo-angular-course) | Full Angular course-path demo with a subject-entry sub-path. |
 | [`demo-angular-shell`](apps/demo-angular-shell) | Angular demo using the `<pw-shell>` default UI — same wizard, zero boilerplate. |
 | [`demo-vue-wizard`](apps/demo-vue-wizard) | Vue 3 onboarding wizard with auto-persistence and validation. |
+| [`demo-vue-storage`](apps/vue-demos/demo-vue-storage) | Vue 3 team onboarding with **switchable storage backends**: localStorage (browser-local) and API (REST server). Demonstrates `LocalStorageStore`, `httpPersistence`, and session listing. **[See HTTP Storage](#http-storage--api-mode) below.** |
 | [`demo-svelte-onboarding`](apps/demo-svelte-onboarding) | Svelte onboarding wizard with PathShell component and HTTP persistence. |
 | [`demo-lifecycle`](apps/demo-lifecycle) | Backend document lifecycle (Draft → Review → Approved → Published) with guards, sub-paths, and conditional skipping — no UI. |
+
+## HTTP Storage & API Mode
+
+The `@daltonr/pathwrite-store-http` package provides persistence adapters for saving wizard state:
+
+- **`LocalStorageStore`** — Browser-local persistence using `localStorage` (or an in-memory fallback in Node). Includes `list()` to enumerate saved session keys and `clear()` to delete all sessions under a prefix.
+- **`HttpStore`** — REST API persistence via HTTP `PUT`/`GET`/`DELETE`. Production-ready for stateless backends.
+
+Both implement the `PathStore` interface, so they're interchangeable with `httpPersistence` and `restoreOrStart`.
+
+### Demo: Switchable storage backends
+
+The **[`demo-vue-storage`](apps/vue-demos/demo-vue-storage)** demonstrates localStorage and API storage side-by-side with a toggle in the UI:
+
+- **💾 localStorage** — Sessions saved to browser storage with prefix `pathwrite-demo:`. Data survives page reloads but is private to your browser.
+- **🌐 API (port 3001)** — Sessions saved to a REST server. Data is shared across tabs/browsers and persists until the server restarts.
+
+#### Running the demo with API mode
+
+You need two servers. Use **one** of these approaches:
+
+**Option 1: Concurrently** (simplest)
+
+```bash
+cd apps/vue-demos/demo-vue-storage
+npm install
+npm run dev
+```
+
+This starts both the Express API server (port 3001) and Vite (port 5173) in one command.
+
+**Option 2: Separate terminals**
+
+Terminal 1 — API server:
+```bash
+cd apps/vue-demos/demo-vue-storage
+npm run server
+```
+
+Terminal 2 — Vue dev server:
+```bash
+cd apps/vue-demos/demo-vue-storage
+npm start
+```
+
+Open `http://localhost:5173` (or the port Vite suggests) and click the **🌐 API** toggle to switch to server-backed storage.
+
+#### API endpoints
+
+The Express server exposes:
+
+```
+GET    /api/state       → { keys: string[] }           # List all snapshot keys
+GET    /api/state/:key  → SerializedPathState | 404   # Load a snapshot
+PUT    /api/state/:key  → { success: true }           # Save a snapshot (body: SerializedPathState)
+DELETE /api/state/:key  → { success: true } | 404     # Delete a snapshot
+```
+
+All endpoints support CORS for local development. The server uses in-memory storage (data is lost on restart).
+
+#### What to test
+
+1. **localStorage mode** — Start a session, add data, reload → session restores.
+2. **API mode** — Toggle to API, start a session. Open the URL in a private/incognito window → both tabs see the same session list (shared storage).
+3. **Switching modes** — Toggle between backends → each mode has independent sessions.
+4. **Server offline** — With the server stopped, try switching to API mode → error banner appears with clear guidance.
+
+See the **[demo README](apps/vue-demos/demo-vue-storage/README.md)** for full details.
+
+### Using HTTP storage in your app
+
+```ts
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+
+// Browser-local storage
+const store = new LocalStorageStore({ prefix: "myapp:" });
+
+// REST API storage
+import { HttpStore } from "@daltonr/pathwrite-store-http";
+const store = new HttpStore({ baseUrl: "https://api.example.com" });
+
+// Auto-persist every change (debounced)
+const engine = new PathEngine({
+  observers: [
+    httpPersistence({
+      store,
+      key: "wizard-session-123",
+      strategy: "onEveryChange",
+      debounceMs: 500,
+    }),
+  ],
+});
+
+// Or restore from a snapshot if one exists
+const { engine, restored } = await restoreOrStart({
+  store,
+  key: "wizard-session-123",
+  path: myPath,
+  initialData: {},
+});
+```
+
+See **[Persistence Strategy Guide](docs/guides/PERSISTENCE_STRATEGY_GUIDE.md)** for persistence options (`onNext`, `onComplete`, etc.) and the **[store-http README](packages/store-http/README.md)** for full API documentation.
 
 ## Design principles
 
@@ -50,13 +154,14 @@ A headless, framework-agnostic path engine for the web, with first-class Angular
 ```bash
 npm install
 npm test
-npm run demo                 # console demo
-npm run demo:lifecycle       # lifecycle state-machine demo (no UI)
-npm run demo:angular         # Angular demo (localhost:4200)
-npm run demo:angular:course  # course path demo (localhost:4200)
-npm run demo:angular:shell   # shell UI demo (localhost:4200)
-npm run demo:vue             # Vue wizard demo (localhost:5173)
-npm run demo:svelte          # Svelte onboarding demo (localhost:5174)
+npm run demo                  # console demo
+npm run demo:lifecycle        # lifecycle state-machine demo (no UI)
+npm run demo:angular          # Angular demo (localhost:4200)
+npm run demo:angular:course   # course path demo (localhost:4200)
+npm run demo:angular:shell    # shell UI demo (localhost:4200)
+npm run demo:vue              # Vue wizard demo (localhost:5173)
+npm run demo:vue:storage      # Vue storage demo with localStorage/API toggle (localhost:5173)
+npm run demo:svelte           # Svelte onboarding demo (localhost:5174)
 ```
 
 ## Default UI shell
@@ -150,7 +255,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-492 tests across eight test files:
+536 tests across nine test files:
 
 | Suite | Tests |
 |-------|-------|
@@ -241,6 +346,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `bindData` (Svelte) | 5 |
 | `usePath` (Svelte) — guards and validation | 5 |
 | `HttpStore` | 10 |
+| `LocalStorageStore` | 36 |
 | `httpPersistence` | 20 |
 | `restoreOrStart` | 7 |
 

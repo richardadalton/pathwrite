@@ -1,5 +1,11 @@
 # @daltonr/pathwrite-core
 
+## 0.7.0 - 2026-03-24
+
+### Minor Changes
+
+- **No core changes** — This is a coordinated release with `@daltonr/pathwrite-store-http@0.7.0` which adds `LocalStorageStore` for browser-local persistence. The core engine is unchanged; all adapters remain compatible.
+
 ## 0.6.3
 
 ### Patch Changes

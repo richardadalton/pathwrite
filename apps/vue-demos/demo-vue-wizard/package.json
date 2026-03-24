@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daltonr/pathwrite-vue": "0.6.3",
+    "@daltonr/pathwrite-vue": "^0.7.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {

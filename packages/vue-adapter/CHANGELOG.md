@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-vue
 
+## 0.7.0 - 2026-03-24
+
+### Patch Changes
+
+- Coordinated release with `@daltonr/pathwrite-store-http@0.7.0` which adds `LocalStorageStore` for browser-local persistence. No adapter changes.
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.7.0
+
 ## 0.6.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 # @daltonr/pathwrite-store-http
 
-REST API persistence for `PathEngine`. Plugs in as a `PathObserver` — the engine emits events, the observer decides when to save. No wrappers, no two-object dance.
+Persistence adapters for `PathEngine`. Supports both browser-local storage (`LocalStorageStore`) and REST API storage (`HttpStore`). Both implement the same `PathStore` interface, so they're interchangeable — switch backends without changing your code.
 
 ---
 
@@ -9,8 +9,19 @@ REST API persistence for `PathEngine`. Plugs in as a `PathObserver` — the engi
 ```bash
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-store-http
 # Plus your framework adapter:
-npm install @daltonr/pathwrite-vue   # or react / angular
+npm install @daltonr/pathwrite-vue   # or react / angular / svelte
 ```
+
+---
+
+## Storage Adapters
+
+| Adapter | Storage location | Best for |
+|---------|------------------|----------|
+| **`LocalStorageStore`** | Browser `localStorage` (or in-memory fallback) | Quick prototyping, single-device sessions, offline-capable wizards |
+| **`HttpStore`** | REST API server | Multi-device sessions, team collaboration, persistent backend storage |
+
+Both adapters implement the `PathStore` interface (`save`, `load`, `delete`), so you can swap between them without rewriting your wizard logic.
 
 ---
 
@@ -18,21 +29,24 @@ npm install @daltonr/pathwrite-vue   # or react / angular
 
 ```typescript
 import {
-  // Storage adapter
-  HttpStore,                    // REST transport: save / load / delete
+  // Storage adapters
+  LocalStorageStore,            // Browser-local storage (localStorage or in-memory fallback)
+  HttpStore,                    // REST API storage
   
   // Observer factory
-  httpPersistence,              // Returns a PathObserver that saves state
+  httpPersistence,              // Returns a PathObserver that auto-saves state
   
   // Load/restore orchestration
   restoreOrStart,               // Handles the load/restore-or-start pattern
   
   // Types
+  LocalStorageStoreOptions,
+  StorageAdapter,               // Interface for custom storage backends
   HttpStoreOptions,
   HttpPersistenceOptions,
   RestoreOrStartOptions,
   ObserverStrategy,
-  PathStore,                    // Interface that HttpStore implements
+  PathStore,                    // Interface that both adapters implement
   
   // Re-exported from core
   PathData, PathDefinition, PathEvent, PathObserver,
@@ -44,15 +58,117 @@ import {
 
 ---
 
-## The one-call approach — `restoreOrStart`
+## Quick Start: LocalStorageStore
 
-For most use cases, one async call is all you need:
+Browser-local persistence — perfect for prototyping and single-device wizards:
+
+```typescript
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+
+const store = new LocalStorageStore({ prefix: "myapp:" });
+const key = `user:${userId}:onboarding`;
+
+const { engine, restored } = await restoreOrStart({
+  store,
+  key,
+  path: onboardingWizard,
+  initialData: { name: "", email: "" },
+  observers: [
+    httpPersistence({ store, key, strategy: "onNext" }),
+  ],
+});
+
+// engine is a plain PathEngine — pass it to any adapter
+const { snapshot, next } = usePath({ engine });
+
+if (restored) {
+  console.log("Welcome back! Resuming from step", engine.snapshot()?.stepId);
+}
+```
+
+### LocalStorageStore Options
+
+```typescript
+const store = new LocalStorageStore({
+  // Optional: prefix for all keys (default: "@daltonr/pathwrite:")
+  prefix: "myapp:",
+  
+  // Optional: custom storage backend
+  // - undefined (default): uses global localStorage, falls back to in-memory if unavailable
+  // - sessionStorage: uses sessionStorage instead of localStorage
+  // - null: forces in-memory fallback (useful for SSR/testing)
+  // - custom StorageAdapter: any object with getItem/setItem/removeItem/getAllKeys
+  storage: sessionStorage,
+});
+```
+
+### LocalStorageStore Methods
+
+| Method | Description |
+|--------|-------------|
+| `save(key, state)` | Save a snapshot to storage |
+| `load(key)` | Load a snapshot (returns `null` if not found) |
+| `delete(key)` | Delete a snapshot |
+| `list()` | Return all keys saved under this store's prefix |
+| `clear()` | Delete all snapshots under this store's prefix |
+
+**Example: Session picker**
+
+```typescript
+const store = new LocalStorageStore({ prefix: "wizard:" });
+
+// List all saved sessions
+const sessionKeys = await store.list();
+console.log(sessionKeys); // → ["user:1:session", "user:2:session"]
+
+// Load a specific session
+const { engine, restored } = await restoreOrStart({
+  store,
+  key: sessionKeys[0],
+  path: myPath,
+  observers: [httpPersistence({ store, key: sessionKeys[0] })],
+});
+
+// Clear all sessions (e.g., on logout)
+await store.clear();
+```
+
+---
+
+## Quick Start: HttpStore
+
+REST API persistence — for multi-device sessions and server-backed storage:
 
 ```typescript
 import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
 const store = new HttpStore({ baseUrl: "/api/wizard" });
-const key = "user:123:onboarding";
+const key = `user:${userId}:onboarding`;
+
+const { engine, restored } = await restoreOrStart({
+  store,
+  key,
+  path: onboardingWizard,
+  initialData: { name: "", email: "" },
+  observers: [httpPersistence({ store, key })],
+});
+```
+
+---
+
+---
+
+## The one-call approach — `restoreOrStart`
+
+For most use cases, one async call is all you need. Works with both `LocalStorageStore` and `HttpStore`:
+
+```typescript
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+
+const store = new LocalStorageStore({ prefix: "myapp:" });
+// Or: const store = new HttpStore({ baseUrl: "/api/wizard" });
+
+const key = `user:${userId}:onboarding`;
 
 const { engine, restored } = await restoreOrStart({
   store,
@@ -73,17 +189,17 @@ if (restored) {
 ```
 
 `restoreOrStart` returns `{ engine, restored }`:
-- `engine` — a `PathEngine` pre-wired with HTTP persistence, ready to pass to `usePath({ engine })` or `<PathShell :engine="engine">`
-- `restored: boolean` — `true` if state was loaded from the server, `false` if it started fresh
+- `engine` — a `PathEngine` pre-wired with persistence, ready to pass to `usePath({ engine })` or `<PathShell :engine="engine">`
+- `restored: boolean` — `true` if state was loaded from storage, `false` if it started fresh
 
 ### Vue example
 
 ```vue
 <script setup lang="ts">
 import { PathShell } from "@daltonr/pathwrite-vue";
-import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
-const store = new HttpStore({ baseUrl: "/api/wizard" });
+const store = new LocalStorageStore({ prefix: "myapp:" });
 const key = `user:${userId}:onboarding`;
 
 const { engine } = await restoreOrStart({
@@ -103,9 +219,9 @@ const { engine } = await restoreOrStart({
 ### React example
 
 ```tsx
-import { HttpStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
 
-const store = new HttpStore({ baseUrl: "/api/wizard" });
+const store = new LocalStorageStore({ prefix: "myapp:" });
 const key = `user:${userId}:onboarding`;
 
 // In a route loader or equivalent — runs before the component mounts
