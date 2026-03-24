@@ -10,30 +10,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Small homepage UI demo styles (self-contained so site CSS unchanged) */
-    .hero-demo { margin-top: 28px; display:flex; justify-content:center; }
-    .pw-mock { width:360px; border-radius:12px; box-shadow:0 8px 24px rgba(16,24,40,0.12); background:#fff; overflow:hidden; font-family:Inter,system-ui,Arial; }
-    .pw-header { padding:12px 16px; background:linear-gradient(90deg,#6d28d9,#7c3aed); color:#fff; font-weight:600 }
-    .pw-steps { display:flex; gap:6px; padding:12px; align-items:center }
-    .pw-step { flex:1; height:8px; background:#f1f5f9; border-radius:6px; }
-    .pw-step.active { background:linear-gradient(90deg,#7c3aed,#06b6d4); }
-    .pw-content { padding:16px; min-height:120px }
-    .pw-controls { display:flex; justify-content:space-between; gap:12px; padding:12px; border-top:1px solid #eef2ff; background:#fbfdff }
-    .pw-btn { padding:8px 12px; border-radius:8px; border:1px solid #e6e9f2; background:#fff; cursor:pointer }
-    .pw-btn.primary { background:#7c3aed; color:#fff; border-color:transparent }
-    .what-you-get { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px }
-    .what-item { background:#f8fafc; padding:10px 12px; border-radius:8px; min-width:180px }
-    pre.inline-code { background:#0f172a; color:#fff; padding:12px; border-radius:8px; overflow:auto }
-    /* Layout: stack on small screens, two columns on wide screens */
-    .hero__left { }
-    .hero__right { }
+    /* ===== Hero two-column layout ===== */
     @media (min-width:900px){
-      .hero__inner{display:flex; gap:36px; align-items:center}
-      .hero__left{flex:1}
-      .hero__right{flex:0 0 420px}
-      .hero-demo{margin-top:0}
-      .hero__title{margin-top:0}
+      .hero__inner { display:flex; gap:40px; align-items:center }
+      .hero__left  { flex:1 }
+      .hero__right { flex:0 0 420px }
     }
+    /* ===== Inline Pathwrite demo widget ===== */
+    .pw-demo { background:var(--color-bg-card); border:1px solid var(--color-border); border-radius:var(--radius); overflow:hidden; margin-top:24px; }
+    @media (min-width:900px){ .pw-demo { margin-top:0 } }
+    .pw-demo__header { display:flex; align-items:center; gap:10px; padding:12px 18px; background:linear-gradient(90deg,#5b21b6,var(--color-primary)); font-size:.85rem; font-weight:700; color:#fff; }
+    .pw-demo__header-title { flex:1 }
+    .pw-demo__header-tag { font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,.2); color:#fff; }
+    .pw-demo__stepper { display:flex; gap:6px; padding:14px 18px 6px; }
+    .pw-demo__dot { flex:1; height:4px; border-radius:4px; background:var(--color-border); transition:background .3s; }
+    .pw-demo__dot.done   { background:var(--color-primary) }
+    .pw-demo__dot.active { background:linear-gradient(90deg,var(--color-primary),var(--color-accent)) }
+    .pw-demo__step-label { padding:4px 18px 10px; font-size:.75rem; color:var(--color-text-muted); font-weight:500; }
+    .pw-demo__body { padding:18px; min-height:170px; font-size:.9rem; line-height:1.65; color:var(--color-text); border-top:1px solid var(--color-border); }
+    .pw-demo__body h3 { font-size:1rem; font-weight:700; margin-bottom:.5rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .pw-demo__body p  { color:var(--color-text-muted); margin-bottom:.6rem; font-size:.88rem; }
+    .pw-demo__body code { font-family:var(--font-mono); font-size:.78rem; color:var(--color-accent); background:var(--color-code-bg); padding:.1rem .3rem; border-radius:4px; }
+    .pw-demo__chips { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px; }
+    .pw-demo__chip { padding:7px 13px; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer; font-size:.82rem; color:var(--color-text-muted); background:var(--color-bg); transition:all .2s; font-family:var(--font-sans); }
+    .pw-demo__chip:hover { border-color:var(--color-primary); color:var(--color-primary-light); }
+    .pw-demo__chip.selected { border-color:var(--color-primary); color:var(--color-primary-light); background:rgba(139,92,246,.12); }
+    .pw-demo__ftag { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:2px 6px; border-radius:4px; background:rgba(34,211,238,.1); color:var(--color-accent); border:1px solid rgba(34,211,238,.2); white-space:nowrap; }
+    .pw-demo__ftag--purple { background:rgba(139,92,246,.12); color:var(--color-primary-light); border-color:rgba(139,92,246,.2); }
+    .pw-demo__action { display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 14px; border:1px solid var(--color-primary); border-radius:var(--radius-sm); cursor:pointer; font-size:.82rem; color:var(--color-primary-light); background:rgba(139,92,246,.1); transition:all .2s; font-family:var(--font-sans); }
+    .pw-demo__action:hover { background:rgba(139,92,246,.2); box-shadow:0 0 14px rgba(139,92,246,.2); }
+    .pw-demo__nav { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--color-border); }
+    .pw-demo__btn { padding:8px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border); background:transparent; color:var(--color-text-muted); cursor:pointer; font-size:.85rem; font-family:var(--font-sans); font-weight:600; transition:all .2s; }
+    .pw-demo__btn:hover:not(:disabled) { border-color:var(--color-text-muted); color:var(--color-text); }
+    .pw-demo__btn--primary { background:var(--color-primary); color:#fff; border-color:transparent; }
+    .pw-demo__btn--primary:hover:not(:disabled) { background:#7c3aed; color:#fff; box-shadow:0 0 20px rgba(139,92,246,.3); }
+    .pw-demo__btn:disabled { opacity:.35; cursor:not-allowed; }
+    /* what-you-get checklist */
+    .what-you-get { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px }
+    .what-item { background:var(--color-bg-card); border:1px solid var(--color-border); padding:10px 12px; border-radius:8px; min-width:180px; font-size:.88rem; color:var(--color-text-muted) }
   </style>
 </head>
 <body>
@@ -45,12 +59,12 @@
       <span class="nav__logo-icon">⟡</span> Pathwrite
     </a>
     <div class="nav__links">
-      <a href="#features">Features</a>
+      <a href="#problem">Why?</a>
       <a href="#ui">Wizard UI</a>
-      <a href="#frameworks">Frameworks</a>
-      <a href="#demos">Demos</a>
+      <a href="#features">Features</a>
       <a href="#compare">Compare</a>
       <a href="#use-cases">Use Cases</a>
+      <a href="#demos">Demos</a>
       <a href="#docs">Docs</a>
       <a href="https://github.com/richardadalton/pathwrite" class="btn btn--sm btn--outline" target="_blank" rel="noopener">GitHub</a>
       <a href="https://www.npmjs.com/package/@daltonr/pathwrite-core" class="btn btn--sm btn--primary" target="_blank" rel="noopener">npm</a>
@@ -80,22 +94,20 @@
     </div>
 
     <div class="hero__right">
-      <!-- Interactive hero demo: small mock of the default UI shell -->
-      <div class="hero-demo" aria-hidden="false">
-        <div class="pw-mock" id="heroMock">
-          <div class="pw-header">Checkout Wizard</div>
-          <div class="pw-steps" id="heroSteps">
-            <div class="pw-step" data-index="0"></div>
-            <div class="pw-step" data-index="1"></div>
-            <div class="pw-step" data-index="2"></div>
-            <div class="pw-step" data-index="3"></div>
-          </div>
-          <div class="pw-content" id="heroContent">Welcome! Click Next to try the shell UI.</div>
-          <div class="pw-controls">
-            <button class="pw-btn" id="heroPrev" disabled>Back</button>
-            <div style="flex:1"></div>
-            <button class="pw-btn primary" id="heroNext">Next</button>
-          </div>
+      <!-- Real inline Pathwrite wizard — powered by @daltonr/pathwrite-core via esm.sh -->
+      <div id="pw-demo" class="pw-demo">
+        <div class="pw-demo__header">
+          <span>⟡</span>
+          <span class="pw-demo__header-title">Pathwrite — Live Demo</span>
+          <span class="pw-demo__header-tag" id="pw-tag">steps</span>
+        </div>
+        <div class="pw-demo__stepper" id="pw-stepper"></div>
+        <div class="pw-demo__step-label" id="pw-step-label">Loading…</div>
+        <div class="pw-demo__body" id="pw-body"></div>
+        <div class="pw-demo__nav">
+          <button class="pw-demo__btn" id="pw-prev" disabled>← Back</button>
+          <div style="flex:1"></div>
+          <button class="pw-demo__btn pw-demo__btn--primary" id="pw-next">Next →</button>
         </div>
       </div>
     </div>
@@ -106,7 +118,7 @@
 <section class="stats">
   <div class="container stats__inner">
     <div class="stat">
-      <span class="stat__number">492</span>
+      <span class="stat__number">500</span>
       <span class="stat__label">Tests</span>
     </div>
     <div class="stat">
@@ -121,38 +133,6 @@
       <span class="stat__number">0</span>
       <span class="stat__label">Core Dependencies</span>
     </div>
-  </div>
-</section>
-
-<!-- ===== WIZARD UI (NEW) ===== -->
-<section class="section" id="ui">
-  <div class="container">
-    <h2 class="section__title">Wizard UI — drop this in</h2>
-    <p class="section__subtitle">A small, minimal example showing the optional shell UI. Use it as-is or customise the slots/components for your design system.</p>
-
-    <div class="code-block">
-      <div class="code-block__header">
-        <span class="code-block__dot code-block__dot--red"></span>
-        <span class="code-block__dot code-block__dot--yellow"></span>
-        <span class="code-block__dot code-block__dot--green"></span>
-        <span class="code-block__filename">Vue (drop-in)</span>
-      </div>
-<pre><code>&lt;script setup&gt;
-import { PathShell } from "@daltonr/pathwrite-vue";
-import { onboardingPath } from "./paths/onboarding";
-&lt;/script&gt;
-
-&lt;template&gt;
-  &lt;PathShell :path="onboardingPath" :initial-data="{ name: '' }" @complete="onComplete"&gt;
-    &lt;template #welcome&gt;&lt;WelcomeStep /&gt;&lt;/template&gt;
-    &lt;template #profile&gt;&lt;ProfileStep /&gt;&lt;/template&gt;
-    &lt;template #confirm&gt;&lt;ConfirmStep /&gt;&lt;/template&gt;
-  &lt;/PathShell&gt;
-&lt;/template&gt;</code></pre>
-    </div>
-
-    <p style="margin-top:12px">The shell provides: a stepper, navigation buttons, progress indicator and a compact layout. Replace the step templates with your own components to customise visuals and behaviour.</p>
-    <p style="margin-top:8px"><a href="#get-started">See the quickstart and path definition</a> or open the full UI docs in the <a href="#docs">Docs</a> section.</p>
   </div>
 </section>
 
@@ -185,87 +165,11 @@ import { onboardingPath } from "./paths/onboarding";
   </div>
 </section>
 
-<!-- ===== FEATURES ===== -->
-<section class="section" id="features">
-  <div class="container">
-    <h2 class="section__title">Everything you need. Nothing you don't.</h2>
-    <p class="section__subtitle">Pathwrite gives you a complete engine for multi-step flows — headless, typed, and testable.</p>
-
-    <h3 style="margin-top:18px">What you get out of the box</h3>
-    <div class="what-you-get">
-      <div class="what-item">✔️ Stepper (progress)</div>
-      <div class="what-item">✔️ Navigation buttons (Next / Back / Cancel)</div>
-      <div class="what-item">✔️ Validation &amp; messages</div>
-      <div class="what-item">✔️ Layout system &amp; theming</div>
-      <div class="what-item">✔️ Sub-paths (nested flows)</div>
-      <div class="what-item">✔️ Framework adapters (React, Vue, Angular, Svelte)</div>
-    </div>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-card__icon">🎯</div>
-        <h3>Headless Core</h3>
-        <p>Zero DOM dependencies. The engine runs anywhere — browser, server, CLI. Your UI, your rules.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🛡️</div>
-        <h3>Guards &amp; Validation</h3>
-        <p><code>canMoveNext</code>, <code>canMovePrevious</code>, and <code>fieldMessages</code> per step. Sync or async. Type-checked. Auto-derived guards from field validation.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">📦</div>
-        <h3>Sub-Paths</h3>
-        <p>Push a path onto the stack mid-flow, and start a sub path. Completion or cancellation auto-restores the parent. Nested workflows, solved.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">💾</div>
-        <h3>Built-in Persistence</h3>
-        <p>Save state on every step, on data change, or on a custom trigger. Restore seamlessly. Ships with an HTTP store adapter.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">⏭️</div>
-        <h3>Conditional Steps</h3>
-        <p><code>shouldSkip</code> lets you dynamically hide steps based on data. The progress bar and step count update automatically.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🔔</div>
-        <h3>Event System</h3>
-        <p>Subscribe to <code>stateChanged</code>, <code>completed</code>, <code>cancelled</code>, <code>resumed</code>. Power analytics, logging, or side effects.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🪝</div>
-        <h3>Lifecycle Hooks</h3>
-        <p><code>onEnter</code>, <code>onLeave</code>, <code>onSubPathComplete</code>, <code>onSubPathCancel</code> — async-capable hooks that receive an immutable context snapshot with <code>isFirstEntry</code> tracking.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">📝</div>
-        <h3>Forms &amp; Wizards</h3>
-        <p>Single-step forms with <code>fieldMessages</code>, auto-derived guards, smart error timing, and form-mode layout — all with zero extra config.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🎨</div>
-        <h3>Optional Shell UI</h3>
-        <p>Every adapter ships a <code>&lt;PathShell&gt;</code> component — progress bar, nav buttons, validation display. Use it, customise it, or replace it entirely.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🔠</div>
-        <h3>Full TypeScript</h3>
-        <p>Generic <code>PathDefinition&lt;TData&gt;</code> flows through every hook, guard, snapshot, and adapter. Define your shape once.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card__icon">🧪</div>
-        <h3>Fully Testable Without UI</h3>
-        <p>Test any step, sub-wizard, or full flow by calling engine methods and reading the snapshot. No browser, no DOM, no component mounting needed.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== FRAMEWORK ADAPTERS ===== -->
-<section class="section section--dark" id="frameworks">
+<!-- ===== WIZARD UI / FRAMEWORK ADAPTERS ===== -->
+<section class="section" id="ui">
   <div class="container">
     <h2 class="section__title">One engine. Four idiomatic adapters.</h2>
-    <p class="section__subtitle">Each adapter wraps the same core with framework-native patterns. Same behavior. Same tests. Your idiom.</p>
+    <p class="section__subtitle">Drop <code style="font-size:.9em">PathShell</code> into any framework and get a full wizard UI — stepper, navigation, validation display and layout — in the same pattern your framework already uses. Define your workflows once and reuse them across React, Vue, Angular and Svelte apps — ideal for multi-framework teams.</p>
 
     <div class="tabs" id="framework-tabs">
       <div class="tabs__bar">
@@ -380,8 +284,82 @@ import { onboardingPath } from "./paths/onboarding";
         <p class="tabs__note">Svelte 5 runes (<code>$state</code>). No legacy stores. Snippets for step content.</p>
       </div>
     </div>
+
+    <p style="margin-top:1.5rem;color:var(--color-text-muted);font-size:.95rem">The shell provides stepper, navigation buttons, validation display and layout out of the box. Use it as-is, theme it, or replace individual parts with your own components. <a href="#get-started">See the full path definition →</a></p>
   </div>
 </section>
+
+<!-- ===== FEATURES ===== -->
+<section class="section" id="features">
+  <div class="container">
+    <h2 class="section__title">Everything you need. Nothing you don't.</h2>
+    <p class="section__subtitle">What you get, out of the box.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card__icon">🎯</div>
+        <h3>Headless Core</h3>
+        <p>Zero DOM dependencies. The engine runs anywhere — browser, server, CLI. Your UI, your rules.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🛡️</div>
+        <h3>Guards &amp; Validation</h3>
+        <p><code>canMoveNext</code>, <code>canMovePrevious</code>, and <code>fieldMessages</code> per step. Sync or async. Type-checked. Auto-derived guards from field validation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">📦</div>
+        <h3>Sub-Paths</h3>
+        <p>Push a path onto the stack mid-flow, and start a sub path. Completion or cancellation auto-restores the parent. Nested workflows, solved.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">💾</div>
+        <h3>Built-in Persistence</h3>
+        <p>Save state on every step, on data change, or on a custom trigger. Restore seamlessly. Ships with an HTTP store adapter.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">⏭️</div>
+        <h3>Conditional Steps</h3>
+        <p><code>shouldSkip</code> lets you dynamically hide steps based on data. The progress bar and step count update automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🔔</div>
+        <h3>Event System</h3>
+        <p>Subscribe to <code>stateChanged</code>, <code>completed</code>, <code>cancelled</code>, <code>resumed</code>. Power analytics, logging, or side effects.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🪝</div>
+        <h3>Lifecycle Hooks</h3>
+        <p><code>onEnter</code>, <code>onLeave</code>, <code>onSubPathComplete</code>, <code>onSubPathCancel</code> — async-capable hooks that receive an immutable context snapshot with <code>isFirstEntry</code> tracking.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">📝</div>
+        <h3>Forms &amp; Wizards</h3>
+        <p>Single-step forms with <code>fieldMessages</code>, auto-derived guards, smart error timing, and form-mode layout — all with zero extra config.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🎨</div>
+        <h3>Optional Shell UI</h3>
+        <p>Every adapter ships a <code>&lt;PathShell&gt;</code> component — progress bar, nav buttons, validation display. Use it, customise it, or replace it entirely.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🔠</div>
+        <h3>Full TypeScript</h3>
+        <p>Generic <code>PathDefinition&lt;TData&gt;</code> flows through every hook, guard, snapshot, and adapter. Define your shape once.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🧪</div>
+        <h3>Fully Testable Without UI</h3>
+        <p>Test any step, sub-wizard, or full flow by calling engine methods and reading the snapshot. No browser, no DOM, no component mounting needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🔌</div>
+        <h3>Extensible</h3>
+        <p>Write a custom observer to add analytics, logging, or any side effect in one function. Build a new framework adapter by wrapping the core engine — the same pattern used by all four official adapters.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <!-- ===== CODE: DEFINE A PATH ===== -->
 <section class="section" id="get-started">
@@ -792,6 +770,7 @@ import { onboardingPath } from "./paths/onboarding";
   </div>
 </footer>
 
+
 <script>
   function switchTab(id) {
     document.querySelectorAll('#framework-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
@@ -801,32 +780,184 @@ import { onboardingPath } from "./paths/onboarding";
   }
 </script>
 
-<script>
-  // Small interactive demo for the hero mock
-  (function(){
-    const steps = Array.from(document.querySelectorAll('#heroSteps .pw-step'));
-    const prev = document.getElementById('heroPrev');
-    const next = document.getElementById('heroNext');
-    const content = document.getElementById('heroContent');
-    if (!steps.length || !prev || !next || !content) return;
-    let idx = 0;
-    const texts = [
-      'Welcome! Enter your details to continue.',
-      'Shipping address — add a street and ZIP code.',
-      'Payment — add a test card number.',
-      'Confirm — review your order and submit.'
-    ];
-    function render(){
-      steps.forEach((s,i)=> s.classList.toggle('active', i<=idx));
-      content.textContent = texts[idx] || '';
-      prev.disabled = idx===0;
-      next.textContent = idx < steps.length-1 ? 'Next' : 'Finish';
+<script type="module">
+  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.6.3';
+
+  // ── Path definitions ────────────────────────────────────────────────────────
+  const mainPath = {
+    id: 'demo',
+    steps: [
+      { id: 'welcome',     title: 'Welcome' },
+      { id: 'framework',   title: 'Framework',
+        canMoveNext: ({ data }) => !!data.framework },
+      { id: 'react-tip',   title: 'React',    shouldSkip: ({ data }) => data.framework !== 'react' },
+      { id: 'vue-tip',     title: 'Vue',      shouldSkip: ({ data }) => data.framework !== 'vue' },
+      { id: 'angular-tip', title: 'Angular',  shouldSkip: ({ data }) => data.framework !== 'angular' },
+      { id: 'svelte-tip',  title: 'Svelte',   shouldSkip: ({ data }) => data.framework !== 'svelte' },
+      { id: 'subpath-demo',title: 'Sub-Paths' },
+      { id: 'done',        title: 'Done' },
+    ]
+  };
+
+  const subPath = {
+    id: 'sub',
+    steps: [
+      { id: 'sub-1', title: 'Sub Step 1' },
+      { id: 'sub-2', title: 'Sub Step 2' },
+    ]
+  };
+
+  // ── Step content ────────────────────────────────────────────────────────────
+  function stepHTML(snap) {
+    const { stepId, data, nestingLevel } = snap;
+    const ftag  = (t) => `<span class="pw-demo__ftag">${t}</span>`;
+    const ptag  = (t) => `<span class="pw-demo__ftag pw-demo__ftag--purple">${t}</span>`;
+    const fw = data.framework || '';
+
+    switch (stepId) {
+      case 'welcome': return `
+        <h3>Live Pathwrite Demo</h3>
+        <p>This wizard runs <strong>@daltonr/pathwrite-core</strong> directly in the page — no iframe, no mock.</p>
+        <p>Walk through it to see steps, a <code>canMoveNext</code> guard, <code>shouldSkip</code> conditional skipping, and a <strong>sub-path</strong>. Click <strong>Next</strong> to begin.</p>`;
+
+      case 'framework': return `
+        <h3>Choose your framework ${ftag('canMoveNext')}</h3>
+        <p>Next is disabled until you make a selection. Each framework has its own info step — the others will be automatically skipped.</p>
+        <div class="pw-demo__chips">
+          ${['React','Vue','Angular','Svelte'].map(f =>
+            `<button class="pw-demo__chip${fw === f.toLowerCase() ? ' selected' : ''}" data-fw="${f.toLowerCase()}">${f}</button>`
+          ).join('')}
+        </div>`;
+
+      case 'react-tip': return `
+        <h3>React ${ftag('shouldSkip')}</h3>
+        <p>Vue, Angular and Svelte steps were automatically skipped. The stepper updated to reflect the active steps only.</p>
+        <p>Each skipped step has <code>shouldSkip: ({'{'}data{'}'}) =&gt; data.framework !== 'react'</code>.</p>`;
+
+      case 'vue-tip': return `
+        <h3>Vue ${ftag('shouldSkip')}</h3>
+        <p>React, Angular and Svelte steps were automatically skipped.</p>
+        <p><code>shouldSkip</code> is re-evaluated on every navigation — change the choice and steps update live.</p>`;
+
+      case 'angular-tip': return `
+        <h3>Angular ${ftag('shouldSkip')}</h3>
+        <p>Other framework steps were skipped. <code>shouldSkip</code> is declarative and re-evaluated on every navigation.</p>`;
+
+      case 'svelte-tip': return `
+        <h3>Svelte ${ftag('shouldSkip')}</h3>
+        <p>Other framework steps were skipped. <code>shouldSkip</code> is declarative and re-evaluated on every navigation.</p>`;
+
+      case 'subpath-demo': return `
+        <h3>Sub-Paths ${ptag('nestingLevel ' + nestingLevel)}</h3>
+        <p>A sub-path can be launched from any step. The parent path is <strong>paused on the stack</strong> and automatically resumes when the sub-path completes or is cancelled.</p>
+        <button class="pw-demo__action" id="start-sub">⟡ Launch sub-path →</button>`;
+
+      case 'sub-1': return `
+        <h3>Sub-Path: Step 1 ${ptag('nesting level ' + nestingLevel)}</h3>
+        <p>You're inside a sub-path. The parent is paused on the stack.</p>
+        <p>Sub-paths have their own steps, data, guards, and lifecycle hooks — fully independent of the parent.</p>`;
+
+      case 'sub-2': return `
+        <h3>Sub-Path: Step 2</h3>
+        <p>Clicking <strong>Next</strong> completes the sub-path and returns automatically to the parent. <strong>Back</strong> returns to sub-path step 1, and Back again exits the sub-path entirely.</p>`;
+
+      case 'done': return `
+        <h3>🎉 Complete!</h3>
+        <p>You ran a real Pathwrite engine live in this page. Steps, guards, conditional skipping, and sub-paths — all in ~30 lines of path definition.</p>
+        <button class="pw-demo__action" id="restart-btn">↺ Try again</button>`;
+
+      default: return `<h3>${snap.stepTitle}</h3>`;
     }
-    prev.addEventListener('click', ()=>{ idx = Math.max(0, idx-1); render(); });
-    next.addEventListener('click', ()=>{ idx = Math.min(steps.length-1, idx+1); render(); });
+  }
+
+  // ── Engine ──────────────────────────────────────────────────────────────────
+  const engine = new PathEngine();
+  let isDone = false;
+
+  function render() {
+    const snap = engine.snapshot();
+    const prevBtn = document.getElementById('pw-prev');
+    const nextBtn = document.getElementById('pw-next');
+
+    if (!snap) {
+      // Completed state
+      document.getElementById('pw-body').innerHTML = `
+        <h3>🎉 Complete!</h3>
+        <p>The engine finished. <button class="pw-demo__action" id="restart-btn" style="display:inline-flex;margin-top:8px">↺ Try again</button></p>`;
+      document.getElementById('pw-step-label').textContent = 'Done';
+      document.getElementById('pw-stepper').innerHTML = '';
+      document.getElementById('pw-tag').textContent = 'done';
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.style.display = 'none';
+      document.getElementById('restart-btn')?.addEventListener('click', () => {
+        isDone = false;
+        if (nextBtn) nextBtn.style.display = '';
+        engine.restart(mainPath, {});
+      });
+      return;
+    }
+
+    // Header tag
+    document.getElementById('pw-tag').textContent =
+      snap.nestingLevel > 0 ? 'sub-path' :
+      snap.stepId === 'framework' ? 'guard' :
+      ['react-tip','vue-tip','angular-tip','svelte-tip'].includes(snap.stepId) ? 'skip' :
+      snap.stepId === 'subpath-demo' ? 'sub-path' : 'steps';
+
+    // Stepper dots
+    document.getElementById('pw-stepper').innerHTML =
+      snap.steps.map(s =>
+        `<div class="pw-demo__dot ${s.status === 'completed' ? 'done' : s.status === 'current' ? 'active' : ''}"></div>`
+      ).join('');
+
+    // Step label
+    document.getElementById('pw-step-label').textContent =
+      `Step ${snap.stepIndex + 1} of ${snap.stepCount} — ${snap.stepTitle}`;
+
+    // Body
+    document.getElementById('pw-body').innerHTML = stepHTML(snap);
+
+    // Wire interactive elements in body
+    document.querySelectorAll('[data-fw]').forEach(btn =>
+      btn.addEventListener('click', () => engine.setData('framework', btn.dataset.fw))
+    );
+    document.getElementById('start-sub')?.addEventListener('click', () =>
+      engine.startSubPath(subPath, {})
+    );
+    document.getElementById('restart-btn')?.addEventListener('click', () => {
+      isDone = false;
+      if (nextBtn) nextBtn.style.display = '';
+      engine.restart(mainPath, {});
+    });
+
+    // Nav buttons
+    if (prevBtn) {
+      prevBtn.disabled = snap.isFirstStep && snap.nestingLevel === 0;
+      prevBtn.textContent = '← Back';
+    }
+    if (nextBtn) {
+      nextBtn.style.display = snap.stepId === 'done' ? 'none' : '';
+      nextBtn.disabled = !snap.canMoveNext;
+      nextBtn.textContent = snap.isLastStep ? 'Finish ✓' : 'Next →';
+    }
+  }
+
+  engine.subscribe(event => {
+    if (event.type === 'completed') isDone = true;
     render();
-  })();
+  });
+
+  engine.start(mainPath, {}).then(() => render());
+
+  document.getElementById('pw-prev').addEventListener('click', () => {
+    const snap = engine.snapshot();
+    if (!snap) return;
+    if (snap.nestingLevel > 0 && snap.isFirstStep) engine.cancel();
+    else engine.previous();
+  });
+  document.getElementById('pw-next').addEventListener('click', () => engine.next());
 </script>
+
 
 </body>
 </html>
