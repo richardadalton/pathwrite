@@ -9,6 +9,23 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Small homepage UI demo styles (self-contained so site CSS unchanged) */
+    .hero-demo { margin-top: 28px; display:flex; justify-content:center; }
+    .pw-mock { width:360px; border-radius:12px; box-shadow:0 8px 24px rgba(16,24,40,0.12); background:#fff; overflow:hidden; font-family:Inter,system-ui,Arial; }
+    .pw-header { padding:12px 16px; background:linear-gradient(90deg,#6d28d9,#7c3aed); color:#fff; font-weight:600 }
+    .pw-steps { display:flex; gap:6px; padding:12px; align-items:center }
+    .pw-step { flex:1; height:8px; background:#f1f5f9; border-radius:6px; }
+    .pw-step.active { background:linear-gradient(90deg,#7c3aed,#06b6d4); }
+    .pw-content { padding:16px; min-height:120px }
+    .pw-controls { display:flex; justify-content:space-between; gap:12px; padding:12px; border-top:1px solid #eef2ff; background:#fbfdff }
+    .pw-btn { padding:8px 12px; border-radius:8px; border:1px solid #e6e9f2; background:#fff; cursor:pointer }
+    .pw-btn.primary { background:#7c3aed; color:#fff; border-color:transparent }
+    .what-you-get { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px }
+    .what-item { background:#f8fafc; padding:10px 12px; border-radius:8px; min-width:180px }
+    pre.inline-code { background:#0f172a; color:#fff; padding:12px; border-radius:8px; overflow:auto }
+    @media (min-width:900px){ .hero__inner{display:flex; gap:36px; align-items:center} .hero__title{flex:1} }
+  </style>
 </head>
 <body>
 
@@ -20,6 +37,7 @@
     </a>
     <div class="nav__links">
       <a href="#features">Features</a>
+      <a href="#ui">Wizard UI</a>
       <a href="#frameworks">Frameworks</a>
       <a href="#demos">Demos</a>
       <a href="#compare">Compare</a>
@@ -37,16 +55,32 @@
   <div class="container hero__inner">
     <div class="hero__badge">v0.6.0 — Angular injectPath() &amp; Form Demos</div>
     <h1 class="hero__title">
-      Stop hand-rolling<br />multi-step&nbsp;flows.
+      Build powerful wizards — with logic and UI included.
     </h1>
     <p class="hero__subtitle">
-      Pathwrite is a headless, framework-agnostic engine for wizards, onboarding, checkout, and any sequential UI.
-      First-class adapters for <strong>React</strong>, <strong>Vue</strong>, <strong>Angular</strong>&nbsp;&amp;&nbsp;<strong>Svelte</strong>.
-      Built-in persistence. 492&nbsp;tests. Zero&nbsp;dependencies&nbsp;in&nbsp;core.
+      Pathwrite gives you a workflow engine plus a complete wizard UI shell. Define steps, guards and validation — and drop-in a ready-to-use UI across React, Vue, Angular and Svelte.
     </p>
     <div class="hero__actions">
       <a href="#get-started" class="btn btn--lg btn--primary">Get Started</a>
       <a href="#compare" class="btn btn--lg btn--ghost">Why Pathwrite?</a>
+    </div>
+    <!-- Interactive hero demo: small mock of the default UI shell -->
+    <div class="hero-demo" aria-hidden="false">
+      <div class="pw-mock" id="heroMock">
+        <div class="pw-header">Checkout Wizard</div>
+        <div class="pw-steps" id="heroSteps">
+          <div class="pw-step" data-index="0"></div>
+          <div class="pw-step" data-index="1"></div>
+          <div class="pw-step" data-index="2"></div>
+          <div class="pw-step" data-index="3"></div>
+        </div>
+        <div class="pw-content" id="heroContent">Welcome! Click Next to try the shell UI.</div>
+        <div class="pw-controls">
+          <button class="pw-btn" id="heroPrev" disabled>Back</button>
+          <div style="flex:1"></div>
+          <button class="pw-btn primary" id="heroNext">Next</button>
+        </div>
+      </div>
     </div>
     <div class="hero__install">
       <code>npm install @daltonr/pathwrite-core @daltonr/pathwrite-react</code>
@@ -73,6 +107,38 @@
       <span class="stat__number">0</span>
       <span class="stat__label">Core Dependencies</span>
     </div>
+  </div>
+</section>
+
+<!-- ===== WIZARD UI (NEW) ===== -->
+<section class="section" id="ui">
+  <div class="container">
+    <h2 class="section__title">Wizard UI — drop this in</h2>
+    <p class="section__subtitle">A small, minimal example showing the optional shell UI. Use it as-is or customise the slots/components for your design system.</p>
+
+    <div class="code-block">
+      <div class="code-block__header">
+        <span class="code-block__dot code-block__dot--red"></span>
+        <span class="code-block__dot code-block__dot--yellow"></span>
+        <span class="code-block__dot code-block__dot--green"></span>
+        <span class="code-block__filename">Vue (drop-in)</span>
+      </div>
+<pre><code>&lt;script setup&gt;
+import { PathShell } from "@daltonr/pathwrite-vue";
+import { onboardingPath } from "./paths/onboarding";
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;PathShell :path="onboardingPath" :initial-data="{ name: '' }" @complete="onComplete"&gt;
+    &lt;template #welcome&gt;&lt;WelcomeStep /&gt;&lt;/template&gt;
+    &lt;template #profile&gt;&lt;ProfileStep /&gt;&lt;/template&gt;
+    &lt;template #confirm&gt;&lt;ConfirmStep /&gt;&lt;/template&gt;
+  &lt;/PathShell&gt;
+&lt;/template&gt;</code></pre>
+    </div>
+
+    <p style="margin-top:12px">The shell provides: a stepper, navigation buttons, progress indicator and a compact layout. Replace the step templates with your own components to customise visuals and behaviour.</p>
+    <p style="margin-top:8px"><a href="#get-started">See the quickstart and path definition</a> or open the full UI docs in the <a href="#docs">Docs</a> section.</p>
   </div>
 </section>
 
@@ -110,6 +176,16 @@
   <div class="container">
     <h2 class="section__title">Everything you need. Nothing you don't.</h2>
     <p class="section__subtitle">Pathwrite gives you a complete engine for multi-step flows — headless, typed, and testable.</p>
+
+    <h3 style="margin-top:18px">What you get out of the box</h3>
+    <div class="what-you-get">
+      <div class="what-item">✔️ Stepper (progress)</div>
+      <div class="what-item">✔️ Navigation buttons (Next / Back / Cancel)</div>
+      <div class="what-item">✔️ Validation &amp; messages</div>
+      <div class="what-item">✔️ Layout system &amp; theming</div>
+      <div class="what-item">✔️ Sub-paths (nested flows)</div>
+      <div class="what-item">✔️ Framework adapters (React, Vue, Angular, Svelte)</div>
+    </div>
 
     <div class="feature-grid">
       <div class="feature-card">
@@ -709,6 +785,33 @@
     document.querySelector(`#framework-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
     document.getElementById(`panel-${id}`).classList.add('tabs__panel--active');
   }
+</script>
+
+<script>
+  // Small interactive demo for the hero mock
+  (function(){
+    const steps = Array.from(document.querySelectorAll('#heroSteps .pw-step'));
+    const prev = document.getElementById('heroPrev');
+    const next = document.getElementById('heroNext');
+    const content = document.getElementById('heroContent');
+    if (!steps.length || !prev || !next || !content) return;
+    let idx = 0;
+    const texts = [
+      'Welcome! Enter your details to continue.',
+      'Shipping address — add a street and ZIP code.',
+      'Payment — add a test card number.',
+      'Confirm — review your order and submit.'
+    ];
+    function render(){
+      steps.forEach((s,i)=> s.classList.toggle('active', i<=idx));
+      content.textContent = texts[idx] || '';
+      prev.disabled = idx===0;
+      next.textContent = idx < steps.length-1 ? 'Next' : 'Finish';
+    }
+    prev.addEventListener('click', ()=>{ idx = Math.max(0, idx-1); render(); });
+    next.addEventListener('click', ()=>{ idx = Math.min(steps.length-1, idx+1); render(); });
+    render();
+  })();
 </script>
 
 </body>
