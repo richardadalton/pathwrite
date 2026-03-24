@@ -19,6 +19,8 @@ import SummaryStep from "./SummaryStep.vue";
 type StorageMode = "localStorage" | "api";
 const storageMode = ref<StorageMode>("localStorage");
 const apiConnectionError = ref(false);
+const apiAvailable = ref(false);
+const checkingApi = ref(true);
 
 const store = computed(() => {
   if (storageMode.value === "api") {
@@ -27,8 +29,26 @@ const store = computed(() => {
   return new LocalStorageStore({ prefix: "pathwrite-demo:" });
 });
 
+async function checkApiAvailability() {
+  checkingApi.value = true;
+  try {
+    const testStore = new ApiStore("http://localhost:3001/api");
+    await testStore.list();
+    apiAvailable.value = true;
+  } catch (err) {
+    apiAvailable.value = false;
+    console.log("API server not available - localStorage mode only");
+  } finally {
+    checkingApi.value = false;
+  }
+}
+
 async function switchStorageMode(mode: StorageMode) {
   if (mode === "api") {
+    if (!apiAvailable.value) {
+      apiConnectionError.value = true;
+      return;
+    }
     // Test API connection before switching
     try {
       const testStore = new ApiStore("http://localhost:3001/api");
@@ -37,6 +57,7 @@ async function switchStorageMode(mode: StorageMode) {
       storageMode.value = mode;
     } catch (err) {
       apiConnectionError.value = true;
+      apiAvailable.value = false;
       console.error("Failed to connect to API:", err);
       return;
     }
@@ -109,7 +130,10 @@ async function loadSessionList() {
   }
 }
 
-onMounted(loadSessionList);
+onMounted(async () => {
+  await checkApiAvailability();
+  await loadSessionList();
+});
 
 async function deleteSession(key: string) {
   await store.value.delete(key);
@@ -252,11 +276,17 @@ function formatDate(d: string): string {
         </button>
         <button
           class="storage-toggle__btn"
-          :class="{ 'storage-toggle__btn--active': storageMode === 'api' }"
+          :class="{
+            'storage-toggle__btn--active': storageMode === 'api',
+            'storage-toggle__btn--disabled': !apiAvailable && !checkingApi
+          }"
           @click="switchStorageMode('api')"
-          :disabled="view !== 'sessions'"
+          :disabled="view !== 'sessions' || !apiAvailable"
+          :title="!apiAvailable ? 'API server not available - run locally with npm run server' : ''"
         >
-          🌐 API (port 3001)
+          <span v-if="!apiAvailable && !checkingApi">🔒</span>
+          <span v-else>🌐</span>
+          API (port 3001)
         </button>
       </div>
 
