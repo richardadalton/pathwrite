@@ -205,6 +205,13 @@ export class PathShellFooterDirective {
         </li>
       </ul>
 
+      <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
+      <ul class="pw-shell__warnings" *ngIf="validationDisplay !== 'inline' && warningEntries(s).length > 0">
+        <li *ngFor="let entry of warningEntries(s)" class="pw-shell__warnings-item">
+          <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+        </li>
+      </ul>
+
       <!-- Footer — custom or default navigation buttons -->
       <ng-container *ngIf="customFooter; else defaultFooter">
         <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
@@ -358,6 +365,11 @@ export class PathShellComponent implements OnInit, OnDestroy {
   /** Returns Object.entries(s.fieldMessages) for use in *ngFor. */
   protected fieldEntries(s: PathSnapshot): [string, string][] {
     return Object.entries(s.fieldMessages) as [string, string][];
+  }
+
+  /** Returns Object.entries(s.fieldWarnings) for use in *ngFor. */
+  protected warningEntries(s: PathSnapshot): [string, string][] {
+    return Object.entries(s.fieldWarnings) as [string, string][];
   }
 
   /** Resolves "auto" footerLayout based on snapshot. Single-step top-level → "form", otherwise → "wizard". */

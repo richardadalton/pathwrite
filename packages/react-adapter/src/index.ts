@@ -390,6 +390,15 @@ export function PathShell({
           )
         )
       ),
+      // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
+      validationDisplay !== "inline" && Object.keys(snapshot.fieldWarnings).length > 0 && createElement("ul", { className: "pw-shell__warnings" },
+        ...Object.entries(snapshot.fieldWarnings).map(([key, msg]) =>
+          createElement("li", { key, className: "pw-shell__warnings-item" },
+            key !== "_" && createElement("span", { className: "pw-shell__warnings-label" }, formatFieldKey(key)),
+            msg
+          )
+        )
+      ),
       // Footer — navigation buttons
       renderFooter
         ? renderFooter(snapshot, actions)

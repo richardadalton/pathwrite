@@ -1075,6 +1075,133 @@ describe("PathEngine — fieldMessages", () => {
 });
 
 // ---------------------------------------------------------------------------
+// fieldWarnings
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — fieldWarnings", () => {
+  it("is an empty object when the step has no fieldWarnings hook", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.fieldWarnings).toEqual({});
+  });
+
+  it("returns the warnings from the hook", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) }]
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
+  });
+
+  it("strips undefined values from the hook result", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", fieldWarnings: () => ({ name: undefined, email: "Check this" }) }]
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Check this" });
+  });
+
+  it("re-evaluates warnings reactively when setData changes data", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          fieldWarnings: (ctx) => ({
+            email: (ctx.data as PathData).email === "test@gmial.com" ? "Did you mean gmail.com?" : undefined
+          })
+        }
+      ]
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({});
+
+    await engine.setData("email", "test@gmial.com");
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
+  });
+
+  it("does NOT block canMoveNext", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) }]
+    });
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+  });
+
+  it("does NOT prevent next() navigation", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) },
+        { id: "step2" }
+      ]
+    });
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("returns {} for an async fieldWarnings hook (not supported synchronously)", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "step1", fieldWarnings: () => Promise.resolve({ email: "Warning" }) as any }]
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({});
+  });
+
+  it("updates as navigation moves to a different step", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", fieldWarnings: () => ({ field: "Consider this" }) },
+        { id: "step2", fieldWarnings: () => ({}) }
+      ]
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ field: "Consider this" });
+
+    await engine.goToStep("step2");
+    expect(engine.snapshot()?.fieldWarnings).toEqual({});
+  });
+
+  it("coexists with fieldMessages — only fieldMessages blocks navigation", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          fieldMessages: (ctx) => ({
+            name: (ctx.data as PathData).name ? undefined : "Required"
+          }),
+          fieldWarnings: () => ({ email: "Did you mean gmail.com?" })
+        },
+        { id: "step2" }
+      ]
+    });
+    // Both populated
+    expect(engine.snapshot()?.fieldMessages).toEqual({ name: "Required" });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
+    // fieldMessages blocks
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step1");
+
+    // Clear fieldMessages — warnings remain but don't block
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // hasAttemptedNext
 // ---------------------------------------------------------------------------
 

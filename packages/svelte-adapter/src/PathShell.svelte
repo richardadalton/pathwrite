@@ -205,6 +205,17 @@
       </ul>
     {/if}
 
+    <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
+    {#if validationDisplay !== 'inline' && Object.keys(snap.fieldWarnings).length > 0}
+      <ul class="pw-shell__warnings">
+        {#each Object.entries(snap.fieldWarnings) as [key, msg]}
+          <li class="pw-shell__warnings-item">
+            {#if key !== '_'}<span class="pw-shell__warnings-label">{formatFieldKey(key)}</span>{/if}{msg}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+
     <!-- Footer: navigation buttons (overridable via footer snippet) -->
     {#if footer}
       {@render footer(snap, actions)}

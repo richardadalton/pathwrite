@@ -88,6 +88,22 @@ export interface PathStep<TData extends PathData = PathData> {
    * ```
    */
   fieldMessages?: (ctx: PathStepContext<TData>) => FieldErrors;
+  /**
+   * Returns a map of field ID → warning message for non-blocking advisories.
+   * Same shape as `fieldMessages`, but warnings never affect `canMoveNext` —
+   * they are purely informational. Shells render them in amber/yellow instead
+   * of red.
+   *
+   * Evaluated synchronously on every snapshot; async functions default to `{}`.
+   *
+   * @example
+   * ```typescript
+   * fieldWarnings: ({ data }) => ({
+   *   email: looksLikeTypo(data.email) ? "Did you mean gmail.com?" : undefined,
+   * })
+   * ```
+   */
+  fieldWarnings?: (ctx: PathStepContext<TData>) => FieldErrors;
   onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
   /**
@@ -251,6 +267,13 @@ export interface PathSnapshot<TData extends PathData = PathData> {
    * Use `"_"` as a key for form-level (non-field-specific) errors.
    */
   fieldMessages: Record<string, string>;
+  /**
+   * Field-keyed warning messages for the current step. Empty object when there are none.
+   * Same shape as `fieldMessages` but purely informational — warnings never block navigation.
+   * Shells render these in amber/yellow instead of red.
+   * Use `"_"` as a key for form-level (non-field-specific) warnings.
+   */
+  fieldWarnings: Record<string, string>;
   data: TData;
 }
 
@@ -652,6 +675,7 @@ export class PathEngine {
       canMoveNext: this.evaluateCanMoveNextSync(step, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
       fieldMessages: this.evaluateFieldMessagesSync(step.fieldMessages, active),
+      fieldWarnings: this.evaluateFieldMessagesSync(step.fieldWarnings, active),
       isDirty: this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
       data: { ...active.data }

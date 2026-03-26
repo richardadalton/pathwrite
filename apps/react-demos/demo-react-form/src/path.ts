@@ -27,6 +27,16 @@ export const contactFormPath: PathDefinition<ContactData> = {
       if (!data.subject)                                    m.subject = "Please select a subject.";
       if ((data.message ?? "").trim().length < 10)          m.message = "Minimum 10 characters.";
       return m;
+    },
+    fieldWarnings: ({ data }) => {
+      const w: FieldErrors = {};
+      const email = data.email?.trim() ?? "";
+      if (email && /@(gmial|gmali|gmal|gamil)\./i.test(email))
+        w.email = "Did you mean gmail.com?";
+      const msgLen = (data.message ?? "").trim().length;
+      if (msgLen >= 10 && msgLen < 30)
+        w.message = "Short messages may not get a detailed reply.";
+      return w;
     }
   }]
 };

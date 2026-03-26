@@ -311,6 +311,17 @@ export const PathShell = defineComponent({
               )
             )
           : null,
+        // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
+        props.validationDisplay !== "inline" && Object.keys(snap.fieldWarnings).length > 0
+          ? h("ul", { class: "pw-shell__warnings" },
+              Object.entries(snap.fieldWarnings).map(([key, msg]) =>
+                h("li", { key, class: "pw-shell__warnings-item" }, [
+                  key !== "_" ? h("span", { class: "pw-shell__warnings-label" }, formatFieldKey(key)) : null,
+                  msg
+                ])
+              )
+            )
+          : null,
         // Footer — navigation
         slots.footer
           ? slots.footer({ snapshot: snap, actions })
