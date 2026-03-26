@@ -118,6 +118,12 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.setData(key, value as unknown);
   }
 
+  /** Reset the current step's data to what it was when the step was entered.
+   *  Useful for "Clear" or "Reset" buttons that undo changes within a step. */
+  public resetStep(): Promise<void> {
+    return this._engine.resetStep();
+  }
+
   public goToStep(stepId: string): Promise<void> {
     return this._engine.goToStep(stepId);
   }
@@ -158,6 +164,8 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
   cancel: () => Promise<void>;
   /** Update a single data field. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
+  /** Reset the current step's data to what it was when the step was entered. */
+  resetStep: () => Promise<void>;
   /** Jump to a step by ID without checking guards. */
   goToStep: (stepId: string) => Promise<void>;
   /** Jump to a step by ID, checking guards first. */
@@ -223,6 +231,7 @@ export function injectPath<TData extends PathData = PathData>(): InjectPathRetur
     previous: () => facade.previous(),
     cancel: () => facade.cancel(),
     setData: (key, value) => facade.setData(key, value),
+    resetStep: () => facade.resetStep(),
     goToStep: (stepId) => facade.goToStep(stepId),
     goToStepChecked: (stepId) => facade.goToStepChecked(stepId),
     restart: (path, initialData = {}) => facade.restart(path, initialData),

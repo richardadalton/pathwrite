@@ -269,3 +269,43 @@ body {
 }
 .btn-secondary:hover { background: #f3f4f6; }
 
+/* ── isDirty indicator and reset button ───────────────────────────────────── */
+.unsaved-changes-banner {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reset-button-container {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.btn-reset {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-reset:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.btn-reset:active:not(:disabled) {
+  background-color: #545b62;
+}
+
+.btn-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

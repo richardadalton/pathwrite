@@ -1,5 +1,14 @@
 # @daltonr/pathwrite-core
 
+## Unreleased
+
+### Minor Changes
+
+- **Added `onComplete` and `onCancel` callbacks to `PathDefinition`** — Define completion and cancellation handlers directly on the path definition instead of subscribing to events. Callbacks are only invoked for top-level paths (sub-path completion/cancellation continues to use parent step hooks). This eliminates common boilerplate and provides a more ergonomic API for the most common use case.
+- **Added `resetStep()` method** — Resets the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons that undo changes within a step. Emits a `stateChanged` event with cause `"resetStep"`.
+- **Added `isDirty` field to `PathSnapshot`** — Automatically tracks whether any data has changed since entering the current step. Uses shallow comparison of top-level keys. Resets to `false` when navigating to a new step or calling `resetStep()`. Enables "unsaved changes" warnings, conditional Save button styling, or form modification indicators without manual tracking. Zero configuration required.
+- **Added `stepEnteredAt` timestamp to `PathSnapshot`** — Captures `Date.now()` when each step is entered. Useful for analytics (tracking time spent per step), timeout warnings ("You've been idle for 10 minutes"), or observer-based logging. Automatically updated on every step entry and persisted/restored with state. Zero configuration required.
+
 ## 0.7.0 - 2026-03-24
 
 ### Minor Changes

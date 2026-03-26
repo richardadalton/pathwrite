@@ -63,6 +63,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   goToStepChecked: (stepId: string) => Promise<void>;
   /** Update a single data value; triggers a re-render via stateChanged. When `TData` is specified, `key` and `value` are type-checked against your data shape. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
+  /** Reset the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. */
+  resetStep: () => Promise<void>;
   /**
    * Tear down any active path (without firing hooks) and immediately start the
    * given path fresh. Safe to call whether or not a path is currently active.
@@ -113,10 +115,12 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
 
+  const resetStep = (): Promise<void> => engine.resetStep();
+
   const restart = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.restart(path, initialData);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, restart };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
 }
 
 // ---------------------------------------------------------------------------

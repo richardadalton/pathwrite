@@ -21,6 +21,30 @@ onEnter: (ctx) => {
 }
 ```
 
+### ✅ Track Unsaved Changes with `isDirty`
+```typescript
+// In your UI component
+const snapshot = engine.snapshot();
+if (snapshot.isDirty) {
+  // Show "unsaved changes" warning, disable Save button until changes made, etc.
+}
+
+// Revert changes
+<button onClick={() => engine.resetStep()}>Undo Changes</button>
+```
+
+### ✅ Compute Time on Step with `stepEnteredAt`
+```typescript
+// Analytics or timeout warnings
+const snapshot = engine.snapshot();
+const durationMs = Date.now() - snapshot.stepEnteredAt;
+const durationSec = Math.floor(durationMs / 1000);
+
+if (durationSec > 300) { // 5 minutes
+  console.warn("User has been on this step for 5+ minutes");
+}
+```
+
 ### ✅ Correlate Sub-Paths with `meta`
 ```typescript
 // Starting sub-path
@@ -53,18 +77,26 @@ const path: PathDefinition<CourseData> = {
       onLeave: (ctx) => ({ courseName: ctx.data.courseName.trim() })
     },
     { id: "review" }
-  ]
+  ],
+  onComplete: (data) => {
+    // Called when the path completes
+    console.log("Course created:", data.courseName);
+  },
+  onCancel: (data) => {
+    // Called when the path is cancelled
+    console.log("Course creation cancelled");
+  }
 };
 ```
 
 | Type | Description |
 |------|-------------|
-| `PathDefinition<TData>` | A path's ID, title, and ordered list of step definitions. |
+| `PathDefinition<TData>` | A path's ID, title, ordered list of step definitions, and optional `onComplete` / `onCancel` callbacks. |
 | `PathStep<TData>` | A single step: guards, lifecycle hooks. |
 | `PathStepContext<TData>` | Passed to every hook and guard. `data` is a **readonly snapshot copy** — return a patch to update state. |
 | `PathSnapshot<TData>` | Point-in-time read of the engine: step ID, index, count, flags, and a copy of data. |
 | `PathEvent` | Union of `stateChanged` (includes `cause`), `completed`, `cancelled`, and `resumed`. |
-| `StateChangeCause` | Identifies the method that triggered a `stateChanged` event: `"start"` \| `"next"` \| `"previous"` \| `"goToStep"` \| `"goToStepChecked"` \| `"setData"` \| `"cancel"` \| `"restart"`. |
+| `StateChangeCause` | Identifies the method that triggered a `stateChanged` event: `"start"` \| `"next"` \| `"previous"` \| `"goToStep"` \| `"goToStepChecked"` \| `"setData"` \| `"resetStep"` \| `"cancel"` \| `"restart"`. |
 | `PathObserver` | `(event: PathEvent, engine: PathEngine) => void` — a function registered at construction time that receives every event for the engine's lifetime. |
 | `PathEngineOptions` | `{ observers?: PathObserver[] }` — options accepted by the `PathEngine` constructor and `PathEngine.fromState()`. |
 | `ObserverStrategy` | Union type for the five built-in trigger strategies: `"onEveryChange" \| "onNext" \| "onSubPathComplete" \| "onComplete" \| "manual"`. Import and use in your own observer factories. |
@@ -83,9 +115,14 @@ engine.next();
 engine.previous();
 engine.cancel();
 engine.setData(key, value);                // update a single data value; emits stateChanged
-engine.goToStep(stepId);                   // jump to step by ID; bypasses guards and shouldSkip
+engine.resetStep();                        // revert current step data to what it was on entry; emits stateChanged
 engine.goToStepChecked(stepId);            // jump to step by ID; checks canMoveNext / canMovePrevious first
 engine.snapshot();                         // returns PathSnapshot | null
+
+// Key PathSnapshot fields
+snapshot.isDirty                           // true if any data changed since entering this step (resets on navigation or resetStep)
+snapshot.hasAttemptedNext                  // true after user clicks Next at least once on this step
+snapshot.stepEnteredAt                     // Date.now() timestamp when step was entered (for analytics, timeout warnings)
 
 // Serialization API (for persistence)
 const state = engine.exportState();        // returns SerializedPathState | null

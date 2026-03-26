@@ -72,8 +72,6 @@ function startOver() {
       :initial-data="INITIAL_DATA"
       complete-label="Complete Onboarding"
       cancel-label="Cancel"
-      @complete="handleComplete"
-      @cancel="handleCancel"
     >
       <template #personal-info><PersonalInfoStep /></template>
       <template #about-you><AboutYouStep /></template>

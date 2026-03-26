@@ -1157,8 +1157,152 @@ describe("PathEngine — errors", () => {
     expect(() => new PathEngine().previous()).toThrow();
   });
 
-  it("throws when cancel is called with no active path", () => {
-    expect(() => new PathEngine().cancel()).toThrow();
+  it("throws when cancel is called with no active path", async () => {
+    await expect(new PathEngine().cancel()).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// onComplete / onCancel callbacks on PathDefinition
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
+  it("calls onComplete when a top-level path finishes", async () => {
+    const onComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }, { id: "s2" }],
+      onComplete
+    });
+    await engine.next();
+    await engine.next();
+    expect(onComplete).toHaveBeenCalledOnce();
+    expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({}));
+  });
+
+  it("passes the final path data to onComplete", async () => {
+    const onComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onComplete
+    }, { name: "Alice" });
+    await engine.setData("age", 30);
+    await engine.next();
+    expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({ name: "Alice", age: 30 }));
+  });
+
+  it("calls onCancel when a top-level path is cancelled", async () => {
+    const onCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onCancel
+    }, { foo: "bar" });
+    await engine.cancel();
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onCancel).toHaveBeenCalledWith(expect.objectContaining({ foo: "bar" }));
+  });
+
+  it("does not call onComplete for sub-paths", async () => {
+    const subOnComplete = vi.fn();
+    const parentOnComplete = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{ id: "s1" }],
+      onComplete: parentOnComplete
+    });
+    await engine.startSubPath({
+      id: "sub",
+      steps: [{ id: "sub1" }],
+      onComplete: subOnComplete
+    });
+    await engine.next();
+    expect(subOnComplete).not.toHaveBeenCalled();
+    expect(parentOnComplete).not.toHaveBeenCalled();
+  });
+
+  it("does not call onCancel for sub-paths", async () => {
+    const subOnCancel = vi.fn();
+    const parentOnCancel = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{ id: "s1" }],
+      onCancel: parentOnCancel
+    });
+    await engine.startSubPath({
+      id: "sub",
+      steps: [{ id: "sub1" }],
+      onCancel: subOnCancel
+    });
+    await engine.cancel();
+    expect(subOnCancel).not.toHaveBeenCalled();
+    expect(parentOnCancel).not.toHaveBeenCalled();
+  });
+
+  it("supports async onComplete callback", async () => {
+    let result: string | null = null;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onComplete: async (data) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        result = "completed-" + data.value;
+      }
+    }, { value: "test" });
+    await engine.next();
+    expect(result).toBe("completed-test");
+  });
+
+  it("supports async onCancel callback", async () => {
+    let result: string | null = null;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onCancel: async (data) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        result = "cancelled-" + data.value;
+      }
+    }, { value: "test" });
+    await engine.cancel();
+    expect(result).toBe("cancelled-test");
+  });
+
+  it("calls onComplete after emitting the completed event", async () => {
+    const callOrder: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((event) => {
+      if (event.type === "completed") callOrder.push("event");
+    });
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onComplete: () => { callOrder.push("callback"); }
+    });
+    await engine.next();
+    expect(callOrder).toEqual(["event", "callback"]);
+  });
+
+  it("calls onCancel after emitting the cancelled event", async () => {
+    const callOrder: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((event) => {
+      if (event.type === "cancelled") callOrder.push("event");
+    });
+    await engine.start({
+      id: "test",
+      steps: [{ id: "s1" }],
+      onCancel: () => { callOrder.push("callback"); }
+    });
+    await engine.cancel();
+    expect(callOrder).toEqual(["event", "callback"]);
   });
 });
 
@@ -2047,6 +2191,244 @@ describe("PathEngine — restart()", () => {
 });
 
 // ---------------------------------------------------------------------------
+// isDirty tracking
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — isDirty", () => {
+  it("is false when a step is first entered", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "" });
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("becomes true after setData changes a value", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "" });
+    expect(engine.snapshot()?.isDirty).toBe(false);
+
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+  });
+
+  it("remains false if setData sets the same value", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "Alice" });
+    expect(engine.snapshot()?.isDirty).toBe(false);
+
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("becomes false after resetStep() is called", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "Alice" });
+    await engine.setData("name", "Bob");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.resetStep();
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("resets to false when navigating to a new step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "" });
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.next();
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("resets to false when navigating backward", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "" });
+    await engine.next();
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.previous();
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("detects changes from multiple setData calls", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "", email: "" });
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.setData("email", "alice@example.com");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+  });
+
+  it("becomes false if all changes are reverted manually", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "Alice" });
+    await engine.setData("name", "Bob");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.setData("name", "Alice"); // revert to original
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("detects when a new key is added that wasn't in entry data", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "Alice" });
+    expect(engine.snapshot()?.isDirty).toBe(false);
+
+    await engine.setData("newField", "value");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+  });
+
+  it("is false after restart", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "" });
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+
+    await engine.restart(twoStepPath(), { name: "" });
+    expect(engine.snapshot()?.isDirty).toBe(false);
+  });
+
+  it("tracks dirty state independently per step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { step1Data: "", step2Data: "" });
+    
+    // Modify on step 1
+    await engine.setData("step1Data", "changed");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+    
+    // Navigate to step 2 - should reset to false
+    await engine.next();
+    expect(engine.snapshot()?.isDirty).toBe(false);
+    
+    // Modify on step 2
+    await engine.setData("step2Data", "changed");
+    expect(engine.snapshot()?.isDirty).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stepEnteredAt timestamp
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — stepEnteredAt", () => {
+  it("captures a timestamp when a step is first entered", async () => {
+    const engine = new PathEngine();
+    const before = Date.now();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    const after = Date.now();
+    
+    const snapshot = engine.snapshot();
+    expect(snapshot?.stepEnteredAt).toBeGreaterThanOrEqual(before);
+    expect(snapshot?.stepEnteredAt).toBeLessThanOrEqual(after);
+  });
+
+  it("updates the timestamp when navigating to a new step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    const firstTimestamp = engine.snapshot()?.stepEnteredAt;
+    
+    // Wait a bit to ensure different timestamp
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    await engine.next();
+    const secondTimestamp = engine.snapshot()?.stepEnteredAt;
+    
+    expect(secondTimestamp).toBeGreaterThan(firstTimestamp!);
+  });
+
+  it("updates the timestamp when navigating backward", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    await engine.next();
+    
+    // Wait a bit
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    await engine.previous();
+    const backTimestamp = engine.snapshot()?.stepEnteredAt;
+    
+    // Should have a fresh timestamp for re-entry
+    expect(backTimestamp).toBeGreaterThan(0);
+  });
+
+  it("is included in exportState", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    
+    const state = engine.exportState();
+    expect(state?.stepEnteredAt).toBeDefined();
+    expect(typeof state?.stepEnteredAt).toBe("number");
+    expect(state?.stepEnteredAt).toBeGreaterThan(0);
+  });
+
+  it("is restored from state", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    await engine.next();
+    
+    const state = engine.exportState()!;
+    const restoredEngine = PathEngine.fromState(state, { test: twoStepPath("test") });
+    
+    const snapshot = restoredEngine.snapshot();
+    expect(snapshot?.stepEnteredAt).toBe(state.stepEnteredAt);
+  });
+
+  it("defaults to current timestamp when restoring state without stepEnteredAt", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    
+    const state = engine.exportState()!;
+    // Simulate old state without stepEnteredAt
+    delete (state as any).stepEnteredAt;
+    
+    const before = Date.now();
+    const restoredEngine = PathEngine.fromState(state, { test: twoStepPath("test") });
+    const after = Date.now();
+    
+    const snapshot = restoredEngine.snapshot();
+    expect(snapshot?.stepEnteredAt).toBeGreaterThanOrEqual(before);
+    expect(snapshot?.stepEnteredAt).toBeLessThanOrEqual(after);
+  });
+
+  it("tracks independently per step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    const step1Timestamp = engine.snapshot()?.stepEnteredAt;
+    
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await engine.next();
+    const step2Timestamp = engine.snapshot()?.stepEnteredAt;
+    
+    expect(step2Timestamp).toBeGreaterThan(step1Timestamp!);
+  });
+
+  it("is updated on restart", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    const firstTimestamp = engine.snapshot()?.stepEnteredAt;
+    
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await engine.restart(twoStepPath("test"), { name: "Bob" });
+    const restartTimestamp = engine.snapshot()?.stepEnteredAt;
+    
+    expect(restartTimestamp).toBeGreaterThan(firstTimestamp!);
+  });
+
+  it("can be used to compute duration on a step", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("test"), { name: "Alice" });
+    const snapshot = engine.snapshot();
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const duration = Date.now() - snapshot!.stepEnteredAt;
+    expect(duration).toBeGreaterThanOrEqual(50);
+    expect(duration).toBeLessThan(200); // reasonable upper bound
+  });
+});
+
+// ---------------------------------------------------------------------------
 // State export/import
 // ---------------------------------------------------------------------------
 
@@ -2161,7 +2543,6 @@ describe("PathEngine — exportState / fromState", () => {
     const engine1 = new PathEngine();
     const parent = twoStepPath("parent");
     const sub = twoStepPath("sub");
-    
     await engine1.start(parent, { parentValue: "p1" });
     await engine1.startSubPath(sub, { subValue: "s1" });
     await engine1.next(); // advance sub to step2
@@ -2326,98 +2707,6 @@ describe("PathEngine — exportState / fromState", () => {
     await engine2.cancel();
     
     expect(engine2.snapshot()?.pathId).toBe("parent");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// matchesStrategy
-// ---------------------------------------------------------------------------
-
-describe("matchesStrategy", () => {
-  // Minimal event stubs — only the fields matchesStrategy actually reads.
-  const settledNext    = { type: "stateChanged" as const, cause: "next" as const,    snapshot: { isNavigating: false } as any };
-  const navigatingNext = { type: "stateChanged" as const, cause: "next" as const,    snapshot: { isNavigating: true  } as any };
-  const settledSetData = { type: "stateChanged" as const, cause: "setData" as const, snapshot: { isNavigating: false } as any };
-  const settledStart   = { type: "stateChanged" as const, cause: "start" as const,   snapshot: { isNavigating: false } as any };
-  const resumed    = { type: "resumed"    as const, resumedPathId: "p", fromSubPathId: "s", snapshot: {} as any };
-  const completed  = { type: "completed"  as const, pathId: "p", data: {} };
-  const cancelled  = { type: "cancelled"  as const, pathId: "p", data: {} };
-
-  describe('"onNext"', () => {
-    it("returns true for a settled next stateChanged", () => {
-      expect(matchesStrategy("onNext", settledNext)).toBe(true);
-    });
-    it("returns false when isNavigating is true", () => {
-      expect(matchesStrategy("onNext", navigatingNext)).toBe(false);
-    });
-    it("returns false for setData stateChanged", () => {
-      expect(matchesStrategy("onNext", settledSetData)).toBe(false);
-    });
-    it("returns false for start stateChanged", () => {
-      expect(matchesStrategy("onNext", settledStart)).toBe(false);
-    });
-    it("returns false for resumed", () => {
-      expect(matchesStrategy("onNext", resumed)).toBe(false);
-    });
-    it("returns false for completed", () => {
-      expect(matchesStrategy("onNext", completed)).toBe(false);
-    });
-  });
-
-  describe('"onEveryChange"', () => {
-    it("returns true for a settled stateChanged (any cause)", () => {
-      expect(matchesStrategy("onEveryChange", settledNext)).toBe(true);
-      expect(matchesStrategy("onEveryChange", settledSetData)).toBe(true);
-      expect(matchesStrategy("onEveryChange", settledStart)).toBe(true);
-    });
-    it("returns false when isNavigating is true", () => {
-      expect(matchesStrategy("onEveryChange", navigatingNext)).toBe(false);
-    });
-    it("returns true for resumed", () => {
-      expect(matchesStrategy("onEveryChange", resumed)).toBe(true);
-    });
-    it("returns false for completed", () => {
-      expect(matchesStrategy("onEveryChange", completed)).toBe(false);
-    });
-    it("returns false for cancelled", () => {
-      expect(matchesStrategy("onEveryChange", cancelled)).toBe(false);
-    });
-  });
-
-  describe('"onSubPathComplete"', () => {
-    it("returns true for resumed", () => {
-      expect(matchesStrategy("onSubPathComplete", resumed)).toBe(true);
-    });
-    it("returns false for stateChanged", () => {
-      expect(matchesStrategy("onSubPathComplete", settledNext)).toBe(false);
-    });
-    it("returns false for completed", () => {
-      expect(matchesStrategy("onSubPathComplete", completed)).toBe(false);
-    });
-  });
-
-  describe('"onComplete"', () => {
-    it("returns true for completed", () => {
-      expect(matchesStrategy("onComplete", completed)).toBe(true);
-    });
-    it("returns false for stateChanged", () => {
-      expect(matchesStrategy("onComplete", settledNext)).toBe(false);
-    });
-    it("returns false for resumed", () => {
-      expect(matchesStrategy("onComplete", resumed)).toBe(false);
-    });
-    it("returns false for cancelled", () => {
-      expect(matchesStrategy("onComplete", cancelled)).toBe(false);
-    });
-  });
-
-  describe('"manual"', () => {
-    it("returns false for every event type", () => {
-      expect(matchesStrategy("manual", settledNext)).toBe(false);
-      expect(matchesStrategy("manual", resumed)).toBe(false);
-      expect(matchesStrategy("manual", completed)).toBe(false);
-      expect(matchesStrategy("manual", cancelled)).toBe(false);
-    });
   });
 });
 

@@ -138,9 +138,26 @@ const myPath: PathDefinition = {
     { id: "step-one",   title: "Step One" },
     { id: "step-two",   title: "Step Two" },
     { id: "step-three", title: "Step Three" },
-  ]
+  ],
+  onComplete: (data) => {
+    // Called when the path completes (user reaches the end)
+    console.log("Path completed with data:", data);
+  },
+  onCancel: (data) => {
+    // Called when the path is cancelled
+    console.log("Path cancelled with data:", data);
+  }
 };
 ```
+
+### Path-level callbacks
+
+| Field | Type | Description |
+|---|---|---|
+| `onComplete` | `(data: TData) => void \| Promise<void>` | Called when a **top-level** path completes (i.e. the user reaches the end of the last step). Receives the final path data. Not called for sub-paths — sub-path completion is handled by the parent step's `onSubPathComplete` hook. |
+| `onCancel` | `(data: TData) => void \| Promise<void>` | Called when a **top-level** path is cancelled. Receives the path data at the time of cancellation. Not called for sub-paths — sub-path cancellation is handled by the parent step's `onSubPathCancel` hook. |
+
+> **Why on the path definition?** Before this feature, developers subscribed to events and filtered for `type === "completed"` or `type === "cancelled"`. This was boilerplate every app needed. Now you can define completion and cancellation handlers right where you define the path — no subscription management required.
 
 ### Step fields
 
@@ -389,6 +406,9 @@ interface PathSnapshot<TData> {
   canMoveNext:    boolean;              // result of the current step's canMoveNext guard
   canMovePrevious: boolean;             // result of the current step's canMovePrevious guard
   validationMessages: string[];         // messages from the current step's validationMessages hook
+  isDirty:        boolean;              // true if any data changed since entering this step
+  hasAttemptedNext: boolean;            // true after the user has called next() at least once on this step
+  stepEnteredAt:  number;               // Date.now() timestamp when this step was entered
   data:           TData;                // copy of current path data
 }
 ```
@@ -422,6 +442,32 @@ The snapshot evaluates the current step's `canMoveNext` and `canMovePrevious` gu
 ```
 
 If no guard is defined, the value defaults to `true`. If the guard is async (returns a `Promise`), the snapshot defaults to `true` optimistically — the engine still enforces the real result on navigation.
+
+### `isDirty` — automatic unsaved changes tracking
+
+The snapshot automatically tracks whether any data has changed since entering the current step. `isDirty` is `false` on step entry and becomes `true` after the first `setData()` that changes a value. It resets to `false` when:
+- Navigating to a new step (forward or backward)
+- Calling `resetStep()` to revert changes
+- Calling `restart()` to start over
+
+The comparison is **shallow** — only top-level keys are checked. Nested objects are compared by reference, not deep equality. This is a deliberate trade-off for performance and simplicity, as most form data is flat (strings, numbers, booleans).
+
+**Common use cases:**
+```typescript
+// Show "unsaved changes" warning
+{snapshot.isDirty && <span className="warning">You have unsaved changes</span>}
+
+// Disable Save button until user makes changes
+<button disabled={!snapshot.isDirty} onClick={handleSave}>Save</button>
+
+// Prompt before navigation
+if (snapshot.isDirty && !confirm("Discard changes?")) {
+  return;
+}
+
+// Revert changes
+<button onClick={() => engine.resetStep()}>Undo Changes</button>
+```
 
 ---
 
@@ -845,6 +891,7 @@ public constructor() {
 | `previous()` | Go back one step |
 | `cancel()` | Cancel the active path or sub-path |
 | `setData(key, value)` | Update a single data value |
+| `resetStep()` | Revert the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. |
 | `goToStep(stepId)` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | Jump to a step by ID, checking the current step's `canMoveNext` (forward) or `canMovePrevious` (backward) guard first. Navigation is blocked if the guard returns false. |
 | `snapshot()` | Synchronous read of the current snapshot |
@@ -1507,7 +1554,7 @@ Use the `pwShellFooter` directive to replace the default navigation buttons. The
 </pw-shell>
 ```
 
-`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `resetStep`, `restart`. All return `Promise<void>`.
 
 ### Svelte — `<PathShell>`
 
@@ -1918,6 +1965,7 @@ await engine.start(path, { apiKey: "" });
 | `previous()` | `Promise<void>` | Go back. No-op when already on the first step of a top-level path. Pops a sub-path back to its parent. |
 | `cancel()` | `Promise<void>` | Cancel. Pops sub-path silently; completes top-level with `cancelled` event. |
 | `setData(key, value)` | `Promise<void>` | Update one data value. Emits `stateChanged`. |
+| `resetStep()` | `Promise<void>` | Revert the current step's data to what it was when the step was entered. Emits `stateChanged`. |
 | `goToStep(stepId)` | `Promise<void>` | Jump to step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID, checking `canMoveNext` (forward) or `canMovePrevious` (backward) first. Navigation is blocked if the guard returns false. |
 | `snapshot()` | `PathSnapshot \| null` | Synchronous snapshot read. |

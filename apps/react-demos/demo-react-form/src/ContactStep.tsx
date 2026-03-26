@@ -11,13 +11,20 @@ const SUBJECTS = [
 export function ContactStep() {
   // usePathContext() reaches into the PathShell's PathContext — no prop
   // drilling or template reference variables needed.
-  const { snapshot, setData } = usePathContext<ContactData>();
+  const { snapshot, setData, resetStep } = usePathContext<ContactData>();
   const data = snapshot?.data ?? ({} as ContactData);
   const messageLen = (data.message ?? "").length;
   const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldMessages ?? {}) : {};
 
   return (
     <div className="form-body">
+
+      {/* isDirty indicator */}
+      {snapshot?.isDirty && (
+        <div className="unsaved-changes-banner">
+          ✏️ You have unsaved changes
+        </div>
+      )}
 
       {/* Name */}
       <div className={`field ${errors.name ? "field--error" : ""}`}>
@@ -85,6 +92,18 @@ export function ContactStep() {
         />
         <span className="char-count">{messageLen} chars</span>
         {errors.message && <span className="field-error">{errors.message}</span>}
+      </div>
+
+      {/* Reset Button */}
+      <div className="reset-button-container">
+        <button 
+          type="button" 
+          className="btn-reset" 
+          onClick={resetStep}
+          disabled={!snapshot?.isDirty}
+        >
+          Clear Form
+        </button>
       </div>
 
     </div>

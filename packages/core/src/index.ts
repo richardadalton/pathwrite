@@ -18,12 +18,16 @@ export interface SerializedPathState {
   data: PathData;
   visitedStepIds: string[];
   subPathMeta?: Record<string, unknown>;
+  stepEntryData?: PathData;
+  stepEnteredAt?: number;
   pathStack: Array<{
     pathId: string;
     currentStepIndex: number;
     data: PathData;
     visitedStepIds: string[];
     subPathMeta?: Record<string, unknown>;
+    stepEntryData?: PathData;
+    stepEnteredAt?: number;
   }>;
   _isNavigating: boolean;
 }
@@ -118,6 +122,19 @@ export interface PathDefinition<TData extends PathData = PathData> {
   id: string;
   title?: string;
   steps: PathStep<TData>[];
+  /**
+   * Optional callback invoked when this path completes (i.e. the user
+   * reaches the end of the last step). Receives the final path data.
+   * Only called for top-level paths — sub-path completion is handled by
+   * the parent step's `onSubPathComplete` hook.
+   */
+  onComplete?: (data: TData) => void | Promise<void>;
+  /**
+   * Optional callback invoked when this path is cancelled. Receives the
+   * path data at the time of cancellation. Only called for top-level paths —
+   * sub-path cancellation is handled by the parent step's `onSubPathCancel` hook.
+   */
+  onCancel?: (data: TData) => void | Promise<void>;
 }
 
 export type StepStatus = "completed" | "current" | "upcoming";
@@ -199,6 +216,35 @@ export interface PathSnapshot<TData extends PathData = PathData> {
    */
   hasAttemptedNext: boolean;
   /**
+   * True if any data has changed since entering this step. Automatically computed
+   * by comparing the current data to the snapshot taken on step entry. Resets to
+   * `false` when navigating to a new step or calling `resetStep()`.
+   *
+   * Useful for "unsaved changes" warnings, disabling Save buttons until changes
+   * are made, or styling forms to indicate modifications.
+   *
+   * ```typescript
+   * {#if snapshot.isDirty}
+   *   <span class="warning">You have unsaved changes</span>
+   * {/if}
+   * ```
+   */
+  isDirty: boolean;
+  /**
+   * Timestamp (from `Date.now()`) captured when the current step was entered.
+   * Useful for analytics, timeout warnings, or computing how long a user has
+   * been on a step.
+   *
+   * ```typescript
+   * const durationMs = Date.now() - snapshot.stepEnteredAt;
+   * const durationSec = Math.floor(durationMs / 1000);
+   * ```
+   *
+   * Resets to a new timestamp each time the step is entered (including when
+   * navigating back to a previously visited step).
+   */
+  stepEnteredAt: number;
+  /**
    * Field-keyed validation messages for the current step. Empty object when there are none.
    * Use in step templates to render inline per-field errors: `snapshot.fieldMessages['email']`.
    * The shell also renders these automatically in a labeled summary box.
@@ -218,6 +264,7 @@ export type StateChangeCause =
   | "goToStep"
   | "goToStepChecked"
   | "setData"
+  | "resetStep"
   | "cancel"
   | "restart";
 
@@ -316,6 +363,10 @@ interface ActivePath {
   data: PathData;
   visitedStepIds: Set<string>;
   subPathMeta?: Record<string, unknown>;
+  /** Snapshot of data taken when the current step was entered. Used by resetStep(). */
+  stepEntryData: PathData;
+  /** Timestamp (Date.now()) captured when the current step was entered. */
+  stepEnteredAt: number;
 }
 
 export class PathEngine {
@@ -374,7 +425,9 @@ export class PathEngine {
         currentStepIndex: stackItem.currentStepIndex,
         data: { ...stackItem.data },
         visitedStepIds: new Set(stackItem.visitedStepIds),
-        subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined
+        subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined,
+        stepEntryData: stackItem.stepEntryData ? { ...stackItem.stepEntryData } : { ...stackItem.data },
+        stepEnteredAt: stackItem.stepEnteredAt ?? Date.now()
       });
     }
 
@@ -393,7 +446,9 @@ export class PathEngine {
       visitedStepIds: new Set(state.visitedStepIds),
       // Active path's subPathMeta is not serialized (it's transient metadata
       // from the parent when this path was started). On restore, it's undefined.
-      subPathMeta: undefined
+      subPathMeta: undefined,
+      stepEntryData: state.stepEntryData ? { ...state.stepEntryData } : { ...state.data },
+      stepEnteredAt: state.stepEnteredAt ?? Date.now()
     };
 
     engine._isNavigating = state._isNavigating;
@@ -465,9 +520,9 @@ export class PathEngine {
   /** Cancel is synchronous for top-level paths (no hooks). Sub-path cancellation
    *  is async when an `onSubPathCancel` hook is present. Returns a Promise for
    *  API consistency. */
-  public cancel(): Promise<void> {
+  public async cancel(): Promise<void> {
     const active = this.requireActivePath();
-    if (this._isNavigating) return Promise.resolve();
+    if (this._isNavigating) return;
 
     const cancelledPathId = active.definition.id;
     const cancelledData = { ...active.data };
@@ -479,15 +534,32 @@ export class PathEngine {
       return this._cancelSubPathAsync(cancelledPathId, cancelledData, cancelledMeta);
     }
 
+    // Top-level path cancelled — call onCancel hook if defined
     this.activePath = null;
     this.emit({ type: "cancelled", pathId: cancelledPathId, data: cancelledData });
-    return Promise.resolve();
+    if (active.definition.onCancel) {
+      await active.definition.onCancel(cancelledData);
+    }
   }
 
   public setData(key: string, value: unknown): Promise<void> {
     const active = this.requireActivePath();
     active.data[key] = value;
     this.emitStateChanged("setData");
+    return Promise.resolve();
+  }
+
+  /**
+   * Resets the current step's data to what it was when the step was entered.
+   * Useful for "Clear" or "Reset" buttons that undo changes within a step.
+   * Emits a `stateChanged` event with cause `"resetStep"`.
+   * Throws if no path is active.
+   */
+  public resetStep(): Promise<void> {
+    const active = this.requireActivePath();
+    // Restore data from the snapshot taken when this step was entered
+    active.data = { ...active.stepEntryData };
+    this.emitStateChanged("resetStep");
     return Promise.resolve();
   }
 
@@ -580,6 +652,8 @@ export class PathEngine {
       canMoveNext: this.evaluateCanMoveNextSync(step, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
       fieldMessages: this.evaluateFieldMessagesSync(step.fieldMessages, active),
+      isDirty: this.computeIsDirty(active),
+      stepEnteredAt: active.stepEnteredAt,
       data: { ...active.data }
     };
   }
@@ -608,12 +682,16 @@ export class PathEngine {
       currentStepIndex: active.currentStepIndex,
       data: { ...active.data },
       visitedStepIds: Array.from(active.visitedStepIds),
+      stepEntryData: { ...active.stepEntryData },
+      stepEnteredAt: active.stepEnteredAt,
       pathStack: this.pathStack.map((p) => ({
         pathId: p.definition.id,
         currentStepIndex: p.currentStepIndex,
         data: { ...p.data },
         visitedStepIds: Array.from(p.visitedStepIds),
-        subPathMeta: p.subPathMeta ? { ...p.subPathMeta } : undefined
+        subPathMeta: p.subPathMeta ? { ...p.subPathMeta } : undefined,
+        stepEntryData: { ...p.stepEntryData },
+        stepEnteredAt: p.stepEnteredAt
       })),
       _isNavigating: this._isNavigating
     };
@@ -640,7 +718,9 @@ export class PathEngine {
       currentStepIndex: 0,
       data: { ...initialData },
       visitedStepIds: new Set(),
-      subPathMeta: undefined
+      subPathMeta: undefined,
+      stepEntryData: { ...initialData },  // Will be updated in enterCurrentStep
+      stepEnteredAt: 0  // Will be set in enterCurrentStep
     };
 
     this._isNavigating = true;
@@ -859,8 +939,12 @@ export class PathEngine {
         snapshot: this.snapshot()!
       });
     } else {
+      // Top-level path completed — call onComplete hook if defined
       this.activePath = null;
       this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+      if (finished.definition.onComplete) {
+        await finished.definition.onComplete(finishedData);
+      }
     }
   }
 
@@ -931,6 +1015,13 @@ export class PathEngine {
     this._hasAttemptedNext = false;
     const active = this.activePath;
     if (!active) return;
+    
+    // Save a snapshot of the data as it was when entering this step (for resetStep)
+    active.stepEntryData = { ...active.data };
+    
+    // Capture the timestamp when entering this step (for analytics, timeout warnings)
+    active.stepEnteredAt = Date.now();
+    
     const step = this.getCurrentStep(active);
     const isFirstEntry = !active.visitedStepIds.has(step.id);
     // Mark as visited before calling onEnter so re-entrant calls see the
@@ -1108,6 +1199,29 @@ export class PathEngine {
       );
       return {};
     }
+  }
+
+  /**
+   * Compares the current step data to the snapshot taken when the step was entered.
+   * Returns `true` if any data value has changed.
+   *
+   * Performs a shallow comparison — only top-level keys are checked. Nested objects
+   * are compared by reference, not by deep equality.
+   */
+  private computeIsDirty(active: ActivePath): boolean {
+    const current = active.data;
+    const entry = active.stepEntryData;
+
+    // Get all unique keys from both objects
+    const allKeys = new Set([...Object.keys(current), ...Object.keys(entry)]);
+
+    for (const key of allKeys) {
+      if (current[key] !== entry[key]) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
 

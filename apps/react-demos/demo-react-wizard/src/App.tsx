@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { PathShell } from "@daltonr/pathwrite-react";
-import type { PathData } from "@daltonr/pathwrite-react";
-import { onboardingPath, INITIAL_DATA, EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "./onboarding";
+import { INITIAL_DATA, EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "./onboarding";
 import { PersonalInfoStep } from "./PersonalInfoStep";
 import { AboutYouStep }     from "./AboutYouStep";
 import { PreferencesStep }  from "./PreferencesStep";
@@ -12,11 +11,41 @@ export default function App() {
   const [isCancelled,  setIsCancelled]  = useState(false);
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
 
-  function handleComplete(data: PathData) {
-    setCompletedData(data as OnboardingData);
-    setIsCompleted(true);
-  }
-  function handleCancel() { setIsCancelled(true); }
+  // Path definition with completion callbacks
+  const onboardingPath = {
+    id: "onboarding",
+    steps: [
+      {
+        id: "personal-info",
+        title: "Personal Info",
+        fieldMessages: ({ data }: any) => ({
+          firstName: !data.firstName?.trim() ? "First name is required."    : undefined,
+          lastName:  !data.lastName?.trim()  ? "Last name is required."     : undefined,
+          email:     !data.email?.trim()     ? "Email address is required."
+                   : !(data.email.includes("@") && data.email.includes(".")) ? "Enter a valid email address." : undefined,
+        }),
+      },
+      {
+        id: "about-you",
+        title: "About You",
+        canMoveNext: ({ data }: any) => !!data.jobTitle?.trim() && !!data.experience,
+        fieldMessages: ({ data }: any) => ({
+          jobTitle:   !data.jobTitle?.trim() ? "Job title is required."               : undefined,
+          experience: !data.experience       ? "Please select your experience level." : undefined,
+        }),
+      },
+      { id: "preferences", title: "Preferences" },
+      { id: "review",      title: "Review" },
+    ],
+    onComplete: (data: OnboardingData) => {
+      setCompletedData(data);
+      setIsCompleted(true);
+    },
+    onCancel: () => {
+      setIsCancelled(true);
+    }
+  };
+
   function startOver() {
     setIsCompleted(false);
     setIsCancelled(false);
@@ -75,8 +104,6 @@ export default function App() {
           initialData={INITIAL_DATA}
           completeLabel="Complete Onboarding"
           cancelLabel="Cancel"
-          onComplete={handleComplete}
-          onCancel={handleCancel}
           steps={{
             "personal-info": <PersonalInfoStep />,
             "about-you":     <AboutYouStep />,
