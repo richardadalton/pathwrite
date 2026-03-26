@@ -153,12 +153,7 @@ a:hover { color: #c4b5fd; }
 }
 .value-card:hover { border-color: var(--color-primary); background: var(--color-bg-card-hover); }
 .value-card--highlight { border-color: rgba(139, 92, 246, 0.2); }
-.value-card__number {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--color-primary); color: white; font-size: 0.85rem; font-weight: 700;
-  margin-bottom: 1rem;
-}
+.value-card__icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
 .value-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
 .value-card p { font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.65; }
 .value-card code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-accent); background: var(--color-code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; }
@@ -174,6 +169,7 @@ a:hover { color: #c4b5fd; }
   padding: 1.5rem; transition: all 0.2s;
 }
 .feature-card:hover { border-color: var(--color-primary); background: var(--color-bg-card-hover); }
+.feature-card__icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
 .feature-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; }
 .feature-card p { font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.55; }
 .feature-card code { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-accent); background: var(--color-code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; }

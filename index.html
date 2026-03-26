@@ -52,7 +52,7 @@
       <div id="pw-demo" class="pw-demo">
         <div class="pw-demo__header">
           <span>&loz;</span>
-          <span class="pw-demo__header-title">Live Demo</span>
+          <span class="pw-demo__header-title">Real Pathwrite Wizard — Not a Mockup</span>
           <span class="pw-demo__header-tag" id="pw-tag">steps</span>
         </div>
         <div class="pw-demo__stepper" id="pw-stepper"></div>
@@ -64,8 +64,9 @@
           <button class="pw-demo__btn pw-demo__btn--primary" id="pw-next">Next &rarr;</button>
         </div>
       </div>
-      <div style="text-align:center;margin-top:10px">
-        <a href="/how-this-was-done.html" class="btn btn--ghost" style="font-size:0.85rem">How was this built?</a>
+      <div style="text-align:center;margin-top:10px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color:var(--color-text-muted)">Real engine, loaded from npm. No iframe.</span>
+        <a href="/how-this-was-done.html" style="font-size:0.78rem;color:var(--color-text-muted)">How was this built? →</a>
       </div>
     </div>
   </div>
@@ -101,22 +102,22 @@
 
     <div class="value-grid">
       <div class="value-card value-card--highlight">
-        <div class="value-card__number">1</div>
+        <div class="value-card__icon">🌐</div>
         <h3>Write once, run in any framework</h3>
         <p>Your path definition is plain TypeScript. The same guards, validation, and lifecycle hooks work identically in React, Vue, Angular, and Svelte.</p>
       </div>
       <div class="value-card value-card--highlight">
-        <div class="value-card__number">2</div>
+        <div class="value-card__icon">🎨</div>
         <h3>Headless engine + optional UI shell</h3>
         <p>Use the engine headless for full control, or drop in <code>PathShell</code> for an instant wizard UI with stepper, navigation, and validation display.</p>
       </div>
       <div class="value-card value-card--highlight">
-        <div class="value-card__number">3</div>
+        <div class="value-card__icon">💾</div>
         <h3>Built-in persistence</h3>
         <p>Save and restore progress with LocalStorage or HTTP. Users pick up where they left off. Configurable strategies, zero boilerplate.</p>
       </div>
       <div class="value-card value-card--highlight">
-        <div class="value-card__number">4</div>
+        <div class="value-card__icon">🧪</div>
         <h3>Test without a browser</h3>
         <p>Every step, guard, and sub-path is testable by calling engine methods. No DOM, no component mounting.</p>
       </div>
@@ -130,34 +131,42 @@
     <h2 class="section__title">Everything you need</h2>
     <div class="feature-grid">
       <div class="feature-card">
+        <div class="feature-card__icon">🛡️</div>
         <h3>Guards &amp; Validation</h3>
         <p><code>canMoveNext</code>, <code>fieldMessages</code>, sync or async. Type-checked.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">⏭️</div>
         <h3>Conditional Steps</h3>
         <p><code>shouldSkip</code> dynamically hides steps. Stepper updates automatically.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">📦</div>
         <h3>Sub-Paths</h3>
         <p>Push nested flows onto the stack. Parent auto-resumes on completion.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">🪝</div>
         <h3>Lifecycle Hooks</h3>
         <p><code>onEnter</code>, <code>onLeave</code>, <code>onComplete</code>, <code>onCancel</code> — all async-capable.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">🔔</div>
         <h3>Event System</h3>
         <p>Subscribe to state changes, completions, and cancellations for analytics or side effects.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">🔠</div>
         <h3>Full TypeScript</h3>
         <p>Generic <code>PathDefinition&lt;TData&gt;</code> flows through every hook, guard, and snapshot.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">✨</div>
         <h3>Dirty Tracking</h3>
         <p><code>isDirty</code> and <code>resetStep()</code> out of the box. Zero config.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-card__icon">📝</div>
         <h3>Forms Too</h3>
         <p>Single-step forms with <code>fieldMessages</code>, auto-derived guards, and smart error timing.</p>
       </div>
@@ -521,9 +530,9 @@
 
     switch (stepId) {
       case 'welcome': return `
-        <h3>Live Pathwrite Demo</h3>
-        <p>This wizard runs <strong>@daltonr/pathwrite-core</strong> directly in the page.</p>
-        <p>Try steps, guards, conditional skipping, and sub-paths.</p>`;
+        <h3>This is the real thing</h3>
+        <p>Not a mockup. <strong>@daltonr/pathwrite-core</strong> is running live in this page — loaded directly from npm, no iframe.</p>
+        <p>Walk through to see guards, conditional step skipping, and nested sub-paths in action.</p>`;
 
       case 'framework': return `
         <h3>Choose a framework ${ftag('canMoveNext')}</h3>
