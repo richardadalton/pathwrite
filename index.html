@@ -122,7 +122,7 @@
 <section class="stats">
   <div class="container stats__inner">
     <div class="stat">
-      <span class="stat__number">546</span>
+      <span class="stat__number">555</span>
       <span class="stat__label">Tests</span>
     </div>
     <div class="stat">
@@ -146,7 +146,7 @@
     <h2 class="section__title">
       <span style="display:inline-block; background:linear-gradient(90deg,var(--color-primary),var(--color-accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">What's New in v0.8.0</span>
     </h2>
-    <p class="section__subtitle">Coming soon: Four powerful features that eliminate common boilerplate — zero breaking changes.</p>
+    <p class="section__subtitle">Coming soon: Five powerful features that eliminate common boilerplate — zero breaking changes.</p>
 
     <div class="feature-grid" style="margin-top:2.5rem">
       <div class="feature-card" style="border-color:rgba(139,92,246,0.2); background:rgba(139,92,246,0.03)">
@@ -184,10 +184,18 @@
           Date.now() - snapshot.stepEnteredAt
         </div>
       </div>
+      <div class="feature-card" style="border-color:rgba(245,158,11,0.2); background:rgba(245,158,11,0.03)">
+        <div class="feature-card__icon" style="background:rgba(245,158,11,0.1)">⚠️</div>
+        <h3><code style="font-size:0.9em; color:#d97706">fieldWarnings</code> — Non-Blocking Messages</h3>
+        <p>Same shape as <code>fieldMessages</code>, but purely informational. Warnings appear in amber and never block navigation — perfect for "Did you mean gmail.com?" hints or soft advisories.</p>
+        <div style="margin-top:10px; padding:10px; background:var(--color-bg); border-radius:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--color-text-muted); border:1px solid var(--color-border)">
+          fieldWarnings: ({ data }) => ({ email: typo ? "Did you mean gmail.com?" : undefined })
+        </div>
+      </div>
     </div>
 
     <p style="margin-top:2rem; text-align:center; color:var(--color-text-muted); font-size:0.95rem">
-      All four features are <strong>optional</strong>, <strong>additive</strong>, and <strong>non-breaking</strong>. Ignore them and your code works exactly as before.
+      All five features are <strong>optional</strong>, <strong>additive</strong>, and <strong>non-breaking</strong>. Ignore them and your code works exactly as before.
     </p>
   </div>
 </section>
