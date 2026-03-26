@@ -23,7 +23,7 @@ export const approvalSubPath: PathDefinition<ApprovalData> = {
     {
       id: "decision",
       title: "Your Decision",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         decision: !data.decision ? "Please select approve or reject." : undefined,
       }),
     },
@@ -36,7 +36,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     {
       id: "create-document",
       title: "Create Document",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         title:       !data.title?.trim()       ? "Document title is required." : undefined,
         description: !data.description?.trim() ? "Description is required."   : undefined,
       }),
@@ -44,14 +44,14 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     {
       id: "select-approvers",
       title: "Select Approvers",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         approvers: !(data.approvers as string[])?.length ? "Select at least one approver." : undefined,
       }),
     },
     {
       id: "approval-review",
       title: "Awaiting Approvals",
-      fieldMessages: ({ data }) => {
+      fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
         const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
         return {

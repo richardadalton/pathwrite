@@ -17,9 +17,9 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
     {
       id: "personal-info",
       title: "Personal Info",
-      // fieldMessages without an explicit canMoveNext — the engine auto-derives
+      // fieldErrors without an explicit canMoveNext — the engine auto-derives
       // canMoveNext as true when all messages are undefined.
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         firstName: !(data.firstName as string)?.trim()
           ? "First name is required."
           : undefined,
@@ -36,10 +36,10 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
     {
       id: "about-you",
       title: "About You",
-      // Explicit canMoveNext plus fieldMessages — demonstrates both together.
+      // Explicit canMoveNext plus fieldErrors — demonstrates both together.
       canMoveNext: ({ data }) =>
         !!(data.jobTitle as string)?.trim() && !!(data.experience as string),
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         jobTitle: !(data.jobTitle as string)?.trim()
           ? "Job title is required."
           : undefined,

@@ -99,7 +99,7 @@ export class AboutYouStepComponent {
   protected readonly path = injectPath<OnboardingData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? s.fieldMessages : {};
+    return s?.hasAttemptedNext ? s.fieldErrors : {};
   });
 
   // snapshot() is always non-null while this step component is mounted —

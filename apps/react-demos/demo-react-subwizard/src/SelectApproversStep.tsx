@@ -6,7 +6,7 @@ export function SelectApproversStep() {
   const { snapshot, setData } = usePathContext<DocumentData>();
   const snap    = snapshot!;
   const data    = snap.data;
-  const errors  = snap.hasAttemptedNext ? snap.fieldMessages : {};
+  const errors  = snap.hasAttemptedNext ? snap.fieldErrors : {};
   const selected = (data.approvers ?? []) as string[];
 
   function toggle(id: string) {

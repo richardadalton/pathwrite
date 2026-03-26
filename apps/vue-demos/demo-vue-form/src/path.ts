@@ -19,7 +19,7 @@ export const contactFormPath: PathDefinition<ContactData> = {
     title: "Contact Us",
     onEnter: ({ isFirstEntry }) =>
       isFirstEntry ? { name: "", email: "", subject: "", message: "" } : undefined,
-    fieldMessages: ({ data }) => {
+    fieldErrors: ({ data }) => {
       const m: FieldErrors = {};
       if (!data.name?.trim())                               m.name    = "Required.";
       if (!data.email?.trim())                              m.email   = "Required.";

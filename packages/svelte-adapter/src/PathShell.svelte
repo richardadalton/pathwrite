@@ -195,9 +195,9 @@
     </div>
 
     <!-- Validation messages — suppressed when validationDisplay="inline" -->
-    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0}
+    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && Object.keys(snap.fieldErrors).length > 0}
       <ul class="pw-shell__validation">
-        {#each Object.entries(snap.fieldMessages) as [key, msg]}
+        {#each Object.entries(snap.fieldErrors) as [key, msg]}
           <li class="pw-shell__validation-item">
             {#if key !== '_'}<span class="pw-shell__validation-label">{formatFieldKey(key)}</span>{/if}{msg}
           </li>

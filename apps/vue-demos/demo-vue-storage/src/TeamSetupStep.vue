@@ -7,7 +7,7 @@ const { snapshot, setData } = usePathContext<WizardData>();
 
 const teamName = computed(() => (snapshot.value?.data.teamName as string) ?? "");
 const members  = computed(() => (snapshot.value?.data.members  ?? []) as Person[]);
-const errors   = computed(() => snapshot.value?.fieldMessages ?? {});
+const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
 function updateTeamName(value: string) {

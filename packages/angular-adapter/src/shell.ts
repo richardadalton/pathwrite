@@ -362,9 +362,9 @@ export class PathShellComponent implements OnInit, OnDestroy {
     return this.facade.restart(this.path, this.initialData);
   }
 
-  /** Returns Object.entries(s.fieldMessages) for use in *ngFor. */
+  /** Returns Object.entries(s.fieldErrors) for use in *ngFor. */
   protected fieldEntries(s: PathSnapshot): [string, string][] {
-    return Object.entries(s.fieldMessages) as [string, string][];
+    return Object.entries(s.fieldErrors) as [string, string][];
   }
 
   /** Returns Object.entries(s.fieldWarnings) for use in *ngFor. */

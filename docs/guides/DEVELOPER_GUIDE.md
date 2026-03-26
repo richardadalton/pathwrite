@@ -8,7 +8,7 @@
 4. [Defining a Path](#4-defining-a-path)
 5. [Step Lifecycle](#5-step-lifecycle)
 6. [Navigation Guards](#6-navigation-guards)
-   - [`fieldMessages` — per-field validation and auto-derived `canMoveNext`](#fieldmessages--per-field-validation-and-auto-derived-canmovenext)
+   - [`fieldErrors` — per-field validation and auto-derived `canMoveNext`](#fieldmessages--per-field-validation-and-auto-derived-canmovenext)
 7. [The PathSnapshot](#7-the-pathsnapshot)
 8. [Events](#8-events)
 9. [Sub-Paths](#9-sub-paths)
@@ -343,40 +343,40 @@ The values update automatically whenever the snapshot is rebuilt (e.g. after `se
 
 If all remaining steps are skipped going forward, the path **completes**. If all preceding steps are skipped going backward, the path **cancels**.
 
-### `fieldMessages` — per-field validation and auto-derived `canMoveNext`
+### `fieldErrors` — per-field validation and auto-derived `canMoveNext`
 
-`fieldMessages` is a synchronous hook that returns a map of field ID → error string (or `undefined` for no error). The shell displays these messages with human-readable labels below the step body, and the snapshot exposes them as `snapshot.fieldMessages` so step templates can render inline per-field errors.
+`fieldErrors` is a synchronous hook that returns a map of field ID → error string (or `undefined` for no error). The shell displays these messages with human-readable labels below the step body, and the snapshot exposes them as `snapshot.fieldErrors` so step templates can render inline per-field errors.
 
 ```typescript
 {
   id: "details",
-  fieldMessages: ({ data }) => ({
+  fieldErrors: ({ data }) => ({
     firstName: !data.firstName?.trim() ? "First name is required." : undefined,
     email:     !String(data.email ?? "").includes("@") ? "Valid email required." : undefined,
   })
 }
 ```
 
-> **Auto-derived guard:** When `fieldMessages` is defined and `canMoveNext` is **not**, the
+> **Auto-derived guard:** When `fieldErrors` is defined and `canMoveNext` is **not**, the
 > engine automatically derives `canMoveNext` as `true` when every field message is `undefined`,
 > and `false` when any message is non-empty.
 >
 > You only need an explicit `canMoveNext` if your guard logic differs from "all fields valid":
 >
 > ```typescript
-> // ✅ No canMoveNext needed — auto-derived from fieldMessages
-> { id: "details", fieldMessages: ({ data }) => ({ name: !data.name ? "Required." : undefined }) }
+> // ✅ No canMoveNext needed — auto-derived from fieldErrors
+> { id: "details", fieldErrors: ({ data }) => ({ name: !data.name ? "Required." : undefined }) }
 >
 > // ✅ Explicit canMoveNext when the guard is more than "all fields valid"
-> { id: "terms", fieldMessages: ..., canMoveNext: (ctx) => ctx.data.agreed === true }
+> { id: "terms", fieldErrors: ..., canMoveNext: (ctx) => ctx.data.agreed === true }
 > ```
 
-`fieldMessages` **must be synchronous**. Async functions are called but their result is discarded (the snapshot defaults to `{}`). If validation depends on async state, load it beforehand, store the result in `data`, and reference it from a synchronous `fieldMessages`.
+`fieldErrors` **must be synchronous**. Async functions are called but their result is discarded (the snapshot defaults to `{}`). If validation depends on async state, load it beforehand, store the result in `data`, and reference it from a synchronous `fieldErrors`.
 
 Use `"_"` as the field key for form-level errors that don't belong to a specific field:
 
 ```typescript
-fieldMessages: ({ data }) => ({
+fieldErrors: ({ data }) => ({
   _: data.password !== data.confirmPassword ? "Passwords do not match." : undefined,
 })
 ```
@@ -2797,17 +2797,17 @@ const contactForm: PathDefinition = {
   steps: [{
     id: "contact",
     title: "Contact Us",
-    fieldMessages: ({ data }) => ({
+    fieldErrors: ({ data }) => ({
       name:    !data.name?.trim()              ? "Name is required."          : undefined,
       email:   !data.email?.includes("@")     ? "Valid email address required." : undefined,
       message: !data.message?.trim()          ? "Message is required."        : undefined,
     })
-    // No canMoveNext needed — auto-derived from fieldMessages (see below)
+    // No canMoveNext needed — auto-derived from fieldErrors (see below)
   }]
 };
 ```
 
-> **`canMoveNext` is auto-derived from `fieldMessages`.** When `fieldMessages` is defined
+> **`canMoveNext` is auto-derived from `fieldErrors`.** When `fieldErrors` is defined
 > and `canMoveNext` is not, the engine treats the step as valid (allows navigation) when
 > every field message is `undefined`, and blocks navigation when any message is non-empty.
 >
@@ -2865,7 +2865,7 @@ With the code above, single-step forms **automatically**:
 
 1. **Hide the progress indicator** (no "Step 1 of 1" clutter)
 2. **Use form-style footer** (Cancel on left, Submit on right)
-3. **Block submission while invalid** (canMoveNext derived from fieldMessages)
+3. **Block submission while invalid** (canMoveNext derived from fieldErrors)
 4. **Hide errors initially** (shown after first submit attempt via hasAttemptedNext)
 5. **Render field errors with labels** (camelCase → Title Case: "firstName" → "First Name")
 6. **Disable submit during validation** (isNavigating flag)
@@ -2886,7 +2886,7 @@ Override when needed:
 #### Basic Validation
 
 ```typescript
-fieldMessages: ({ data }) => ({
+fieldErrors: ({ data }) => ({
   email: !data.email?.includes("@") ? "Invalid email" : undefined,
   age: (data.age < 18) ? "Must be 18 or older" : undefined,
   terms: !data.terms ? "You must accept the terms" : undefined
@@ -2898,7 +2898,7 @@ fieldMessages: ({ data }) => ({
 Return the first error encountered:
 
 ```typescript
-fieldMessages: ({ data }) => ({
+fieldErrors: ({ data }) => ({
   password: !data.password 
     ? "Password is required"
     : data.password.length < 8
@@ -2914,7 +2914,7 @@ fieldMessages: ({ data }) => ({
 Use `"_"` as the key for errors that don't belong to a specific field:
 
 ```typescript
-fieldMessages: ({ data }) => ({
+fieldErrors: ({ data }) => ({
   _: data.password !== data.confirmPassword 
     ? "Passwords do not match" 
     : undefined
@@ -2928,7 +2928,7 @@ The shell renders this without a label.
 Only validate certain fields based on other fields:
 
 ```typescript
-fieldMessages: ({ data }) => ({
+fieldErrors: ({ data }) => ({
   country: !data.country ? "Required" : undefined,
   state: data.country === "US" && !data.state 
     ? "State is required for US addresses" 
@@ -2946,7 +2946,7 @@ For async validation (checking username availability, validating addresses, etc.
 ```typescript
 {
   id: "signup",
-  fieldMessages: ({ data }) => ({
+  fieldErrors: ({ data }) => ({
     username: !data.username ? "Required" : undefined,
     _: data.usernameAvailable === false ? "Username is already taken" : undefined
   }),
@@ -2980,18 +2980,18 @@ function ContactFormFields() {
       <input 
         value={snapshot.data.name || ""} 
         onChange={(e) => setData("name", e.target.value)}
-        className={snapshot.fieldMessages.name ? "error" : ""}
+        className={snapshot.fieldErrors.name ? "error" : ""}
       />
-      {snapshot.hasAttemptedNext && snapshot.fieldMessages.name && (
-        <span className="error">{snapshot.fieldMessages.name}</span>
+      {snapshot.hasAttemptedNext && snapshot.fieldErrors.name && (
+        <span className="error">{snapshot.fieldErrors.name}</span>
       )}
       
       <input 
         value={snapshot.data.email || ""} 
         onChange={(e) => setData("email", e.target.value)}
       />
-      {snapshot.hasAttemptedNext && snapshot.fieldMessages.email && (
-        <span className="error">{snapshot.fieldMessages.email}</span>
+      {snapshot.hasAttemptedNext && snapshot.fieldErrors.email && (
+        <span className="error">{snapshot.fieldErrors.email}</span>
       )}
     </>
   );
@@ -3008,10 +3008,10 @@ const { snapshot, setData } = usePathContext();
   <input 
     :value="snapshot.data.name || ''" 
     @input="setData('name', $event.target.value)"
-    :class="{ error: snapshot.fieldMessages.name }"
+    :class="{ error: snapshot.fieldErrors.name }"
   />
-  <span v-if="snapshot.hasAttemptedNext && snapshot.fieldMessages.name" class="error">
-    {{ snapshot.fieldMessages.name }}
+  <span v-if="snapshot.hasAttemptedNext && snapshot.fieldErrors.name" class="error">
+    {{ snapshot.fieldErrors.name }}
   </span>
 </template>
 ```
@@ -3028,18 +3028,18 @@ const { snapshot, setData } = usePathContext();
   <input
     value={ctx.snapshot.data.name || ''}
     oninput={(e) => ctx.setData('name', e.currentTarget.value)}
-    class={ctx.snapshot.fieldMessages.name ? 'error' : ''}
+    class={ctx.snapshot.fieldErrors.name ? 'error' : ''}
   />
-  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldMessages.name}
-    <span class="error">{ctx.snapshot.fieldMessages.name}</span>
+  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldErrors.name}
+    <span class="error">{ctx.snapshot.fieldErrors.name}</span>
   {/if}
 
   <input
     value={ctx.snapshot.data.email || ''}
     oninput={(e) => ctx.setData('email', e.currentTarget.value)}
   />
-  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldMessages.email}
-    <span class="error">{ctx.snapshot.fieldMessages.email}</span>
+  {#if ctx.snapshot.hasAttemptedNext && ctx.snapshot.fieldErrors.email}
+    <span class="error">{ctx.snapshot.fieldErrors.email}</span>
   {/if}
 {/if}
 ```
@@ -3062,7 +3062,7 @@ Use `onEnter` to set defaults or fetch initial data:
       };
     }
   },
-  fieldMessages: ({ data }) => ({
+  fieldErrors: ({ data }) => ({
     name: !data.name ? "Required" : undefined,
     email: !data.email?.includes("@") ? "Invalid email" : undefined
   })
@@ -3078,7 +3078,7 @@ const registrationForm: PathDefinition = {
   id: "registration",
   steps: [{
     id: "signup",
-    fieldMessages: ({ data }) => ({
+    fieldErrors: ({ data }) => ({
       // Personal info section
       firstName: !data.firstName ? "Required" : undefined,
       lastName: !data.lastName ? "Required" : undefined,
@@ -3158,7 +3158,7 @@ export const contactForm: PathDefinition = {
         };
       }
     },
-    fieldMessages: ({ data }) => ({
+    fieldErrors: ({ data }) => ({
       name: !data.name?.trim() ? "Name is required" : undefined,
       email: !data.email?.includes("@") ? "Valid email address required" : undefined,
       message: !data.message?.trim() 
@@ -3249,8 +3249,8 @@ Then in your template:
   value={snapshot.data.email} 
   onChange={(e) => setData("email", e.target.value)}
 />
-{snapshot.hasAttemptedNext && snapshot.fieldMessages.email && (
-  <span className="inline-error">{snapshot.fieldMessages.email}</span>
+{snapshot.hasAttemptedNext && snapshot.fieldErrors.email && (
+  <span className="inline-error">{snapshot.fieldErrors.email}</span>
 )}
 ```
 

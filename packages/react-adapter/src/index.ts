@@ -382,8 +382,8 @@ export function PathShell({
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
       // Validation messages — suppressed when validationDisplay="inline"
-      validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldMessages).length > 0 && createElement("ul", { className: "pw-shell__validation" },
-        ...Object.entries(snapshot.fieldMessages).map(([key, msg]) =>
+      validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+        ...Object.entries(snapshot.fieldErrors).map(([key, msg]) =>
           createElement("li", { key, className: "pw-shell__validation-item" },
             key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
             msg

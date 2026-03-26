@@ -534,15 +534,15 @@ describe("PathShell (Vue) — context sharing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// fieldMessages
+// fieldErrors
 // ---------------------------------------------------------------------------
 
-describe("PathShell (Vue) — fieldMessages", () => {
+describe("PathShell (Vue) — fieldErrors", () => {
   it("does not render messages before the user has attempted to proceed", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -561,7 +561,7 @@ describe("PathShell (Vue) — fieldMessages", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -581,10 +581,10 @@ describe("PathShell (Vue) — fieldMessages", () => {
     wrapper.unmount();
   });
 
-  it("does not render the validation list when fieldMessages is empty", async () => {
+  it("does not render the validation list when fieldErrors is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({}) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }]
     };
     const TestHost = defineComponent({
       setup() {
@@ -603,8 +603,8 @@ describe("PathShell (Vue) — fieldMessages", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B", fieldMessages: () => ({ other: "Also required" }) }
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ field: "Fill this in" }), canMoveNext: () => true },
+        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) }
       ]
     };
     const TestHost = defineComponent({
@@ -624,7 +624,7 @@ describe("PathShell (Vue) — fieldMessages", () => {
   it("does not render a label span for the _ key", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({ _: "Form-level error" }) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }]
     };
     const TestHost = defineComponent({
       setup() {

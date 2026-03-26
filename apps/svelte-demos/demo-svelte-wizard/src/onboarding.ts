@@ -45,7 +45,7 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
     {
       id: "personalInfo",
       title: "Personal Info",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         firstName: !data.firstName?.trim() ? "First name is required."    : undefined,
         lastName:  !data.lastName?.trim()  ? "Last name is required."     : undefined,
         email:     !data.email?.trim()     ? "Email address is required."
@@ -56,7 +56,7 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
       id: "aboutYou",
       title: "About You",
       canMoveNext: ({ data }) => !!data.jobTitle?.trim() && !!data.experience,
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         jobTitle:   !data.jobTitle?.trim() ? "Job title is required."               : undefined,
         experience: !data.experience       ? "Please select your experience level." : undefined,
       }),

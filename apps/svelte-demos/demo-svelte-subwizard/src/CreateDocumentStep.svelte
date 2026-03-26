@@ -3,7 +3,7 @@
   import type { DocumentData } from "./types";
 
   const ctx = getPathContext<DocumentData>();
-  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldMessages : {});
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 </script>
 
 {#if ctx.snapshot}

@@ -195,7 +195,7 @@ export class ContactStepComponent {
   protected readonly path = injectPath<ContactData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? (s.fieldMessages ?? {}) : {};
+    return s?.hasAttemptedNext ? (s.fieldErrors ?? {}) : {};
   });
 
   // ── Local form state (two-way synced to engine via setData) ──────────────

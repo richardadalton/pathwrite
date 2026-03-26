@@ -8,7 +8,7 @@ import type { ContactData } from "./path";
 const { snapshot, setData, resetStep } = usePathContext<ContactData>();
 
 const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldMessages ?? {}) : {}
+  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}
 );
 
 const SUBJECTS = [

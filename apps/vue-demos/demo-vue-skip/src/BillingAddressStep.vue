@@ -5,7 +5,7 @@ import type { SubscriptionData } from "./subscription";
 
 const { snapshot, setData } = usePathContext<SubscriptionData>();
 const data     = computed(() => snapshot.value?.data);
-const errors   = computed(() => snapshot.value?.fieldMessages ?? {});
+const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 </script>
 

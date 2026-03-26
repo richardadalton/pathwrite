@@ -7,7 +7,7 @@ export function PersonalInfoStep() {
   // when the path is active. The non-null assertion (!) is safe; no cast needed.
   const snap   = snapshot!;
   const data   = snap.data;
-  const errors = snap.hasAttemptedNext ? snap.fieldMessages : {};
+  const errors = snap.hasAttemptedNext ? snap.fieldErrors : {};
 
   return (
     <div className="form-body">

@@ -63,7 +63,7 @@ export class DecisionStepComponent {
   protected readonly path   = injectPath<ApprovalData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? s.fieldMessages : {};
+    return s?.hasAttemptedNext ? s.fieldErrors : {};
   });
   protected get data(): ApprovalData { return this.path.snapshot()!.data; }
 }

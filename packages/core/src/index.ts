@@ -1,7 +1,7 @@
 export type PathData = Record<string, unknown>;
 
 /**
- * The return type of a `fieldMessages` hook. Each key is a field ID; the value
+ * The return type of a `fieldErrors` hook. Each key is a field ID; the value
  * is an error string, or `undefined` / omitted to indicate no error for that field.
  *
  * Use `"_"` as a key for form-level errors that don't belong to a specific field:
@@ -73,7 +73,7 @@ export interface PathStep<TData extends PathData = PathData> {
    * by field name) so consumers do not need to duplicate validation logic in
    * the template. Return `undefined` for a field to indicate no error.
    *
-   * When `fieldMessages` is provided and `canMoveNext` is **not**, the engine
+   * When `fieldErrors` is provided and `canMoveNext` is **not**, the engine
    * automatically derives `canMoveNext` as `true` when all values are `undefined`
    * (i.e. no messages), eliminating the need to express the same logic twice.
    *
@@ -81,16 +81,16 @@ export interface PathStep<TData extends PathData = PathData> {
    *
    * @example
    * ```typescript
-   * fieldMessages: ({ data }) => ({
+   * fieldErrors: ({ data }) => ({
    *   name:  !data.name?.trim()        ? "Required."             : undefined,
    *   email: !isValidEmail(data.email) ? "Invalid email address." : undefined,
    * })
    * ```
    */
-  fieldMessages?: (ctx: PathStepContext<TData>) => FieldErrors;
+  fieldErrors?: (ctx: PathStepContext<TData>) => FieldErrors;
   /**
    * Returns a map of field ID → warning message for non-blocking advisories.
-   * Same shape as `fieldMessages`, but warnings never affect `canMoveNext` —
+   * Same shape as `fieldErrors`, but warnings never affect `canMoveNext` —
    * they are purely informational. Shells render them in amber/yellow instead
    * of red.
    *
@@ -209,7 +209,7 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   rootProgress?: RootProgress;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
-  /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. Auto-derived as `true` when `fieldMessages` is defined and returns no messages, and `canMoveNext` is not explicitly defined. */
+  /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. Auto-derived as `true` when `fieldErrors` is defined and returns no messages, and `canMoveNext` is not explicitly defined. */
   canMoveNext: boolean;
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
   canMovePrevious: boolean;
@@ -222,12 +222,12 @@ export interface PathSnapshot<TData extends PathData = PathData> {
    * render and only appear after the user has attempted to proceed:
    *
    * ```svelte
-   * {#if snapshot.hasAttemptedNext && snapshot.fieldMessages.email}
-   *   <span class="error">{snapshot.fieldMessages.email}</span>
+   * {#if snapshot.hasAttemptedNext && snapshot.fieldErrors.email}
+   *   <span class="error">{snapshot.fieldErrors.email}</span>
    * {/if}
    * ```
    *
-   * The shell itself uses this flag to gate its own automatic `fieldMessages`
+   * The shell itself uses this flag to gate its own automatic `fieldErrors`
    * summary rendering — errors are never shown before the first Next attempt.
    */
   hasAttemptedNext: boolean;
@@ -262,14 +262,14 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   stepEnteredAt: number;
   /**
    * Field-keyed validation messages for the current step. Empty object when there are none.
-   * Use in step templates to render inline per-field errors: `snapshot.fieldMessages['email']`.
+   * Use in step templates to render inline per-field errors: `snapshot.fieldErrors['email']`.
    * The shell also renders these automatically in a labeled summary box.
    * Use `"_"` as a key for form-level (non-field-specific) errors.
    */
-  fieldMessages: Record<string, string>;
+  fieldErrors: Record<string, string>;
   /**
    * Field-keyed warning messages for the current step. Empty object when there are none.
-   * Same shape as `fieldMessages` but purely informational — warnings never block navigation.
+   * Same shape as `fieldErrors` but purely informational — warnings never block navigation.
    * Shells render these in amber/yellow instead of red.
    * Use `"_"` as a key for form-level (non-field-specific) warnings.
    */
@@ -674,7 +674,7 @@ export class PathEngine {
       hasAttemptedNext: this._hasAttemptedNext,
       canMoveNext: this.evaluateCanMoveNextSync(step, active),
       canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
-      fieldMessages: this.evaluateFieldMessagesSync(step.fieldMessages, active),
+      fieldErrors: this.evaluateFieldMessagesSync(step.fieldErrors, active),
       fieldWarnings: this.evaluateFieldMessagesSync(step.fieldWarnings, active),
       isDirty: this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
@@ -1088,8 +1088,8 @@ export class PathEngine {
       };
       return step.canMoveNext(ctx);
     }
-    if (step.fieldMessages) {
-      return Object.keys(this.evaluateFieldMessagesSync(step.fieldMessages, active)).length === 0;
+    if (step.fieldErrors) {
+      return Object.keys(this.evaluateFieldMessagesSync(step.fieldErrors, active)).length === 0;
     }
     return true;
   }
@@ -1162,24 +1162,24 @@ export class PathEngine {
   /**
    * Evaluates `canMoveNext` synchronously for inclusion in the snapshot.
    * When `canMoveNext` is defined, delegates to `evaluateGuardSync`.
-   * When absent but `fieldMessages` is defined, auto-derives: `true` iff no messages.
+   * When absent but `fieldErrors` is defined, auto-derives: `true` iff no messages.
    * When neither is defined, returns `true`.
    */
   private evaluateCanMoveNextSync(step: PathStep, active: ActivePath): boolean {
     if (step.canMoveNext) return this.evaluateGuardSync(step.canMoveNext, active);
-    if (step.fieldMessages) {
-      return Object.keys(this.evaluateFieldMessagesSync(step.fieldMessages, active)).length === 0;
+    if (step.fieldErrors) {
+      return Object.keys(this.evaluateFieldMessagesSync(step.fieldErrors, active)).length === 0;
     }
     return true;
   }
 
   /**
-   * Evaluates a fieldMessages function synchronously for inclusion in the snapshot.
+   * Evaluates a fieldErrors function synchronously for inclusion in the snapshot.
    * If the hook is absent, returns `{}`.
    * If the hook returns a `Promise`, returns `{}` (async hooks are not supported in snapshots).
    * `undefined` values are stripped from the result — only fields with a defined message are included.
    *
-   * **Note:** Like guards, `fieldMessages` is evaluated before `onEnter` runs on first
+   * **Note:** Like guards, `fieldErrors` is evaluated before `onEnter` runs on first
    * entry. Write it defensively so it does not throw when fields are absent.
    */
   private evaluateFieldMessagesSync(
@@ -1207,17 +1207,17 @@ export class PathEngine {
       }
       if (result && typeof (result as unknown as { then?: unknown }).then === "function") {
         console.warn(
-          `[pathwrite] Async fieldMessages detected on step "${step.id}". ` +
-          `fieldMessages must be synchronous. Returning {} as default. ` +
+          `[pathwrite] Async fieldErrors detected on step "${step.id}". ` +
+          `fieldErrors must be synchronous. Returning {} as default. ` +
           `Use synchronous validation or move async checks to canMoveNext.`
         );
       }
       return {};
     } catch (err) {
       console.warn(
-        `[pathwrite] fieldMessages on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `[pathwrite] fieldErrors on step "${step.id}" threw an error during snapshot evaluation. ` +
         `Returning {} as a safe default. ` +
-        `Note: fieldMessages is evaluated before onEnter runs on first entry — ` +
+        `Note: fieldErrors is evaluated before onEnter runs on first entry — ` +
         `ensure it handles missing/undefined data gracefully.`,
         err
       );

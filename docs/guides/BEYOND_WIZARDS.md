@@ -27,12 +27,12 @@ const contactForm: PathDefinition = {
   steps: [{
     id: "form",
     title: "Contact Us",
-    fieldMessages: (ctx) => ({
+    fieldErrors: (ctx) => ({
       name: !ctx.data.name?.trim() ? "Name is required" : undefined,
       email: !ctx.data.email?.includes("@") ? "Valid email required" : undefined,
       message: !ctx.data.message?.trim() ? "Message is required" : undefined
     })
-    // Note: canMoveNext auto-derives from fieldMessages when not explicitly set
+    // Note: canMoveNext auto-derives from fieldErrors when not explicitly set
   }]
 };
 

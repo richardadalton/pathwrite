@@ -5,7 +5,7 @@ export function CreateDocumentStep() {
   const { snapshot, setData } = usePathContext<DocumentData>();
   const snap   = snapshot!;
   const data   = snap.data;
-  const errors = snap.hasAttemptedNext ? snap.fieldMessages : {};
+  const errors = snap.hasAttemptedNext ? snap.fieldErrors : {};
 
   return (
     <div className="form-body">

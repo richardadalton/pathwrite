@@ -14,7 +14,7 @@ export function ContactStep() {
   const { snapshot, setData, resetStep } = usePathContext<ContactData>();
   const data = snapshot?.data ?? ({} as ContactData);
   const messageLen = (data.message ?? "").length;
-  const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldMessages ?? {}) : {};
+  const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldErrors ?? {}) : {};
 
   return (
     <div className="form-body">

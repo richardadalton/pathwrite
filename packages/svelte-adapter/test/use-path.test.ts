@@ -592,14 +592,14 @@ describe("usePath — guards and validation", () => {
     expect(snap(path)?.canMoveNext).toBe(true);
   });
 
-  it("fieldMessages appear in snapshot", async () => {
+  it("fieldErrors appear in snapshot", async () => {
     const path = createPath();
     await path.start({
       id: "w",
       steps: [
         {
           id: "s1",
-          fieldMessages: ({ data }) => ({
+          fieldErrors: ({ data }) => ({
             name: data.name ? undefined : "Name is required"
           })
         },
@@ -607,20 +607,20 @@ describe("usePath — guards and validation", () => {
       ]
     }, { name: "" });
 
-    expect(snap(path)?.fieldMessages).toMatchObject({ name: "Name is required" });
+    expect(snap(path)?.fieldErrors).toMatchObject({ name: "Name is required" });
 
     await path.setData("name", "Alice");
-    expect(snap(path)?.fieldMessages).toEqual({});
+    expect(snap(path)?.fieldErrors).toEqual({});
   });
 
-  it("fieldMessages auto-derives canMoveNext", async () => {
+  it("fieldErrors auto-derives canMoveNext", async () => {
     const path = createPath();
     await path.start({
       id: "w",
       steps: [
         {
           id: "s1",
-          fieldMessages: ({ data }) => ({
+          fieldErrors: ({ data }) => ({
             name: data.name ? undefined : "Required"
           })
         },

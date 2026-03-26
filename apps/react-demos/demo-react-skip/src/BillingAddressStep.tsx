@@ -5,7 +5,7 @@ export function BillingAddressStep() {
   const { snapshot, setData } = usePathContext<SubscriptionData>();
   const snap   = snapshot!;
   const data   = snap.data;
-  const errors = snap.hasAttemptedNext ? snap.fieldMessages : {};
+  const errors = snap.hasAttemptedNext ? snap.fieldErrors : {};
 
   return (
     <div className="form-body">

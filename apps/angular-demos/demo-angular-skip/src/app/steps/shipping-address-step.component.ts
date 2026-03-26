@@ -84,7 +84,7 @@ export class ShippingAddressStepComponent {
   protected readonly path = injectPath<SubscriptionData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? s.fieldMessages : {};
+    return s?.hasAttemptedNext ? s.fieldErrors : {};
   });
   protected get data(): SubscriptionData { return this.path.snapshot()!.data; }
 }

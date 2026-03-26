@@ -4,7 +4,7 @@
   import type { DocumentData, ApprovalData, ApproverResult } from "./types";
 
   const ctx = getPathContext<DocumentData>();
-  let errors  = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldMessages : {});
+  let errors  = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
   let data    = $derived(ctx.snapshot?.data);
   let results = $derived((data?.approvalResults ?? {}) as Record<string, ApproverResult>);
 

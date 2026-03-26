@@ -5,7 +5,7 @@ import type { OnboardingData } from "./onboarding";
 
 const { snapshot, setData } = usePathContext<OnboardingData>();
 const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldMessages : {}
+  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}
 );
 
 const EXPERIENCE_OPTIONS = [

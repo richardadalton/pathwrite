@@ -928,38 +928,38 @@ describe("PathEngine — stepTitle", () => {
 // validationMessages
 // ---------------------------------------------------------------------------
 
-describe("PathEngine — fieldMessages", () => {
-  it("is an empty object when the step has no fieldMessages hook", async () => {
+describe("PathEngine — fieldErrors", () => {
+  it("is an empty object when the step has no fieldErrors hook", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
 
   it("returns the messages from the hook", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => ({ name: "Required", email: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: "Required" }) }]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({ name: "Required", email: "Required" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required", email: "Required" });
   });
 
   it("returns an empty object when the hook returns no defined messages", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => ({}) }]
+      steps: [{ id: "step1", fieldErrors: () => ({}) }]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
 
   it("strips undefined values from the hook result", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => ({ name: "Required", email: undefined }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: undefined }) }]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({ name: "Required" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
   });
 
   it("re-evaluates messages reactively when setData changes data", async () => {
@@ -969,32 +969,32 @@ describe("PathEngine — fieldMessages", () => {
       steps: [
         {
           id: "step1",
-          fieldMessages: (ctx) => ({
+          fieldErrors: (ctx) => ({
             name: (ctx.data as PathData).name ? undefined : "Required"
           })
         }
       ]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({ name: "Required" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
 
     await engine.setData("name", "Alice");
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
 
-  it("auto-derives canMoveNext as false when fieldMessages has entries", async () => {
+  it("auto-derives canMoveNext as false when fieldErrors has entries", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => ({ name: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }]
     });
     expect(engine.snapshot()?.canMoveNext).toBe(false);
   });
 
-  it("auto-derives canMoveNext as true when fieldMessages returns no entries", async () => {
+  it("auto-derives canMoveNext as true when fieldErrors returns no entries", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => ({}) }]
+      steps: [{ id: "step1", fieldErrors: () => ({}) }]
     });
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
@@ -1004,12 +1004,12 @@ describe("PathEngine — fieldMessages", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "step1", fieldMessages: () => ({ name: "Required" }) },
+        { id: "step1", fieldErrors: () => ({ name: "Required" }) },
         { id: "step2" }
       ]
     });
     expect(engine.snapshot()?.stepId).toBe("step1");
-    await engine.next(); // blocked — fieldMessages has entries
+    await engine.next(); // blocked — fieldErrors has entries
     expect(engine.snapshot()?.stepId).toBe("step1");
 
     // Would need setData to clear the message before next() proceeds
@@ -1022,7 +1022,7 @@ describe("PathEngine — fieldMessages", () => {
       steps: [
         {
           id: "step1",
-          fieldMessages: (ctx) => ({
+          fieldErrors: (ctx) => ({
             name: (ctx.data as PathData).name ? undefined : "Required"
           })
         },
@@ -1042,20 +1042,20 @@ describe("PathEngine — fieldMessages", () => {
       id: "w",
       steps: [{
         id: "step1",
-        fieldMessages: () => ({ name: "Required" }), // has messages
+        fieldErrors: () => ({ name: "Required" }), // has messages
         canMoveNext: () => true                        // explicitly allows anyway
       }]
     });
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
 
-  it("returns {} for an async fieldMessages hook (not supported synchronously)", async () => {
+  it("returns {} for an async fieldErrors hook (not supported synchronously)", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldMessages: () => Promise.resolve({ name: "Required" }) as any }]
+      steps: [{ id: "step1", fieldErrors: () => Promise.resolve({ name: "Required" }) as any }]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
 
   it("updates as navigation moves to a different step", async () => {
@@ -1063,14 +1063,14 @@ describe("PathEngine — fieldMessages", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "step1", fieldMessages: () => ({ field: "Fill in step 1" }) },
-        { id: "step2", fieldMessages: () => ({}) }
+        { id: "step1", fieldErrors: () => ({ field: "Fill in step 1" }) },
+        { id: "step2", fieldErrors: () => ({}) }
       ]
     });
-    expect(engine.snapshot()?.fieldMessages).toEqual({ field: "Fill in step 1" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ field: "Fill in step 1" });
 
     await engine.goToStep("step2");
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
 });
 
@@ -1169,14 +1169,14 @@ describe("PathEngine — fieldWarnings", () => {
     expect(engine.snapshot()?.fieldWarnings).toEqual({});
   });
 
-  it("coexists with fieldMessages — only fieldMessages blocks navigation", async () => {
+  it("coexists with fieldErrors — only fieldErrors blocks navigation", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
       steps: [
         {
           id: "step1",
-          fieldMessages: (ctx) => ({
+          fieldErrors: (ctx) => ({
             name: (ctx.data as PathData).name ? undefined : "Required"
           }),
           fieldWarnings: () => ({ email: "Did you mean gmail.com?" })
@@ -1185,14 +1185,14 @@ describe("PathEngine — fieldWarnings", () => {
       ]
     });
     // Both populated
-    expect(engine.snapshot()?.fieldMessages).toEqual({ name: "Required" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
     expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
-    // fieldMessages blocks
+    // fieldErrors blocks
     expect(engine.snapshot()?.canMoveNext).toBe(false);
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step1");
 
-    // Clear fieldMessages — warnings remain but don't block
+    // Clear fieldErrors — warnings remain but don't block
     await engine.setData("name", "Alice");
     expect(engine.snapshot()?.canMoveNext).toBe(true);
     expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
@@ -1907,9 +1907,9 @@ describe("PathEngine — isFirstEntry", () => {
     expect(subEntries).toEqual([true]);
   });
 
-  it("is available in all hooks including canMoveNext and fieldMessages", async () => {
+  it("is available in all hooks including canMoveNext and fieldErrors", async () => {
     const canMoveNextFirstEntry: boolean[] = [];
-    const fieldMessagesFirstEntry: boolean[] = [];
+    const fieldErrorsFirstEntry: boolean[] = [];
     const engine = new PathEngine();
     await engine.start({
       id: "w",
@@ -1917,7 +1917,7 @@ describe("PathEngine — isFirstEntry", () => {
         {
           id: "a",
           canMoveNext: (ctx) => { canMoveNextFirstEntry.push(ctx.isFirstEntry); return true; },
-          fieldMessages: (ctx) => { fieldMessagesFirstEntry.push(ctx.isFirstEntry); return {}; }
+          fieldErrors: (ctx) => { fieldErrorsFirstEntry.push(ctx.isFirstEntry); return {}; }
         },
         { id: "b" }
       ]
@@ -2162,7 +2162,7 @@ describe("PathEngine — guard error resilience", () => {
     warnSpy.mockRestore();
   });
 
-  it("does not throw when fieldMessages crashes on the first snapshot", async () => {
+  it("does not throw when fieldErrors crashes on the first snapshot", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const engine = new PathEngine();
 
@@ -2171,13 +2171,13 @@ describe("PathEngine — guard error resilience", () => {
         id: "p",
         steps: [{
           id: "s1",
-          fieldMessages: ({ data }) => ({ name: (data.name as string).trim() })
+          fieldErrors: ({ data }) => ({ name: (data.name as string).trim() })
         }]
       })
     ).resolves.toBeUndefined();
 
     // Safe default is an empty object.
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("[pathwrite]"),
       expect.anything()
@@ -2197,15 +2197,15 @@ describe("PathEngine — guard error resilience", () => {
     expect(engine.snapshot()?.canMoveNext).toBe(false);
   });
 
-  it("returns fieldMessages normally when they do not throw", async () => {
+  it("returns fieldErrors normally when they do not throw", async () => {
     const engine = new PathEngine();
 
     await engine.start({
       id: "p",
-      steps: [{ id: "s1", fieldMessages: () => ({ field: "Field is required" }) }]
+      steps: [{ id: "s1", fieldErrors: () => ({ field: "Field is required" }) }]
     });
 
-    expect(engine.snapshot()?.fieldMessages).toEqual({ field: "Field is required" });
+    expect(engine.snapshot()?.fieldErrors).toEqual({ field: "Field is required" });
   });
 
   it("still evaluates guards correctly after onEnter has run and data is populated", async () => {

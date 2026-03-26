@@ -72,7 +72,7 @@ export class ApprovalReviewStepComponent {
   protected readonly path   = injectPath<DocumentData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
-    return s?.hasAttemptedNext ? s.fieldMessages : {};
+    return s?.hasAttemptedNext ? s.fieldErrors : {};
   });
 
   protected get data(): DocumentData { return this.path.snapshot()!.data; }

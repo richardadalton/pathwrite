@@ -95,7 +95,7 @@ function makeQuizStep(topicId: TopicId): PathDefinition<CourseData>["steps"][num
     id: QUIZ_STEP_IDS[topicId],
     title: `${TOPICS[topicId].title} Quiz`,
     canMoveNext: ({ data }) => hasPassedTopic(topicId, data),
-    fieldMessages: ({ data }) => {
+    fieldErrors: ({ data }) => {
       const score = getQuizScore(topicId, data);
       return {
         _: score > 70 ? undefined : `Score ${score}%. You need more than 70% to continue.`
@@ -135,7 +135,7 @@ export const coursePath: PathDefinition<CourseData> = {
     {
       id: "full-name",
       title: "Student Name",
-      fieldMessages: ({ data }) => {
+      fieldErrors: ({ data }) => {
         const parts = data.fullName.trim().split(/\s+/).filter(Boolean);
         return {
           fullName: parts.length < 2 ? "Please enter your full name (first and last name)." : undefined

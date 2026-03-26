@@ -27,7 +27,7 @@ export const approvalSubPath: PathDefinition<ApprovalData> = {
     {
       id: "decision",
       title: "Your Decision",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         decision: !data.decision ? "Please select approve or reject." : undefined,
       }),
     },
@@ -41,7 +41,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     {
       id: "create-document",
       title: "Create Document",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         title:       !data.title?.trim()       ? "Document title is required." : undefined,
         description: !data.description?.trim() ? "Description is required."   : undefined,
       }),
@@ -49,7 +49,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     {
       id: "select-approvers",
       title: "Select Approvers",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         approvers: !(data.approvers as string[])?.length
           ? "Select at least one approver."
           : undefined,
@@ -60,8 +60,8 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       title: "Awaiting Approvals",
       // Gate: Next is blocked until every selected approver has decided.
       // Because canMoveNext is not defined, the engine derives it from
-      // fieldMessages — no messages means canMoveNext is true.
-      fieldMessages: ({ data }) => {
+      // fieldErrors — no messages means canMoveNext is true.
+      fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
         const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
         return {

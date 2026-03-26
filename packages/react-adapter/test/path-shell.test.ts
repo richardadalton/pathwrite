@@ -404,15 +404,15 @@ describe("PathShell — context sharing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// fieldMessages
+// fieldErrors
 // ---------------------------------------------------------------------------
 
-describe("PathShell — fieldMessages", () => {
+describe("PathShell — fieldErrors", () => {
   it("does not render messages before the user has attempted to proceed", async () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -430,7 +430,7 @@ describe("PathShell — fieldMessages", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ name: "Required", email: "Invalid email address" }) },
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
         { id: "step-b", title: "Step B" }
       ]
     };
@@ -456,7 +456,7 @@ describe("PathShell — fieldMessages", () => {
         {
           id: "step-a",
           title: "Step A",
-          fieldMessages: (ctx) => ({
+          fieldErrors: (ctx) => ({
             name: (ctx.data as { name: string }).name ? undefined : "Required"
           })
         }
@@ -478,10 +478,10 @@ describe("PathShell — fieldMessages", () => {
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
-  it("does not render the validation list when fieldMessages is empty", async () => {
+  it("does not render the validation list when fieldErrors is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({}) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }]
     };
     await act(async () =>
       render(createElement(PathShell, {
@@ -497,8 +497,8 @@ describe("PathShell — fieldMessages", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldMessages: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B", fieldMessages: () => ({ other: "Also required" }) }
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ field: "Fill this in" }), canMoveNext: () => true },
+        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) }
       ]
     };
     await act(async () =>
@@ -510,14 +510,14 @@ describe("PathShell — fieldMessages", () => {
     // Navigate to step B (canMoveNext: () => true lets navigation succeed)
     await act(async () => screen.getByText("Next").click());
     expect(screen.getByText("B")).toBeTruthy(); // now on step B
-    // step-b has fieldMessages but hasAttemptedNext is false — errors not shown yet
+    // step-b has fieldErrors but hasAttemptedNext is false — errors not shown yet
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
 
   it("does not render label span for the _ key", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldMessages: () => ({ _: "Form-level error" }) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }]
     };
     await act(async () =>
       render(createElement(PathShell, {
@@ -526,7 +526,7 @@ describe("PathShell — fieldMessages", () => {
         steps: { "step-a": createElement("div", null, "A") }
       }))
     );
-    // Trigger hasAttemptedNext — navigation blocked (canMoveNext=false from fieldMessages)
+    // Trigger hasAttemptedNext — navigation blocked (canMoveNext=false from fieldErrors)
     await act(async () => screen.getByText("Complete").click()); // single-step uses "Complete"
     expect(document.querySelector(".pw-shell__validation-label")).toBeNull();
     expect(screen.getByText("Form-level error")).toBeTruthy();

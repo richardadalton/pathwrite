@@ -8,7 +8,7 @@ const { snapshot, startSubPath } = usePathContext<WizardData>();
 
 const members  = computed(() => (snapshot.value?.data.members  ?? []) as Person[]);
 const profiles = computed(() => (snapshot.value?.data.profiles ?? {}) as Record<string, MemberProfile>);
-const errors   = computed(() => snapshot.value?.fieldMessages ?? {});
+const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
 function getProfile(index: number): MemberProfile | null {

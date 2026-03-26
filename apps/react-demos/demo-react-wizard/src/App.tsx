@@ -18,7 +18,7 @@ export default function App() {
       {
         id: "personal-info",
         title: "Personal Info",
-        fieldMessages: ({ data }: any) => ({
+        fieldErrors: ({ data }: any) => ({
           firstName: !data.firstName?.trim() ? "First name is required."    : undefined,
           lastName:  !data.lastName?.trim()  ? "Last name is required."     : undefined,
           email:     !data.email?.trim()     ? "Email address is required."
@@ -29,7 +29,7 @@ export default function App() {
         id: "about-you",
         title: "About You",
         canMoveNext: ({ data }: any) => !!data.jobTitle?.trim() && !!data.experience,
-        fieldMessages: ({ data }: any) => ({
+        fieldErrors: ({ data }: any) => ({
           jobTitle:   !data.jobTitle?.trim() ? "Job title is required."               : undefined,
           experience: !data.experience       ? "Please select your experience level." : undefined,
         }),

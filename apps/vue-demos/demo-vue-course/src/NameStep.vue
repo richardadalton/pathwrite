@@ -6,7 +6,7 @@ import type { CourseData } from "./course";
 const { snapshot, setData } = usePathContext<CourseData>();
 
 const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldMessages ?? {}) : {}
+  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}
 );
 
 const fullName = computed(() => snapshot.value?.data.fullName ?? "");

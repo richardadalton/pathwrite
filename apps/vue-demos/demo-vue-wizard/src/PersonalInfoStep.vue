@@ -8,7 +8,7 @@ const { snapshot, setData } = usePathContext<OnboardingData>();
 // renders this component when the path is active. Dot notation works because
 // the generic narrows snapshot.data to OnboardingData.
 const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldMessages : {}
+  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}
 );
 </script>
 

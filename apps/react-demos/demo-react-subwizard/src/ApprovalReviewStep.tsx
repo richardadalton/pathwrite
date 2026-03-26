@@ -6,7 +6,7 @@ export function ApprovalReviewStep() {
   const { snapshot, startSubPath } = usePathContext<DocumentData>();
   const snap    = snapshot!;
   const data    = snap.data;
-  const errors  = snap.hasAttemptedNext ? snap.fieldMessages : {};
+  const errors  = snap.hasAttemptedNext ? snap.fieldErrors : {};
   const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
 
   const selectedApprovers = AVAILABLE_APPROVERS.filter(a =>

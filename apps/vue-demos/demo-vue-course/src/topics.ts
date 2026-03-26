@@ -29,7 +29,7 @@ export const TOPICS: Record<TopicId, TopicContent> = {
     summary: [
       "Pathwrite is a headless engine: it owns navigation and data, while your app owns UI markup.",
       "A path is defined as ordered steps with optional guards and lifecycle hooks.",
-      "fieldMessages can automatically derive canMoveNext when you do not provide an explicit guard."
+      "fieldErrors can automatically derive canMoveNext when you do not provide an explicit guard."
     ],
     drilldown: {
       whyItMatters: "Separating orchestration from UI lets teams reuse the same flow logic across Angular, React, Vue, and Svelte.",
@@ -62,12 +62,12 @@ export const TOPICS: Record<TopicId, TopicContent> = {
         id: "cc-3",
         prompt: "If canMoveNext is omitted, what can block Next by default?",
         options: [
-          { id: "a", label: "A non-empty fieldMessages result" },
+          { id: "a", label: "A non-empty fieldErrors result" },
           { id: "b", label: "The document title" },
           { id: "c", label: "Any observer callback" }
         ],
         correctOptionId: "a",
-        explanation: "fieldMessages integrates with default shell behavior and guard derivation."
+        explanation: "fieldErrors integrates with default shell behavior and guard derivation."
       }
     ]
   },

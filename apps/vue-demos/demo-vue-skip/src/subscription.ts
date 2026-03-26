@@ -44,14 +44,14 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
     {
       id: "select-plan",
       title: "Select Plan",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         plan: !data.plan ? "Please select a plan." : undefined,
       }),
     },
     {
       id: "shipping-address",
       title: "Shipping Address",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         shippingName:     !data.shippingName?.trim()     ? "Name is required."     : undefined,
         shippingAddress:  !data.shippingAddress?.trim()  ? "Address is required."  : undefined,
         shippingCity:     !data.shippingCity?.trim()      ? "City is required."     : undefined,
@@ -63,7 +63,7 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
       title: "Payment Details",
       // Skip the entire payment step when the user chose the Free plan.
       shouldSkip: ({ data }) => data.plan === "free",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         cardNumber: !data.cardNumber?.trim()  ? "Card number is required." : undefined,
         cardExpiry: !data.cardExpiry?.trim()   ? "Expiry date is required." : undefined,
         cardCvc:    !data.cardCvc?.trim()      ? "CVC is required."        : undefined,
@@ -85,7 +85,7 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
           };
         }
       },
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         billingName:     !data.billingName?.trim()     ? "Name is required."     : undefined,
         billingAddress:  !data.billingAddress?.trim()  ? "Address is required."  : undefined,
         billingCity:     !data.billingCity?.trim()      ? "City is required."     : undefined,

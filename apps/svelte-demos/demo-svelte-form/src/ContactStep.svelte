@@ -15,7 +15,7 @@
 
   // Derived reactive value for character count
   let messageLen = $derived((ctx.snapshot?.data.message as string ?? "").length);
-  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? (ctx.snapshot.fieldMessages ?? {}) : {});
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? (ctx.snapshot.fieldErrors ?? {}) : {});
 </script>
 
 {#if ctx.snapshot}

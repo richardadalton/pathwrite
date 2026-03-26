@@ -8,7 +8,7 @@ This demo implements Recipe 3 from the Pathwrite recipes guide: a document appro
 
 - **`startSubPath()`** — launching a per-approver review subwizard from within a step component
 - **`onSubPathComplete`** — recording each approver's decision back into the parent path's data automatically when their subwizard finishes
-- **Gate step** — the "Awaiting Approvals" step uses `fieldMessages` to block Next until every selected approver has decided (engine derives `canMoveNext` automatically from `fieldMessages`)
+- **Gate step** — the "Awaiting Approvals" step uses `fieldErrors` to block Next until every selected approver has decided (engine derives `canMoveNext` automatically from `fieldErrors`)
 - **`meta` correlation** — the `approverId` is passed as `meta` to `startSubPath()` and returned unchanged to `onSubPathComplete`, cleanly identifying which approver completed without embedding it in subwizard data
 - **Single `PathShell`** — both main and subwizard steps are declared as named slots on one `<PathShell>`. The shell automatically renders the correct slot based on the current engine step ID, regardless of nesting level
 

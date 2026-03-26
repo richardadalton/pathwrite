@@ -57,7 +57,7 @@ export const memberProfileSubPath: PathDefinition<ProfileSubData> = {
     {
       id: "background",
       title: "Background",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         department: !data.department?.toString().trim()
           ? "Department is required."
           : undefined,
@@ -72,7 +72,7 @@ export const memberProfileSubPath: PathDefinition<ProfileSubData> = {
     {
       id: "goals",
       title: "Goals",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         goals30: !data.goals30?.toString().trim()
           ? "30-day goals are required."
           : undefined,
@@ -95,7 +95,7 @@ export const teamOnboardingPath: PathDefinition<WizardData> = {
     {
       id: "team-setup",
       title: "Team Setup",
-      fieldMessages: ({ data }) => {
+      fieldErrors: ({ data }) => {
         const members = (data.members ?? []) as Person[];
         return {
           teamName: !data.teamName?.toString().trim()
@@ -115,7 +115,7 @@ export const teamOnboardingPath: PathDefinition<WizardData> = {
     {
       id: "member-profiles",
       title: "Member Profiles",
-      fieldMessages: ({ data }) => {
+      fieldErrors: ({ data }) => {
         const members = (data.members ?? []) as Person[];
         const profiles = (data.profiles ?? {}) as Record<string, MemberProfile>;
         const pending = members.filter((_, i) => !profiles[String(i)]?.department);

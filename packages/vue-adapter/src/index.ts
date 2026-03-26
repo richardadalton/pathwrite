@@ -301,9 +301,9 @@ export const PathShell = defineComponent({
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
         // Validation messages — suppressed when validationDisplay="inline"
-        props.validationDisplay !== "inline" && snap.hasAttemptedNext && Object.keys(snap.fieldMessages).length > 0
+        props.validationDisplay !== "inline" && snap.hasAttemptedNext && Object.keys(snap.fieldErrors).length > 0
           ? h("ul", { class: "pw-shell__validation" },
-              Object.entries(snap.fieldMessages).map(([key, msg]) =>
+              Object.entries(snap.fieldErrors).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__validation-item" }, [
                   key !== "_" ? h("span", { class: "pw-shell__validation-label" }, formatFieldKey(key)) : null,
                   msg

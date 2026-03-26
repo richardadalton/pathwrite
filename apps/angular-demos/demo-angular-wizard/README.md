@@ -10,8 +10,8 @@ review step before completion.
 
 | # | Step | Key concepts |
 |---|------|-------------|
-| 1 | **Personal Info** | `fieldMessages` auto-derives `canMoveNext`; errors shown only after first Next attempt |
-| 2 | **About You** | Explicit `canMoveNext` guard + `fieldMessages` together; optional field (Company) |
+| 1 | **Personal Info** | `fieldErrors` auto-derives `canMoveNext`; errors shown only after first Next attempt |
+| 2 | **About You** | Explicit `canMoveNext` guard + `fieldErrors` together; optional field (Company) |
 | 3 | **Preferences** | No guard — all fields have defaults; radio buttons + toggle |
 | 4 | **Review** | Read-only summary; navigating back from here preserves all data |
 

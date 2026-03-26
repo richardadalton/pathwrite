@@ -270,7 +270,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathEngine` — subscriptions | 3 |
 | `PathEngine` — shouldSkip | 9 |
 | `PathEngine` — stepTitle | 3 |
-| `PathEngine` — fieldMessages | 12 |
+| `PathEngine` — fieldErrors | 12 |
 | `PathEngine` — hasAttemptedNext | 6 |
 | `PathEngine` — errors | 4 |
 | `PathEngine` — async hooks and guards | 11 |
@@ -290,7 +290,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathFacade` — goToStep | 2 |
 | `PathFacade` — goToStepChecked | 7 |
 | `PathFacade` — generic typing <TData> | 5 |
-| `PathFacade` — fieldMessages | 6 |
+| `PathFacade` — fieldErrors | 6 |
 | `PathFacade` — ngOnDestroy | 2 |
 | `PathFacade` — stateSignal | 5 |
 | `syncFormGroup` | 7 |
@@ -303,7 +303,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (React) — render props | 2 |
 | `PathShell` (React) — autoStart false | 2 |
 | `PathShell` (React) — context sharing | 2 |
-| `PathShell` (React) — fieldMessages | 6 |
+| `PathShell` (React) — fieldErrors | 6 |
 | `PathShell` (React) — footerLayout | 4 |
 | `usePath` (React) — snapshot | 8 |
 | `usePath` (React) — events | 5 |
@@ -323,7 +323,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 | `PathShell` (Vue) — progress | 3 |
 | `PathShell` (Vue) — autoStart false | 2 |
 | `PathShell` (Vue) — context sharing | 2 |
-| `PathShell` (Vue) — fieldMessages | 5 |
+| `PathShell` (Vue) — fieldErrors | 5 |
 | `usePath` (Vue) — snapshot | 8 |
 | `usePath` (Vue) — events | 4 |
 | `usePath` (Vue) — navigation | 5 |

@@ -2,13 +2,13 @@
 
 ## Completed Items (Priority 1-2)
 
-### ✅ 1.1 Field-level validation (`fieldMessages` API)
+### ✅ 1.1 Field-level validation (`fieldErrors` API)
 - **Status:** Complete
 - **Packages affected:** `core`, `react-adapter`, `vue-adapter`, `svelte-adapter`, `angular-adapter`
 - **Key changes:**
-  - Added `fieldMessages?: (ctx) => FieldErrors` to `PathStep` interface
-  - Added `fieldMessages: Record<string, string>` to `PathSnapshot`
-  - Auto-derives `canMoveNext` from `fieldMessages` when not explicitly defined
+  - Added `fieldErrors?: (ctx) => FieldErrors` to `PathStep` interface
+  - Added `fieldErrors: Record<string, string>` to `PathSnapshot`
+  - Auto-derives `canMoveNext` from `fieldErrors` when not explicitly defined
   - All adapter shells render field messages with formatted labels
   - Added `formatFieldKey()` helper to convert camelCase to Title Case
   - Special handling for `"_"` key for form-level errors (no label)
@@ -38,7 +38,7 @@
 - **Key changes:**
   - `hasAttemptedNext: boolean` added to `PathSnapshot`
   - Set to `true` after first `next()` call, reset to `false` on step entry
-  - All adapter shells gate `fieldMessages` rendering with this flag
+  - All adapter shells gate `fieldErrors` rendering with this flag
   - Step templates can use it for custom inline error display
   - Comprehensive test coverage in `packages/core/test/path-engine.test.ts`
 
@@ -69,8 +69,8 @@ Items 1.2 and 2.3 follow the same smart auto-detection pattern:
 - **Override:** Explicit props still available when needed
 
 ### Field Messages Integration
-The `fieldMessages` feature integrates with existing engine features:
-- **Auto-derived `canMoveNext`:** When `fieldMessages` is defined but `canMoveNext` is not, the engine automatically derives `canMoveNext` as `true` when all field messages are undefined
+The `fieldErrors` feature integrates with existing engine features:
+- **Auto-derived `canMoveNext`:** When `fieldErrors` is defined but `canMoveNext` is not, the engine automatically derives `canMoveNext` as `true` when all field messages are undefined
 - **`hasAttemptedNext` gating:** Shells automatically gate error display to avoid "punish early" anti-pattern
 - **Formatted labels:** All shells format camelCase field keys to Title Case for display
 
@@ -79,7 +79,7 @@ All implementations maintain API consistency across frameworks:
 - Same prop names across React, Vue, Svelte, Angular
 - Same auto-detection logic for `hideProgress` and `footerLayout`
 - Same `hasAttemptedNext` behavior and timing
-- Same `fieldMessages` rendering with formatted labels
+- Same `fieldErrors` rendering with formatted labels
 
 ## Testing
 

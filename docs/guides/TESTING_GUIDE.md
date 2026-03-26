@@ -25,11 +25,11 @@ const contactForm: PathDefinition = {
   id: "contact",
   steps: [{
     id: "contact-info",
-    fieldMessages: ({ data }) => ({
+    fieldErrors: ({ data }) => ({
       name:  !data.name  ? "Name is required."  : undefined,
       email: !data.email ? "Email is required." : undefined,
     }),
-    // canMoveNext is auto-derived from fieldMessages when not explicitly set
+    // canMoveNext is auto-derived from fieldErrors when not explicitly set
   }]
 };
 
@@ -39,8 +39,8 @@ describe("Contact form — validation", () => {
     await engine.start(contactForm);
 
     const snap = engine.snapshot()!;
-    expect(snap.fieldMessages.name).toBe("Name is required.");
-    expect(snap.fieldMessages.email).toBe("Email is required.");
+    expect(snap.fieldErrors.name).toBe("Name is required.");
+    expect(snap.fieldErrors.email).toBe("Email is required.");
     expect(snap.canMoveNext).toBe(false);
   });
 
@@ -52,7 +52,7 @@ describe("Contact form — validation", () => {
     await engine.setData("email", "alice@example.com");
 
     const snap = engine.snapshot()!;
-    expect(snap.fieldMessages).toEqual({});
+    expect(snap.fieldErrors).toEqual({});
     expect(snap.canMoveNext).toBe(true);
   });
 
@@ -60,7 +60,7 @@ describe("Contact form — validation", () => {
     const engine = new PathEngine();
     await engine.start(contactForm);
 
-    await engine.next(); // attempt to submit — blocked by fieldMessages
+    await engine.next(); // attempt to submit — blocked by fieldErrors
     expect(engine.snapshot()?.stepId).toBe("contact-info"); // still on the form
   });
 
@@ -145,7 +145,7 @@ describe("Address step — isolated", () => {
     // Wrap the single step in a throwaway path
     await engine.start({ id: "test", steps: [addressStep] });
 
-    expect(engine.snapshot()?.fieldMessages).toMatchObject({
+    expect(engine.snapshot()?.fieldErrors).toMatchObject({
       street: expect.any(String),
       city:   expect.any(String),
     });
@@ -158,13 +158,13 @@ describe("Address step — isolated", () => {
       { street: "123 Main St", city: "Springfield", postcode: "62701" }
     );
 
-    expect(engine.snapshot()?.fieldMessages).toEqual({});
+    expect(engine.snapshot()?.fieldErrors).toEqual({});
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
 });
 ```
 
-**Why this works:** Steps are plain objects. They don't know or care what path they're in. A step's `fieldMessages`, `canMoveNext`, `onEnter`, and `onLeave` all receive a `ctx` with `data` — they don't reference other steps. You supply the data, you get the result.
+**Why this works:** Steps are plain objects. They don't know or care what path they're in. A step's `fieldErrors`, `canMoveNext`, `onEnter`, and `onLeave` all receive a `ctx` with `data` — they don't reference other steps. You supply the data, you get the result.
 
 ---
 
@@ -180,7 +180,7 @@ const approvalSubWizard: PathDefinition = {
     {
       id: "decision",
       title: "Approve or Reject",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         decision: !data.decision ? "You must approve or reject." : undefined,
         comments: data.decision === "rejected" && !data.comments
           ? "Comments are required when rejecting."
@@ -206,7 +206,7 @@ describe("Approval sub-wizard — isolated", () => {
     await engine.next();
 
     await engine.setData("decision", "rejected");
-    expect(engine.snapshot()?.fieldMessages.comments).toBe(
+    expect(engine.snapshot()?.fieldErrors.comments).toBe(
       "Comments are required when rejecting."
     );
     expect(engine.snapshot()?.canMoveNext).toBe(false);
@@ -298,7 +298,7 @@ const subscription: PathDefinition = {
       id: "payment",
       title: "Payment",
       shouldSkip: (ctx) => ctx.data.plan === "free",
-      fieldMessages: ({ data }) => ({
+      fieldErrors: ({ data }) => ({
         cardNumber: !data.cardNumber ? "Card number is required." : undefined,
       }),
     },

@@ -4,7 +4,7 @@
   import type { DocumentData } from "./types";
 
   const ctx = getPathContext<DocumentData>();
-  let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldMessages : {});
+  let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
   let selected = $derived((ctx.snapshot?.data.approvers ?? []) as string[]);
 
   function toggle(id: string) {

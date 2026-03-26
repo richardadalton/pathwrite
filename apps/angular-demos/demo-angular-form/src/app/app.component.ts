@@ -38,7 +38,7 @@ export class AppComponent {
           isFirstEntry
             ? { name: "", email: "", subject: "", message: "" }
             : undefined,
-        fieldMessages: ({ data }) => {
+        fieldErrors: ({ data }) => {
           const m: FieldErrors = {};
           if (!(data.name as string)?.trim())                               m["name"]    = "Required.";
           if (!(data.email as string)?.trim())                              m["email"]   = "Required.";
