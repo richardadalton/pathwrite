@@ -585,7 +585,7 @@
 
       case 'sub-1': return `
         <h3>Sub-Path: Step 1 ${ptag('level ' + nestingLevel)}</h3>
-        <p>You're inside a nested path. The parent wizard is paused on the stack.</p>`;
+        <p>You're inside a nested path. The parent wizard is paused on the stack — and the entire state, including the stack, is persisted to LocalStorage. Complete or cancel this sub-path (even after closing the browser) and the parent will be right where you left it.</p>`;
 
       case 'sub-2': return `
         <h3>Sub-Path: Step 2</h3>
