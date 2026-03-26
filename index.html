@@ -143,7 +143,7 @@
       </div>
       <div class="feature-card">
         <h3>Lifecycle Hooks</h3>
-        <p><code>onEnter</code>, <code>onLeave</code>, <code>onComplete</code>, <code>onCancel</code> &mdash; all async-capable.</p>
+        <p><code>onEnter</code>, <code>onLeave</code>, <code>onComplete</code>, <code>onCancel</code> — all async-capable.</p>
       </div>
       <div class="feature-card">
         <h3>Event System</h3>
@@ -203,7 +203,7 @@
   ],
 };</code></pre>
     </div>
-    <p class="code-caption">Guards, validation, conditional steps &mdash; all declarative, all typed. Works with every adapter.</p>
+    <p class="code-caption">Guards, validation, conditional steps — all declarative, all typed. Works with every adapter.</p>
   </div>
 </section>
 
@@ -553,7 +553,7 @@
       case 'subpath-demo': return `
         <h3>Sub-Paths ${ptag('level ' + nestingLevel)}</h3>
         <p>Launch a nested flow. The parent pauses and resumes automatically.</p>
-        <button class="pw-demo__action" id="start-sub">Launch sub-path &rarr;</button>`;
+        <button class="pw-demo__action" id="start-sub">Launch sub-path →</button>`;
 
       case 'sub-1': return `
         <h3>Sub-Path: Step 1 ${ptag('level ' + nestingLevel)}</h3>
@@ -565,8 +565,8 @@
 
       case 'done': return `
         <h3>Complete!</h3>
-        <p>Steps, guards, conditional skipping, and sub-paths &mdash; all from one engine.</p>
-        <button class="pw-demo__action" id="restart-btn">&larrhk; Try again</button>`;
+        <p>Steps, guards, conditional skipping, and sub-paths — all from one engine.</p>
+        <button class="pw-demo__action" id="restart-btn">↩ Try again</button>`;
 
       default: return `<h3>${snap.stepTitle}</h3>`;
     }
@@ -583,7 +583,7 @@
     if (!snap) {
       document.getElementById('pw-body').innerHTML = `
         <h3>Complete!</h3>
-        <p><button class="pw-demo__action" id="restart-btn">&larrhk; Try again</button></p>`;
+        <p><button class="pw-demo__action" id="restart-btn">↩ Try again</button></p>`;
       document.getElementById('pw-step-label').textContent = 'Done';
       document.getElementById('pw-stepper').innerHTML = '';
       document.getElementById('pw-tag').textContent = 'done';
