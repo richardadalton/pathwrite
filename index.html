@@ -59,6 +59,7 @@
       <span class="nav__logo-icon">⟡</span> Pathwrite
     </a>
     <div class="nav__links">
+      <a href="#whats-new" style="color:var(--color-primary);font-weight:600">What's New</a>
       <a href="#problem">Why?</a>
       <a href="#ui">Wizard UI</a>
       <a href="#features">Features</a>
@@ -136,6 +137,58 @@
       <span class="stat__number">0</span>
       <span class="stat__label">Core Dependencies</span>
     </div>
+  </div>
+</section>
+
+<!-- ===== WHAT'S NEW ===== -->
+<section class="section section--accent" id="whats-new" style="background:linear-gradient(135deg, rgba(139,92,246,0.05), rgba(34,211,238,0.05)); border-top:1px solid rgba(139,92,246,0.1); border-bottom:1px solid rgba(139,92,246,0.1)">
+  <div class="container">
+    <h2 class="section__title">
+      <span style="display:inline-block; background:linear-gradient(90deg,var(--color-primary),var(--color-accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">What's New in v0.7.0</span>
+    </h2>
+    <p class="section__subtitle">Four powerful features that eliminate common boilerplate — zero breaking changes.</p>
+
+    <div class="feature-grid" style="margin-top:2.5rem">
+      <div class="feature-card" style="border-color:rgba(139,92,246,0.2); background:rgba(139,92,246,0.03)">
+        <div class="feature-card__icon" style="background:rgba(139,92,246,0.1)">🎯</div>
+        <h3><code style="font-size:0.9em; color:var(--color-primary)">onComplete</code> / <code style="font-size:0.9em; color:var(--color-primary)">onCancel</code> Callbacks</h3>
+        <p>Define completion and cancellation handlers right on your <code>PathDefinition</code>. No more subscribing to events and filtering for <code>type === "completed"</code> — it's where you'd expect it.</p>
+        <div style="margin-top:10px; padding:10px; background:var(--color-bg); border-radius:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--color-text-muted); border:1px solid var(--color-border)">
+          onComplete: (data) => submitToAPI(data)
+        </div>
+      </div>
+
+      <div class="feature-card" style="border-color:rgba(139,92,246,0.2); background:rgba(139,92,246,0.03)">
+        <div class="feature-card__icon" style="background:rgba(139,92,246,0.1)">↩️</div>
+        <h3><code style="font-size:0.9em; color:var(--color-primary)">resetStep()</code> — Undo Current Step</h3>
+        <p>One method to revert the current step's data to what it was when the step was entered. No more manually calling <code>setData</code> for every field.</p>
+        <div style="margin-top:10px; padding:10px; background:var(--color-bg); border-radius:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--color-text-muted); border:1px solid var(--color-border)">
+          engine.resetStep(); // data reverts instantly
+        </div>
+      </div>
+
+      <div class="feature-card" style="border-color:rgba(34,211,238,0.2); background:rgba(34,211,238,0.03)">
+        <div class="feature-card__icon" style="background:rgba(34,211,238,0.1)">✨</div>
+        <h3><code style="font-size:0.9em; color:var(--color-accent)">isDirty</code> — Automatic Dirty Tracking</h3>
+        <p>Know instantly if the user has changed anything on the current step. Perfect for "unsaved changes" prompts or disabling Save buttons. Zero configuration.</p>
+        <div style="margin-top:10px; padding:10px; background:var(--color-bg); border-radius:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--color-text-muted); border:1px solid var(--color-border)">
+          snapshot.isDirty // true if data changed
+        </div>
+      </div>
+
+      <div class="feature-card" style="border-color:rgba(34,211,238,0.2); background:rgba(34,211,238,0.03)">
+        <div class="feature-card__icon" style="background:rgba(34,211,238,0.1)">⏱️</div>
+        <h3><code style="font-size:0.9em; color:var(--color-accent)">stepEnteredAt</code> Timestamp</h3>
+        <p>Captures <code>Date.now()</code> when each step is entered. Compute time spent, trigger timeout warnings, or power analytics — it's just there.</p>
+        <div style="margin-top:10px; padding:10px; background:var(--color-bg); border-radius:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--color-text-muted); border:1px solid var(--color-border)">
+          Date.now() - snapshot.stepEnteredAt
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:2rem; text-align:center; color:var(--color-text-muted); font-size:0.95rem">
+      All four features are <strong>optional</strong>, <strong>additive</strong>, and <strong>non-breaking</strong>. Ignore them and your code works exactly as before.
+    </p>
   </div>
 </section>
 
@@ -332,7 +385,12 @@
       <div class="feature-card">
         <div class="feature-card__icon">🪝</div>
         <h3>Lifecycle Hooks</h3>
-        <p><code>onEnter</code>, <code>onLeave</code>, <code>onSubPathComplete</code>, <code>onSubPathCancel</code> — async-capable hooks that receive an immutable context snapshot with <code>isFirstEntry</code> tracking.</p>
+        <p><code>onEnter</code>, <code>onLeave</code>, <code>onComplete</code>, <code>onCancel</code>, <code>onSubPathComplete</code>, <code>onSubPathCancel</code> — async-capable hooks that receive an immutable context snapshot with <code>isFirstEntry</code> tracking.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">✨</div>
+        <h3>Developer Experience</h3>
+        <p><code>resetStep()</code> to undo changes, <code>isDirty</code> for automatic dirty tracking, and <code>stepEnteredAt</code> timestamps. Zero config, zero boilerplate — they're just there when you need them.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card__icon">📝</div>
