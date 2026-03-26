@@ -255,7 +255,7 @@ See the [Developer Guide](DEVELOPER_GUIDE.md) for the full list of shell props, 
 
 ## Test coverage
 
-536 tests across nine test files:
+555 tests across nine test files:
 
 | Suite | Tests |
 |-------|-------|

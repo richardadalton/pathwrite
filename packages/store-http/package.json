@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-store-http",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Persistence adapters for PathEngine — LocalStorageStore (browser) and HttpStore (REST API)",
   "type": "module",
   "main": "dist/index.js",

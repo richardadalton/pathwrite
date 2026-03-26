@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-react",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "license": "MIT",
   "description": "React adapter for @daltonr/pathwrite-core — hooks, context provider, and optional <PathShell> default UI.",

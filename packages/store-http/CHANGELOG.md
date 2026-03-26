@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-store-http
 
+## 0.8.0 - 2026-03-26
+
+### Minor Changes
+
+- **Compatible with `@daltonr/pathwrite-core@0.8.0`** — No store-http API changes. `fieldErrors` rename and new snapshot fields (`isDirty`, `stepEnteredAt`, `fieldWarnings`) are all in the core and adapters.
+
+
+
 ## 0.7.0 - 2026-03-24
 
 ### Minor Changes

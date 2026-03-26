@@ -1,5 +1,20 @@
 # @daltonr/pathwrite-vue
 
+## 0.8.0 - 2026-03-26
+
+### Breaking Changes
+
+- **Renamed `fieldMessages` to `fieldErrors`** — Update snapshot references and step definitions.
+
+### Minor Changes
+
+- **`fieldWarnings` rendering in shell** — Warnings rendered in amber; never block navigation.
+- **`onComplete` / `onCancel` props on `PathShell`** — Pass handlers directly on the shell component.
+- **`resetStep()` exposed** — Call to revert current step data to its entry state.
+- **New snapshot fields** — `isDirty`, `stepEnteredAt`, and `fieldWarnings` all passed through.
+
+
+
 ## 0.7.0 - 2026-03-24
 
 ### Patch Changes
