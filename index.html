@@ -49,10 +49,11 @@
       </div>
     </div>
     <div class="hero__right">
+      <div id="pw-restored-banner" class="pw-demo__restored" style="display:none"></div>
       <div id="pw-demo" class="pw-demo">
         <div class="pw-demo__header">
           <span>&loz;</span>
-          <span class="pw-demo__header-title">Real Pathwrite Wizard — Not a Mockup</span>
+          <span class="pw-demo__header-title">Live Pathwrite Engine — Not a Mockup</span>
           <span class="pw-demo__header-tag" id="pw-tag">steps</span>
         </div>
         <div class="pw-demo__stepper" id="pw-stepper"></div>
@@ -65,8 +66,8 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:10px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap">
-        <span style="font-size:0.78rem;color:var(--color-text-muted)">Real engine, loaded from npm. No iframe.</span>
-        <a href="/how-this-was-done.html" style="font-size:0.78rem;color:var(--color-text-muted)">How was this built? →</a>
+        <span style="font-size:0.78rem;color:var(--color-text-muted)">Real engine from npm &mdash; try closing and reopening this tab.</span>
+        <a href="/how-this-was-done.html" style="font-size:0.78rem;color:var(--color-text-muted)">How? &rarr;</a>
       </div>
     </div>
   </div>
@@ -497,20 +498,28 @@
 </script>
 
 <script type="module">
-  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.6.3';
+  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.7.0';
+  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.7.0';
+
+  // ── Path definitions ──────────────────────────────────────────────────────
+  const DEMO_KEY = 'pw-hero-demo-v1';
+  const INITIAL_DATA = { name: '', framework: '' };
 
   const mainPath = {
     id: 'demo',
     steps: [
-      { id: 'welcome',     title: 'Welcome' },
-      { id: 'framework',   title: 'Framework',
-        canMoveNext: ({ data }) => !!data.framework },
-      { id: 'react-tip',   title: 'React',    shouldSkip: ({ data }) => data.framework !== 'react' },
-      { id: 'vue-tip',     title: 'Vue',      shouldSkip: ({ data }) => data.framework !== 'vue' },
-      { id: 'angular-tip', title: 'Angular',  shouldSkip: ({ data }) => data.framework !== 'angular' },
-      { id: 'svelte-tip',  title: 'Svelte',   shouldSkip: ({ data }) => data.framework !== 'svelte' },
-      { id: 'subpath-demo',title: 'Sub-Paths' },
-      { id: 'done',        title: 'Done' },
+      {
+        id: 'name',
+        title: 'Your Name',
+        canMoveNext: ({ data }) => (data.name || '').trim().length >= 2,
+      },
+      {
+        id: 'framework',
+        title: 'Framework',
+        canMoveNext: ({ data }) => !!data.framework,
+      },
+      { id: 'subpath-demo', title: 'Sub-Paths' },
+      { id: 'done', title: 'Done' },
     ]
   };
 
@@ -522,121 +531,161 @@
     ]
   };
 
-  function stepHTML(snap) {
+  // ── isDirty / resetStep (manual, mirrors v0.8.0 built-in) ────────────────
+  let trackedStepId = null;
+  let stepEntryData = {};
+
+  function computeIsDirty(snap) {
+    if (!snap) return false;
+    return JSON.stringify(snap.data) !== JSON.stringify(stepEntryData);
+  }
+
+  function doResetStep(engine) {
+    Object.entries(stepEntryData).forEach(([k, v]) => engine.setData(k, v));
+  }
+
+  // ── Step content ──────────────────────────────────────────────────────────
+  function dirtyBar(isDirty, engine) {
+    if (!isDirty) return '';
+    return `<div class="pw-demo__dirty">
+      <span class="pw-demo__dirty-dot"></span> Unsaved changes on this step
+      <button class="pw-demo__reset-btn" id="demo-reset">↩ Undo</button>
+    </div>`;
+  }
+
+  function stepHTML(snap, isDirty, engine) {
     const { stepId, data, nestingLevel } = snap;
-    const ftag  = (t) => `<span class="pw-demo__ftag">${t}</span>`;
-    const ptag  = (t) => `<span class="pw-demo__ftag pw-demo__ftag--purple">${t}</span>`;
-    const fw = data.framework || '';
+    const ftag = (t) => `<span class="pw-demo__ftag">${t}</span>`;
+    const ptag = (t) => `<span class="pw-demo__ftag pw-demo__ftag--purple">${t}</span>`;
 
     switch (stepId) {
-      case 'welcome': return `
-        <h3>This is the real thing</h3>
-        <p>Not a mockup. <strong>@daltonr/pathwrite-core</strong> is running live in this page — loaded directly from npm, no iframe.</p>
-        <p>Walk through to see guards, conditional step skipping, and nested sub-paths in action.</p>`;
+      case 'name': return `
+        <h3>Enter your name ${ftag('canMoveNext')}</h3>
+        <p>Next unlocks at 2+ characters. Your name is auto-saved to <strong>LocalStorage</strong> — close this tab and reopen it.</p>
+        <input class="pw-demo__input" id="demo-name" type="text"
+               placeholder="Your name" value="${(data.name || '').replace(/"/g, '&quot;')}" autocomplete="off" />
+        ${(data.name || '').trim().length > 0 && (data.name || '').trim().length < 2
+          ? '<p class="pw-demo__hint">One more character…</p>' : ''}
+        ${dirtyBar(isDirty)}`;
 
       case 'framework': return `
         <h3>Choose a framework ${ftag('canMoveNext')}</h3>
-        <p>Next is disabled until you pick one. Other framework steps are skipped automatically.</p>
+        <p>Your progress is saved automatically. Close and reopen this tab — you'll land right here.</p>
         <div class="pw-demo__chips">
           ${['React','Vue','Angular','Svelte'].map(f =>
-            `<button class="pw-demo__chip${fw === f.toLowerCase() ? ' selected' : ''}" data-fw="${f.toLowerCase()}">${f}</button>`
+            `<button class="pw-demo__chip${data.framework === f.toLowerCase() ? ' selected' : ''}" data-fw="${f.toLowerCase()}">${f}</button>`
           ).join('')}
-        </div>`;
-
-      case 'react-tip': return `
-        <h3>React ${ftag('shouldSkip')}</h3>
-        <p>Vue, Angular, and Svelte steps were automatically skipped. The stepper reflects only active steps.</p>`;
-
-      case 'vue-tip': return `
-        <h3>Vue ${ftag('shouldSkip')}</h3>
-        <p>Other framework steps were skipped. <code>shouldSkip</code> re-evaluates on every navigation.</p>`;
-
-      case 'angular-tip': return `
-        <h3>Angular ${ftag('shouldSkip')}</h3>
-        <p>Other framework steps were skipped automatically.</p>`;
-
-      case 'svelte-tip': return `
-        <h3>Svelte ${ftag('shouldSkip')}</h3>
-        <p>Other framework steps were skipped automatically.</p>`;
+        </div>
+        ${dirtyBar(isDirty)}`;
 
       case 'subpath-demo': return `
         <h3>Sub-Paths ${ptag('level ' + nestingLevel)}</h3>
-        <p>Launch a nested flow. The parent pauses and resumes automatically.</p>
+        <p>Hi <strong>${data.name || 'there'}</strong>! Launch a nested flow — the parent pauses and auto-resumes on completion.</p>
         <button class="pw-demo__action" id="start-sub">Launch sub-path →</button>`;
 
       case 'sub-1': return `
         <h3>Sub-Path: Step 1 ${ptag('level ' + nestingLevel)}</h3>
-        <p>Inside a sub-path. The parent is paused on the stack.</p>`;
+        <p>You're inside a nested path. The parent wizard is paused on the stack.</p>`;
 
       case 'sub-2': return `
         <h3>Sub-Path: Step 2</h3>
-        <p><strong>Next</strong> completes the sub-path and returns to the parent.</p>`;
+        <p><strong>Next</strong> completes the sub-path and returns to the parent automatically.</p>`;
 
       case 'done': return `
-        <h3>Complete!</h3>
-        <p>Steps, guards, conditional skipping, and sub-paths — all from one engine.</p>
-        <button class="pw-demo__action" id="restart-btn">↩ Try again</button>`;
+        <h3>Complete, ${data.name || 'friend'}!</h3>
+        <p>You just walked through guards, dirty tracking, localStorage persistence, and sub-paths — all from <strong>@daltonr/pathwrite-core</strong>.</p>
+        <button class="pw-demo__action" id="restart-btn">↩ Start over</button>`;
 
       default: return `<h3>${snap.stepTitle}</h3>`;
     }
   }
 
-  const engine = new PathEngine();
-  let isDone = false;
-
-  function render() {
-    const snap = engine.snapshot();
-    const prevBtn = document.getElementById('pw-prev');
-    const nextBtn = document.getElementById('pw-next');
-
-    if (!snap) {
-      document.getElementById('pw-body').innerHTML = `
-        <h3>Complete!</h3>
-        <p><button class="pw-demo__action" id="restart-btn">↩ Try again</button></p>`;
-      document.getElementById('pw-step-label').textContent = 'Done';
-      document.getElementById('pw-stepper').innerHTML = '';
-      document.getElementById('pw-tag').textContent = 'done';
-      if (prevBtn) prevBtn.disabled = true;
-      if (nextBtn) nextBtn.style.display = 'none';
-      document.getElementById('restart-btn')?.addEventListener('click', () => {
-        isDone = false;
-        if (nextBtn) nextBtn.style.display = '';
-        engine.restart(mainPath, {});
-      });
-      return;
-    }
-
-    document.getElementById('pw-tag').textContent =
-      snap.nestingLevel > 0 ? 'sub-path' :
-      snap.stepId === 'framework' ? 'guard' :
-      ['react-tip','vue-tip','angular-tip','svelte-tip'].includes(snap.stepId) ? 'skip' :
-      snap.stepId === 'subpath-demo' ? 'sub-path' : 'steps';
-
-    document.getElementById('pw-stepper').innerHTML =
-      snap.steps.map(s =>
-        `<div class="pw-demo__dot ${s.status === 'completed' ? 'done' : s.status === 'current' ? 'active' : ''}"></div>`
-      ).join('');
-
-    document.getElementById('pw-step-label').textContent =
-      `Step ${snap.stepIndex + 1} of ${snap.stepCount} — ${snap.stepTitle}`;
-
-    document.getElementById('pw-body').innerHTML = stepHTML(snap);
-
+  // ── Wire interactive body elements ────────────────────────────────────────
+  function wireBodyEvents(engine) {
+    document.getElementById('demo-name')?.addEventListener('input', e =>
+      engine.setData('name', e.target.value)
+    );
     document.querySelectorAll('[data-fw]').forEach(btn =>
       btn.addEventListener('click', () => engine.setData('framework', btn.dataset.fw))
     );
     document.getElementById('start-sub')?.addEventListener('click', () =>
       engine.startSubPath(subPath, {})
     );
+    document.getElementById('demo-reset')?.addEventListener('click', () =>
+      doResetStep(engine)
+    );
     document.getElementById('restart-btn')?.addEventListener('click', () => {
-      isDone = false;
-      if (nextBtn) nextBtn.style.display = '';
-      engine.restart(mainPath, {});
+      trackedStepId = null;
+      stepEntryData = {};
+      engine.restart(mainPath, INITIAL_DATA);
     });
+  }
 
-    if (prevBtn) {
-      prevBtn.disabled = snap.isFirstStep && snap.nestingLevel === 0;
+  // ── Render ────────────────────────────────────────────────────────────────
+  function render(engine) {
+    const snap = engine.snapshot();
+    const prevBtn = document.getElementById('pw-prev');
+    const nextBtn = document.getElementById('pw-next');
+
+    // Track step entry for isDirty
+    if (snap && snap.stepId !== trackedStepId) {
+      trackedStepId = snap.stepId;
+      stepEntryData = { ...(snap.data || {}) };
     }
+
+    const isDirty = computeIsDirty(snap);
+
+    // Header tag
+    document.getElementById('pw-tag').textContent =
+      !snap ? 'done' :
+      snap.nestingLevel > 0 ? 'sub-path' :
+      snap.stepId === 'name' ? 'guard + dirty' :
+      snap.stepId === 'framework' ? 'guard + persist' :
+      snap.stepId === 'subpath-demo' ? 'sub-paths' : 'steps';
+
+    if (!snap) {
+      document.getElementById('pw-step-label').textContent = 'Done';
+      document.getElementById('pw-stepper').innerHTML = '';
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.style.display = 'none';
+      document.getElementById('pw-body').innerHTML = `
+        <h3>Complete!</h3>
+        <p>Guards, dirty tracking, persistence, sub-paths — all from one engine.</p>
+        <button class="pw-demo__action" id="restart-btn">↩ Start over</button>`;
+      wireBodyEvents(engine);
+      return;
+    }
+
+    // Stepper
+    document.getElementById('pw-stepper').innerHTML =
+      snap.steps.map(s =>
+        `<div class="pw-demo__dot ${s.status === 'completed' ? 'done' : s.status === 'current' ? 'active' : ''}"></div>`
+      ).join('');
+
+    // Step label
+    document.getElementById('pw-step-label').textContent =
+      `Step ${snap.stepIndex + 1} of ${snap.stepCount} — ${snap.stepTitle}`;
+
+    // Body — preserve input focus across re-renders
+    const focusedId = document.activeElement?.id;
+    const selStart = document.activeElement?.selectionStart;
+    const selEnd = document.activeElement?.selectionEnd;
+
+    document.getElementById('pw-body').innerHTML = stepHTML(snap, isDirty, engine);
+    wireBodyEvents(engine);
+
+    if (focusedId) {
+      const el = document.getElementById(focusedId);
+      if (el) {
+        el.focus();
+        if (selStart !== undefined && el.setSelectionRange) {
+          try { el.setSelectionRange(selStart, selEnd); } catch (_) {}
+        }
+      }
+    }
+
+    // Nav buttons
+    if (prevBtn) prevBtn.disabled = snap.isFirstStep && snap.nestingLevel === 0;
     if (nextBtn) {
       nextBtn.style.display = snap.stepId === 'done' ? 'none' : '';
       nextBtn.disabled = !snap.canMoveNext;
@@ -644,20 +693,51 @@
     }
   }
 
-  engine.subscribe(event => {
-    if (event.type === 'completed') isDone = true;
-    render();
-  });
+  // ── Init with LocalStorage persistence ───────────────────────────────────
+  (async () => {
+    let engine;
 
-  engine.start(mainPath, {}).then(() => render());
+    try {
+      const store = new LocalStorageStore();
+      const result = await restoreOrStart({
+        store,
+        key: DEMO_KEY,
+        path: mainPath,
+        pathDefinitions: { [mainPath.id]: mainPath, [subPath.id]: subPath },
+        initialData: INITIAL_DATA,
+        observers: [httpPersistence({ store, key: DEMO_KEY, strategy: 'onEveryChange' })],
+      });
+      engine = result.engine;
 
-  document.getElementById('pw-prev').addEventListener('click', () => {
-    const snap = engine.snapshot();
-    if (!snap) return;
-    if (snap.nestingLevel > 0 && snap.isFirstStep) engine.cancel();
-    else engine.previous();
-  });
-  document.getElementById('pw-next').addEventListener('click', () => engine.next());
+      if (result.restored) {
+        const snap = engine.snapshot();
+        const banner = document.getElementById('pw-restored-banner');
+        if (banner) {
+          const name = snap?.data?.name;
+          banner.textContent = name
+            ? `Welcome back, ${name}! Resumed from where you left off.`
+            : 'Session restored from your last visit.';
+          banner.style.display = 'block';
+          setTimeout(() => { banner.style.display = 'none'; }, 5000);
+        }
+      }
+    } catch (e) {
+      // Fallback: plain in-memory engine (e.g. if localStorage is blocked)
+      engine = new PathEngine();
+      await engine.start(mainPath, INITIAL_DATA);
+    }
+
+    engine.subscribe(() => render(engine));
+    render(engine);
+
+    document.getElementById('pw-prev').addEventListener('click', () => {
+      const snap = engine.snapshot();
+      if (!snap) return;
+      if (snap.nestingLevel > 0 && snap.isFirstStep) engine.cancel();
+      else engine.previous();
+    });
+    document.getElementById('pw-next').addEventListener('click', () => engine.next());
+  })();
 </script>
 
 </body>
