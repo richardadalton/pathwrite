@@ -12,7 +12,6 @@
     "packages/*",
     "apps/angular-demos/*",
     "apps/react-demos/*",
-    "apps/react-native-demos/*",
     "apps/svelte-demos/*",
     "apps/vue-demos/*"
   ],
