@@ -40,9 +40,13 @@ npm-debug.log*
 # Coverage
 coverage/
 
+# Expo runtime state (machine-specific)
+.expo/
+
 # Local feedback / scratch documents
 feedback.md
 *-feedback.md
+feedback-*.md
 .working-notes/
 docs/feedback/
 .vite
