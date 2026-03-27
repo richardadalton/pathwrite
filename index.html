@@ -498,15 +498,28 @@
 </script>
 
 <script type="module">
-  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.7.0';
-  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.7.0';
+  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.8.0';
+  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.8.0';
 
   // ── Path definitions ──────────────────────────────────────────────────────
-  const DEMO_KEY = 'pw-hero-demo-v1';
-  const INITIAL_DATA = { name: '', framework: '' };
+  const DEMO_KEY = 'pw-hero-demo-v2';
+  const INITIAL_DATA = { name: '', country: '', state: '', county: '', skipNext: false, notes: '' };
+
+  const US_STATES = [
+    'Alabama','Alaska','Arizona','California','Colorado','Connecticut',
+    'Florida','Georgia','Illinois','Massachusetts','Michigan','New York',
+    'Ohio','Texas','Washington'
+  ];
+
+  const IE_COUNTIES = [
+    'Carlow','Cavan','Clare','Cork','Donegal','Dublin','Galway','Kerry',
+    'Kildare','Kilkenny','Laois','Leitrim','Limerick','Longford','Louth',
+    'Mayo','Meath','Monaghan','Offaly','Roscommon','Sligo','Tipperary',
+    'Waterford','Westmeath','Wexford','Wicklow'
+  ];
 
   const mainPath = {
-    id: 'demo',
+    id: 'demo-v2',
     steps: [
       {
         id: 'name',
@@ -514,24 +527,53 @@
         canMoveNext: ({ data }) => (data.name || '').trim().length >= 2,
       },
       {
-        id: 'framework',
-        title: 'Framework',
-        canMoveNext: ({ data }) => !!data.framework,
+        id: 'country',
+        title: 'Country',
+        canMoveNext: ({ data }) => !!data.country,
       },
-      { id: 'subpath-demo', title: 'Sub-Paths' },
+      {
+        id: 'address',
+        title: 'Address',
+        select: ({ data }) => data.country === 'US' ? 'address-us' : 'address-ie',
+        steps: [
+          {
+            id: 'address-us',
+            title: 'US Address',
+            canMoveNext: ({ data }) => !!data.state,
+          },
+          {
+            id: 'address-ie',
+            title: 'Irish Address',
+            canMoveNext: ({ data }) => !!data.county,
+          },
+        ],
+      },
+      {
+        id: 'skip-toggle',
+        title: 'Conditional Steps',
+      },
+      {
+        id: 'optional',
+        title: 'Optional Step',
+        shouldSkip: ({ data }) => !!data.skipNext,
+      },
+      {
+        id: 'subwizard-intro',
+        title: 'Sub-Wizard',
+      },
       { id: 'done', title: 'Done' },
     ]
   };
 
   const subPath = {
-    id: 'sub',
+    id: 'sub-v2',
     steps: [
-      { id: 'sub-1', title: 'Sub Step 1' },
-      { id: 'sub-2', title: 'Sub Step 2' },
+      { id: 'sub-1', title: 'Sub-Wizard: Step 1' },
+      { id: 'sub-2', title: 'Sub-Wizard: Step 2' },
     ]
   };
 
-  // ── isDirty / resetStep (manual, mirrors v0.8.0 built-in) ────────────────
+  // ── isDirty / undo ────────────────────────────────────────────────────────
   let trackedStepId = null;
   let stepEntryData = {};
 
@@ -545,7 +587,7 @@
   }
 
   // ── Step content ──────────────────────────────────────────────────────────
-  function dirtyBar(isDirty, engine) {
+  function dirtyBar(isDirty) {
     if (!isDirty) return '';
     return `<div class="pw-demo__dirty">
       <span class="pw-demo__dirty-dot"></span> Changes made
@@ -553,47 +595,82 @@
     </div>`;
   }
 
-  function stepHTML(snap, isDirty, engine) {
-    const { stepId, data, nestingLevel } = snap;
+  function stepHTML(snap, isDirty) {
+    const { stepId, formId, data, nestingLevel } = snap;
+    const renderStepId = formId ?? stepId;
     const ftag = (t) => `<span class="pw-demo__ftag">${t}</span>`;
     const ptag = (t) => `<span class="pw-demo__ftag pw-demo__ftag--purple">${t}</span>`;
 
-    switch (stepId) {
+    switch (renderStepId) {
       case 'name': return `
-        <h3>Enter your name ${ftag('canMoveNext')}</h3>
-        <p>Next unlocks at 2+ characters. Your name is auto-saved to <strong>LocalStorage</strong> — close this tab and reopen it.</p>
+        <h3>Enter your name ${ftag('canMoveNext')} ${ftag('isDirty')}</h3>
+        <p>Next unlocks at 2+ characters. Edit your name and watch the <strong>Undo</strong> button appear — that's <code>isDirty</code> tracking. Your name is also saved to <strong>LocalStorage</strong> as you type.</p>
         <input class="pw-demo__input" id="demo-name" type="text"
                placeholder="Your name" value="${(data.name || '').replace(/"/g, '&quot;')}" autocomplete="off" />
         ${(data.name || '').trim().length > 0 && (data.name || '').trim().length < 2
           ? '<p class="pw-demo__hint">One more character…</p>' : ''}
         ${dirtyBar(isDirty)}`;
 
-      case 'framework': return `
-        <h3>Choose a framework ${ftag('canMoveNext')}</h3>
-        <p>Your progress is saved automatically. Close and reopen this tab — you'll land right here.</p>
+      case 'country': return `
+        <h3>Select your country ${ftag('canMoveNext')}</h3>
+        <p>Your choice here determines which address form appears next. That's <strong>StepChoice</strong> — a single slot in the path that selects between multiple inner steps at runtime.</p>
         <div class="pw-demo__chips">
-          ${['React','Vue','Angular','Svelte'].map(f =>
-            `<button class="pw-demo__chip${data.framework === f.toLowerCase() ? ' selected' : ''}" data-fw="${f.toLowerCase()}">${f}</button>`
-          ).join('')}
+          <button class="pw-demo__chip${data.country === 'US' ? ' selected' : ''}" data-country="US">🇺🇸 United States</button>
+          <button class="pw-demo__chip${data.country === 'IE' ? ' selected' : ''}" data-country="IE">🇮🇪 Ireland</button>
         </div>
         ${dirtyBar(isDirty)}`;
 
-      case 'subpath-demo': return `
-        <h3>Sub-Paths ${ptag('level ' + nestingLevel)}</h3>
-        <p>Hi <strong>${data.name || 'there'}</strong>! Launch a nested flow — the parent pauses and auto-resumes on completion.</p>
-        <button class="pw-demo__action" id="start-sub">Launch sub-path →</button>`;
+      case 'address-us': return `
+        <h3>US Address ${ftag('StepChoice')} ${ftag('canMoveNext')}</h3>
+        <p>You're here because you selected <strong>United States</strong>. The path definition has a single <code>StepChoice</code> slot containing both this form and an Irish one — the engine activated this one. The Irish form never ran.</p>
+        <select class="pw-demo__input" id="demo-state">
+          <option value="">Select a state…</option>
+          ${US_STATES.map(s => `<option value="${s}"${data.state === s ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+        ${dirtyBar(isDirty)}`;
+
+      case 'address-ie': return `
+        <h3>Irish Address ${ftag('StepChoice')} ${ftag('canMoveNext')}</h3>
+        <p>You're here because you selected <strong>Ireland</strong>. The path definition has a single <code>StepChoice</code> slot containing both this form and a US one — the engine activated this one. The US form never ran.</p>
+        <select class="pw-demo__input" id="demo-county">
+          <option value="">Select a county…</option>
+          ${IE_COUNTIES.map(c => `<option value="${c}"${data.county === c ? ' selected' : ''}>${c}</option>`).join('')}
+        </select>
+        ${dirtyBar(isDirty)}`;
+
+      case 'skip-toggle': return `
+        <h3>Conditional steps ${ftag('shouldSkip')}</h3>
+        <p>The next step has a <code>shouldSkip</code> guard that reads from your data. Check the box and the engine will silently remove that step from the flow — the stepper updates automatically.</p>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.95rem;margin-top:0.5rem">
+          <input type="checkbox" id="demo-skip" ${data.skipNext ? 'checked' : ''}
+                 style="width:18px;height:18px;cursor:pointer;accent-color:var(--color-primary)" />
+          Skip the next step
+        </label>`;
+
+      case 'optional': return `
+        <h3>You chose not to skip ${ftag('shouldSkip')}</h3>
+        <p>Because you left the checkbox unchecked, <code>shouldSkip</code> returned <code>false</code> and this step remained in the flow. Go back, check the box, and click Next — this step will disappear entirely.</p>`;
+
+      case 'subwizard-intro': return `
+        <h3>Sub-wizards ${ptag('startSubPath')}</h3>
+        <p>A sub-wizard is a nested path launched from within the current flow. The parent path is <strong>paused and pushed onto a stack</strong>. When the sub-wizard completes or is cancelled, the engine automatically pops the parent and resumes exactly where it left off — no wiring needed.</p>
+        <p>The full stack, including the parent's position and data, is persisted to <strong>LocalStorage</strong>.</p>
+        <button class="pw-demo__action" id="start-sub">Launch sub-wizard →</button>`;
 
       case 'sub-1': return `
-        <h3>Sub-Path: Step 1 ${ptag('level ' + nestingLevel)}</h3>
-        <p>You're inside a nested path. The parent wizard is paused on the stack — and the entire state, including the stack, is persisted to LocalStorage. Complete or cancel this sub-path (even after closing the browser) and the parent will be right where you left it.</p>`;
+        <h3>Sub-wizard: step 1 ${ptag('level ' + nestingLevel)}</h3>
+        <p>You're inside a nested path. The parent is paused on the stack at <em>Sub-Wizard</em>. Type something in the box below, then <strong>close this browser tab and reopen it</strong>. Your text, your position in the sub-wizard, and the paused parent will all be exactly as you left them.</p>
+        <textarea class="pw-demo__input" id="demo-notes"
+                  style="height:90px;resize:vertical;font-family:inherit;line-height:1.5"
+                  placeholder="Type something, then close the browser and come back…">${(data.notes || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
 
       case 'sub-2': return `
-        <h3>Sub-Path: Step 2</h3>
-        <p><strong>Next</strong> completes the sub-path and returns to the parent automatically.</p>`;
+        <h3>Sub-wizard: step 2 ${ptag('level ' + nestingLevel)}</h3>
+        <p>Clicking <strong>Next</strong> will complete this sub-wizard. The engine will automatically pop the parent path off the stack and resume it at the <em>Done</em> step — no code needed on your part. This is the sub-wizard's entire contribution to the codebase: a plain path definition with two steps.</p>`;
 
       case 'done': return `
-        <h3>Complete, ${data.name || 'friend'}!</h3>
-        <p>You just walked through guards, dirty tracking, localStorage persistence, and sub-paths — all from <strong>@daltonr/pathwrite-core</strong>.</p>
+        <h3>That was a live engine — not a mockup 🎉</h3>
+        <p>Hi <strong>${(data.name || 'there').replace(/</g,'&lt;')}</strong>! You just walked through every major Pathwrite feature: guards, dirty tracking with undo, <strong>StepChoice</strong>, conditional steps via <code>shouldSkip</code>, a nested sub-wizard, and LocalStorage persistence — all powered by a single <code>PathEngine</code> instance with zero framework dependencies.</p>
         <button class="pw-demo__action" id="restart-btn">↩ Start over</button>`;
 
       default: return `<h3>${snap.stepTitle}</h3>`;
@@ -605,8 +682,20 @@
     document.getElementById('demo-name')?.addEventListener('input', e =>
       engine.setData('name', e.target.value)
     );
-    document.querySelectorAll('[data-fw]').forEach(btn =>
-      btn.addEventListener('click', () => engine.setData('framework', btn.dataset.fw))
+    document.querySelectorAll('[data-country]').forEach(btn =>
+      btn.addEventListener('click', () => engine.setData('country', btn.dataset.country))
+    );
+    document.getElementById('demo-state')?.addEventListener('change', e =>
+      engine.setData('state', e.target.value)
+    );
+    document.getElementById('demo-county')?.addEventListener('change', e =>
+      engine.setData('county', e.target.value)
+    );
+    document.getElementById('demo-skip')?.addEventListener('change', e =>
+      engine.setData('skipNext', e.target.checked)
+    );
+    document.getElementById('demo-notes')?.addEventListener('input', e =>
+      engine.setData('notes', e.target.value)
     );
     document.getElementById('start-sub')?.addEventListener('click', () =>
       engine.startSubPath(subPath, {})
@@ -627,21 +716,28 @@
     const prevBtn = document.getElementById('pw-prev');
     const nextBtn = document.getElementById('pw-next');
 
-    // Track step entry for isDirty
-    if (snap && snap.stepId !== trackedStepId) {
-      trackedStepId = snap.stepId;
+    // Track step entry for isDirty — use formId when on a StepChoice
+    const currentStepId = snap ? (snap.formId ?? snap.stepId) : null;
+    if (snap && currentStepId !== trackedStepId) {
+      trackedStepId = currentStepId;
       stepEntryData = { ...(snap.data || {}) };
     }
 
     const isDirty = computeIsDirty(snap);
 
     // Header tag
+    const renderStepId = snap ? (snap.formId ?? snap.stepId) : null;
     document.getElementById('pw-tag').textContent =
       !snap ? 'done' :
-      snap.nestingLevel > 0 ? 'sub-path' :
-      snap.stepId === 'name' ? 'guard + dirty' :
-      snap.stepId === 'framework' ? 'guard + persist' :
-      snap.stepId === 'subpath-demo' ? 'sub-paths' : 'steps';
+      snap.nestingLevel > 0 ? 'sub-wizard' :
+      renderStepId === 'name'         ? 'guard + dirty' :
+      renderStepId === 'country'      ? 'StepChoice' :
+      renderStepId === 'address-us'   ? 'StepChoice' :
+      renderStepId === 'address-ie'   ? 'StepChoice' :
+      renderStepId === 'skip-toggle'  ? 'shouldSkip' :
+      renderStepId === 'optional'     ? 'shouldSkip' :
+      renderStepId === 'subwizard-intro' ? 'sub-wizard' :
+      renderStepId === 'done'         ? 'done' : 'steps';
 
     if (!snap) {
       document.getElementById('pw-step-label').textContent = 'Done';
@@ -650,7 +746,7 @@
       if (nextBtn) nextBtn.style.display = 'none';
       document.getElementById('pw-body').innerHTML = `
         <h3>Complete!</h3>
-        <p>Guards, dirty tracking, persistence, sub-paths — all from one engine.</p>
+        <p>Guards, dirty tracking, StepChoice, conditional steps, sub-wizards, persistence — all from one engine.</p>
         <button class="pw-demo__action" id="restart-btn">↩ Start over</button>`;
       wireBodyEvents(engine);
       return;
@@ -671,7 +767,7 @@
     const selStart = document.activeElement?.selectionStart;
     const selEnd = document.activeElement?.selectionEnd;
 
-    document.getElementById('pw-body').innerHTML = stepHTML(snap, isDirty, engine);
+    document.getElementById('pw-body').innerHTML = stepHTML(snap, isDirty);
     wireBodyEvents(engine);
 
     if (focusedId) {
@@ -687,9 +783,9 @@
     // Nav buttons
     if (prevBtn) prevBtn.disabled = snap.isFirstStep && snap.nestingLevel === 0;
     if (nextBtn) {
-      nextBtn.style.display = snap.stepId === 'done' ? 'none' : '';
+      nextBtn.style.display = renderStepId === 'done' ? 'none' : '';
       nextBtn.disabled = !snap.canMoveNext;
-      nextBtn.textContent = snap.isLastStep ? 'Finish' : 'Next \u2192';
+      nextBtn.textContent = snap.isLastStep ? 'Finish ✓' : 'Next \u2192';
     }
   }
 
