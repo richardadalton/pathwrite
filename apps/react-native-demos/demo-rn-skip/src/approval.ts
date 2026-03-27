@@ -16,14 +16,10 @@ export const INITIAL_DATA: DocumentData = {
   approvalResults: {},
 };
 
-// ── Approval subwizard (one per approver) ────────────────────────────────────
 export const approvalSubPath: PathDefinition<ApprovalData> = {
   id: "approval",
   steps: [
-    {
-      id: "view-document",
-      title: "Review Document",
-    },
+    { id: "view-document", title: "Review Document" },
     {
       id: "decision",
       title: "Your Decision",
@@ -34,7 +30,6 @@ export const approvalSubPath: PathDefinition<ApprovalData> = {
   ],
 };
 
-// ── Main approval workflow ───────────────────────────────────────────────────
 export const approvalWorkflowPath: PathDefinition<DocumentData> = {
   id: "approval-workflow",
   steps: [
@@ -42,25 +37,20 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       id: "create-document",
       title: "Create Document",
       fieldErrors: ({ data }) => ({
-        title:       !data.title?.trim()       ? "Document title is required." : undefined,
-        description: !data.description?.trim() ? "Description is required."   : undefined,
+        title:       !data.title?.toString().trim()       ? "Document title is required." : undefined,
+        description: !data.description?.toString().trim() ? "Description is required."   : undefined,
       }),
     },
     {
       id: "select-approvers",
       title: "Select Approvers",
       fieldErrors: ({ data }) => ({
-        approvers: !(data.approvers as string[])?.length
-          ? "Select at least one approver."
-          : undefined,
+        approvers: !(data.approvers as string[])?.length ? "Select at least one approver." : undefined,
       }),
     },
     {
       id: "approval-review",
       title: "Awaiting Approvals",
-      // Gate: Next is blocked until every selected approver has decided.
-      // Because canMoveNext is not defined, the engine derives it from
-      // fieldErrors — no messages means canMoveNext is true.
       fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
         const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
@@ -70,8 +60,6 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
             : undefined,
         };
       },
-      // Called automatically when any approval subwizard completes.
-      // Records the approver's decision back into the parent path's data.
       onSubPathComplete(_subPathId, subPathData, ctx, meta) {
         const approverId = meta?.approverId as string;
         const existing = (ctx.data.approvalResults ?? {}) as Record<string, ApproverResult>;
@@ -86,10 +74,6 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
         };
       },
     },
-    {
-      id: "summary",
-      title: "Summary",
-    },
+    { id: "summary", title: "Summary" },
   ],
 };
-

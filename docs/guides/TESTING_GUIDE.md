@@ -598,6 +598,23 @@ it("reactive snapshot updates on next()", async () => {
 
 ---
 
+---
+
+## 10. Property-Based Testing
+
+In addition to the example-based tests above, `packages/core` has a second test file that uses [fast-check](https://fast-check.dev) to verify structural invariants across randomly-generated path configurations and action sequences.
+
+Property tests check things like: "for *any* path shape, `stepIndex` is always within bounds after *any* sequence of next/previous". They complement example tests rather than replacing them — example tests document specific behaviours, property tests check that invariants hold under adversarial inputs.
+
+See **[PROPERTY_BASED_TESTING.md](./PROPERTY_BASED_TESTING.md)** for:
+- The full list of properties being tested and what each one would catch
+- Findings from the first run (including what fast-check found and shrunk automatically)
+- How the arbitraries are structured
+- What is not yet covered
+- How to apply property testing to your own `PathDefinition` workflows, with patterns and findings from the Pathwrite demo apps (`packages/core/test/workflow-demos.properties.test.ts`)
+
+---
+
 ## Summary
 
 | What you're testing | How | UI needed? |

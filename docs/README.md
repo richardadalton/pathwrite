@@ -11,6 +11,8 @@ This directory contains all documentation and guides for the Pathwrite project.
 Comprehensive guides for developers using and contributing to Pathwrite:
 
 - **[DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md)** - Main developer documentation
+- **[TESTING_GUIDE.md](guides/TESTING_GUIDE.md)** - How to test forms, steps, wizards, and sub-wizards without UI
+- **[PROPERTY_BASED_TESTING.md](guides/PROPERTY_BASED_TESTING.md)** - Property-based tests for the core engine: invariants, findings, and fast-check setup
 - **[BEYOND_WIZARDS.md](guides/BEYOND_WIZARDS.md)** - Using Pathwrite beyond multi-step forms
 - **[COMPETITIVE_ANALYSIS.md](guides/COMPETITIVE_ANALYSIS.md)** - How Pathwrite compares to alternatives
 - **[AUTO_PERSISTENCE_SUMMARY.md](guides/AUTO_PERSISTENCE_SUMMARY.md)** - Auto-persistence feature implementation details
@@ -19,6 +21,10 @@ Comprehensive guides for developers using and contributing to Pathwrite:
 - **[HTTP_STORE_STATUS.md](guides/HTTP_STORE_STATUS.md)** - HTTP store implementation status
 - **[PUBLISHING.md](guides/PUBLISHING.md)** - Publishing and release process
 - **[DEMO_SMOKE_TESTS.md](guides/DEMO_SMOKE_TESTS.md)** - Smoke test all demo startup scripts
+- **[WORKFLOWS_AS_ARTIFACTS.md](guides/WORKFLOWS_AS_ARTIFACTS.md)** - Workflows as first-class versioned artifacts: architecture, testing, and versioning independent of any UI framework
+- **[ASYNC_GUARDS_AND_SERVICES.md](guides/ASYNC_GUARDS_AND_SERVICES.md)** - Async guards, external services in workflows, and the factory pattern for injecting dependencies (planned, unverified)
+- **[CONNASCENCE_AND_TYPES.md](guides/CONNASCENCE_AND_TYPES.md)** - Assessment of coupling between workflow definitions and UI: what is unavoidable, what is improvable, and a typed step pattern that makes the compiler enforce the contract
+- **[OFFLINE_WORKFLOWS.md](guides/OFFLINE_WORKFLOWS.md)** - Offline-first workflows using the PathServices abstraction: reference data caching, captured data persistence, sync on reconnect, and the structural equivalence of mock and offline services
 
 ---
 

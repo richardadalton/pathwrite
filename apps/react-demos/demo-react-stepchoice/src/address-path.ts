@@ -1,4 +1,4 @@
-import type { PathDefinition } from "@daltonr/pathwrite-react";
+import type { PathDefinition } from "@daltonr/pathwrite-core";
 
 export interface AddressData {
   // Step 1

@@ -1,4 +1,4 @@
-import type { PathDefinition, PathStepContext } from "@daltonr/pathwrite-vue";
+import type { PathDefinition, PathStepContext } from "@daltonr/pathwrite-core";
 import { TOPIC_IDS, TOPICS, type TopicId } from "./topics";
 
 export type CourseData = {

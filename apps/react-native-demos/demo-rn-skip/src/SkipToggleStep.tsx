@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, Switch, StyleSheet } from "react-native";
 import { usePathContext } from "@daltonr/pathwrite-react-native";
-import type { DemoData } from "./skip-path";
+import type { DemoData } from "./demo-path";
 
 export function SkipToggleStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
-  const skipOptional = snapshot?.data.skipOptional ?? false;
+  const skipOptional = snapshot.data.skipNext ?? false;
 
   return (
     <View style={styles.container}>
@@ -28,7 +28,7 @@ export function SkipToggleStep() {
         </View>
         <Switch
           value={skipOptional}
-          onValueChange={(value) => setData("skipOptional", value)}
+          onValueChange={(value) => setData("skipNext", value)}
           trackColor={{ false: "#e5e7eb", true: "#818cf8" }}
           thumbColor={skipOptional ? "#6366f1" : "#9ca3af"}
         />

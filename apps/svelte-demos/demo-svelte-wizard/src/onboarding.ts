@@ -1,4 +1,4 @@
-import type { PathDefinition } from "@daltonr/pathwrite-svelte";
+import type { PathDefinition } from "@daltonr/pathwrite-core";
 
 export interface OnboardingData {
   firstName: string;

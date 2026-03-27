@@ -1,9 +1,11 @@
 import {
   createContext,
   createElement,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
+  useImperativeHandle,
   useRef,
   useSyncExternalStore,
 } from "react";
@@ -15,6 +17,8 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import type { StyleProp, ViewStyle, TextStyle } from "react-native";
 import {
@@ -163,17 +167,22 @@ export function PathProvider({ children, onEvent }: PathProviderProps): ReactEle
  * Access the nearest `PathProvider`'s path instance.
  * Throws if used outside of a `<PathProvider>`.
  */
-export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
+export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  return ctx as UsePathReturn<TData>;
+  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> };
 }
 
 // ---------------------------------------------------------------------------
 // PathShell — React Native UI
 // ---------------------------------------------------------------------------
+
+export interface PathShellHandle {
+  /** Restart the shell's current path with its original `initialData`, without unmounting. */
+  restart: () => void;
+}
 
 export interface PathShellActions {
   next: () => void;
@@ -227,6 +236,12 @@ export interface PathShellProps {
   renderFooter?: (snapshot: PathSnapshot, actions: PathShellActions) => ReactNode;
   /** Style override for the root container. */
   style?: StyleProp<ViewStyle>;
+  /**
+   * Passed to the internal `KeyboardAvoidingView`. Use this to account for
+   * any header or navigation bar above the shell (e.g. a React Navigation header).
+   * Defaults to `0`.
+   */
+  keyboardVerticalOffset?: number;
 }
 
 /**
@@ -245,7 +260,7 @@ export interface PathShellProps {
  * />
  * ```
  */
-export function PathShell({
+export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell({
   path: pathDef,
   engine: externalEngine,
   steps,
@@ -264,7 +279,8 @@ export function PathShell({
   renderHeader,
   renderFooter,
   style,
-}: PathShellProps): ReactElement {
+  keyboardVerticalOffset = 0,
+}: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
     onEvent(event) {
@@ -275,6 +291,10 @@ export function PathShell({
   });
 
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+
+  useImperativeHandle(ref, () => ({
+    restart: () => restart(pathDef, initialData),
+  }));
 
   const startedRef = useRef(false);
   useEffect(() => {
@@ -324,7 +344,11 @@ export function PathShell({
 
   return (
     <PathContext.Provider value={pathReturn}>
-      <View style={[styles.shell, style]}>
+      <KeyboardAvoidingView
+        style={[styles.shell, style]}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={keyboardVerticalOffset}
+      >
         {/* Header — progress dots or custom */}
         {showProgress && (
           renderHeader
@@ -428,10 +452,10 @@ export function PathShell({
             </View>
           )
         }
-      </View>
+      </KeyboardAvoidingView>
     </PathContext.Provider>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

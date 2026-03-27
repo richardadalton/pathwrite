@@ -1,4 +1,4 @@
-import type { PathDefinition } from "@daltonr/pathwrite-svelte";
+import type { PathDefinition } from "@daltonr/pathwrite-core";
 import type { DocumentData, ApprovalData, ApproverResult } from "./types";
 
 export const AVAILABLE_APPROVERS = [

@@ -1,4 +1,4 @@
-import type { PathDefinition, FieldErrors } from "@daltonr/pathwrite-vue";
+import type { PathDefinition, FieldErrors } from "@daltonr/pathwrite-core";
 
 export interface ContactData {
   name: string;

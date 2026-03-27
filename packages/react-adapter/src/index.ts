@@ -1,9 +1,11 @@
 import {
   createContext,
   createElement,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
+  useImperativeHandle,
   useRef,
   useSyncExternalStore
 } from "react";
@@ -187,12 +189,12 @@ export function PathProvider({ children, onEvent }: PathProviderProps): ReactEle
  * The optional generic narrows `snapshot.data` for convenience — it is a
  * **type-level assertion**, not a runtime guarantee.
  */
-export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
+export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  return ctx as UsePathReturn<TData>;
+  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> };
 }
 
 // ---------------------------------------------------------------------------
@@ -272,6 +274,11 @@ export interface PathShellProps {
   progressLayout?: ProgressLayout;
 }
 
+export interface PathShellHandle {
+  /** Restart the shell's current path with its original `initialData`, without unmounting. */
+  restart: () => void;
+}
+
 export interface PathShellActions {
   next: () => void;
   previous: () => void;
@@ -299,7 +306,7 @@ export interface PathShellActions {
  * />
  * ```
  */
-export function PathShell({
+export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell({
   path: pathDef,
   engine: externalEngine,
   steps,
@@ -320,7 +327,7 @@ export function PathShell({
   renderFooter,
   validationDisplay = "inline",
   progressLayout = "merged",
-}: PathShellProps): ReactElement {
+}: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
     onEvent(event) {
@@ -331,6 +338,10 @@ export function PathShell({
   });
 
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+
+  useImperativeHandle(ref, () => ({
+    restart: () => restart(pathDef, initialData),
+  }));
 
   // Auto-start on mount — skipped when an external engine is provided since
   // the caller is responsible for starting it (e.g. via createPersistedEngine).
@@ -412,7 +423,7 @@ export function PathShell({
           })
     )
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Root progress (compact top-level bar visible during sub-paths)

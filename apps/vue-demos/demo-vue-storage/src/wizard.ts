@@ -1,4 +1,4 @@
-import type { PathData, PathDefinition } from "@daltonr/pathwrite-vue";
+import type { PathData, PathDefinition } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Data shapes

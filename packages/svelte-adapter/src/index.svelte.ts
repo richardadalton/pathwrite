@@ -172,7 +172,7 @@ export function usePath<TData extends PathData = PathData>(
 const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
 
 export interface PathContext<TData extends PathData = PathData> {
-  readonly snapshot: PathSnapshot<TData> | null;
+  readonly snapshot: PathSnapshot<TData>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
   cancel: () => Promise<void>;

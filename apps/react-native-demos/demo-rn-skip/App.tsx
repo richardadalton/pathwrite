@@ -1,21 +1,22 @@
-import React, { useState } from "react";
+import React, { useRef } from "react";
 import { SafeAreaView, StyleSheet, View, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { PathShell } from "@daltonr/pathwrite-react-native";
-import { skipPath, INITIAL_DATA } from "./src/skip-path";
-import { NameStep } from "./src/NameStep";
-import { SkipToggleStep } from "./src/SkipToggleStep";
-import { OptionalStep } from "./src/OptionalStep";
-import { DoneStep } from "./src/DoneStep";
+import type { PathShellHandle } from "@daltonr/pathwrite-react-native";
+import { mainPath, INITIAL_DATA } from "./src/demo-path";
+import { NameStep }            from "./src/NameStep";
+import { CountryStep }         from "./src/CountryStep";
+import { AddressUSStep }       from "./src/AddressUSStep";
+import { AddressIEStep }       from "./src/AddressIEStep";
+import { SkipToggleStep }      from "./src/SkipToggleStep";
+import { OptionalStep }        from "./src/OptionalStep";
+import { SubwizardIntroStep }  from "./src/SubwizardIntroStep";
+import { SubStep1 }            from "./src/SubStep1";
+import { SubStep2 }            from "./src/SubStep2";
+import { DoneStep }            from "./src/DoneStep";
 
 export default function App() {
-  const [completed, setCompleted] = useState(false);
-  const [restartKey, setRestartKey] = useState(0);
-
-  function handleRestart() {
-    setCompleted(false);
-    setRestartKey((k) => k + 1);
-  }
+  const shellRef = useRef<PathShellHandle>(null);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -23,20 +24,27 @@ export default function App() {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Pathwrite</Text>
-        <Text style={styles.headerSub}>Conditional Steps — React Native Demo</Text>
+        <Text style={styles.headerSub}>Full Feature Demo — React Native</Text>
       </View>
 
       <View style={styles.card}>
         <PathShell
-          key={restartKey}
-          path={skipPath}
+          ref={shellRef}
+          path={mainPath}
           initialData={INITIAL_DATA}
-          onComplete={() => setCompleted(true)}
+          completeLabel="Finish ✓"
+          onComplete={() => shellRef.current?.restart()}
           steps={{
-            name:         <NameStep />,
-            "skip-toggle": <SkipToggleStep />,
-            optional:     <OptionalStep />,
-            done:         <DoneStep onRestart={handleRestart} />,
+            "name":             <NameStep />,
+            "country":          <CountryStep />,
+            "address-us":       <AddressUSStep />,
+            "address-ie":       <AddressIEStep />,
+            "skip-toggle":      <SkipToggleStep />,
+            "optional":         <OptionalStep />,
+            "subwizard-intro":  <SubwizardIntroStep />,
+            "sub-1":            <SubStep1 />,
+            "sub-2":            <SubStep2 />,
+            "done":             <DoneStep />,
           }}
         />
       </View>

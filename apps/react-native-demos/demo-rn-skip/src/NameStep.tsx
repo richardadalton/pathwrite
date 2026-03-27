@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { usePathContext } from "@daltonr/pathwrite-react-native";
-import type { DemoData } from "./skip-path";
+import type { DemoData } from "./demo-path";
 
 export function NameStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
-  const name = snapshot?.data.name ?? "";
+  const name = snapshot.data.name ?? "";
 
   return (
     <View style={styles.container}>

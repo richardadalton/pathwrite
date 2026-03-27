@@ -147,12 +147,12 @@ const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
  * The optional generic narrows `snapshot.data` for convenience — it is a
  * **type-level assertion**, not a runtime guarantee.
  */
-export function usePathContext<TData extends PathData = PathData>(): UsePathReturn<TData> {
+export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> } {
   const ctx = inject(PathInjectionKey, null);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a PathShell component.");
   }
-  return ctx as UsePathReturn<TData>;
+  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> };
 }
 
 // ---------------------------------------------------------------------------
