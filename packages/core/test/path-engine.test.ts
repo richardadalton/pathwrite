@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PathData, PathDefinition, PathEngine, PathEvent, matchesStrategy } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine, PathEvent, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -2832,8 +2832,288 @@ describe("PathEngine — exportState / fromState", () => {
 
     const engine2 = PathEngine.fromState(state, { parent, sub });
     await engine2.cancel();
-    
+
     expect(engine2.snapshot()?.pathId).toBe("parent");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// StepChoice — conditional step selection
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — StepChoice", () => {
+  it("exposes formId on the snapshot when a StepChoice is active", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          select: () => "individual",
+          steps: [{ id: "individual" }, { id: "company" }],
+        } satisfies StepChoice,
+      ],
+    });
+    expect(engine.snapshot()?.stepId).toBe("contact");
+    expect(engine.snapshot()?.formId).toBe("individual");
+  });
+
+  it("formId is undefined for plain steps", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "main", steps: [{ id: "step1" }] });
+    expect(engine.snapshot()?.formId).toBeUndefined();
+  });
+
+  it("select receives snapshot data and picks the right step", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      {
+        id: "main",
+        steps: [
+          {
+            id: "contact",
+            select: ({ data }) => data.type === "company" ? "company" : "individual",
+            steps: [{ id: "individual" }, { id: "company" }],
+          } satisfies StepChoice,
+        ],
+      },
+      { type: "company" }
+    );
+    expect(engine.snapshot()?.formId).toBe("company");
+  });
+
+  it("throws when select returns an id not in steps", async () => {
+    const engine = new PathEngine();
+    await expect(
+      engine.start({
+        id: "main",
+        steps: [
+          {
+            id: "contact",
+            select: () => "nonexistent",
+            steps: [{ id: "individual" }],
+          } satisfies StepChoice,
+        ],
+      })
+    ).rejects.toThrow(/StepChoice "contact".select\(\) returned "nonexistent"/);
+  });
+
+  it("uses the inner step's title and meta; falls back to choice title/meta", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          title: "Contact (fallback)",
+          meta: { shared: true },
+          select: () => "individual",
+          steps: [{ id: "individual", title: "Individual details", meta: { form: "ind" } }],
+        } satisfies StepChoice,
+      ],
+    });
+    const snap = engine.snapshot()!;
+    expect(snap.stepTitle).toBe("Individual details");
+    expect(snap.stepMeta).toEqual({ form: "ind" });
+  });
+
+  it("falls back to choice title/meta when the inner step omits them", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          title: "Contact",
+          meta: { shared: true },
+          select: () => "individual",
+          steps: [{ id: "individual" }],
+        } satisfies StepChoice,
+      ],
+    });
+    const snap = engine.snapshot()!;
+    expect(snap.stepTitle).toBe("Contact");
+    expect(snap.stepMeta).toEqual({ shared: true });
+  });
+
+  it("uses the inner step's fieldErrors and auto-derives canMoveNext", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      {
+        id: "main",
+        steps: [
+          {
+            id: "contact",
+            select: () => "individual",
+            steps: [
+              {
+                id: "individual",
+                fieldErrors: ({ data }) => ({ name: !data.name ? "Required." : undefined }),
+              },
+            ],
+          } satisfies StepChoice,
+        ],
+      },
+      { name: "" }
+    );
+    expect(engine.snapshot()?.canMoveNext).toBe(false);
+    expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required." });
+
+    await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.canMoveNext).toBe(true);
+  });
+
+  it("uses the inner step's canMoveNext guard", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      {
+        id: "main",
+        steps: [
+          {
+            id: "contact",
+            select: () => "individual",
+            steps: [
+              { id: "individual", canMoveNext: ({ data }) => !!data.agreed },
+            ],
+          } satisfies StepChoice,
+          { id: "step2" },
+        ],
+      },
+      { agreed: false }
+    );
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("contact"); // blocked
+
+    await engine.setData("agreed", true);
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("calls the inner step's onEnter and onLeave hooks", async () => {
+    const onEnter = vi.fn().mockResolvedValue({ entered: true });
+    const onLeave = vi.fn().mockResolvedValue({ left: true });
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          select: () => "individual",
+          steps: [{ id: "individual", onEnter, onLeave }],
+        } satisfies StepChoice,
+        { id: "step2" },
+      ],
+    });
+    expect(onEnter).toHaveBeenCalledOnce();
+    expect(engine.snapshot()?.data).toMatchObject({ entered: true });
+
+    await engine.next();
+    expect(onLeave).toHaveBeenCalledOnce();
+    expect(engine.snapshot()?.data).toMatchObject({ left: true });
+  });
+
+  it("re-evaluates select when navigating back and data has changed", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      {
+        id: "main",
+        steps: [
+          { id: "step1" },
+          {
+            id: "contact",
+            select: ({ data }) => data.type === "company" ? "company" : "individual",
+            steps: [{ id: "individual" }, { id: "company" }],
+          } satisfies StepChoice,
+        ],
+      },
+      { type: "individual" }
+    );
+
+    await engine.next();
+    expect(engine.snapshot()?.formId).toBe("individual");
+
+    await engine.previous();
+    await engine.setData("type", "company");
+    await engine.next();
+    expect(engine.snapshot()?.formId).toBe("company");
+  });
+
+  it("exposes inner step's fieldWarnings on the snapshot", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          select: () => "individual",
+          steps: [
+            { id: "individual", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) },
+          ],
+        } satisfies StepChoice,
+      ],
+    });
+    expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
+  });
+
+  it("supports shouldSkip to bypass the entire choice slot", async () => {
+    const engine = new PathEngine();
+    await engine.start(
+      {
+        id: "main",
+        steps: [
+          { id: "step1" },
+          {
+            id: "contact",
+            shouldSkip: ({ data }) => !!data.skipContact,
+            select: () => "individual",
+            steps: [{ id: "individual" }],
+          } satisfies StepChoice,
+          { id: "step3" },
+        ],
+      },
+      { skipContact: true }
+    );
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step3");
+  });
+
+  it("restores the selected inner step correctly via fromState", async () => {
+    const path: PathDefinition = {
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          select: ({ data }) => data.mode === "company" ? "company" : "individual",
+          steps: [{ id: "individual" }, { id: "company" }],
+        } satisfies StepChoice,
+      ],
+    };
+
+    const engine1 = new PathEngine();
+    await engine1.start(path, { mode: "company" });
+    expect(engine1.snapshot()?.formId).toBe("company");
+
+    const engine2 = PathEngine.fromState(engine1.exportState()!, { main: path });
+    expect(engine2.snapshot()?.formId).toBe("company");
+  });
+
+  it("choice appears in the steps summary with its own id and title", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "main",
+      steps: [
+        { id: "step1", title: "Step 1" },
+        {
+          id: "contact",
+          title: "Contact Details",
+          select: () => "individual",
+          steps: [{ id: "individual" }],
+        } satisfies StepChoice,
+      ],
+    });
+    const summary = engine.snapshot()!.steps;
+    expect(summary[1].id).toBe("contact");
+    expect(summary[1].title).toBe("Contact Details");
   });
 });
 

@@ -276,8 +276,9 @@ export const PathShell = defineComponent({
         );
       }
 
-      // Resolve step content from named slot matching the current step ID
-      const stepSlot = slots[snap.stepId];
+      // Resolve step content — prefer formId (inner step id of a StepChoice) so
+      // consumers can register slots by inner step ids directly.
+      const stepSlot = (snap.formId ? slots[snap.formId] : undefined) ?? slots[snap.stepId];
       const stepContent = stepSlot ? stepSlot({ snapshot: snap }) : null;
 
       const showRoot = !props.hideProgress && !!snap.rootProgress && props.progressLayout !== "activeOnly";

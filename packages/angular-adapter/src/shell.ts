@@ -192,7 +192,8 @@ export class PathShellFooterDirective {
       <!-- Body — step content -->
       <div class="pw-shell__body">
         <ng-container *ngFor="let stepDir of stepDirectives">
-          <ng-container *ngIf="stepDir.stepId === s.stepId">
+          <!-- Match by formId first (inner step of a StepChoice), then stepId -->
+          <ng-container *ngIf="stepDir.stepId === (s.formId ?? s.stepId)">
             <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector"></ng-container>
           </ng-container>
         </ng-container>

@@ -38,7 +38,7 @@
     "directory": "packages/store-http"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.7.0"
+    "@daltonr/pathwrite-core": "^0.8.0"
   },
   "peerDependencies": {},
   "devDependencies": {

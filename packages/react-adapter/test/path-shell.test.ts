@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
+import { PathDefinition, PathSnapshot, StepChoice } from "@daltonr/pathwrite-core";
 import { PathShell, PathShellActions, usePathContext } from "../src/index";
 
 afterEach(() => cleanup());
@@ -585,6 +585,30 @@ describe("PathShell — footerLayout", () => {
     const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
     expect(leftButtons.length).toBe(0); // No back on first step in wizard mode
     expect(rightButtons.length).toBe(2); // Cancel + Next on right
+  });
+
+  it("renders inner step content when steps are keyed by inner step id (StepChoice)", async () => {
+    const path: PathDefinition = {
+      id: "test",
+      steps: [
+        {
+          id: "type-choice",
+          select: () => "type-b",
+          steps: [{ id: "type-a" }, { id: "type-b" }],
+        } satisfies StepChoice,
+      ],
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        steps: {
+          "type-a": createElement("div", null, "Form A"),
+          "type-b": createElement("div", null, "Form B"),
+        }
+      } as any))
+    );
+    expect(screen.getByText("Form B")).toBeTruthy();
+    expect(screen.queryByText("Form A")).toBeNull();
   });
 
   it("explicit form mode overrides auto-detection", async () => {

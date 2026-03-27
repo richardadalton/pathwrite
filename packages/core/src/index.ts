@@ -60,6 +60,46 @@ export interface PathStepContext<TData extends PathData = PathData> {
   readonly isFirstEntry: boolean;
 }
 
+/**
+ * A conditional step selection placed in a path's `steps` array in place of a
+ * single `PathStep`. When the engine reaches a `StepChoice` it calls `select`
+ * to decide which of the bundled `steps` to activate. The chosen step is then
+ * treated exactly like any other step — its hooks, guards, and validation all
+ * apply normally.
+ *
+ * `StepChoice` has its own `id` (used for progress tracking and `goToStep`)
+ * while `formId` on the snapshot exposes which inner step was selected, so the
+ * UI can render the right component.
+ *
+ * @example
+ * ```typescript
+ * {
+ *   id: "contact-details",
+ *   select: ({ data }) => data.accountType === "company" ? "company" : "individual",
+ *   steps: [
+ *     {
+ *       id: "individual",
+ *       fieldErrors: ({ data }) => ({ name: !data.name ? "Required." : undefined }),
+ *     },
+ *     {
+ *       id: "company",
+ *       fieldErrors: ({ data }) => ({ companyName: !data.companyName ? "Required." : undefined }),
+ *     },
+ *   ],
+ * }
+ * ```
+ */
+export interface StepChoice<TData extends PathData = PathData> {
+  id: string;
+  title?: string;
+  meta?: Record<string, unknown>;
+  /** Called on step entry. Return the `id` of the step to activate. Throws if the returned id is not found in `steps`. */
+  select: (ctx: PathStepContext<TData>) => string;
+  steps: PathStep<TData>[];
+  /** When `true`, the engine skips this choice slot entirely (same semantics as `PathStep.shouldSkip`). */
+  shouldSkip?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+}
+
 export interface PathStep<TData extends PathData = PathData> {
   id: string;
   title?: string;
@@ -137,7 +177,7 @@ export interface PathStep<TData extends PathData = PathData> {
 export interface PathDefinition<TData extends PathData = PathData> {
   id: string;
   title?: string;
-  steps: PathStep<TData>[];
+  steps: (PathStep<TData> | StepChoice<TData>)[];
   /**
    * Optional callback invoked when this path completes (i.e. the user
    * reaches the end of the last step). Receives the final path data.
@@ -194,6 +234,12 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   stepId: string;
   stepTitle?: string;
   stepMeta?: Record<string, unknown>;
+  /**
+   * The `id` of the selected inner `PathStep` when the current position in
+   * the path is a `StepChoice`. `undefined` for ordinary steps.
+   * Use this to decide which form component to render.
+   */
+  formId?: string;
   stepIndex: number;
   stepCount: number;
   progress: number;
@@ -390,6 +436,12 @@ interface ActivePath {
   stepEntryData: PathData;
   /** Timestamp (Date.now()) captured when the current step was entered. */
   stepEnteredAt: number;
+  /** The selected inner step when the current slot is a StepChoice. Cached on entry. */
+  resolvedChoiceStep?: PathStep;
+}
+
+function isStepChoice(item: PathStep | StepChoice): item is StepChoice {
+  return "select" in item && "steps" in item;
 }
 
 export class PathEngine {
@@ -475,6 +527,13 @@ export class PathEngine {
     };
 
     engine._isNavigating = state._isNavigating;
+
+    // Re-derive the selected inner step for any StepChoice slots (not serialized —
+    // always recomputed from current data on restore).
+    for (const stackItem of engine.pathStack) {
+      engine.cacheResolvedChoiceStep(stackItem);
+    }
+    engine.cacheResolvedChoiceStep(engine.activePath);
 
     return engine;
   }
@@ -622,7 +681,8 @@ export class PathEngine {
     }
 
     const active = this.activePath;
-    const step = this.getCurrentStep(active);
+    const item = this.getCurrentItem(active);
+    const effectiveStep = this.getEffectiveStep(active);
     const { steps } = active.definition;
     const stepCount = steps.length;
 
@@ -650,9 +710,10 @@ export class PathEngine {
 
     return {
       pathId: active.definition.id,
-      stepId: step.id,
-      stepTitle: step.title,
-      stepMeta: step.meta,
+      stepId: item.id,
+      stepTitle: effectiveStep.title ?? item.title,
+      stepMeta: effectiveStep.meta ?? item.meta,
+      formId: isStepChoice(item) ? effectiveStep.id : undefined,
       stepIndex: active.currentStepIndex,
       stepCount,
       progress: stepCount <= 1 ? 1 : active.currentStepIndex / (stepCount - 1),
@@ -672,10 +733,10 @@ export class PathEngine {
       rootProgress,
       isNavigating: this._isNavigating,
       hasAttemptedNext: this._hasAttemptedNext,
-      canMoveNext: this.evaluateCanMoveNextSync(step, active),
-      canMovePrevious: this.evaluateGuardSync(step.canMovePrevious, active),
-      fieldErrors: this.evaluateFieldMessagesSync(step.fieldErrors, active),
-      fieldWarnings: this.evaluateFieldMessagesSync(step.fieldWarnings, active),
+      canMoveNext: this.evaluateCanMoveNextSync(effectiveStep, active),
+      canMovePrevious: this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
+      fieldErrors: this.evaluateFieldMessagesSync(effectiveStep.fieldErrors, active),
+      fieldWarnings: this.evaluateFieldMessagesSync(effectiveStep.fieldWarnings, active),
       isDirty: this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
       data: { ...active.data }
@@ -780,7 +841,7 @@ export class PathEngine {
     this.emitStateChanged("next");
 
     try {
-      const step = this.getCurrentStep(active);
+      const step = this.getEffectiveStep(active);
 
       if (await this.canMoveNext(active, step)) {
         this.applyPatch(await this.leaveCurrentStep(active, step));
@@ -817,7 +878,7 @@ export class PathEngine {
     this.emitStateChanged("previous");
 
     try {
-      const step = this.getCurrentStep(active);
+      const step = this.getEffectiveStep(active);
 
       if (await this.canMovePrevious(active, step)) {
         this.applyPatch(await this.leaveCurrentStep(active, step));
@@ -849,7 +910,7 @@ export class PathEngine {
     this.emitStateChanged("goToStep");
 
     try {
-      const currentStep = this.getCurrentStep(active);
+      const currentStep = this.getEffectiveStep(active);
       this.applyPatch(await this.leaveCurrentStep(active, currentStep));
 
       active.currentStepIndex = targetIndex;
@@ -871,7 +932,7 @@ export class PathEngine {
     this.emitStateChanged("goToStepChecked");
 
     try {
-      const currentStep = this.getCurrentStep(active);
+      const currentStep = this.getEffectiveStep(active);
       const goingForward = targetIndex > active.currentStepIndex;
       const allowed = goingForward
         ? await this.canMoveNext(active, currentStep)
@@ -909,13 +970,14 @@ export class PathEngine {
       const parent = this.activePath;
 
       if (parent) {
-        const parentStep = this.getCurrentStep(parent);
+        const parentItem = this.getCurrentItem(parent);
+        const parentStep = this.getEffectiveStep(parent);
         if (parentStep.onSubPathCancel) {
           const ctx: PathStepContext = {
             pathId: parent.definition.id,
-            stepId: parentStep.id,
+            stepId: parentItem.id,
             data: { ...parent.data },
-            isFirstEntry: !parent.visitedStepIds.has(parentStep.id)
+            isFirstEntry: !parent.visitedStepIds.has(parentItem.id)
           };
           this.applyPatch(
             await parentStep.onSubPathCancel(cancelledPathId, cancelledData, ctx, cancelledMeta)
@@ -942,14 +1004,15 @@ export class PathEngine {
       // The meta is stored on the parent, not the sub-path
       const finishedMeta = parent.subPathMeta;
       this.activePath = parent;
-      const parentStep = this.getCurrentStep(parent);
+      const parentItem = this.getCurrentItem(parent);
+      const parentStep = this.getEffectiveStep(parent);
 
       if (parentStep.onSubPathComplete) {
         const ctx: PathStepContext = {
           pathId: parent.definition.id,
-          stepId: parentStep.id,
+          stepId: parentItem.id,
           data: { ...parent.data },
-          isFirstEntry: !parent.visitedStepIds.has(parentStep.id)
+          isFirstEntry: !parent.visitedStepIds.has(parentItem.id)
         };
         this.applyPatch(
           await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta)
@@ -999,8 +1062,61 @@ export class PathEngine {
     this.emit({ type: "stateChanged", cause, snapshot: this.snapshot()! });
   }
 
-  private getCurrentStep(active: ActivePath): PathStep {
+  /** Returns the raw item at the current index — either a PathStep or a StepChoice. */
+  private getCurrentItem(active: ActivePath): PathStep | StepChoice {
     return active.definition.steps[active.currentStepIndex];
+  }
+
+  /**
+   * Calls `StepChoice.select` and caches the chosen inner step in
+   * `active.resolvedChoiceStep`. Clears the cache when the current item is a
+   * plain `PathStep`. Throws if `select` returns an id not present in `steps`.
+   */
+  private cacheResolvedChoiceStep(active: ActivePath): void {
+    const item = this.getCurrentItem(active);
+    if (!isStepChoice(item)) {
+      active.resolvedChoiceStep = undefined;
+      return;
+    }
+    const ctx: PathStepContext = {
+      pathId: active.definition.id,
+      stepId: item.id,
+      data: { ...active.data },
+      isFirstEntry: !active.visitedStepIds.has(item.id)
+    };
+    let selectedId: string;
+    try {
+      selectedId = item.select(ctx);
+    } catch (err) {
+      throw new Error(
+        `[pathwrite] StepChoice "${item.id}".select() threw an error: ${err}`
+      );
+    }
+    const found = item.steps.find((s) => s.id === selectedId);
+    if (!found) {
+      throw new Error(
+        `[pathwrite] StepChoice "${item.id}".select() returned "${selectedId}" ` +
+        `but no step with that id exists in its steps array.`
+      );
+    }
+    active.resolvedChoiceStep = found;
+  }
+
+  /**
+   * Returns the effective `PathStep` for the current position. When the
+   * current item is a `StepChoice`, returns the cached resolved inner step.
+   * When it is a plain `PathStep`, returns it directly.
+   */
+  private getEffectiveStep(active: ActivePath): PathStep {
+    if (active.resolvedChoiceStep) return active.resolvedChoiceStep;
+    const item = this.getCurrentItem(active);
+    if (isStepChoice(item)) {
+      // resolvedChoiceStep should always be set after enterCurrentStep; this
+      // branch is a defensive fallback (e.g. during fromState restore).
+      this.cacheResolvedChoiceStep(active);
+      return active.resolvedChoiceStep!;
+    }
+    return item;
   }
 
   private applyPatch(patch: Partial<PathData> | void | null | undefined): void {
@@ -1020,15 +1136,15 @@ export class PathEngine {
       active.currentStepIndex >= 0 &&
       active.currentStepIndex < active.definition.steps.length
     ) {
-      const step = active.definition.steps[active.currentStepIndex];
-      if (!step.shouldSkip) break;
+      const item = active.definition.steps[active.currentStepIndex];
+      if (!item.shouldSkip) break;
       const ctx: PathStepContext = {
         pathId: active.definition.id,
-        stepId: step.id,
+        stepId: item.id,
         data: { ...active.data },
-        isFirstEntry: !active.visitedStepIds.has(step.id)
+        isFirstEntry: !active.visitedStepIds.has(item.id)
       };
-      const skip = await step.shouldSkip(ctx);
+      const skip = await item.shouldSkip(ctx);
       if (!skip) break;
       active.currentStepIndex += direction;
     }
@@ -1039,26 +1155,31 @@ export class PathEngine {
     this._hasAttemptedNext = false;
     const active = this.activePath;
     if (!active) return;
-    
+
     // Save a snapshot of the data as it was when entering this step (for resetStep)
     active.stepEntryData = { ...active.data };
-    
+
     // Capture the timestamp when entering this step (for analytics, timeout warnings)
     active.stepEnteredAt = Date.now();
-    
-    const step = this.getCurrentStep(active);
-    const isFirstEntry = !active.visitedStepIds.has(step.id);
+
+    const item = this.getCurrentItem(active);
+
+    // Resolve the inner step when this slot is a StepChoice
+    this.cacheResolvedChoiceStep(active);
+
+    const effectiveStep = this.getEffectiveStep(active);
+    const isFirstEntry = !active.visitedStepIds.has(item.id);
     // Mark as visited before calling onEnter so re-entrant calls see the
     // correct isFirstEntry value.
-    active.visitedStepIds.add(step.id);
-    if (!step.onEnter) return;
+    active.visitedStepIds.add(item.id);
+    if (!effectiveStep.onEnter) return;
     const ctx: PathStepContext = {
       pathId: active.definition.id,
-      stepId: step.id,
+      stepId: item.id,
       data: { ...active.data },
       isFirstEntry
     };
-    return step.onEnter(ctx);
+    return effectiveStep.onEnter(ctx);
   }
 
   private async leaveCurrentStep(
@@ -1127,12 +1248,12 @@ export class PathEngine {
     active: ActivePath
   ): boolean {
     if (!guard) return true;
-    const step = this.getCurrentStep(active);
+    const item = this.getCurrentItem(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
-      stepId: step.id,
+      stepId: item.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id)
+      isFirstEntry: !active.visitedStepIds.has(item.id)
     };
     try {
       const result = guard(ctx);
@@ -1140,7 +1261,7 @@ export class PathEngine {
       // Async guard detected - warn and return optimistic default
       if (result && typeof result.then === "function") {
         console.warn(
-          `[pathwrite] Async guard detected on step "${step.id}". ` +
+          `[pathwrite] Async guard detected on step "${item.id}". ` +
           `Guards in snapshots must be synchronous. ` +
           `Returning true (optimistic) as default. ` +
           `The async guard will still be enforced during actual navigation.`
@@ -1149,7 +1270,7 @@ export class PathEngine {
       return true;
     } catch (err) {
       console.warn(
-        `[pathwrite] Guard on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `[pathwrite] Guard on step "${item.id}" threw an error during snapshot evaluation. ` +
         `Returning true (allow navigation) as a safe default. ` +
         `Note: guards are evaluated before onEnter runs on first entry — ` +
         `ensure guards handle missing/undefined data gracefully.`,
@@ -1187,12 +1308,12 @@ export class PathEngine {
     active: ActivePath
   ): Record<string, string> {
     if (!fn) return {};
-    const step = this.getCurrentStep(active);
+    const item = this.getCurrentItem(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
-      stepId: step.id,
+      stepId: item.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id)
+      isFirstEntry: !active.visitedStepIds.has(item.id)
     };
     try {
       const result = fn(ctx);
@@ -1207,7 +1328,7 @@ export class PathEngine {
       }
       if (result && typeof (result as unknown as { then?: unknown }).then === "function") {
         console.warn(
-          `[pathwrite] Async fieldErrors detected on step "${step.id}". ` +
+          `[pathwrite] Async fieldErrors detected on step "${item.id}". ` +
           `fieldErrors must be synchronous. Returning {} as default. ` +
           `Use synchronous validation or move async checks to canMoveNext.`
         );
@@ -1215,7 +1336,7 @@ export class PathEngine {
       return {};
     } catch (err) {
       console.warn(
-        `[pathwrite] fieldErrors on step "${step.id}" threw an error during snapshot evaluation. ` +
+        `[pathwrite] fieldErrors on step "${item.id}" threw an error during snapshot evaluation. ` +
         `Returning {} as a safe default. ` +
         `Note: fieldErrors is evaluated before onEnter runs on first entry — ` +
         `ensure it handles missing/undefined data gracefully.`,

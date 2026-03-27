@@ -185,9 +185,13 @@
       {/if}
     {/if}
 
-    <!-- Body: current step rendered via named snippet -->
+    <!-- Body: current step rendered via named snippet.
+         Prefer formId (inner step id of a StepChoice) so consumers can
+         register snippets by inner step ids directly. -->
     <div class="pw-shell__body">
-      {#if stepSnippets[snap.stepId]}
+      {#if snap.formId && stepSnippets[snap.formId]}
+        {@render stepSnippets[snap.formId]()}
+      {:else if stepSnippets[snap.stepId]}
         {@render stepSnippets[snap.stepId]()}
       {:else}
         <p>No content for step "{snap.stepId}"</p>

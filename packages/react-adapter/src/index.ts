@@ -343,8 +343,13 @@ export function PathShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Look up step content from the steps map
-  const stepContent = snapshot ? (steps[snapshot.stepId] ?? null) : null;
+  // Look up step content from the steps map.
+  // When the current slot is a StepChoice, prefer the inner step id (formId)
+  // so consumers can register components by their inner step ids directly,
+  // without needing a wrapper dispatcher component.
+  const stepContent = snapshot
+    ? ((snapshot.formId ? steps[snapshot.formId] : undefined) ?? steps[snapshot.stepId] ?? null)
+    : null;
 
   if (!snapshot) {
     return createElement(PathContext.Provider, { value: pathReturn },
@@ -552,7 +557,8 @@ export type {
   PathStepContext,
   ProgressLayout,
   RootProgress,
-  SerializedPathState
+  SerializedPathState,
+  StepChoice,
 } from "@daltonr/pathwrite-core";
 
 export { PathEngine } from "@daltonr/pathwrite-core";
