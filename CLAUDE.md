@@ -13,6 +13,7 @@ npm workspaces. All publishable packages in `packages/`, demo apps in `apps/`.
 | `@daltonr/pathwrite-angular` | `packages/angular-adapter` | `PathFacade` injectable, RxJS + signals |
 | `@daltonr/pathwrite-vue` | `packages/vue-adapter` | `usePath()` composable |
 | `@daltonr/pathwrite-svelte` | `packages/svelte-adapter` | Svelte 5 runes-based store |
+| `@daltonr/pathwrite-react-native` | `packages/react-native-adapter` | `usePath()` hook, `PathShell` for React Native (Expo / bare) |
 | `@daltonr/pathwrite-store-http` | `packages/store-http` | `HttpStore` + `LocalStorageStore` persistence |
 
 ## Commands
