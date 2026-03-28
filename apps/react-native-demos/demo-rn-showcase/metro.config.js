@@ -24,12 +24,16 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
 ];
 
-// Belt-and-suspenders: for react, react-native, and scheduler (plus any
-// subpath imports like react/jsx-runtime) always resolve to the app's copy,
-// never to whatever is sitting in the monorepo root node_modules.
+// Belt-and-suspenders: for react, react-dom, react-native, and scheduler
+// (plus any subpath imports) always resolve to the app's copy, never to
+// whatever is sitting in the monorepo root node_modules.
+// react-dom must be pinned alongside react — the root has react-dom@18
+// which is incompatible with this app's react@19 and causes a
+// "ReactCurrentBatchConfig undefined" crash at runtime.
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
     moduleName === "react"         || moduleName.startsWith("react/") ||
+    moduleName === "react-dom"     || moduleName.startsWith("react-dom/") ||
     moduleName === "react-native"  || moduleName.startsWith("react-native/") ||
     moduleName === "scheduler"     || moduleName.startsWith("scheduler/")
   ) {
