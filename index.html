@@ -38,7 +38,7 @@
         Multi-step flows.<br />Solved once.<br />Used everywhere.
       </h1>
       <p class="hero__subtitle">
-        A headless engine for wizards, onboarding, checkout, and any sequential flow. Write your logic once — use it in React, Vue, Angular, and Svelte.
+        A headless engine for wizards, onboarding, checkout, and any sequential flow. Write your logic once — use it in React, Vue, Angular, Svelte, and React Native.
       </p>
       <div class="hero__actions">
         <a href="#get-started" class="btn btn--lg btn--primary">Get Started</a>
@@ -77,11 +77,11 @@
 <section class="stats">
   <div class="container stats__inner">
     <div class="stat">
-      <span class="stat__number">570+</span>
+      <span class="stat__number">637</span>
       <span class="stat__label">Tests</span>
     </div>
     <div class="stat">
-      <span class="stat__number">4</span>
+      <span class="stat__number">5</span>
       <span class="stat__label">Frameworks</span>
     </div>
     <div class="stat">
@@ -89,7 +89,7 @@
       <span class="stat__label">Dependencies</span>
     </div>
     <div class="stat">
-      <span class="stat__number">6</span>
+      <span class="stat__number">7</span>
       <span class="stat__label">Packages</span>
     </div>
   </div>
@@ -104,8 +104,8 @@
     <div class="value-grid">
       <div class="value-card value-card--highlight">
         <div class="value-card__icon">🌐</div>
-        <h3>Write once, run in any framework</h3>
-        <p>Your path definition is plain TypeScript. The same guards, validation, and lifecycle hooks work identically in React, Vue, Angular, and Svelte.</p>
+        <h3>Write once, run anywhere</h3>
+        <p>Your path definition is plain TypeScript. The same guards, validation, and lifecycle hooks work identically in React, Vue, Angular, Svelte, and React Native.</p>
       </div>
       <div class="value-card value-card--highlight">
         <div class="value-card__icon">🎨</div>
@@ -115,7 +115,7 @@
       <div class="value-card value-card--highlight">
         <div class="value-card__icon">💾</div>
         <h3>Built-in persistence</h3>
-        <p>Save and restore progress with LocalStorage or HTTP. Users pick up where they left off. Configurable strategies, zero boilerplate.</p>
+        <p>Save and restore progress with <code>LocalStorageStore</code>, <code>AsyncStorageStore</code> (React Native), or <code>HttpStore</code>. Users pick up where they left off.</p>
       </div>
       <div class="value-card value-card--highlight">
         <div class="value-card__icon">🧪</div>
@@ -170,6 +170,16 @@
         <div class="feature-card__icon">📝</div>
         <h3>Forms Too</h3>
         <p>Single-step forms with <code>fieldMessages</code>, auto-derived guards, and smart error timing.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🔀</div>
+        <h3>StepChoice Branching</h3>
+        <p>Dynamic routing within a step — swap sub-steps at runtime based on data without leaving the flow.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">📱</div>
+        <h3>React Native</h3>
+        <p>First-class mobile support. Same engine, same path definitions — runs on iOS and Android via Expo or bare workflow.</p>
       </div>
     </div>
   </div>
@@ -351,6 +361,7 @@
         <tbody>
           <tr><td>Framework-agnostic core</td><td class="y">&check;</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>React + Vue + Angular + Svelte</td><td class="y">&check;</td><td class="n">2 of 4</td><td class="n">React only</td><td class="n">React only</td></tr>
+          <tr><td>React Native (iOS &amp; Android)</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>Built-in persistence</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>Navigation guards</td><td class="y">&check;</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>Field-level validation</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td><td class="y">&check;</td></tr>
@@ -418,10 +429,24 @@
       </div>
 
       <div class="demo-card">
-        <h3 class="demo-card__title">Storage Demo</h3>
-        <p class="demo-card__desc">LocalStorage persistence with session management and auto-save.</p>
+        <h3 class="demo-card__title">StepChoice (Dynamic Routing)</h3>
+        <p class="demo-card__desc">Steps that branch at runtime — show different sub-steps based on user data.</p>
         <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-stepchoice/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+          <a href="apps/vue-demos/demo-vue-stepchoice/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+          <a href="apps/angular-demos/demo-angular-stepchoice/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-stepchoice/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+        </div>
+      </div>
+
+      <div class="demo-card">
+        <h3 class="demo-card__title">Persistence &amp; Sessions</h3>
+        <p class="demo-card__desc">LocalStorage persistence with multi-session management, auto-save, and progress restore.</p>
+        <div class="demo-card__links">
+          <a href="apps/react-demos/demo-react-storage/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
           <a href="apps/vue-demos/demo-vue-storage/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+          <a href="apps/angular-demos/demo-angular-storage/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+          <a href="apps/svelte-demos/demo-svelte-storage/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
         </div>
       </div>
     </div>
@@ -441,9 +466,9 @@
         <h3>Core Engine API</h3>
         <p>PathEngine, step definitions, hooks, guards, and sub-paths.</p>
       </a>
-      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/store-http/README.md" class="docs-card" target="_blank" rel="noopener">
+      <a href="https://github.com/richardadalton/pathwrite/blob/main/packages/store/README.md" class="docs-card" target="_blank" rel="noopener">
         <h3>Persistence</h3>
-        <p>HttpStore, LocalStorageStore, strategies, and restore patterns.</p>
+        <p>LocalStorageStore, AsyncStorageStore, HttpStore, persistence strategies, and session restore.</p>
       </a>
       <a href="https://github.com/richardadalton/pathwrite/blob/main/docs/guides/TESTING_GUIDE.md" class="docs-card" target="_blank" rel="noopener">
         <h3>Testing Guide</h3>
@@ -469,6 +494,8 @@
       <code>@daltonr/pathwrite-vue</code>
       <code>@daltonr/pathwrite-angular</code>
       <code>@daltonr/pathwrite-svelte</code>
+      <code>@daltonr/pathwrite-react-native</code>
+      <code>@daltonr/pathwrite-store</code>
     </div>
     <div class="cta__actions">
       <a href="https://github.com/richardadalton/pathwrite" class="btn btn--lg btn--white" target="_blank" rel="noopener">View on GitHub</a>
