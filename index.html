@@ -415,84 +415,98 @@
     <h2 class="section__title">See it in action</h2>
     <p class="section__subtitle">Same path definitions, every framework. Pick any demo below.</p>
 
-    <div class="rn-showcase">
-      <div class="phone-frame">
-        <div class="phone-frame__screen">
-          <iframe src="apps/react-native-demos/demo-rn-showcase/dist/" title="React Native showcase"></iframe>
-        </div>
-      </div>
-      <div style="text-align:center;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap">
-        <span style="font-size:0.78rem;color:var(--color-text-muted)">Real React Native app &mdash; compiled to web via Expo.</span>
-        <a href="/how-rn-web-works.html" style="font-size:0.78rem;color:var(--color-text-muted)">How? &rarr;</a>
-      </div>
-    </div>
+    <div class="demos__split">
 
-    <div class="demo-grid">
-      <div class="demo-card">
-        <h3 class="demo-card__title">Linear Wizard</h3>
-        <p class="demo-card__desc">Guards, per-field validation, lifecycle hooks, and a review step.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-wizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-wizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-wizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-wizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+      <!-- Mobile column -->
+      <div class="demos__mobile-col">
+        <span class="demos__col-label demos__col-label--rn">React Native</span>
+        <div class="phone-frame">
+          <div class="phone-frame__screen">
+            <iframe src="apps/react-native-demos/demo-rn-showcase/dist/" title="React Native showcase"></iframe>
+          </div>
+        </div>
+        <div class="demos__caption">
+          <span>Real React Native app &mdash; compiled to web via Expo.</span>
+          <a href="/how-rn-web-works.html">How? &rarr;</a>
         </div>
       </div>
 
-      <div class="demo-card">
-        <h3 class="demo-card__title">Conditional Steps</h3>
-        <p class="demo-card__desc">Steps dynamically skipped based on user choices.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-skip/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-skip/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-skip/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-skip/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+      <!-- Web column -->
+      <div class="demos__web-col">
+        <div class="demos__web-header">
+          <span class="demos__col-label demos__col-label--web">Web</span>
+          <p class="demos__web-sub">React &middot; Vue &middot; Angular &middot; Svelte</p>
+        </div>
+
+        <div class="demo-grid">
+          <div class="demo-card">
+            <h3 class="demo-card__title">Linear Wizard</h3>
+            <p class="demo-card__desc">Guards, per-field validation, lifecycle hooks, and a review step.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-wizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-wizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-wizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-wizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3 class="demo-card__title">Conditional Steps</h3>
+            <p class="demo-card__desc">Steps dynamically skipped based on user choices.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-skip/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-skip/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-skip/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-skip/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3 class="demo-card__title">Sub-Path (Nested)</h3>
+            <p class="demo-card__desc">Nested sub-wizards that auto-resume the parent.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-subwizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-subwizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-subwizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-subwizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3 class="demo-card__title">Single-Step Form</h3>
+            <p class="demo-card__desc">Contact form with validation, error timing, and form-mode layout.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-form/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-form/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-form/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-form/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3 class="demo-card__title">StepChoice (Dynamic Routing)</h3>
+            <p class="demo-card__desc">Steps that branch at runtime &mdash; show different sub-steps based on user data.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-stepchoice/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-stepchoice/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-stepchoice/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-stepchoice/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3 class="demo-card__title">Persistence &amp; Sessions</h3>
+            <p class="demo-card__desc">LocalStorage persistence with multi-session management, auto-save, and progress restore.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-storage/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-storage/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-storage/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-storage/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="demo-card">
-        <h3 class="demo-card__title">Sub-Path (Nested)</h3>
-        <p class="demo-card__desc">Nested sub-wizards that auto-resume the parent.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-subwizard/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-subwizard/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-subwizard/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-subwizard/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
-        </div>
-      </div>
-
-      <div class="demo-card">
-        <h3 class="demo-card__title">Single-Step Form</h3>
-        <p class="demo-card__desc">Contact form with validation, error timing, and form-mode layout.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-form/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-form/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-form/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-form/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
-        </div>
-      </div>
-
-      <div class="demo-card">
-        <h3 class="demo-card__title">StepChoice (Dynamic Routing)</h3>
-        <p class="demo-card__desc">Steps that branch at runtime — show different sub-steps based on user data.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-stepchoice/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-stepchoice/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-stepchoice/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-stepchoice/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
-        </div>
-      </div>
-
-      <div class="demo-card">
-        <h3 class="demo-card__title">Persistence &amp; Sessions</h3>
-        <p class="demo-card__desc">LocalStorage persistence with multi-session management, auto-save, and progress restore.</p>
-        <div class="demo-card__links">
-          <a href="apps/react-demos/demo-react-storage/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
-          <a href="apps/vue-demos/demo-vue-storage/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
-          <a href="apps/angular-demos/demo-angular-storage/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
-          <a href="apps/svelte-demos/demo-svelte-storage/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
-        </div>
-      </div>
     </div>
   </div>
 </section>
