@@ -6,7 +6,8 @@
     "orientation": "portrait",
     "platforms": [
       "ios",
-      "android"
+      "android",
+      "web"
     ],
     "plugins": [
       "expo-asset"
