@@ -1,4 +1,4 @@
-import { usePathContext } from "@daltonr/pathwrite-react";
+import { usePathContext, useField } from "@daltonr/pathwrite-react";
 import type { ContactData } from "./path";
 
 const SUBJECTS = [
@@ -11,16 +11,21 @@ const SUBJECTS = [
 export function ContactStep() {
   // usePathContext() reaches into the PathShell's PathContext — no prop
   // drilling or template reference variables needed.
-  const { snapshot, setData, resetStep } = usePathContext<ContactData>();
-  const data = snapshot?.data ?? ({} as ContactData);
-  const messageLen = (data.message ?? "").length;
-  const errors = snapshot?.hasAttemptedNext ? (snapshot.fieldErrors ?? {}) : {};
+  const { snapshot, resetStep } = usePathContext<ContactData>();
+  const errors = snapshot.hasAttemptedNext ? snapshot.fieldErrors : {};
+
+  // useField returns { value, onChange } bound to snapshot.data — spread directly
+  // onto each input to replace the repetitive onChange={e => setData("f", e.target.value)} pattern.
+  const name    = useField<ContactData, "name">("name");
+  const email   = useField<ContactData, "email">("email");
+  const subject = useField<ContactData, "subject">("subject");
+  const message = useField<ContactData, "message">("message");
 
   return (
     <div className="form-body">
 
       {/* isDirty indicator */}
-      {snapshot?.isDirty && (
+      {snapshot.isDirty && (
         <div className="unsaved-changes-banner">
           ✏️ You have unsaved changes
         </div>
@@ -34,8 +39,7 @@ export function ContactStep() {
         <input
           id="name"
           type="text"
-          value={data.name ?? ""}
-          onChange={(e) => setData("name", e.target.value)}
+          {...name}
           placeholder="Jane Smith"
           autoComplete="name"
           autoFocus
@@ -51,8 +55,7 @@ export function ContactStep() {
         <input
           id="email"
           type="email"
-          value={data.email ?? ""}
-          onChange={(e) => setData("email", e.target.value)}
+          {...email}
           placeholder="jane@example.com"
           autoComplete="email"
         />
@@ -64,11 +67,7 @@ export function ContactStep() {
         <label htmlFor="subject">
           Subject <span className="required">*</span>
         </label>
-        <select
-          id="subject"
-          value={data.subject ?? ""}
-          onChange={(e) => setData("subject", e.target.value)}
-        >
+        <select id="subject" {...subject}>
           <option value="" disabled>Select a subject…</option>
           {SUBJECTS.map((s) => (
             <option key={s} value={s}>{s}</option>
@@ -86,21 +85,20 @@ export function ContactStep() {
         <textarea
           id="message"
           rows={5}
-          value={data.message ?? ""}
-          onChange={(e) => setData("message", e.target.value)}
+          {...message}
           placeholder="How can we help you?"
         />
-        <span className="char-count">{messageLen} chars</span>
+        <span className="char-count">{message.value.length} chars</span>
         {errors.message && <span className="field-error">{errors.message}</span>}
       </div>
 
       {/* Reset Button */}
       <div className="reset-button-container">
-        <button 
-          type="button" 
-          className="btn-reset" 
+        <button
+          type="button"
+          className="btn-reset"
           onClick={resetStep}
-          disabled={!snapshot?.isDirty}
+          disabled={!snapshot.isDirty}
         >
           Clear Form
         </button>
@@ -109,4 +107,3 @@ export function ContactStep() {
     </div>
   );
 }
-

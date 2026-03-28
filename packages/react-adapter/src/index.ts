@@ -9,7 +9,7 @@ import {
   useRef,
   useSyncExternalStore
 } from "react";
-import type { PropsWithChildren, ReactElement, ReactNode } from "react";
+import type { ChangeEvent, PropsWithChildren, ReactElement, ReactNode } from "react";
 import {
   PathData,
   PathDefinition,
@@ -195,6 +195,47 @@ export function usePathContext<TData extends PathData = PathData>(): Omit<UsePat
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
   return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> };
+}
+
+// ---------------------------------------------------------------------------
+// useField — input binding helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Binding helper for a single `<input>`, `<select>`, or `<textarea>` field.
+ *
+ * Returns `{ value, onChange }` tied to `snapshot.data[field]`, so you can
+ * spread it directly onto an element and eliminate the repetitive
+ * `onChange={e => setData("field", e.target.value)}` pattern:
+ *
+ * ```tsx
+ * function NameStep() {
+ *   const name = useField<MyData, "name">("name");
+ *   return <input type="text" {...name} />;
+ * }
+ * ```
+ *
+ * - `value` is always a `string` (falls back to `""` when the data key is unset).
+ * - `onChange` calls `setData(field, e.target.value)`.
+ *
+ * For inputs that need a value transform (e.g. `.trim()`, `Number()`) keep
+ * an explicit `onChange` handler — this helper is for the no-transform case.
+ *
+ * Must be called inside a `<PathShell>` or `<PathProvider>`.
+ */
+export function useField<TData extends PathData, K extends string & keyof TData>(
+  field: K
+): { value: string; onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void } {
+  const { snapshot, setData } = usePathContext<TData>();
+  const onChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setData(field, e.target.value as TData[K]);
+    },
+    // field is a string literal at the call site and never changes; setData is stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [field, setData]
+  );
+  return { value: String(snapshot.data[field] ?? ""), onChange };
 }
 
 // ---------------------------------------------------------------------------

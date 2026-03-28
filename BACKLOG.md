@@ -25,9 +25,10 @@ Removed redundant `canMoveNext` from the "about-you" step in the React, Vue, and
 
 ## React
 
-### BL-05 — Add `useField` binding helper to React adapter
-Every React step component writes `onChange={e => setData("field", e.target.value)}` for each input. A small `useField("name")` helper returning `{ value, onChange }` (typed against `TData`) would eliminate the repetition and improve ergonomics for form-heavy steps.
-**Affects:** react adapter.
+### ~~BL-05 — Add `useField` binding helper to React adapter~~ ✓ Done
+~~Every React step component writes `onChange={e => setData("field", e.target.value)}` for each input. A small `useField("name")` helper returning `{ value, onChange }` (typed against `TData`) would eliminate the repetition and improve ergonomics for form-heavy steps.~~
+~~**Affects:** react adapter.~~
+Added `useField<TData, K>(field)` to `@daltonr/pathwrite-react`. Returns `{ value: string, onChange }` bound to `snapshot.data[field]` — spread directly onto any `<input>`, `<select>`, or `<textarea>`. Updated the react-form `ContactStep` demo to use it for all four fields.
 
 ### BL-06 — `usePath().restart()` should not require re-passing path and initialData
 `PathShell` exposes a `restart()` handle via `ref` that correctly captures `path` and `initialData` at mount time. But the lower-level `usePath().restart(path, initialData)` always requires re-passing them. Consider overloading or a `createRestarter(path, initialData)` helper.
