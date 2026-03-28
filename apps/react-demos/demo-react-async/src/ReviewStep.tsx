@@ -1,0 +1,33 @@
+import { usePathContext } from "@daltonr/pathwrite-react";
+import type { ApplicationData } from "./application-path";
+
+export function ReviewStep() {
+  const { snapshot } = usePathContext<ApplicationData>();
+  const snap = snapshot!;
+  const data = snap.data;
+
+  const selectedRole = data.availableRoles.find(r => r.id === data.roleId);
+
+  return (
+    <div className="form-body">
+      <p className="step-intro">
+        All async checks passed. Review your application before submitting.
+      </p>
+
+      <div className="eligibility-summary">
+        <div className="summary-row">
+          <span className="summary-key">Role</span>
+          <span>{selectedRole?.label ?? data.roleId}</span>
+        </div>
+        <div className="summary-row">
+          <span className="summary-key">Experience</span>
+          <span>{data.yearsExperience} years</span>
+        </div>
+        <div className="summary-row">
+          <span className="summary-key">Skills</span>
+          <span>{data.skills as string}</span>
+        </div>
+      </div>
+    </div>
+  );
+}

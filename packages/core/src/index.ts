@@ -1264,8 +1264,9 @@ export class PathEngine {
     try {
       const result = guard(ctx);
       if (typeof result === "boolean") return result;
-      // Async guard detected - warn and return optimistic default
-      if (result && typeof result.then === "function") {
+      // Async guard detected - suppress the unhandled rejection, warn, return optimistic default
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).catch(() => {});
         console.warn(
           `[pathwrite] Async guard detected on step "${item.id}". ` +
           `Guards in snapshots must be synchronous. ` +

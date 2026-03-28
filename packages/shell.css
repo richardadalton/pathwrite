@@ -361,11 +361,35 @@
   background: var(--pw-color-primary);
   border-color: var(--pw-color-primary);
   color: #fff;
+  position: relative;
 }
 
 .pw-shell__btn--next:hover:not(:disabled) {
   background: #1d4ed8;
   border-color: #1d4ed8;
+}
+
+@keyframes pw-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pw-shell__btn--next.pw-shell__btn--loading {
+  color: transparent;
+  pointer-events: none;
+}
+
+.pw-shell__btn--next.pw-shell__btn--loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pw-spin 0.6s linear infinite;
 }
 
 .pw-shell__btn--back {

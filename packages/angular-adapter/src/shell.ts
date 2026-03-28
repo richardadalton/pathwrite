@@ -253,6 +253,7 @@ export class PathShellFooterDirective {
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--next"
+              [class.pw-shell__btn--loading]="s.isNavigating"
               [disabled]="s.isNavigating"
               (click)="facade.next()"
             >{{ s.isLastStep ? completeLabel : nextLabel }}</button>

@@ -264,6 +264,7 @@
           <button
             type="button"
             class="pw-shell__btn pw-shell__btn--next"
+            class:pw-shell__btn--loading={snap.isNavigating}
             disabled={snap.isNavigating}
             onclick={next}
           >

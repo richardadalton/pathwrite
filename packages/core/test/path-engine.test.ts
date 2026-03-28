@@ -1582,6 +1582,69 @@ describe("PathEngine — async hooks and guards", () => {
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
+
+  it("resets isNavigating to false and rethrows when an async guard throws", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          canMoveNext: () => Promise.reject(new Error("network error"))
+        },
+        { id: "step2" }
+      ]
+    });
+
+    await expect(engine.next()).rejects.toThrow("network error");
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    expect(engine.snapshot()?.isNavigating).toBe(false);
+  });
+
+  it("allows navigation on a second attempt after a guard initially returns false", async () => {
+    let shouldAllow = false;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "step1",
+          canMoveNext: () => Promise.resolve(shouldAllow)
+        },
+        { id: "step2" }
+      ]
+    });
+
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step1");
+
+    shouldAllow = true;
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("drops a concurrent next() call while a guard is already awaiting", async () => {
+    let resolveGuard!: (v: boolean) => void;
+    const guardPromise = new Promise<boolean>((resolve) => { resolveGuard = resolve; });
+
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => guardPromise },
+        { id: "step2" }
+      ]
+    });
+
+    const first = engine.next();  // guard is now pending
+    engine.next();                // second call — should be dropped silently
+
+    resolveGuard(true);
+    await first;
+
+    // Only one navigation should have occurred
+    expect(engine.snapshot()?.stepId).toBe("step2");
+  });
 });
 
 // ---------------------------------------------------------------------------

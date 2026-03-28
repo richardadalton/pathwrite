@@ -445,7 +445,7 @@ function renderVueFooter(
       // Both modes: Submit on the right
       h("button", {
         type: "button",
-        class: "pw-shell__btn pw-shell__btn--next",
+        class: ["pw-shell__btn pw-shell__btn--next", snapshot.isNavigating && "pw-shell__btn--loading"].filter(Boolean).join(" "),
         disabled: snapshot.isNavigating,
         onClick: actions.next
       }, snapshot.isLastStep ? props.completeLabel : props.nextLabel)

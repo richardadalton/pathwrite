@@ -575,7 +575,7 @@ function defaultFooter(
       // Both modes: Submit on the right
       createElement("button", {
         type: "button",
-        className: "pw-shell__btn pw-shell__btn--next",
+        className: cls("pw-shell__btn pw-shell__btn--next", snapshot.isNavigating && "pw-shell__btn--loading"),
         disabled: snapshot.isNavigating,
         onClick: actions.next
       }, snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
