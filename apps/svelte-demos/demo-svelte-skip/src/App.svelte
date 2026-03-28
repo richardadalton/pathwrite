@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PathShell from "@daltonr/pathwrite-svelte/PathShell.svelte";
+  import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData } from "@daltonr/pathwrite-svelte";
   import { subscriptionPath, INITIAL_DATA, PLAN_LABELS, type SubscriptionData } from "./subscription";
   import SelectPlanStep      from "./SelectPlanStep.svelte";

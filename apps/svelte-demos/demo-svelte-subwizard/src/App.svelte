@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PathShell from "@daltonr/pathwrite-svelte/PathShell.svelte";
+  import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData } from "@daltonr/pathwrite-svelte";
   import { approvalWorkflowPath, INITIAL_DATA, AVAILABLE_APPROVERS } from "./approval";
   import type { DocumentData, ApproverResult } from "./types";

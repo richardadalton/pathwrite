@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import PathShell from "@daltonr/pathwrite-svelte/PathShell.svelte";
+  import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData, PathEngine } from "@daltonr/pathwrite-svelte";
   import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
   import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";

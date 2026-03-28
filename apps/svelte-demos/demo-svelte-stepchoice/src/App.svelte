@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PathShell from "@daltonr/pathwrite-svelte/PathShell.svelte";
+  import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData } from "@daltonr/pathwrite-svelte";
   import { addressPath, INITIAL_DATA, type AddressData } from "./address-path";
   import CountryStep      from "./CountryStep.svelte";

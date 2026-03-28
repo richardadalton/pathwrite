@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PathShell from "@daltonr/pathwrite-svelte/PathShell.svelte";
+  import { PathShell } from "@daltonr/pathwrite-svelte";
   import { INITIAL_DATA, EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "./onboarding";
   import PersonalInfoStep from "./PersonalInfoStep.svelte";
   import AboutYouStep     from "./AboutYouStep.svelte";
