@@ -168,7 +168,7 @@ Create the engine yourself with `restoreOrStart()` and pass it via `engine`. Pat
 
 ```svelte
 <script>
-  import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+  import { HttpStore, restoreOrStart, persistence } from '@daltonr/pathwrite-store';
 
   let engine = $state(null);
 
@@ -179,7 +179,7 @@ Create the engine yourself with `restoreOrStart()` and pass it via `engine`. Pat
       path: signupPath,
       initialData: { name: '' },
       observers: [
-        httpPersistence({ store, key: 'user:onboarding', strategy: 'onNext' })
+        persistence({ store, key: 'user:onboarding', strategy: 'onNext' })
       ]
     });
     engine = result.engine;
@@ -467,13 +467,13 @@ const myPath = {
 
 ## Persistence
 
-Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state persistence:
+Use with [@daltonr/pathwrite-store](../store) for automatic state persistence:
 
 ```svelte
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PathShell } from '@daltonr/pathwrite-svelte';
-  import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+  import { HttpStore, restoreOrStart, persistence } from '@daltonr/pathwrite-store';
   import DetailsForm from './DetailsForm.svelte';
   import ReviewPanel from './ReviewPanel.svelte';
   
@@ -490,7 +490,7 @@ Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state pers
       path: signupPath,
       initialData: { name: '', email: '' },
       observers: [
-        httpPersistence({ store, key, strategy: 'onNext' })
+        persistence({ store, key, strategy: 'onNext' })
       ]
     });
     engine = result.engine;
@@ -537,7 +537,7 @@ MIT — © 2026 Devjoy Ltd.
 ## See Also
 
 - [@daltonr/pathwrite-core](../core) - Core engine
-- [@daltonr/pathwrite-store-http](../store-http) - HTTP persistence
+- [@daltonr/pathwrite-store](../store) - HTTP persistence
 - [Documentation](../../docs/guides/DEVELOPER_GUIDE.md)
 
 

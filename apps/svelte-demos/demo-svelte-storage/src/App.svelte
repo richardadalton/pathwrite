@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData, PathEngine } from "@daltonr/pathwrite-svelte";
-  import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
+  import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
   import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
   import type { WizardData, Person, MemberProfile } from "./wizard";
   import TeamSetupStep      from "./TeamSetupStep.svelte";

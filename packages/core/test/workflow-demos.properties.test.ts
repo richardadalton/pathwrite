@@ -7,7 +7,7 @@ import { PathEngine } from "@daltonr/pathwrite-core";
 import { subscriptionPath }   from "../../../apps/react-demos/demo-react-skip/src/subscription";
 import { onboardingPath }      from "../../../apps/react-demos/demo-react-wizard/src/onboarding";
 import { addressPath, INITIAL_DATA as ADDRESS_INITIAL } from "../../../apps/react-demos/demo-react-stepchoice/src/address-path";
-import { skipPath }            from "../../../apps/react-native-demos/demo-rn-skip/src/skip-path";
+import { mainPath as skipPath } from "../../../apps/react-native-demos/demo-rn-showcase/src/features/demo-path";
 import { coursePath, getQuizScore, INITIAL_DATA as COURSE_INITIAL } from "../../../apps/vue-demos/demo-vue-course/src/course";
 import { TOPIC_IDS, TOPICS }   from "../../../apps/vue-demos/demo-vue-course/src/topics";
 import { contactFormPath }     from "../../../apps/react-demos/demo-react-form/src/path";
@@ -200,7 +200,7 @@ describe("workflow demo — skipPath shouldSkip", () => {
     await fc.assert(fc.asyncProperty(
       fc.boolean(),
       (skipOptional) => {
-        const result = optionalStep.shouldSkip!({ data: { name: "test", skipOptional } } as any);
+        const result = optionalStep.shouldSkip!({ data: { name: "test", skipNext: skipOptional } } as any);
         expect(result).toBe(skipOptional);
       }
     ));

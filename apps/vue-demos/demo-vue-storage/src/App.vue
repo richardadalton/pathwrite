@@ -2,7 +2,7 @@
 import { ref, shallowRef, onMounted, computed } from "vue";
 import { PathShell, PathEngine } from "@daltonr/pathwrite-vue";
 import type { PathData } from "@daltonr/pathwrite-vue";
-import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
+import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import { ApiStore } from "./ApiStore";
 import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
 import type { WizardData, Person, MemberProfile } from "./wizard";

@@ -136,7 +136,7 @@ export const TOPICS: Record<TopicId, TopicContent> = {
     quizQuestions: [
       {
         id: "ps-1",
-        prompt: "Which persistence strategy is default in httpPersistence?",
+        prompt: "Which persistence strategy is default in persistence?",
         options: [
           { id: "a", label: "onEveryChange" },
           { id: "b", label: "onNext" },

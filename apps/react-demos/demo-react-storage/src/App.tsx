@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { PathShell } from "@daltonr/pathwrite-react";
 import type { PathData } from "@daltonr/pathwrite-react";
 import { PathEngine } from "@daltonr/pathwrite-core";
-import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
+import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import {
   teamOnboardingPath,
   memberProfileSubPath,

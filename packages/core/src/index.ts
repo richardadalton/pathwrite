@@ -35,9 +35,9 @@ export interface SerializedPathState {
 /**
  * The interface every path state store must implement.
  *
- * `HttpStore` from `@daltonr/pathwrite-store-http` is the reference
+ * `HttpStore` from `@daltonr/pathwrite-store` is the reference
  * implementation. Any backend — MongoDB, Redis, localStorage, etc. —
- * implements this interface and works with `httpPersistence` and
+ * implements this interface and works with `persistence` and
  * `restoreOrStart` without any other changes.
  */
 export interface PathStore {
@@ -751,7 +751,7 @@ export class PathEngine {
 
   /**
    * Exports the current engine state as a plain JSON-serializable object.
-   * Use with storage adapters (e.g. `@daltonr/pathwrite-store-http`) to
+   * Use with storage adapters (e.g. `@daltonr/pathwrite-store`) to
    * persist and restore wizard progress.
    *
    * Returns `null` if no path is active.

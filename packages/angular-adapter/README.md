@@ -873,7 +873,7 @@ Use it to distinguish initialization from re-entry:
 
 ## Persistence
 
-Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state persistence. The engine is created externally via `restoreOrStart()` and passed directly to `<pw-shell>` via the `[engine]` input.
+Use with [@daltonr/pathwrite-store](../store) for automatic state persistence. The engine is created externally via `restoreOrStart()` and passed directly to `<pw-shell>` via the `[engine]` input.
 
 ### Simple persistence example
 
@@ -881,7 +881,7 @@ Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state pers
 import { Component, OnInit } from '@angular/core';
 import { PathEngine } from '@daltonr/pathwrite-angular';
 import { PathShellComponent, PathStepDirective } from '@daltonr/pathwrite-angular/shell';
-import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
+import { HttpStore, restoreOrStart, persistence } from '@daltonr/pathwrite-store';
 import { signupPath } from './signup-path';
 
 @Component({
@@ -913,7 +913,7 @@ export class SignupWizardComponent implements OnInit {
       path: this.path,
       initialData: { name: '', email: '' },
       observers: [
-        httpPersistence({ store, key, strategy: 'onNext' })
+        persistence({ store, key, strategy: 'onNext' })
       ]
     });
 

@@ -520,7 +520,7 @@ engine.subscribe((event) => {
 });
 ```
 
-Every `stateChanged` event includes a `cause` field (`StateChangeCause`) identifying which public method triggered it. Use this to react to specific operations — for example, the `store-http` package uses `event.cause === "next"` to implement the `onNext` persistence strategy.
+Every `stateChanged` event includes a `cause` field (`StateChangeCause`) identifying which public method triggered it. Use this to react to specific operations — for example, the `store` package uses `event.cause === "next"` to implement the `onNext` persistence strategy.
 
 ## State Persistence
 

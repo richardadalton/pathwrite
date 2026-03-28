@@ -1,11 +1,11 @@
 # Pathwrite — Vue Demo: Storage
 
-This demo shows using `@daltonr/pathwrite-store-http` with **both** `LocalStorageStore` and `HttpStore` (via a custom `ApiStore`) in a Vue wizard.
+This demo shows using `@daltonr/pathwrite-store` with **both** `LocalStorageStore` and `HttpStore` (via a custom `ApiStore`) in a Vue wizard.
 
 It demonstrates:
 
 - Building a list of team members and collecting per-member profile data via a sub-wizard.
-- Persisting every change (debounced at 500ms) using `httpPersistence`.
+- Persisting every change (debounced at 500ms) using `persistence`.
 - Restoring the engine from a snapshot with `restoreOrStart` so the user resumes where they left off.
 - Supporting multiple in-progress sessions: each session is saved under its own key and can be resumed or deleted from a session picker.
 - **Switchable storage backend**: toggle between localStorage (browser-local) and API (server-backed) without restarting the app.
@@ -62,7 +62,7 @@ Notes
 
 - **localStorage mode**: Each session is stored in the browser's localStorage with the prefix `pathwrite-demo:`. Keys look like `pathwrite-demo:session:163...`. Data is private to your browser and survives page reloads.
 - **API mode**: Each session is stored in the Express server's in-memory map. Data is shared across tabs/browsers pointing at the same server, but is lost when the server restarts.
-- The demo uses `httpPersistence` with `strategy: "onEveryChange"` and `debounceMs: 500` to save frequently but avoid excessive writes.
+- The demo uses `persistence` with `strategy: "onEveryChange"` and `debounceMs: 500` to save frequently but avoid excessive writes.
 - On completion the observer deletes the snapshot automatically so completed sessions don't reappear in the session picker.
 - The storage mode toggle is disabled when a wizard is active (you can only switch from the session picker screen).
 
@@ -81,11 +81,11 @@ All endpoints support CORS for local development.
 Developer tips
 --------------
 
-- If you are editing the `store-http` package while working on the demo, rebuild `packages/store-http` so the demo's runtime picks up the compiled `dist` files:
+- If you are editing the `store` package while working on the demo, rebuild `packages/store` so the demo's runtime picks up the compiled `dist` files:
 
 ```bash
 cd /Users/richarddalton/WebstormProjects/pathwrite
-npm run build -w packages/store-http
+npm run build -w packages/store
 ```
 
 - When wiring an externally-managed `PathEngine` instance into Vue components, use `shallowRef` rather than `ref` to avoid Vue proxying the class instance and losing its class shape:
