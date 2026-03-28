@@ -499,9 +499,10 @@ export class MyComponent {
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
-| `path` | `PathDefinition` | *required* | The path definition to drive. |
+| `path` | `PathDefinition` | — | The path definition to drive. Required unless `[engine]` is provided. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `autoStart` is suppressed and the shell immediately reflects the engine's current state. Use `@if (engine)` in the parent template to gate mounting until the engine is ready. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. |
-| `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. Ignored when `[engine]` is provided. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
@@ -872,13 +873,14 @@ Use it to distinguish initialization from re-entry:
 
 ## Persistence
 
-Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state persistence. The engine is created externally via `restoreOrStart()`, then handed to the facade via `adoptEngine()`.
+Use with [@daltonr/pathwrite-store-http](../store-http) for automatic state persistence. The engine is created externally via `restoreOrStart()` and passed directly to `<pw-shell>` via the `[engine]` input.
 
 ### Simple persistence example
 
 ```typescript
-import { Component, inject, OnInit } from '@angular/core';
-import { PathFacade, PathShellComponent, PathStepDirective } from '@daltonr/pathwrite-angular';
+import { Component, OnInit } from '@angular/core';
+import { PathEngine } from '@daltonr/pathwrite-angular';
+import { PathShellComponent, PathStepDirective } from '@daltonr/pathwrite-angular/shell';
 import { HttpStore, restoreOrStart, httpPersistence } from '@daltonr/pathwrite-store-http';
 import { signupPath } from './signup-path';
 
@@ -886,10 +888,9 @@ import { signupPath } from './signup-path';
   selector: 'app-signup-wizard',
   standalone: true,
   imports: [PathShellComponent, PathStepDirective],
-  providers: [PathFacade],
   template: `
-    @if (ready) {
-      <pw-shell [path]="path" [autoStart]="false" (complete)="onComplete($event)">
+    @if (engine) {
+      <pw-shell [path]="path" [engine]="engine" (complete)="onComplete($event)">
         <ng-template pwStep="details"><app-details-form /></ng-template>
         <ng-template pwStep="review"><app-review-panel /></ng-template>
       </pw-shell>
@@ -899,10 +900,8 @@ import { signupPath } from './signup-path';
   `
 })
 export class SignupWizardComponent implements OnInit {
-  private readonly facade = inject(PathFacade);
-
   path = signupPath;
-  ready = false;
+  engine: PathEngine | null = null;
 
   async ngOnInit() {
     const store = new HttpStore({ baseUrl: '/api/wizard' });
@@ -918,10 +917,7 @@ export class SignupWizardComponent implements OnInit {
       ]
     });
 
-    // Hand the running engine to the facade — it immediately
-    // reflects the engine's current state and forwards all events.
-    this.facade.adoptEngine(engine);
-    this.ready = true;
+    this.engine = engine;
 
     if (restored) {
       console.log('Progress restored — resuming from', engine.snapshot()?.stepId);
@@ -936,9 +932,8 @@ export class SignupWizardComponent implements OnInit {
 
 ### Key points
 
-- **`adoptEngine()`** connects the facade to an externally-created engine. No `@ViewChild` or shell reference needed — inject `PathFacade` directly.
-- **`[autoStart]="false"`** prevents the shell from calling `start()` on its own — the engine is already running.
-- **The facade is the same one the shell uses** (provided in the component's `providers`), so the shell's template bindings, progress indicator, and navigation buttons all work automatically.
+- **`[engine]`** passes an externally-managed engine directly to the shell. The shell adopts it immediately and skips `autoStart`.
+- **`@if (engine)`** acts as the async gate — the shell only mounts once the engine is ready, so there is no timing window where `autoStart` could fire before the engine arrives.
 - **`restoreOrStart()`** handles the load-or-create logic: if saved state exists on the server, it restores the engine mid-flow; otherwise it starts fresh.
 
 ---

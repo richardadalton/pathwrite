@@ -80,15 +80,10 @@
           <div class="spinner"></div>
           <p>Loading session…</p>
         </div>
-      } @else if (showShell) {
-        <!--
-          autoStart="false": the shell does NOT call facade.start() on its own.
-          Instead, AppComponent.ngAfterViewChecked() calls facade.adoptEngine()
-          to connect the externally-restored PathEngine to this shell's facade.
-        -->
+      } @else if (engine) {
         <pw-shell
           [path]="teamOnboardingPath"
-          [autoStart]="false"
+          [engine]="engine"
           completeLabel="Submit Onboarding"
           cancelLabel="Cancel"
           validationDisplay="inline"

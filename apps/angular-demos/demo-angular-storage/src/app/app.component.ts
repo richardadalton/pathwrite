@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewChecked, ChangeDetectorRef } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { PathData } from "@daltonr/pathwrite-angular";
 import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
@@ -42,9 +42,7 @@ const STEP_LABELS: Record<string, string> = {
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
-export class AppComponent implements OnInit, AfterViewChecked {
-
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+export class AppComponent implements OnInit {
 
   protected readonly teamOnboardingPath = teamOnboardingPath;
 
@@ -58,17 +56,11 @@ export class AppComponent implements OnInit, AfterViewChecked {
   // ── Active wizard ──────────────────────────────────────────────────────────
   // Kept as a plain property (NOT in a signal) to prevent Angular deep-proxying
   // the PathEngine class, which would strip private class members.
-  protected showShell = false;
+  protected engine: PathEngine | null = null;
   protected activeSessionKey: string | null = null;
   protected isRestored = false;
   protected wizardLoading = false;
   protected completedData: WizardData | null = null;
-
-  // The engine to adopt once the shell is in the DOM.
-  private pendingEngine: PathEngine | null = null;
-  private engineAdopted = false;
-
-  @ViewChild(PathShellComponent) private shellRef?: PathShellComponent;
 
   // ── Save indicator ─────────────────────────────────────────────────────────
   protected saveIndicator = false;
@@ -79,15 +71,6 @@ export class AppComponent implements OnInit, AfterViewChecked {
 
   async ngOnInit(): Promise<void> {
     await this.loadSessionList();
-  }
-
-  ngAfterViewChecked(): void {
-    // Once the shell is rendered (showShell = true), adopt the pending engine.
-    if (this.pendingEngine && this.shellRef && !this.engineAdopted) {
-      this.engineAdopted = true;
-      this.shellRef.facade.adoptEngine(this.pendingEngine);
-      this.pendingEngine = null;
-    }
   }
 
   // ── Session management ────────────────────────────────────────────────────
@@ -168,24 +151,18 @@ export class AppComponent implements OnInit, AfterViewChecked {
       ],
     });
 
-    // Stage the engine for adoption in ngAfterViewChecked once the shell mounts.
-    this.pendingEngine = result.engine;
-    this.engineAdopted = false;
+    this.engine = result.engine;
     this.isRestored = result.restored;
     this.wizardLoading = false;
-    this.showShell = true;
     this.view = "wizard";
-
-    // Trigger change detection so the shell is rendered before ngAfterViewChecked fires.
-    this.cdr.detectChanges();
   }
 
   // ── Wizard event handlers ─────────────────────────────────────────────────
 
   protected handleComplete(data: PathData): void {
     this.completedData = data as unknown as WizardData;
+    this.engine = null;
     this.view = "completed";
-    this.showShell = false;
     // httpPersistence auto-deletes the snapshot on completion; sync the list
     if (this.activeSessionKey) {
       this.sessions = this.sessions.filter(s => s.key !== this.activeSessionKey);
@@ -193,15 +170,13 @@ export class AppComponent implements OnInit, AfterViewChecked {
   }
 
   protected handleCancel(): void {
+    this.engine = null;
     this.view = "cancelled";
-    this.showShell = false;
   }
 
   protected async exitToSessions(): Promise<void> {
-    this.showShell = false;
+    this.engine = null;
     this.activeSessionKey = null;
-    this.engineAdopted = false;
-    this.pendingEngine = null;
     this.view = "sessions";
     await this.loadSessionList();
   }

@@ -9,7 +9,9 @@ import {
   ContentChildren,
   QueryList,
   OnInit,
+  OnChanges,
   OnDestroy,
+  SimpleChanges,
   inject,
   Injector,
   ChangeDetectionStrategy
@@ -20,6 +22,7 @@ import { takeUntil } from "rxjs/operators";
 import {
   PathData,
   PathDefinition,
+  PathEngine,
   PathEvent,
   PathSnapshot,
   ProgressLayout,
@@ -259,9 +262,24 @@ export class PathShellFooterDirective {
     </div>
   `
 })
-export class PathShellComponent implements OnInit, OnDestroy {
-  /** The path definition to run. Required. */
-  @Input({ required: true }) path!: PathDefinition<any>;
+export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
+  /** The path definition to run. Required unless [engine] is provided. */
+  @Input() path?: PathDefinition<any>;
+  /**
+   * An externally-managed `PathEngine` to adopt — for example, the engine
+   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store-http`.
+   *
+   * When provided the shell skips `autoStart` and immediately reflects the
+   * engine's current state. Gate the shell's existence on the engine being
+   * ready using `@if (engine)` so the input is always non-null on mount:
+   *
+   * ```html
+   * @if (engine) {
+   *   <pw-shell [engine]="engine" [path]="myPath" ...></pw-shell>
+   * }
+   * ```
+   */
+  @Input() engine?: PathEngine;
   /** Initial data merged into the path engine on start. */
   @Input() initialData: PathData = {};
   /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */
@@ -328,6 +346,12 @@ export class PathShellComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
+  public ngOnChanges(changes: SimpleChanges): void {
+    if (changes['engine'] && this.engine) {
+      this.facade.adoptEngine(this.engine);
+    }
+  }
+
   public ngOnInit(): void {
     this.facade.events$.pipe(takeUntil(this.destroy$)).subscribe((event) => {
       this.event.emit(event);
@@ -335,7 +359,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
       if (event.type === "cancelled") this.cancel.emit(event.data);
     });
 
-    if (this.autoStart) {
+    if (this.autoStart && !this.engine) {
       this.doStart();
     }
   }
@@ -346,6 +370,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
   }
 
   public doStart(): void {
+    if (!this.path) throw new Error('[pw-shell] [path] is required when no [engine] is provided');
     this.started = true;
     this.facade.start(this.path, this.initialData);
   }
