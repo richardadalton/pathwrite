@@ -1402,7 +1402,7 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     expect(result).toBe("cancelled-test");
   });
 
-  it("calls onComplete after emitting the completed event", async () => {
+  it("calls onComplete before emitting the completed event (so errors in onComplete can be caught and retried)", async () => {
     const callOrder: string[] = [];
     const engine = new PathEngine();
     engine.subscribe((event) => {
@@ -1414,7 +1414,7 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
       onComplete: () => { callOrder.push("callback"); }
     });
     await engine.next();
-    expect(callOrder).toEqual(["event", "callback"]);
+    expect(callOrder).toEqual(["callback", "event"]);
   });
 
   it("calls onCancel after emitting the cancelled event", async () => {
@@ -1583,7 +1583,7 @@ describe("PathEngine — async hooks and guards", () => {
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("resets isNavigating to false and rethrows when an async guard throws", async () => {
+  it("sets snapshot.error and resets isNavigating when an async guard throws", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
@@ -1596,9 +1596,11 @@ describe("PathEngine — async hooks and guards", () => {
       ]
     });
 
-    await expect(engine.next()).rejects.toThrow("network error");
-    expect(engine.snapshot()?.stepId).toBe("step1");
-    expect(engine.snapshot()?.isNavigating).toBe(false);
+    await engine.next();
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("step1");
+    expect(snap.isNavigating).toBe(false);
+    expect(snap.error).toEqual({ message: "network error", phase: "validating", retryCount: 0 });
   });
 
   it("allows navigation on a second attempt after a guard initially returns false", async () => {
@@ -1644,6 +1646,248 @@ describe("PathEngine — async hooks and guards", () => {
 
     // Only one navigation should have occurred
     expect(engine.snapshot()?.stepId).toBe("step2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Error handling — snapshot.error, retry(), suspend()
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — error handling", () => {
+  it("sets snapshot.error when canMoveNext throws, stays on current step", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", canMoveNext: () => Promise.reject(new Error("server down")) },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s1");
+    expect(snap.isNavigating).toBe(false);
+    expect(snap.error).toEqual({ message: "server down", phase: "validating", retryCount: 0 });
+  });
+
+  it("sets snapshot.error when onEnter throws on the new step", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1" },
+        { id: "s2", onEnter: () => Promise.reject(new Error("load failed")) }
+      ]
+    });
+
+    await engine.next();
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s2");
+    expect(snap.error).toEqual({ message: "load failed", phase: "entering", retryCount: 0 });
+  });
+
+  it("sets snapshot.error when onLeave throws, stays on current step", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", onLeave: () => Promise.reject(new Error("save failed")) },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s1");
+    expect(snap.error).toEqual({ message: "save failed", phase: "leaving", retryCount: 0 });
+  });
+
+  it("sets snapshot.error when onComplete throws", async () => {
+    const engine = new PathEngine();
+    let callCount = 0;
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }],
+      onComplete: async () => {
+        callCount++;
+        throw new Error("submit failed");
+      }
+    });
+
+    await engine.next();
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s1");
+    expect(snap.error).toEqual({ message: "submit failed", phase: "completing", retryCount: 0 });
+    expect(callCount).toBe(1);
+  });
+
+  it("retry() re-runs the failed operation and clears error on success", async () => {
+    let shouldFail = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "s1",
+          canMoveNext: async () => {
+            if (shouldFail) throw new Error("temporary failure");
+            return true;
+          }
+        },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    expect(engine.snapshot()!.error?.phase).toBe("validating");
+    expect(engine.snapshot()!.stepId).toBe("s1");
+
+    shouldFail = false;
+    await engine.retry();
+    expect(engine.snapshot()!.error).toBeNull();
+    expect(engine.snapshot()!.stepId).toBe("s2");
+  });
+
+  it("retry() increments retryCount on repeated failure", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", canMoveNext: () => Promise.reject(new Error("flaky")) },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    expect(engine.snapshot()!.error?.retryCount).toBe(0);
+
+    await engine.retry();
+    expect(engine.snapshot()!.error?.retryCount).toBe(1);
+
+    await engine.retry();
+    expect(engine.snapshot()!.error?.retryCount).toBe(2);
+  });
+
+  it("calling next() after an error resets retryCount to 0", async () => {
+    let fail = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        {
+          id: "s1",
+          canMoveNext: async () => {
+            if (fail) throw new Error("oops");
+            return true;
+          }
+        },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    expect(engine.snapshot()!.error?.retryCount).toBe(0);
+    await engine.retry();
+    expect(engine.snapshot()!.error?.retryCount).toBe(1);
+
+    // Call next() fresh — retryCount should reset
+    fail = false;
+    await engine.next();
+    expect(engine.snapshot()!.error).toBeNull();
+    expect(engine.snapshot()!.stepId).toBe("s2");
+  });
+
+  it("retry() is a no-op when there is no pending error", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "s1" }, { id: "s2" }] });
+    await engine.retry(); // no error — should not throw or change state
+    expect(engine.snapshot()!.stepId).toBe("s1");
+  });
+
+  it("suspend() emits a suspended event and clears error state", async () => {
+    const events: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((e) => events.push(e.type));
+
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", canMoveNext: () => Promise.reject(new Error("down")) },
+        { id: "s2" }
+      ]
+    });
+
+    await engine.next();
+    expect(engine.snapshot()!.error).not.toBeNull();
+
+    await engine.suspend();
+    expect(events).toContain("suspended");
+    expect(engine.snapshot()!.error).toBeNull();
+    expect(engine.snapshot()!.isNavigating).toBe(false);
+  });
+
+  it("suspend() includes the path id and current data in the suspended event", async () => {
+    let suspendedEvent: { type: string; pathId: string; data: Record<string, unknown> } | null = null;
+    const engine = new PathEngine();
+    engine.subscribe((e) => {
+      if (e.type === "suspended") suspendedEvent = e as typeof suspendedEvent;
+    });
+
+    await engine.start({ id: "my-path", steps: [{ id: "s1" }] }, { name: "Alice" });
+    await engine.suspend();
+
+    expect(suspendedEvent).not.toBeNull();
+    expect(suspendedEvent!.pathId).toBe("my-path");
+    expect(suspendedEvent!.data).toMatchObject({ name: "Alice" });
+  });
+
+  it("hasPersistence defaults to false", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "s1" }] });
+    expect(engine.snapshot()!.hasPersistence).toBe(false);
+  });
+
+  it("hasPersistence is true when set in options", async () => {
+    const engine = new PathEngine({ hasPersistence: true });
+    await engine.start({ id: "w", steps: [{ id: "s1" }] });
+    expect(engine.snapshot()!.hasPersistence).toBe(true);
+  });
+
+  it("snapshot.error is null on initial start", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "w", steps: [{ id: "s1" }] });
+    expect(engine.snapshot()!.error).toBeNull();
+  });
+
+  it("onComplete is called before the completed event fires", async () => {
+    const order: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((e) => { if (e.type === "completed") order.push("event"); });
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }],
+      onComplete: async () => { order.push("callback"); }
+    });
+
+    await engine.next();
+    expect(order).toEqual(["callback", "event"]);
+  });
+
+  it("completed event does NOT fire when onComplete throws", async () => {
+    const events: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((e) => events.push(e.type));
+
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }],
+      onComplete: async () => { throw new Error("submit failed"); }
+    });
+
+    await engine.next();
+    expect(events).not.toContain("completed");
+    expect(engine.snapshot()!.error?.phase).toBe("completing");
   });
 });
 

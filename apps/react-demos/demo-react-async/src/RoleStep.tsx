@@ -1,36 +1,44 @@
+import { useEffect, useState } from "react";
 import { usePathContext } from "@daltonr/pathwrite-react";
 import type { ApplicationData } from "./application-path";
+import type { ApplicationServices, Role } from "./services";
 
 export function RoleStep() {
-  const { snapshot, setData } = usePathContext<ApplicationData>();
+  const { snapshot, setData, services } = usePathContext<ApplicationData, ApplicationServices>();
   const snap   = snapshot!;
-  const data   = snap.data;
   const errors = snap.hasAttemptedNext ? snap.fieldErrors : {};
 
-  // onEnter is async — while it is running, isNavigating is true and
-  // availableRoles is still the empty initial value.
-  const isLoading = snap.isNavigating || data.availableRoles.length === 0;
+  const [roles, setRoles]       = useState<Role[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    services.getRoles().then(r => {
+      setRoles(r);
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <div className="form-body">
       <p className="step-intro">
-        We'll load the open positions from our API — watch the Next button while
-        this step first mounts.
+        Roles are loaded directly from the service inside the step component —
+        not via <code>onEnter</code>. Option lists are UI data; they shouldn't
+        live in the form payload.
       </p>
 
       <div className={`field ${errors.roleId ? "field--error" : ""}`}>
         <label htmlFor="roleId">Open Position</label>
 
-        {isLoading ? (
+        {loading ? (
           <div className="skeleton-select">Loading roles…</div>
         ) : (
           <select
             id="roleId"
-            value={data.roleId}
+            value={snap.data.roleId}
             onChange={e => setData("roleId", e.target.value)}
           >
             <option value="">— select a role —</option>
-            {data.availableRoles.map(r => (
+            {roles.map(r => (
               <option key={r.id} value={r.id}>{r.label}</option>
             ))}
           </select>
@@ -40,9 +48,10 @@ export function RoleStep() {
       </div>
 
       <p className="hint">
-        <strong>What's happening:</strong> <code>onEnter</code> is async — it
-        called <code>services.getRoles()</code> and patched the result into path
-        data. The shell's isNavigating flag was true during the fetch.
+        <strong>What's happening:</strong> <code>usePathContext&lt;ApplicationData, ApplicationServices&gt;()</code>{" "}
+        returns <code>services</code> alongside <code>snapshot</code>. The component calls{" "}
+        <code>services.getRoles()</code> in a <code>useEffect</code> and manages its
+        own loading state — keeping option lists out of the submission payload.
       </p>
     </div>
   );

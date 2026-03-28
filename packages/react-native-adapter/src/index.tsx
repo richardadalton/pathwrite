@@ -72,10 +72,19 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   resetStep: () => void;
   /** Tear down any active path and immediately start the given path fresh. */
   restart: () => void;
+  /** Re-runs the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
+  retry: () => void;
+  /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
+  suspend: () => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
   onEvent?: (event: PathEvent) => void;
+  /**
+   * Services object passed through context to all step components.
+   * Step components access it via `usePathContext<TData, TServices>()`.
+   */
+  services?: unknown;
 }>;
 
 // ---------------------------------------------------------------------------
@@ -141,35 +150,47 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   ) as UsePathReturn<TData>["setData"];
   const resetStep = useCallback(() => engine.resetStep(), [engine]);
   const restart = useCallback(() => engine.restart(), [engine]);
+  const retry = useCallback(() => engine.retry(), [engine]);
+  const suspend = useCallback(() => engine.suspend(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
 }
 
 // ---------------------------------------------------------------------------
 // Context + Provider
 // ---------------------------------------------------------------------------
 
-const PathContext = createContext<UsePathReturn | null>(null);
+interface PathContextValue {
+  path: UsePathReturn;
+  services: unknown;
+}
+
+const PathContext = createContext<PathContextValue | null>(null);
 
 /**
  * Provides a single `usePath` instance to all descendants.
  * Consume with `usePathContext()`.
  */
-export function PathProvider({ children, onEvent }: PathProviderProps): ReactElement {
+export function PathProvider({ children, onEvent, services }: PathProviderProps): ReactElement {
   const path = usePath({ onEvent });
-  return createElement(PathContext.Provider, { value: path }, children);
+  return createElement(PathContext.Provider, { value: { path, services: services ?? null } }, children);
 }
 
 /**
- * Access the nearest `PathProvider`'s path instance.
- * Throws if used outside of a `<PathProvider>`.
+ * Access the nearest `PathProvider`'s path instance and optional services object.
+ * Throws if used outside of a `<PathProvider>` or `<PathShell>`.
+ *
+ * `TData` narrows `snapshot.data`; `TServices` types the `services` value.
  */
-export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> };
+  return {
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> }),
+    services: ctx.services as TServices
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +210,8 @@ export interface PathShellActions {
   goToStepChecked: (stepId: string) => void;
   setData: (key: string, value: unknown) => void;
   restart: () => void;
+  retry: () => void;
+  suspend: () => void;
 }
 
 export interface PathShellProps {
@@ -253,6 +276,11 @@ export interface PathShellProps {
    * warning. The step is then responsible for managing its own scroll.
    */
   disableBodyScroll?: boolean;
+  /**
+   * Services object passed through context to all step components.
+   * Step components access it via `usePathContext<TData, TServices>()`.
+   */
+  services?: unknown;
 }
 
 /**
@@ -293,6 +321,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   style,
   keyboardVerticalOffset = 0,
   disableBodyScroll = false,
+  services,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -303,7 +332,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     },
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
 
   useImperativeHandle(ref, () => ({
     restart: () => restart(),
@@ -323,14 +352,18 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     ? ((snapshot.formId ? steps[snapshot.formId] : undefined) ?? steps[snapshot.stepId] ?? null)
     : null;
 
+  const contextValue: PathContextValue = { path: pathReturn, services: services ?? null };
+
   const actions: PathShellActions = {
     next, previous, cancel, goToStep, goToStepChecked, setData,
     restart: () => restart(),
+    retry: () => retry(),
+    suspend: () => suspend(),
   };
 
   if (!snapshot) {
     return (
-      <PathContext.Provider value={pathReturn}>
+      <PathContext.Provider value={contextValue}>
         <View style={[styles.shell, style]}>
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No active path.</Text>
@@ -356,7 +389,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     !hideProgress && (snapshot.stepCount > 1 || snapshot.nestingLevel > 0);
 
   return (
-    <PathContext.Provider value={pathReturn}>
+    <PathContext.Provider value={contextValue}>
       <KeyboardAvoidingView
         style={[styles.shell, style]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

@@ -14,13 +14,12 @@ export default function App() {
   const [completedData, setCompletedData] = useState<ApplicationData | null>(null);
 
   if (completedData) {
-    const role = completedData.availableRoles.find(r => r.id === completedData.roleId);
     return (
       <main className="page">
         <div className="page-header">
           <h1>Application Submitted</h1>
           <p className="subtitle">
-            Your application for <strong>{role?.label ?? completedData.roleId}</strong> was received.
+            Your application for role <strong>{completedData.roleId}</strong> was received.
           </p>
         </div>
         <section className="result-panel success-panel">
@@ -47,6 +46,7 @@ export default function App() {
 
       <PathShell
         path={applicationPath}
+        services={services}
         initialData={INITIAL_DATA}
         completeLabel="Submit Application"
         hideCancel

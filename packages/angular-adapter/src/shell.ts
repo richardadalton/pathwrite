@@ -48,6 +48,10 @@ export interface PathShellActions {
   setData: (key: string, value: unknown) => Promise<void>;
   /** Restart the shell's current path with its current `initialData`. */
   restart: () => Promise<void>;
+  /** Re-run the operation that set `snapshot.error`. */
+  retry: () => Promise<void>;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +347,8 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     goToStepChecked: (id) => this.facade.goToStepChecked(id),
     setData: (key, value) => this.facade.setData(key, value as never),
     restart: () => this.facade.restart(),
+    retry: () => this.facade.retry(),
+    suspend: () => this.facade.suspend(),
   };
 
   private readonly destroy$ = new Subject<void>();

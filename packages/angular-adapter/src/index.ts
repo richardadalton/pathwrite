@@ -98,6 +98,16 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.restart();
   }
 
+  /** Re-runs the operation that set `snapshot().error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
+  public retry(): Promise<void> {
+    return this._engine.retry();
+  }
+
+  /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
+  public suspend(): Promise<void> {
+    return this._engine.suspend();
+  }
+
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
     return this._engine.startSubPath(path, initialData, meta);
   }
@@ -175,6 +185,10 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
    * Use for "Start over" / retry flows.
    */
   restart: () => Promise<void>;
+  /** Re-run the operation that set `snapshot().error`. */
+  retry: () => Promise<void>;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => Promise<void>;
 }
 
 /**
@@ -235,6 +249,8 @@ export function injectPath<TData extends PathData = PathData>(): InjectPathRetur
     goToStep: (stepId) => facade.goToStep(stepId),
     goToStepChecked: (stepId) => facade.goToStepChecked(stepId),
     restart: () => facade.restart(),
+    retry: () => facade.retry(),
+    suspend: () => facade.suspend(),
   };
 }
 

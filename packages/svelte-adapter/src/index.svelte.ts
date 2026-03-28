@@ -75,6 +75,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * Use for "Start over" / retry flows without remounting the component.
    */
   restart: () => Promise<void>;
+  /** Re-runs the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
+  retry: () => Promise<void>;
+  /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
+  suspend: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +184,8 @@ export function usePath<TData extends PathData = PathData>(
   const resetStep = (): Promise<void> => engine.resetStep();
 
   const restart = (): Promise<void> => engine.restart();
+  const retry = (): Promise<void> => engine.retry();
+  const suspend = (): Promise<void> => engine.suspend();
 
   return {
     get snapshot() { return _snapshot; },
@@ -192,7 +198,9 @@ export function usePath<TData extends PathData = PathData>(
     goToStepChecked,
     setData,
     resetStep,
-    restart
+    restart,
+    retry,
+    suspend
   };
 }
 
@@ -202,7 +210,7 @@ export function usePath<TData extends PathData = PathData>(
 
 const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
 
-export interface PathContext<TData extends PathData = PathData> {
+export interface PathContext<TData extends PathData = PathData, TServices = unknown> {
   readonly snapshot: PathSnapshot<TData>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
@@ -212,6 +220,15 @@ export interface PathContext<TData extends PathData = PathData> {
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
   resetStep: () => Promise<void>;
   restart: () => Promise<void>;
+  /** Re-run the operation that set `snapshot.error`. */
+  retry: () => Promise<void>;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => Promise<void>;
+  /**
+   * Services object passed through context from `PathShell`.
+   * Typed as `TServices` when `getPathContext<TData, TServices>()` is used.
+   */
+  services: TServices;
 }
 
 /**
@@ -231,8 +248,8 @@ export interface PathContext<TData extends PathData = PathData> {
  * <button onclick={ctx.next}>Next</button>
  * ```
  */
-export function getPathContext<TData extends PathData = PathData>(): PathContext<TData> {
-  const ctx = getContext<PathContext<TData>>(PATH_CONTEXT_KEY);
+export function getPathContext<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> {
+  const ctx = getContext<PathContext<TData, TServices>>(PATH_CONTEXT_KEY);
   if (!ctx) {
     throw new Error(
       "getPathContext() must be called from a component inside a <PathShell>. " +
@@ -246,7 +263,7 @@ export function getPathContext<TData extends PathData = PathData>(): PathContext
  * Internal: Set the PathContext for child components.
  * Used by PathShell component.
  */
-export function setPathContext<TData extends PathData = PathData>(ctx: PathContext<TData>): void {
+export function setPathContext<TData extends PathData = PathData, TServices = unknown>(ctx: PathContext<TData, TServices>): void {
   setContext(PATH_CONTEXT_KEY, ctx);
 }
 

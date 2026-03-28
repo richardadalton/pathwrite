@@ -72,6 +72,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * Use for "Start over" / retry flows without remounting the component.
    */
   restart: () => Promise<void>;
+  /** Re-runs the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
+  retry: () => Promise<void>;
+  /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
+  suspend: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,8 +126,10 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const resetStep = (): Promise<void> => engine.resetStep();
 
   const restart = (): Promise<void> => engine.restart();
+  const retry = (): Promise<void> => engine.retry();
+  const suspend = (): Promise<void> => engine.suspend();
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
 }
 
 // ---------------------------------------------------------------------------
@@ -140,22 +146,31 @@ function formatFieldKey(key: string): string {
 // Context — provide / inject
 // ---------------------------------------------------------------------------
 
+interface PathContextValue {
+  path: UsePathReturn;
+  services: unknown;
+}
+
 /** Injection key used by PathShell and usePathContext. */
-const PathInjectionKey: InjectionKey<UsePathReturn> = Symbol("PathContext");
+const PathInjectionKey: InjectionKey<PathContextValue> = Symbol("PathContext");
 
 /**
- * Access the nearest `PathShell`'s path instance via Vue `inject`.
+ * Access the nearest `PathShell`'s path instance and optional services object via Vue `inject`.
  * Throws if used outside of a PathShell component.
  *
- * The optional generic narrows `snapshot.data` for convenience — it is a
- * **type-level assertion**, not a runtime guarantee.
+ * Both generics are type-level assertions, not runtime guarantees:
+ * - `TData` narrows `snapshot.data`
+ * - `TServices` types the `services` value — must match what was passed to `PathShell`
  */
-export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>>; services: TServices } {
   const ctx = inject(PathInjectionKey, null);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a PathShell component.");
   }
-  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> };
+  return {
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> }),
+    services: ctx.services as TServices
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +186,10 @@ export interface PathShellActions {
   setData: (key: string, value: unknown) => Promise<void>;
   /** Restart the shell's current path with its current `initialData`. */
   restart: () => Promise<void>;
+  /** Re-run the operation that set `snapshot.error`. */
+  retry: () => Promise<void>;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => Promise<void>;
 }
 
 /**
@@ -224,7 +243,12 @@ export const PathShell = defineComponent({
      * - "rootOnly": Only the root bar — sub-path bar hidden.
      * - "activeOnly": Only the active (sub-path) bar — root bar hidden.
      */
-    progressLayout: { type: String as PropType<ProgressLayout>, default: "merged" }
+    progressLayout: { type: String as PropType<ProgressLayout>, default: "merged" },
+    /**
+     * Services object passed through context to all step components.
+     * Step components access it via `usePathContext<TData, TServices>()`.
+     */
+    services: { type: Object as PropType<unknown>, default: undefined }
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
@@ -237,10 +261,10 @@ export const PathShell = defineComponent({
       }
     });
 
-    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
 
     // Provide context so child components can use usePathContext()
-    provide(PathInjectionKey, pathReturn);
+    provide(PathInjectionKey, { path: pathReturn, services: props.services ?? null });
 
     const started = ref(false);
     onMounted(() => {
@@ -254,7 +278,9 @@ export const PathShell = defineComponent({
 
     const actions: PathShellActions = {
       next, previous, cancel, goToStep, goToStepChecked, setData,
-      restart: () => restart()
+      restart: () => restart(),
+      retry: () => retry(),
+      suspend: () => suspend(),
     };
 
     // Expose restart() on the component instance so parent refs can call it:

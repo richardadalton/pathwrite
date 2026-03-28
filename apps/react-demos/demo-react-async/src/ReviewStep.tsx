@@ -6,8 +6,6 @@ export function ReviewStep() {
   const snap = snapshot!;
   const data = snap.data;
 
-  const selectedRole = data.availableRoles.find(r => r.id === data.roleId);
-
   return (
     <div className="form-body">
       <p className="step-intro">
@@ -17,7 +15,7 @@ export function ReviewStep() {
       <div className="eligibility-summary">
         <div className="summary-row">
           <span className="summary-key">Role</span>
-          <span>{selectedRole?.label ?? data.roleId}</span>
+          <span>{data.roleId as string}</span>
         </div>
         <div className="summary-row">
           <span className="summary-key">Experience</span>

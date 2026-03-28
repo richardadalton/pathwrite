@@ -42,6 +42,11 @@
      * - "activeOnly": Only the active (sub-path) bar — root bar hidden.
      */
     progressLayout?: ProgressLayout;
+    /**
+     * Services object passed through context to all step components.
+     * Step components access it via `getPathContext<TData, TServices>()`.
+     */
+    services?: unknown;
     // Callback props replace event dispatching in Svelte 5
     oncomplete?: (data: PathData) => void;
     oncancel?: (data: PathData) => void;
@@ -67,6 +72,7 @@
     footerLayout = 'auto',
     validationDisplay = 'summary',
     progressLayout = 'merged',
+    services = null,
     oncomplete,
     oncancel,
     onevent,
@@ -85,7 +91,7 @@
     }
   });
 
-  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart: restartFn } = pathReturn;
+  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart: restartFn, retry, suspend } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
@@ -96,7 +102,10 @@
     goToStep,
     goToStepChecked,
     setData,
-    restart: () => restartFn(path, initialData)
+    restart: () => restartFn(path, initialData),
+    retry,
+    suspend,
+    services,
   });
 
   // Auto-start the path when no external engine is provided
@@ -109,7 +118,7 @@
   });
 
   let snap = $derived(pathReturn.snapshot);
-  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData) });
+  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData), retry, suspend });
 
   // Auto-detect footer layout: single-step top-level paths use "form", everything else uses "wizard"
   let resolvedFooterLayout = $derived(

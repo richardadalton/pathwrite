@@ -195,6 +195,19 @@ export interface PathDefinition<TData extends PathData = PathData> {
 
 export type StepStatus = "completed" | "current" | "upcoming";
 
+/**
+ * The phase of engine operation in which an error occurred.
+ * Used by `snapshot.error` to let shells adapt the UX to the failure context.
+ *
+ * | Phase          | When it fires                                               |
+ * |----------------|-------------------------------------------------------------|
+ * | `validating`   | `canMoveNext` / `canMovePrevious` threw an exception        |
+ * | `leaving`      | `onLeave` hook threw an exception                           |
+ * | `entering`     | `onEnter` hook threw an exception                           |
+ * | `completing`   | `PathDefinition.onComplete` threw an exception              |
+ */
+export type ErrorPhase = "entering" | "leaving" | "validating" | "completing";
+
 export interface StepSummary {
   id: string;
   title?: string;
@@ -255,6 +268,22 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   rootProgress?: RootProgress;
   /** True while an async guard or hook is executing. Use to disable navigation controls. */
   isNavigating: boolean;
+  /**
+   * Structured error set when an engine-invoked async operation throws. `null` when no error is active.
+   *
+   * `phase` identifies which operation failed so shells can adapt the message.
+   * `retryCount` counts how many times the user has explicitly called `retry()` — starts at 0 on
+   * first failure, increments on each retry. Use this to escalate from "Try again" to "Come back later".
+   *
+   * Cleared automatically when navigation succeeds or when `retry()` is called.
+   */
+  error: { message: string; phase: ErrorPhase; retryCount: number } | null;
+  /**
+   * `true` when a `PathStore` is attached via `PathEngineOptions.hasPersistence`.
+   * Shells use this to decide whether to promise the user that progress is saved
+   * when showing the "come back later" escalation message.
+   */
+  hasPersistence: boolean;
   /** Whether the current step's `canMoveNext` guard allows advancing. Async guards default to `true`. Auto-derived as `true` when `fieldErrors` is defined and returns no messages, and `canMoveNext` is not explicitly defined. */
   canMoveNext: boolean;
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
@@ -335,12 +364,15 @@ export type StateChangeCause =
   | "setData"
   | "resetStep"
   | "cancel"
-  | "restart";
+  | "restart"
+  | "retry"
+  | "suspend";
 
 export type PathEvent =
   | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot }
   | { type: "completed"; pathId: string; data: PathData }
   | { type: "cancelled"; pathId: string; data: PathData }
+  | { type: "suspended"; pathId: string; data: PathData }
   | {
       type: "resumed";
       resumedPathId: string;
@@ -424,6 +456,12 @@ export interface PathEngineOptions {
    * listeners use `engine.subscribe()`.
    */
   observers?: PathObserver[];
+  /**
+   * Set to `true` when a `PathStore` is attached and will persist path state.
+   * Exposed as `snapshot.hasPersistence` so shells can honestly tell the user
+   * their progress is saved when showing the "come back later" escalation message.
+   */
+  hasPersistence?: boolean;
 }
 
 interface ActivePath {
@@ -454,6 +492,16 @@ export class PathEngine {
   /** The path and initial data from the most recent top-level start() call. Used by restart(). */
   private _rootPath: PathDefinition<any> | null = null;
   private _rootInitialData: PathData = {};
+  /** Structured error from the most recent failed async operation. Null when no error is active. */
+  private _error: { message: string; phase: ErrorPhase; retryCount: number } | null = null;
+  /** Stored retry function. Null when no error is pending. */
+  private _pendingRetry: (() => Promise<void>) | null = null;
+  /**
+   * Counts how many times `retry()` has been called for the current error sequence.
+   * Reset to 0 by `next()` (fresh navigation). Incremented by `retry()`.
+   */
+  private _retryCount = 0;
+  private _hasPersistence = false;
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -461,6 +509,9 @@ export class PathEngine {
         // Wrap so observer receives the engine instance as the second argument
         this.listeners.add((event) => observer(event, this));
       }
+    }
+    if (options?.hasPersistence) {
+      this._hasPersistence = true;
     }
   }
 
@@ -597,12 +648,57 @@ export class PathEngine {
 
   public next(): Promise<void> {
     const active = this.requireActivePath();
+    // Fresh navigation — reset the retry sequence
+    this._retryCount = 0;
+    this._error = null;
+    this._pendingRetry = null;
     return this._nextAsync(active);
   }
 
   public previous(): Promise<void> {
     const active = this.requireActivePath();
     return this._previousAsync(active);
+  }
+
+  /**
+   * Re-runs the operation that caused the most recent `snapshot.error`.
+   * Increments `snapshot.error.retryCount` so shells can escalate from
+   * "Try again" to "Come back later" after repeated failures.
+   *
+   * No-op if there is no pending error or if navigation is in progress.
+   */
+  public retry(): Promise<void> {
+    if (!this._pendingRetry || this._isNavigating) return Promise.resolve();
+    this._retryCount++;
+    const fn = this._pendingRetry;
+    this._pendingRetry = null;
+    this._error = null;
+    return fn();
+  }
+
+  /**
+   * Pauses the path with intent to return. Preserves all state and data.
+   *
+   * - Clears any active error state
+   * - Emits a `suspended` event that the application can listen for to dismiss
+   *   the wizard UI (close a modal, navigate away, etc.)
+   * - The engine remains in its current state — call `start()` / `restoreOrStart()`
+   *   to resume when the user returns
+   *
+   * Use in the "Come back later" escalation path when `snapshot.error.retryCount`
+   * has crossed `retryThreshold`. The `suspended` event signals the app to dismiss
+   * the UI; Pathwrite's persistence layer handles saving progress automatically via
+   * the configured store and observer strategy.
+   */
+  public suspend(): Promise<void> {
+    const active = this.activePath;
+    const pathId = active?.definition.id ?? "";
+    const data = active ? { ...active.data } : {};
+    this._error = null;
+    this._pendingRetry = null;
+    this._isNavigating = false;
+    this.emit({ type: "suspended", pathId, data });
+    return Promise.resolve();
   }
 
   /** Cancel is synchronous for top-level paths (no hooks). Sub-path cancellation
@@ -738,6 +834,8 @@ export class PathEngine {
       nestingLevel: this.pathStack.length,
       rootProgress,
       isNavigating: this._isNavigating,
+      error: this._error,
+      hasPersistence: this._hasPersistence,
       hasAttemptedNext: this._hasAttemptedNext,
       canMoveNext: this.evaluateCanMoveNextSync(effectiveStep, active),
       canMovePrevious: this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
@@ -826,15 +924,7 @@ export class PathEngine {
 
     this.emitStateChanged("start");
 
-    try {
-      this.applyPatch(await this.enterCurrentStep());
-      this._isNavigating = false;
-      this.emitStateChanged("start");
-    } catch (err) {
-      this._isNavigating = false;
-      this.emitStateChanged("start");
-      throw err;
-    }
+    await this._enterCurrentStepWithErrorHandling("start");
   }
 
   private async _nextAsync(active: ActivePath): Promise<void> {
@@ -846,30 +936,46 @@ export class PathEngine {
     this._isNavigating = true;
     this.emitStateChanged("next");
 
+    // Phase: validating — canMoveNext guard
+    let canProceed: boolean;
     try {
-      const step = this.getEffectiveStep(active);
+      canProceed = await this.canMoveNext(active, this.getEffectiveStep(active));
+    } catch (err) {
+      this._error = { message: PathEngine.errorMessage(err), phase: "validating", retryCount: this._retryCount };
+      this._pendingRetry = () => this._nextAsync(active);
+      this._isNavigating = false;
+      this.emitStateChanged("next");
+      return;
+    }
 
-      if (await this.canMoveNext(active, step)) {
-        this.applyPatch(await this.leaveCurrentStep(active, step));
-        active.currentStepIndex += 1;
-        await this.skipSteps(1);
-
-        if (active.currentStepIndex >= active.definition.steps.length) {
-          this._isNavigating = false;
-          await this.finishActivePath();
-          return;
-        }
-
-        this.applyPatch(await this.enterCurrentStep());
+    if (canProceed) {
+      // Phase: leaving — onLeave hook
+      try {
+        this.applyPatch(await this.leaveCurrentStep(active, this.getEffectiveStep(active)));
+      } catch (err) {
+        this._error = { message: PathEngine.errorMessage(err), phase: "leaving", retryCount: this._retryCount };
+        this._pendingRetry = () => this._nextAsync(active);
+        this._isNavigating = false;
+        this.emitStateChanged("next");
+        return;
       }
 
-      this._isNavigating = false;
-      this.emitStateChanged("next");
-    } catch (err) {
-      this._isNavigating = false;
-      this.emitStateChanged("next");
-      throw err;
+      active.currentStepIndex += 1;
+      await this.skipSteps(1);
+
+      if (active.currentStepIndex >= active.definition.steps.length) {
+        // Phase: completing — PathDefinition.onComplete
+        await this._finishActivePathWithErrorHandling();
+        return;
+      }
+
+      // Phase: entering — onEnter hook on the new step
+      await this._enterCurrentStepWithErrorHandling("next");
+      return;
     }
+
+    this._isNavigating = false;
+    this.emitStateChanged("next");
   }
 
   private async _previousAsync(active: ActivePath): Promise<void> {
@@ -1032,18 +1138,74 @@ export class PathEngine {
         snapshot: this.snapshot()!
       });
     } else {
-      // Top-level path completed — call onComplete hook if defined
-      this.activePath = null;
-      this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+      // Top-level path completed — call onComplete before clearing activePath so
+      // that if it throws the engine remains on the final step and can retry.
       if (finished.definition.onComplete) {
         await finished.definition.onComplete(finishedData);
       }
+      this.activePath = null;
+      this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+    }
+  }
+
+  /**
+   * Wraps `finishActivePath` with error handling for the `completing` phase.
+   * On failure: sets `_error`, stores a retry that re-calls `finishActivePath`,
+   * resets `isNavigating`, and emits `stateChanged`.
+   * On success: resets `isNavigating` (finishActivePath sets activePath = null,
+   * so no stateChanged is needed — the `completed` event is the terminal signal).
+   */
+  private async _finishActivePathWithErrorHandling(): Promise<void> {
+    const active = this.activePath;
+    try {
+      await this.finishActivePath();
+      this._isNavigating = false;
+      // No stateChanged here — finishActivePath emits "completed" or "resumed"
+    } catch (err) {
+      this._error = { message: PathEngine.errorMessage(err), phase: "completing", retryCount: this._retryCount };
+      // Retry: call finishActivePath again (activePath is still set because onComplete
+      // throws before this.activePath = null in the restructured finishActivePath)
+      this._pendingRetry = () => this._finishActivePathWithErrorHandling();
+      this._isNavigating = false;
+      if (active) {
+        // Restore activePath if it was cleared mid-throw (defensive)
+        if (!this.activePath) this.activePath = active;
+        // Back up to the last valid step so snapshot() can render it while error is shown
+        if (this.activePath.currentStepIndex >= this.activePath.definition.steps.length) {
+          this.activePath.currentStepIndex = this.activePath.definition.steps.length - 1;
+        }
+        this.emitStateChanged("next");
+      }
+    }
+  }
+
+  /**
+   * Wraps `enterCurrentStep` with error handling for the `entering` phase.
+   * Called by both `_startAsync` and `_nextAsync` after advancing to a new step.
+   * On failure: sets `_error`, stores a retry that re-calls this method,
+   * resets `isNavigating`, and emits `stateChanged` with the given `cause`.
+   */
+  private async _enterCurrentStepWithErrorHandling(cause: StateChangeCause): Promise<void> {
+    try {
+      this.applyPatch(await this.enterCurrentStep());
+      this._isNavigating = false;
+      this.emitStateChanged(cause);
+    } catch (err) {
+      this._error = { message: PathEngine.errorMessage(err), phase: "entering", retryCount: this._retryCount };
+      // Retry: re-enter the current step (don't repeat guards/leave)
+      this._pendingRetry = () => this._enterCurrentStepWithErrorHandling(cause);
+      this._isNavigating = false;
+      this.emitStateChanged(cause);
     }
   }
 
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  private static errorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+  }
 
   private requireActivePath(): ActivePath {
     if (this.activePath === null) {

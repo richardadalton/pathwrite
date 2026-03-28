@@ -6,9 +6,6 @@ import type { ApplicationServices, Role } from "./services";
 // ---------------------------------------------------------------------------
 
 export interface ApplicationData {
-  // Loaded asynchronously by onEnter on the first step
-  availableRoles: Role[];
-
   // Step 1 — role selection
   roleId: string;
 
@@ -23,10 +20,9 @@ export interface ApplicationData {
 }
 
 export const INITIAL_DATA: ApplicationData = {
-  availableRoles: [],
-  roleId:         "",
-  yearsExperience: "",
-  skills:          "",
+  roleId:           "",
+  yearsExperience:  "",
+  skills:           "",
   eligibilityReason: "",
 };
 
@@ -45,17 +41,6 @@ export function createApplicationPath(
       {
         id: "role",
         title: "Choose a Role",
-
-        // --- Async onEnter ---------------------------------------------------
-        // Loads the list of available roles from the API before this step is
-        // shown. While this is pending, isNavigating is true and the shell
-        // renders a spinner on the Next button.  The RoleStep component checks
-        // snap.data.availableRoles.length to know when the data has arrived.
-        onEnter: async ({ isFirstEntry }) => {
-          if (!isFirstEntry) return;
-          const roles = await svc.getRoles();
-          return { availableRoles: roles };
-        },
 
         fieldErrors: ({ data }) => ({
           roleId: !data.roleId ? "Please select a role to continue." : undefined,

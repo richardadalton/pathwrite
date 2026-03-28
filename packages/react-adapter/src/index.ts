@@ -67,11 +67,29 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * Use for "Start over" / retry flows without remounting the component.
    */
   restart: () => void;
+  /**
+   * Re-runs the operation that set `snapshot.error`. Increments `snapshot.error.retryCount`
+   * on repeated failure so shells can escalate from "Try again" to "Come back later".
+   * No-op when there is no pending error.
+   */
+  retry: () => void;
+  /**
+   * Pauses the path with intent to return. Emits a `suspended` event that the application
+   * listens for to dismiss the wizard UI. All state and data are preserved.
+   */
+  suspend: () => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
   /** Forwarded to the internal usePath hook. */
   onEvent?: (event: PathEvent) => void;
+  /**
+   * Services object passed through context to all step components.
+   * Step components access it via `usePathContext<TData, TServices>()`.
+   * Typed as `unknown` here so `PathProvider` stays non-generic — provide a
+   * typed services interface via the `TServices` type parameter on `usePathContext`.
+   */
+  services?: unknown;
 }>;
 
 // ---------------------------------------------------------------------------
@@ -160,37 +178,58 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const restart = useCallback(() => engine.restart(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
+  const retry = useCallback(() => engine.retry(), [engine]);
+
+  const suspend = useCallback(() => engine.suspend(), [engine]);
+
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
 }
 
 // ---------------------------------------------------------------------------
 // Context + Provider
 // ---------------------------------------------------------------------------
 
-const PathContext = createContext<UsePathReturn | null>(null);
+interface PathContextValue {
+  path: UsePathReturn;
+  services: unknown;
+}
+
+const PathContext = createContext<PathContextValue | null>(null);
 
 /**
  * Provides a single `usePath` instance to all descendants.
  * Consume with `usePathContext()`.
  */
-export function PathProvider({ children, onEvent }: PathProviderProps): ReactElement {
+export function PathProvider({ children, onEvent, services }: PathProviderProps): ReactElement {
   const path = usePath({ onEvent });
-  return createElement(PathContext.Provider, { value: path }, children);
+  return createElement(PathContext.Provider, { value: { path, services: services ?? null } }, children);
 }
 
 /**
- * Access the nearest `PathProvider`'s path instance.
- * Throws if used outside of a `<PathProvider>`.
+ * Access the nearest `PathProvider`'s path instance and optional services object.
+ * Throws if used outside of a `<PathProvider>` or `<PathShell>`.
  *
- * The optional generic narrows `snapshot.data` for convenience — it is a
- * **type-level assertion**, not a runtime guarantee.
+ * Both generics are type-level assertions, not runtime guarantees:
+ * - `TData` narrows `snapshot.data`
+ * - `TServices` types the `services` value — must match what was passed to `PathShell` or `PathProvider`
+ *
+ * @example
+ * ```tsx
+ * function OfficeStep() {
+ *   const { snapshot, services } = usePathContext<HiringData, HiringServices>();
+ *   // services is typed as HiringServices
+ * }
+ * ```
  */
-export function usePathContext<TData extends PathData = PathData>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  return ctx as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> };
+  return {
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> }),
+    services: ctx.services as TServices
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -309,6 +348,22 @@ export interface PathShellProps {
    * - `"activeOnly"`: Only the active (sub-path) bar — root bar hidden.
    */
   progressLayout?: ProgressLayout;
+  /**
+   * Services object passed through context to all step components.
+   * Step components access it via `usePathContext<TData, TServices>()`.
+   *
+   * The same services object that was passed to your path factory function
+   * should be passed here so step components can call service methods directly
+   * (e.g. parameterised queries that depend on mid-step user input).
+   *
+   * @example
+   * ```tsx
+   * const svc = new LiveHiringServices();
+   * const path = createHiringPath(svc);
+   * <PathShell path={path} services={svc} steps={{ ... }} />
+   * ```
+   */
+  services?: unknown;
 }
 
 export interface PathShellHandle {
@@ -325,6 +380,10 @@ export interface PathShellActions {
   setData: (key: string, value: unknown) => void;
   /** Restart the shell's current path with its current `initialData`. */
   restart: () => void;
+  /** Re-run the operation that set `snapshot.error`. See `PathEngine.retry()`. */
+  retry: () => void;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => void;
 }
 
 /**
@@ -364,6 +423,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   renderFooter,
   validationDisplay = "summary",
   progressLayout = "merged",
+  services,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -374,7 +434,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     }
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
 
   useImperativeHandle(ref, () => ({
     restart: () => restart(),
@@ -399,8 +459,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     ? ((snapshot.formId ? steps[snapshot.formId] : undefined) ?? steps[snapshot.stepId] ?? null)
     : null;
 
+  const contextValue: PathContextValue = { path: pathReturn, services: services ?? null };
+
   if (!snapshot) {
-    return createElement(PathContext.Provider, { value: pathReturn },
+    return createElement(PathContext.Provider, { value: contextValue },
       createElement("div", { className: cls("pw-shell", className) },
         createElement("div", { className: "pw-shell__empty" },
           createElement("p", null, "No active path."),
@@ -416,7 +478,9 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 
   const actions: PathShellActions = {
     next, previous, cancel, goToStep, goToStepChecked, setData,
-    restart: () => restart()
+    restart: () => restart(),
+    retry: () => retry(),
+    suspend: () => suspend(),
   };
 
   const showRoot = !hideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
@@ -424,7 +488,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     ? true
     : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
-  return createElement(PathContext.Provider, { value: pathReturn },
+  return createElement(PathContext.Provider, { value: contextValue },
     createElement("div", { className: cls("pw-shell", progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`, className) },
       // Root progress — persistent top-level bar visible during sub-paths
       showRoot && defaultRootProgress(snapshot.rootProgress!),
