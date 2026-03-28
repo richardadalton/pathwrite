@@ -259,7 +259,7 @@ export const PathShell = defineComponent({
 
     // Expose restart() on the component instance so parent refs can call it:
     //   const shellRef = ref();  →  shellRef.value.restart()
-    expose({ restart: () => restart(props.path, props.initialData) });
+    expose({ restart: () => restart() });
 
     return () => {
       const snap = snapshot.value as PathSnapshot | null;
