@@ -117,7 +117,7 @@ Then open **http://localhost:5173** in your browser.
 | Step content | `<ng-template pwStep="contact">` | `steps={{ contact: <ContactStep /> }}` | `<template #contact>` | `contact={ContactStep}` |
 | Data access in step | `#shell` ref → `shell.facade.setData()` | `usePathContext()` hook | `usePathContext()` composable | `getPathContext()` |
 | Reset | Toggle `@if` | Toggle `useState` | Toggle `v-if` | Toggle `$state` |
-| Event handling | `(completed)` / `(cancelled)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
+| Event handling | `(complete)` / `(cancel)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
 
 Svelte's **snippet prop pattern** (`contact={ContactStep}`) is clean and concise — simpler than Vue's template syntax, more intuitive than React's object, and far better than Angular's directive.
 

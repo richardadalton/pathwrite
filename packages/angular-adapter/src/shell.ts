@@ -127,7 +127,7 @@ export class PathShellFooterDirective {
  * and navigation buttons.
  *
  * ```html
- * <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+ * <pw-shell [path]="myPath" [initialData]="{ name: '' }" (complete)="onDone($event)">
  *   <ng-template pwStep="details"><app-details-form /></ng-template>
  *   <ng-template pwStep="review"><app-review-panel /></ng-template>
  * </pw-shell>
@@ -301,9 +301,9 @@ export class PathShellComponent implements OnInit, OnDestroy {
    */
   @Input() progressLayout: ProgressLayout = "merged";
 
-  @Output() completed = new EventEmitter<PathData>();
-  @Output() cancelled = new EventEmitter<PathData>();
-  @Output() pathEvent = new EventEmitter<PathEvent>();
+  @Output() complete = new EventEmitter<PathData>();
+  @Output() cancel = new EventEmitter<PathData>();
+  @Output() event = new EventEmitter<PathEvent>();
 
   @ContentChildren(PathStepDirective) stepDirectives!: QueryList<PathStepDirective>;
   @ContentChild(PathShellHeaderDirective) customHeader?: PathShellHeaderDirective;
@@ -330,9 +330,9 @@ export class PathShellComponent implements OnInit, OnDestroy {
 
   public ngOnInit(): void {
     this.facade.events$.pipe(takeUntil(this.destroy$)).subscribe((event) => {
-      this.pathEvent.emit(event);
-      if (event.type === "completed") this.completed.emit(event.data);
-      if (event.type === "cancelled") this.cancelled.emit(event.data);
+      this.event.emit(event);
+      if (event.type === "completed") this.complete.emit(event.data);
+      if (event.type === "cancelled") this.cancel.emit(event.data);
     });
 
     if (this.autoStart) {

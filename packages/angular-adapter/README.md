@@ -410,7 +410,7 @@ import {
 @Component({
   imports: [PathShellComponent, PathStepDirective],
   template: `
-    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (complete)="onDone($event)">
       <ng-template pwStep="details"><app-details-form /></ng-template>
       <ng-template pwStep="review"><app-review-panel /></ng-template>
     </pw-shell>
@@ -484,7 +484,7 @@ The parent component hosting `<pw-shell>` does **not** need its own
 @Component({
   imports: [PathShellComponent, PathStepDirective],
   template: `
-    <pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+    <pw-shell #shell [path]="myPath" (complete)="onDone($event)">
       <ng-template pwStep="details"><app-details-form /></ng-template>
     </pw-shell>
   `
@@ -514,9 +514,9 @@ export class MyComponent {
 
 | Output | Payload | Description |
 |--------|---------|-------------|
-| `(completed)` | `PathData` | Emitted when the path finishes naturally. |
-| `(cancelled)` | `PathData` | Emitted when the path is cancelled. |
-| `(pathEvent)` | `PathEvent` | Emitted for every engine event. |
+| `(complete)` | `PathData` | Emitted when the path finishes naturally. |
+| `(cancel)` | `PathData` | Emitted when the path is cancelled. |
+| `(event)` | `PathEvent` | Emitted for every engine event. |
 
 ### Customising the header and footer
 
@@ -576,7 +576,7 @@ Toggle an `@if` flag to destroy and recreate the shell. Every child component re
 
 ```html
 @if (isActive) {
-  <pw-shell [path]="myPath" (completed)="isActive = false" (cancelled)="isActive = false">
+  <pw-shell [path]="myPath" (complete)="isActive = false" (cancel)="isActive = false">
     <ng-template pwStep="details"><app-details-form /></ng-template>
   </pw-shell>
 } @else {
@@ -589,7 +589,7 @@ Toggle an `@if` flag to destroy and recreate the shell. Every child component re
 Use the existing `#shell` template reference — `restart()` is a public method:
 
 ```html
-<pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+<pw-shell #shell [path]="myPath" (complete)="onDone($event)">
   <ng-template pwStep="details"><app-details-form /></ng-template>
 </pw-shell>
 
@@ -889,7 +889,7 @@ import { signupPath } from './signup-path';
   providers: [PathFacade],
   template: `
     @if (ready) {
-      <pw-shell [path]="path" [autoStart]="false" (completed)="onComplete($event)">
+      <pw-shell [path]="path" [autoStart]="false" (complete)="onComplete($event)">
         <ng-template pwStep="details"><app-details-form /></ng-template>
         <ng-template pwStep="review"><app-review-panel /></ng-template>
       </pw-shell>

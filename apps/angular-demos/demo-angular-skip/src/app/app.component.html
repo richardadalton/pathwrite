@@ -46,8 +46,8 @@
       completeLabel="Subscribe"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      (completed)="onComplete($event)"
-      (cancelled)="onCancel()"
+      (complete)="onComplete($event)"
+      (cancel)="onCancel()"
     >
       <ng-template pwStep="select-plan"><app-select-plan-step /></ng-template>
       <ng-template pwStep="shipping-address"><app-shipping-address-step /></ng-template>

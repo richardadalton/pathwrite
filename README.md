@@ -203,7 +203,7 @@ import { PathShell } from "@daltonr/pathwrite-vue";
 
 ```html
 <!-- Import PathShellComponent and PathStepDirective from @daltonr/pathwrite-angular/shell -->
-<pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+<pw-shell [path]="myPath" [initialData]="{ name: '' }" (complete)="onDone($event)">
   <ng-template pwStep="details"><app-details-form /></ng-template>
   <ng-template pwStep="review"><app-review-panel /></ng-template>
 </pw-shell>

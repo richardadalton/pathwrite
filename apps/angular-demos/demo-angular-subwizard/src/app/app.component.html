@@ -65,8 +65,8 @@
       completeLabel="Finalise"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      (completed)="onComplete($event)"
-      (cancelled)="onCancel()"
+      (complete)="onComplete($event)"
+      (cancel)="onCancel()"
     >
       <!-- Main wizard steps -->
       <ng-template pwStep="create-document">

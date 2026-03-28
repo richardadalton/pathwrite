@@ -16,8 +16,8 @@ Same contact form as `demo-react-form`, `demo-vue-form`, and `demo-svelte-form` 
 | `shell.facade.stateSignal()` | Reads reactive engine state inline in the template (e.g. for a character count) |
 | `canMoveNext` guard | Blocks submission until all fields are valid |
 | `validationMessages` | Surfaces per-rule errors in the shell's built-in orange message area |
-| `(completed)` output | Fires when the user clicks "Send Message" |
-| `(cancelled)` output | Fires when the user clicks "Discard" |
+| `(complete)` output | Fires when the user clicks "Send Message" |
+| `(cancel)` output | Fires when the user clicks "Discard" |
 | Auto-hidden progress | Single-step paths hide the progress header automatically — no `[hideProgress]` needed |
 | `completeLabel` / `cancelLabel` | Re-labelled to "Send Message" / "Discard" |
 | Angular `@if` blocks | `@if (!isSubmitted && !isCancelled)` mounts/unmounts the shell cleanly |
@@ -86,8 +86,8 @@ protected readonly contactFormPath: PathDefinition = {
   [path]="contactFormPath"
   completeLabel="Send Message"
   cancelLabel="Discard"
-  (completed)="onSubmit($event)"
-  (cancelled)="onCancel()"
+  (complete)="onSubmit($event)"
+  (cancel)="onCancel()"
 >
   <ng-template pwStep="contact">
     <!-- step content here -->
@@ -149,6 +149,6 @@ Then open **http://localhost:4200** in your browser.
 | Step content | `<ng-template pwStep="contact">` | `steps={{ contact: <ContactStep /> }}` | `<template #contact>` | `contact={ContactStep}` |
 | Data access in step | `#shell` ref → `shell.facade.setData()` | `usePathContext()` hook | `usePathContext()` composable | `getPathContext()` |
 | Reset | Toggle `@if` | Toggle `useState` | Toggle `v-if` | Toggle `$state` |
-| Event handling | `(completed)` / `(cancelled)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
+| Event handling | `(complete)` / `(cancel)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
 
 Angular requires the most boilerplate — a `#shell` template reference for data access and local mirrored properties to keep inputs controlled. This fits Angular's explicit, class-based conventions, but it's the steepest learning curve of the four adapters.

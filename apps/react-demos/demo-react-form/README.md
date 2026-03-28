@@ -126,6 +126,6 @@ Then open **http://localhost:5173** in your browser.
 | Step content | `<ng-template pwStep="contact">` | `steps={{ contact: <ContactStep /> }}` | `<template #contact>` | `contact={ContactStep}` |
 | Data access in step | `#shell` ref → `shell.facade.setData()` | `usePathContext()` hook | `usePathContext()` composable | `getPathContext()` |
 | Reset | Toggle `@if` | Toggle `useState` | Toggle `v-if` | Toggle `$state` |
-| Event handling | `(completed)` / `(cancelled)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
+| Event handling | `(complete)` / `(cancel)` | `onComplete` / `onCancel` | `@complete` / `@cancel` | `oncomplete` / `oncancel` |
 
 React's **`usePathContext()` hook** is the standout pattern — a single call gives full engine access with no prop drilling, template refs, or manual context wiring. The `steps` object is more explicit than Vue's slots and Svelte's snippet props, which suits React's "everything is JS" style.

@@ -47,8 +47,8 @@
       completeLabel="Send Message"
       cancelLabel="Discard"
       validationDisplay="inline"
-      (completed)="onSubmit($event)"
-      (cancelled)="onCancel()"
+      (complete)="onSubmit($event)"
+      (cancel)="onCancel()"
     >
       <!--
         Uses the new ContactStepComponent with injectPath() API (v0.6.0).

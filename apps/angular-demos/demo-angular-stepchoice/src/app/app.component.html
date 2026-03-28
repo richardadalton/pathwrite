@@ -94,8 +94,8 @@
       completeLabel="Save Address"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      (completed)="onComplete($event)"
-      (cancelled)="onCancel()"
+      (complete)="onComplete($event)"
+      (cancel)="onCancel()"
     >
       <ng-template pwStep="country">
         <app-country-step />

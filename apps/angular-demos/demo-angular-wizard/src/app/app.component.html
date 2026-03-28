@@ -78,8 +78,8 @@
       completeLabel="Complete Onboarding"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      (completed)="onComplete($event)"
-      (cancelled)="onCancel()"
+      (complete)="onComplete($event)"
+      (cancel)="onCancel()"
     >
       <ng-template pwStep="personal-info">
         <app-personal-info-step />

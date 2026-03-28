@@ -92,8 +92,8 @@
           completeLabel="Submit Onboarding"
           cancelLabel="Cancel"
           validationDisplay="inline"
-          (completed)="handleComplete($event)"
-          (cancelled)="handleCancel()"
+          (complete)="handleComplete($event)"
+          (cancel)="handleCancel()"
         >
           <ng-template pwStep="team-setup">
             <app-team-setup-step />
