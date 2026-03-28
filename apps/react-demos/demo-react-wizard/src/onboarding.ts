@@ -51,7 +51,6 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
     {
       id: "about-you",
       title: "About You",
-      canMoveNext: ({ data }) => !!data.jobTitle?.trim() && !!data.experience,
       fieldErrors: ({ data }) => ({
         jobTitle:   !data.jobTitle?.trim() ? "Job title is required."              : undefined,
         experience: !data.experience       ? "Please select your experience level." : undefined,

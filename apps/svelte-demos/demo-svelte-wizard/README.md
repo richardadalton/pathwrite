@@ -10,7 +10,7 @@ guards, per-field validation, and a final review step before completion.
 | # | Step | Key concepts |
 |---|------|-------------|
 | 1 | **Personal Info** | `fieldErrors` auto-derives `canMoveNext`; errors shown only after first Next attempt |
-| 2 | **About You** | Explicit `canMoveNext` guard + `fieldErrors` together; optional field (Company) |
+| 2 | **About You** | `fieldErrors` auto-derives `canMoveNext`; optional field (Company) has no validation |
 | 3 | **Preferences** | No guard — all fields have defaults; radio buttons + toggle |
 | 4 | **Review** | Read-only summary using `{@const d = ctx.snapshot.data}` for clean access |
 

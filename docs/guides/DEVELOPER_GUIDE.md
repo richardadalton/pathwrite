@@ -167,7 +167,7 @@ const myPath: PathDefinition = {
 | `title` | `string` | — | Human-readable label. Exposed in the snapshot as `stepTitle` and in `steps[].title`. |
 | `meta` | `Record<string, unknown>` | — | Arbitrary metadata (e.g. icon name, group). Exposed as `stepMeta` and `steps[].meta`. |
 | `shouldSkip` | function | — | Return `true` to skip this step during navigation. |
-| `canMoveNext` | function | — | Return `false` to block forward navigation. |
+| `canMoveNext` | function | — | Return `false` to block forward navigation. **If omitted and `fieldErrors` is defined, auto-derived as `true` when all field messages are `undefined`.** Only add an explicit guard when the condition differs from "all fields valid". |
 | `canMovePrevious` | function | — | Return `false` to block backward navigation. |
 | `validationMessages` | function | — | Returns a `string[]` explaining why the step is not yet valid. Evaluated synchronously on every snapshot; displayed by the default shell below the step body. Async functions default to `[]`. |
 | `onEnter` | function | — | Called on arrival at a step. Can return a partial data patch. Receives `ctx.isFirstEntry` — use it to guard one-time initialisation so that navigating Back and re-entering the step does not reset data. |

@@ -10,7 +10,7 @@ guards, per-field validation, and a final review step before completion.
 | # | Step | Key concepts |
 |---|------|-------------|
 | 1 | **Personal Info** | `fieldErrors` auto-derives `canMoveNext`; errors shown only after first Next attempt |
-| 2 | **About You** | Explicit `canMoveNext` guard + `fieldErrors` together; optional field (Company) |
+| 2 | **About You** | `fieldErrors` auto-derives `canMoveNext`; optional field (Company) has no validation |
 | 3 | **Preferences** | No guard — all fields have defaults; radio buttons + toggle |
 | 4 | **Review** | Read-only summary of all collected data |
 
@@ -31,7 +31,7 @@ src/
 ├── App.tsx               – page state, renders PathShell with steps map
 ├── onboarding.ts         – PathDefinition, OnboardingData type, shared labels
 ├── PersonalInfoStep.tsx  – Step 1: name + email, fieldErrors only
-├── AboutYouStep.tsx      – Step 2: job title + experience, guard + fieldErrors
+├── AboutYouStep.tsx      – Step 2: job title + experience, fieldErrors auto-derives canMoveNext
 ├── PreferencesStep.tsx   – Step 3: theme radios + notifications toggle
 ├── ReviewStep.tsx        – Step 4: read-only summary
 └── style.css             – page + shell override + step styles

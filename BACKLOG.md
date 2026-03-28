@@ -21,9 +21,10 @@ Svelte requires camelCase step IDs (`"selectPlan"`) because prop names can't con
 Two options: (a) make Svelte PathShell normalize camelCase prop keys to kebab-case before lookup, or (b) add a `steps` prop (plain `Record<string, Component>` like React) as an alternative to the spread-props pattern.
 **Affects:** svelte adapter.
 
-### BL-04 — Document `canMoveNext` auto-derivation from `fieldErrors` more prominently
-The engine auto-derives `canMoveNext: true` when `fieldErrors` is defined and returns no messages, and `canMoveNext` is not explicitly set. Several demos still define redundant `canMoveNext` guards that just duplicate the fieldErrors logic. This should be the documented "default pattern" front-and-centre.
-**Affects:** docs, demos.
+### ~~BL-04 — Document `canMoveNext` auto-derivation from `fieldErrors` more prominently~~ ✓ Done
+~~The engine auto-derives `canMoveNext: true` when `fieldErrors` is defined and returns no messages, and `canMoveNext` is not explicitly set. Several demos still define redundant `canMoveNext` guards that just duplicate the fieldErrors logic. This should be the documented "default pattern" front-and-centre.~~
+~~**Affects:** docs, demos.~~
+Removed redundant `canMoveNext` from the "about-you" step in the React, Vue, and Svelte wizard demos. Updated all three wizard READMEs to reflect auto-derivation as the default pattern. Added inline note to the `canMoveNext` row in the DEVELOPER_GUIDE step fields table.
 
 ---
 
