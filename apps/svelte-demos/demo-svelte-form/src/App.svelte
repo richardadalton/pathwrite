@@ -75,6 +75,7 @@
       initialData={{ name: "", email: "", subject: "", message: "" }}
       completeLabel="Send Message"
       cancelLabel="Discard"
+      validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
       contact={ContactStep}

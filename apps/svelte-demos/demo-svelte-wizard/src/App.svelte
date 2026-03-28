@@ -103,6 +103,7 @@
       initialData={INITIAL_DATA}
       completeLabel="Complete Onboarding"
       cancelLabel="Cancel"
+      validationDisplay="inline"
       personalInfo={PersonalInfoStep}
       aboutYou={AboutYouStep}
       preferences={PreferencesStep}

@@ -70,6 +70,7 @@ function startOver() {
       :initial-data="INITIAL_DATA"
       complete-label="Subscribe"
       cancel-label="Cancel"
+      validation-display="inline"
       @complete="handleComplete"
       @cancel="handleCancel"
     >

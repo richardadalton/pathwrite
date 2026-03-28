@@ -213,7 +213,7 @@ export const PathShell = defineComponent({
      * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
      * - `"both"`: Render the shell summary AND whatever the step template renders.
      */
-    validationDisplay: { type: String as PropType<"summary" | "inline" | "both">, default: "inline" },
+    validationDisplay: { type: String as PropType<"summary" | "inline" | "both">, default: "summary" },
     /**
      * Controls how progress bars are arranged when a sub-path is active.
      * - "merged" (default): Root and sub-path bars in one card.

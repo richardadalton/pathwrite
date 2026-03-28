@@ -104,6 +104,7 @@ export default function App() {
           initialData={INITIAL_DATA}
           completeLabel="Complete Onboarding"
           cancelLabel="Cancel"
+          validationDisplay="inline"
           steps={{
             "personal-info": <PersonalInfoStep />,
             "about-you":     <AboutYouStep />,

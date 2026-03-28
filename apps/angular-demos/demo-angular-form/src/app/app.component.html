@@ -46,6 +46,7 @@
       [initialData]="{ name: '', email: '', subject: '', message: '' }"
       completeLabel="Send Message"
       cancelLabel="Discard"
+      validationDisplay="inline"
       (completed)="onSubmit($event)"
       (cancelled)="onCancel()"
     >

@@ -7,9 +7,10 @@ Items within each section are roughly priority-ordered.
 
 ## Cross-cutting
 
-### BL-01 — Change `validationDisplay` default to `"summary"` across all adapters
-The current default `"inline"` suppresses the shell's error rendering, so newcomers see no feedback at all when they use `fieldErrors` without adding their own error UI. Default should be `"summary"` (show errors in the shell). Rename or alias `"inline"` → `"suppress"` to make intent clear.
-**Affects:** react, vue, svelte, angular, react-native adapters + PathShell in each.
+### ~~BL-01 — Change `validationDisplay` default to `"summary"` across all adapters~~ ✓ Done
+~~The current default `"inline"` suppresses the shell's error rendering, so newcomers see no feedback at all when they use `fieldErrors` without adding their own error UI. Default should be `"summary"` (show errors in the shell). Rename or alias `"inline"` → `"suppress"` to make intent clear.~~
+~~**Affects:** react, vue, svelte, angular, react-native adapters + PathShell in each.~~
+All 5 adapters now default to `"summary"`. All existing demos updated with explicit `validationDisplay="inline"` to preserve their inline rendering behaviour. The react-native adapter gained the `validationDisplay` prop for the first time.
 
 ### BL-02 — `usePathContext` / `getPathContext` / `injectPath` should return non-null snapshot
 Step components are only mounted when a snapshot is active; the null case is impossible at runtime. The current `PathSnapshot | null` return type forces `snapshot!.data` or `snapshot?.data ?? {}` guards throughout every step component. Return `PathSnapshot<TData>` (non-null) from the context helpers.

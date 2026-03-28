@@ -73,6 +73,7 @@ export default function App() {
           initialData={INITIAL_DATA}
           completeLabel="Save Address"
           cancelLabel="Cancel"
+          validationDisplay="inline"
           onComplete={(data) => { setResult(data as AddressData); setCompleted(true); }}
           onCancel={() => setCancelled(true)}
           steps={{

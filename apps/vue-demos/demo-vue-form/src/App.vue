@@ -73,6 +73,7 @@ function tryAgain() {
       :initial-data="{ name: '', email: '', subject: '', message: '' }"
       complete-label="Send Message"
       cancel-label="Discard"
+      validation-display="inline"
       @complete="handleComplete"
       @cancel="handleCancel"
     >

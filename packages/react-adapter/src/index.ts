@@ -325,7 +325,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   className,
   renderHeader,
   renderFooter,
-  validationDisplay = "inline",
+  validationDisplay = "summary",
   progressLayout = "merged",
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({

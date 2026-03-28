@@ -230,6 +230,13 @@ export interface PathShellProps {
    * - `"form"`: Cancel on left, Next alone on right.
    */
   footerLayout?: "wizard" | "form" | "auto";
+  /**
+   * Controls whether the shell renders its auto-generated field-error summary box.
+   * - `"summary"` (default): Shell renders the labeled error list below the step body.
+   * - `"inline"`: Suppress the summary — handle errors inside the step component instead.
+   * - `"both"`: Render the shell summary AND whatever the step component renders.
+   */
+  validationDisplay?: "summary" | "inline" | "both";
   /** Render prop to replace the header (progress area). */
   renderHeader?: (snapshot: PathSnapshot) => ReactNode;
   /** Render prop to replace the footer (navigation area). */
@@ -276,6 +283,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   hideCancel = false,
   hideProgress = false,
   footerLayout = "auto",
+  validationDisplay = "summary",
   renderHeader,
   renderFooter,
   style,
@@ -380,7 +388,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         </ScrollView>
 
         {/* Validation messages */}
-        {snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && (
+        {validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && (
           <View style={styles.validation}>
             {Object.entries(snapshot.fieldErrors).map(([key, msg]) => (
               <Text key={key} style={styles.validationItem}>

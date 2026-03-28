@@ -278,6 +278,7 @@
           path={teamOnboardingPath}
           completeLabel="Submit Onboarding"
           cancelLabel="Cancel"
+          validationDisplay="inline"
           progressLayout="split"
           oncomplete={handleComplete}
           oncancel={handleCancel}

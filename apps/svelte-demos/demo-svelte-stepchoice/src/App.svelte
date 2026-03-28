@@ -73,6 +73,7 @@
       initialData={INITIAL_DATA}
       completeLabel="Save Address"
       cancelLabel="Cancel"
+      validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
       country={CountryStep}

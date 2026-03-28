@@ -59,6 +59,7 @@ export default function App() {
             path={contactPath}
             initialData={INITIAL_DATA}
             completeLabel="Send Message"
+            validationDisplay="inline"
             cancelLabel="Discard"
             footerLayout="form"
             onComplete={handleComplete}

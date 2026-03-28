@@ -79,6 +79,7 @@ export default function App() {
           initialData={{ name: "", email: "", subject: "", message: "" }}
           completeLabel="Send Message"
           cancelLabel="Discard"
+          validationDisplay="inline"
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{

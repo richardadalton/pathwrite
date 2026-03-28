@@ -64,6 +64,7 @@
       initialData={INITIAL_DATA}
       completeLabel="Subscribe"
       cancelLabel="Cancel"
+      validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
       selectPlan={SelectPlanStep}

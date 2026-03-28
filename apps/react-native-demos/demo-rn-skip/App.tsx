@@ -33,6 +33,7 @@ export default function App() {
           path={mainPath}
           initialData={INITIAL_DATA}
           completeLabel="Finish ✓"
+          validationDisplay="inline"
           onComplete={() => shellRef.current?.restart()}
           steps={{
             "name":             <NameStep />,

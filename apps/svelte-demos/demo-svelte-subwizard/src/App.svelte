@@ -78,6 +78,7 @@
       initialData={INITIAL_DATA}
       completeLabel="Finalise"
       cancelLabel="Cancel"
+      validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
       createDocument={CreateDocumentStep}

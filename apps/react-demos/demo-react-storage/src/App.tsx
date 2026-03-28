@@ -271,6 +271,7 @@ export default function App() {
               path={teamOnboardingPath}
               engine={engine}
               completeLabel="Submit Onboarding"
+              validationDisplay="inline"
               cancelLabel="Cancel"
               onComplete={handleComplete}
               onCancel={handleCancel}

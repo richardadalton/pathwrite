@@ -65,7 +65,7 @@
     hideCancel = false,
     hideProgress = false,
     footerLayout = 'auto',
-    validationDisplay = 'inline',
+    validationDisplay = 'summary',
     progressLayout = 'merged',
     oncomplete,
     oncancel,

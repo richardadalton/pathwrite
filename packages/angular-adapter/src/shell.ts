@@ -291,7 +291,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
    * - `"inline"`: Suppress the summary — handle errors inside the step template instead.
    * - `"both"`: Render the shell summary AND whatever the step template renders.
    */
-  @Input() validationDisplay: "summary" | "inline" | "both" = "inline";
+  @Input() validationDisplay: "summary" | "inline" | "both" = "summary";
   /**
    * Controls how progress bars are arranged when a sub-path is active.
    * - "merged" (default): Root and sub-path bars in one card.

@@ -55,6 +55,7 @@ function resetCourse() {
       :initial-data="INITIAL_DATA"
       complete-label="Graduate"
       cancel-label="Exit"
+      validation-display="inline"
       @complete="handleComplete"
     >
       <template #header="{ snapshot }"><CourseMilestoneHeader :snapshot="snapshot" /></template>

@@ -81,6 +81,7 @@ export default function App() {
           initialData={INITIAL_DATA}
           completeLabel="Finalise"
           cancelLabel="Cancel"
+          validationDisplay="inline"
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{

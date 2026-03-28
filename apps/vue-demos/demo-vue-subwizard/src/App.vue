@@ -98,6 +98,7 @@ const overallStatus = (data: DocumentData) => {
       :initial-data="INITIAL_DATA"
       complete-label="Finalise"
       cancel-label="Cancel"
+      validation-display="inline"
       @complete="handleComplete"
       @cancel="handleCancel"
     >

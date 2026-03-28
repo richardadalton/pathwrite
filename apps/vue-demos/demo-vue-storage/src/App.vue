@@ -367,6 +367,7 @@ function formatDate(d: string): string {
         :path="teamOnboardingPath"
         :engine="engine"
         complete-label="Submit Onboarding"
+        validation-display="inline"
         cancel-label="Cancel"
         progress-layout="split"
         @complete="handleComplete"
