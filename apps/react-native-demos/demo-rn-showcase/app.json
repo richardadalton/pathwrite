@@ -11,6 +11,9 @@
     ],
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/apps/react-native-demos/demo-rn-showcase/dist"
+    }
   }
 }
