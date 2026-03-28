@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>React Native in the browser — Pathwrite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .doc-container{max-width:900px;margin:48px auto;padding:0 1.5rem}
+    .doc-hero{background:var(--color-bg-card);border:1px solid var(--color-border);padding:20px;border-radius:12px;margin-bottom:20px}
+    .doc-hero h1{margin:0 0 8px}
+    .doc-section{background:var(--color-bg);padding:18px;border-radius:8px;border:1px solid var(--color-border);margin-bottom:14px}
+    pre{background:var(--color-code-bg);padding:12px;border-radius:8px;color:var(--color-text);overflow:auto}
+    a.btn-link{display:inline-block;margin-top:12px}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="/" class="nav__logo"><span class="nav__logo-icon">⟡</span> Pathwrite</a>
+    <div class="nav__links">
+      <a href="/">Home</a>
+      <a href="#">Docs</a>
+    </div>
+  </div>
+</nav>
+
+<main class="doc-container">
+  <div class="doc-hero">
+    <h1>React Native in the browser</h1>
+    <p class="section__subtitle">How the phone-frame demo on the homepage works — a real React Native app compiled to web and embedded in an iframe.</p>
+  </div>
+
+  <section class="doc-section" id="summary">
+    <h2>Summary</h2>
+    <p>The homepage embeds a real <code>@daltonr/pathwrite-react-native</code> app running inside a CSS phone frame. It is not a mockup or a separate web implementation — it is the same React Native source code that runs on iOS and Android, compiled to a browser-compatible bundle using <a href="https://docs.expo.dev/guides/progressive-web-apps/" target="_blank" rel="noopener">Expo Web</a> and <a href="https://necolas.github.io/react-native-web/" target="_blank" rel="noopener">react-native-web</a>.</p>
+  </section>
+
+  <section class="doc-section" id="how-expo-web-works">
+    <h2>How Expo Web works</h2>
+    <p><code>react-native-web</code> provides browser equivalents for every core React Native primitive:</p>
+    <ul>
+      <li><code>View</code> → <code>&lt;div&gt;</code></li>
+      <li><code>Text</code> → <code>&lt;span&gt;</code></li>
+      <li><code>Pressable</code> → <code>&lt;div role="button"&gt;</code></li>
+      <li><code>ScrollView</code>, <code>KeyboardAvoidingView</code>, <code>StyleSheet</code>, <code>Platform</code> — all shimmed</li>
+    </ul>
+    <p>When Expo bundles for web it aliases <code>react-native</code> → <code>react-native-web</code>, so the app and every library it imports (including <code>@daltonr/pathwrite-react-native</code>) transparently pick up the web implementations with no code changes.</p>
+  </section>
+
+  <section class="doc-section" id="building">
+    <h2>Building the web bundle</h2>
+    <p>From the showcase app directory:</p>
+    <pre><code>npx expo export --platform web</code></pre>
+    <p>This produces a static <code>dist/</code> folder — an <code>index.html</code> and a single JS bundle. Because the app is served from a subdirectory on this site, the <code>baseUrl</code> must be set so asset paths resolve correctly:</p>
+    <pre><code>// app.json
+{
+  "expo": {
+    "experiments": {
+      "baseUrl": "/apps/react-native-demos/demo-rn-showcase/dist"
+    }
+  }
+}</code></pre>
+    <p>Without this, Expo emits absolute paths like <code>/_expo/static/js/web/index.js</code> which resolve to the site root instead of the subdirectory.</p>
+  </section>
+
+  <section class="doc-section" id="embedding">
+    <h2>Embedding in the page</h2>
+    <p>The static bundle is served as a standalone page and embedded in an <code>&lt;iframe&gt;</code> inside a CSS phone frame:</p>
+    <pre><code>&lt;div class="phone-frame"&gt;
+  &lt;div class="phone-frame__screen"&gt;
+    &lt;iframe src="apps/react-native-demos/demo-rn-showcase/dist/"
+            title="React Native showcase"&gt;&lt;/iframe&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+    <p>The phone shape is pure CSS — rounded corners, a dark bezel, a notch bar, and a box-shadow stack to give depth. No images or icon fonts required.</p>
+  </section>
+
+  <section class="doc-section" id="pathwrite-adapter">
+    <h2>The Pathwrite adapter</h2>
+    <p>The showcase uses <code>@daltonr/pathwrite-react-native</code> exactly as it would on a real device. <code>PathShell</code> renders its step content inside a <code>ScrollView</code> with <code>KeyboardAvoidingView</code>, and the stepper and navigation buttons use <code>View</code>, <code>Text</code>, and <code>Pressable</code>. All of that maps to DOM elements via react-native-web at build time — the adapter itself has no web-specific code.</p>
+    <pre><code>import { PathShell } from "@daltonr/pathwrite-react-native";
+
+export default function App() {
+  return (
+    &lt;PathShell
+      path={myPath}
+      initialData={INITIAL_DATA}
+      onComplete={handleComplete}
+      steps={{ welcome: &lt;WelcomeStep /&gt;, ... }}
+    /&gt;
+  );
+}</code></pre>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Limitations</h2>
+    <ul>
+      <li><strong>Visual fidelity:</strong> react-native-web renders to DOM, so it looks slightly different from a native app — fonts, shadows, and touch feedback are browser equivalents, not platform-native.</li>
+      <li><strong>Native modules:</strong> any library that requires a native module (e.g. camera, biometrics) will not work on web. The Pathwrite adapter has no native dependencies, so this is not an issue here.</li>
+      <li><strong>Bundle size:</strong> react-native-web ships the full RN primitives layer, so the bundle is larger than a typical web app (~445 kB in this case).</li>
+    </ul>
+  </section>
+
+  <p><a class="btn btn--ghost" href="/">← Back to homepage</a></p>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <p>&copy; 2026 Devjoy Ltd. MIT License.</p>
+  </div>
+</footer>
+</body>
+</html>
