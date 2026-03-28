@@ -40,6 +40,7 @@ export function FeaturesDemo({ onBack }: Props) {
           initialData={INITIAL_DATA}
           completeLabel="Finish ✓"
           validationDisplay="inline"
+          hideCancel
           onComplete={() => shellRef.current?.restart()}
           steps={{
             "name":             <NameStep />,
