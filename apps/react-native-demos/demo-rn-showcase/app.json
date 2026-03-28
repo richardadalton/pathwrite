@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Pathwrite — Conditional Steps",
-    "slug": "pathwrite-demo-rn-skip",
+    "name": "Pathwrite — RN Showcase",
+    "slug": "pathwrite-demo-rn-showcase",
     "version": "1.0.0",
     "orientation": "portrait",
     "platforms": [
       "ios",
       "android"
     ],
-"plugins": [
+    "plugins": [
       "expo-asset"
     ]
   }

@@ -6,20 +6,24 @@ import {
   Text,
   ScrollView,
   Pressable,
+  TouchableOpacity,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { PathShell } from "@daltonr/pathwrite-react-native";
 import type { PathShellHandle } from "@daltonr/pathwrite-react-native";
 import type { PathData } from "@daltonr/pathwrite-react-native";
-import { contactPath, INITIAL_DATA } from "./src/path";
-import type { ContactData } from "./src/path";
-import { ContactStep } from "./src/ContactStep";
+import { contactPath, INITIAL_DATA } from "./path";
+import type { ContactData } from "./path";
+import { ContactStep } from "./ContactStep";
 
-type View = "form" | "success" | "cancelled";
+type DemoView = "form" | "success" | "cancelled";
 
-export default function App() {
+interface Props {
+  onBack: () => void;
+}
+
+export function FormDemo({ onBack }: Props) {
   const shellRef = useRef<PathShellHandle>(null);
-  const [view,          setView]          = useState<View>("form");
+  const [view,          setView]          = useState<DemoView>("form");
   const [submittedData, setSubmittedData] = useState<ContactData | null>(null);
 
   function handleComplete(data: PathData) {
@@ -44,15 +48,17 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Pathwrite</Text>
-        <Text style={styles.headerSub}>Contact Form Demo — React Native</Text>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </TouchableOpacity>
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>Contact Form</Text>
+          <Text style={styles.headerSub}>Validation demo — fieldErrors · fieldWarnings</Text>
+        </View>
       </View>
 
       <View style={styles.card}>
-        {/* ── Active form ── */}
         {view === "form" && (
           <PathShell
             ref={shellRef}
@@ -70,7 +76,6 @@ export default function App() {
           />
         )}
 
-        {/* ── Success screen ── */}
         {view === "success" && submittedData && (
           <ScrollView contentContainerStyle={styles.result}>
             <Text style={styles.resultIcon}>✅</Text>
@@ -97,7 +102,6 @@ export default function App() {
           </ScrollView>
         )}
 
-        {/* ── Cancelled screen ── */}
         {view === "cancelled" && (
           <ScrollView contentContainerStyle={styles.result}>
             <Text style={styles.resultIcon}>✖</Text>
@@ -120,19 +124,34 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f3ff",
   },
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backBtn: {
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  backText: {
+    fontSize: 18,
+    color: "#4f46e5",
+    fontWeight: "600",
+  },
+  headerText: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "800",
     color: "#4f46e5",
     letterSpacing: -0.5,
   },
   headerSub: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6b7280",
-    marginTop: 2,
+    marginTop: 1,
   },
   card: {
     flex: 1,
@@ -147,8 +166,6 @@ const styles = StyleSheet.create({
     elevation: 4,
     overflow: "hidden",
   },
-
-  // ── Result screens ─────────────────────────────────────────────────────────
   result: {
     flexGrow: 1,
     alignItems: "center",
