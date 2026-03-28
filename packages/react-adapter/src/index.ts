@@ -62,11 +62,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Reset the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. */
   resetStep: () => void;
   /**
-   * Tear down any active path (without firing hooks) and immediately start the
-   * given path fresh. Safe to call whether or not a path is currently active.
+   * Tear down any active path (without firing hooks) and immediately restart
+   * the same path with the same initial data. Safe to call at any time.
    * Use for "Start over" / retry flows without remounting the component.
    */
-  restart: (path: PathDefinition<any>, initialData?: PathData) => void;
+  restart: () => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
@@ -158,11 +158,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const resetStep = useCallback(() => engine.resetStep(), [engine]);
 
-  const restart = useCallback(
-    (path: PathDefinition<any>, initialData: PathData = {}) =>
-      engine.restart(path, initialData),
-    [engine]
-  );
+  const restart = useCallback(() => engine.restart(), [engine]);
 
   return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
 }
@@ -381,7 +377,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart } = pathReturn;
 
   useImperativeHandle(ref, () => ({
-    restart: () => restart(pathDef, initialData),
+    restart: () => restart(),
   }));
 
   // Auto-start on mount — skipped when an external engine is provided since
@@ -420,7 +416,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 
   const actions: PathShellActions = {
     next, previous, cancel, goToStep, goToStepChecked, setData,
-    restart: () => restart(pathDef, initialData)
+    restart: () => restart()
   };
 
   const showRoot = !hideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";

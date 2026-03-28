@@ -323,7 +323,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
     goToStep: (id) => this.facade.goToStep(id),
     goToStepChecked: (id) => this.facade.goToStepChecked(id),
     setData: (key, value) => this.facade.setData(key, value as never),
-    restart: () => this.facade.restart(this.path, this.initialData),
+    restart: () => this.facade.restart(),
   };
 
   private readonly destroy$ = new Subject<void>();
@@ -360,7 +360,7 @@ export class PathShellComponent implements OnInit, OnDestroy {
    * ```
    */
   public restart(): Promise<void> {
-    return this.facade.restart(this.path, this.initialData);
+    return this.facade.restart();
   }
 
   /** Returns Object.entries(s.fieldErrors) for use in *ngFor. */

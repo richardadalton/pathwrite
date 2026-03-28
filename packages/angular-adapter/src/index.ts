@@ -94,8 +94,8 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
    * Use for "Start over" / retry flows without destroying and re-creating the
    * component that provides this facade.
    */
-  public restart(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
-    return this._engine.restart(path, initialData);
+  public restart(): Promise<void> {
+    return this._engine.restart();
   }
 
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
@@ -174,7 +174,7 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
    * Tears down any active path and immediately starts the given path fresh.
    * Use for "Start over" / retry flows.
    */
-  restart: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
+  restart: () => Promise<void>;
 }
 
 /**
@@ -234,7 +234,7 @@ export function injectPath<TData extends PathData = PathData>(): InjectPathRetur
     resetStep: () => facade.resetStep(),
     goToStep: (stepId) => facade.goToStep(stepId),
     goToStepChecked: (stepId) => facade.goToStepChecked(stepId),
-    restart: (path, initialData = {}) => facade.restart(path, initialData),
+    restart: () => facade.restart(),
   };
 }
 

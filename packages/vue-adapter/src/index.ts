@@ -71,7 +71,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * given path fresh. Safe to call whether or not a path is currently active.
    * Use for "Start over" / retry flows without remounting the component.
    */
-  restart: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
+  restart: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,8 +121,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const resetStep = (): Promise<void> => engine.resetStep();
 
-  const restart = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
-    engine.restart(path, initialData);
+  const restart = (): Promise<void> => engine.restart();
 
   return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart };
 }
@@ -255,7 +254,7 @@ export const PathShell = defineComponent({
 
     const actions: PathShellActions = {
       next, previous, cancel, goToStep, goToStepChecked, setData,
-      restart: () => restart(props.path, props.initialData)
+      restart: () => restart()
     };
 
     // Expose restart() on the component instance so parent refs can call it:

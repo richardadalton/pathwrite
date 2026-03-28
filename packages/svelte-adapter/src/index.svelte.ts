@@ -69,7 +69,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * given path fresh. Safe to call whether or not a path is currently active.
    * Use for "Start over" / retry flows without remounting the component.
    */
-  restart: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
+  restart: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,8 +147,7 @@ export function usePath<TData extends PathData = PathData>(
 
   const resetStep = (): Promise<void> => engine.resetStep();
 
-  const restart = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
-    engine.restart(path, initialData);
+  const restart = (): Promise<void> => engine.restart();
 
   return {
     get snapshot() { return _snapshot; },

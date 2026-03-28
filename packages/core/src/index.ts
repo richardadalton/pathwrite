@@ -451,6 +451,9 @@ export class PathEngine {
   private _isNavigating = false;
   /** True after the user has called next() on the current step at least once. Resets on step entry. */
   private _hasAttemptedNext = false;
+  /** The path and initial data from the most recent top-level start() call. Used by restart(). */
+  private _rootPath: PathDefinition<any> | null = null;
+  private _rootInitialData: PathData = {};
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -549,27 +552,30 @@ export class PathEngine {
 
   public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     this.assertPathHasSteps(path);
+    this._rootPath = path;
+    this._rootInitialData = initialData;
     return this._startAsync(path, initialData);
   }
 
   /**
    * Tears down any active path (and the entire sub-path stack) without firing
-   * lifecycle hooks or emitting `cancelled`, then immediately starts the given
-   * path from scratch.
+   * lifecycle hooks or emitting `cancelled`, then immediately restarts the same
+   * path with the same initial data that was passed to the original `start()` call.
    *
    * Safe to call at any time — whether a path is running, already completed,
    * or has never been started. Use this to implement a "Start over" button or
    * to retry a path after completion without remounting the host component.
    *
-   * @param path        The path definition to (re)start.
-   * @param initialData Data to seed the fresh path with. Defaults to `{}`.
+   * @throws If `restart()` is called before `start()` has ever been called.
    */
-  public restart(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
-    this.assertPathHasSteps(path);
+  public restart(): Promise<void> {
+    if (!this._rootPath) {
+      throw new Error("Cannot restart: engine has not been started. Call start() first.");
+    }
     this._isNavigating = false;
     this.activePath = null;
     this.pathStack.length = 0;
-    return this._startAsync(path, initialData);
+    return this._startAsync(this._rootPath, { ...this._rootInitialData });
   }
 
   /**
