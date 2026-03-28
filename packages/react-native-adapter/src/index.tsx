@@ -361,7 +361,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
             : (
               <View style={styles.header}>
                 <View style={styles.stepper}>
-                  {snapshot.steps.map((step) => (
+                  {snapshot.steps.map((step, i) => (
                     <View
                       key={step.id}
                       style={[
@@ -369,9 +369,18 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                         step.status === "completed" && styles.dotCompleted,
                         step.status === "current" && styles.dotCurrent,
                       ]}
-                    />
+                    >
+                      <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
+                        {step.status === "completed" ? "✓" : String(i + 1)}
+                      </Text>
+                    </View>
                   ))}
                 </View>
+                {(() => {
+                  const cur = snapshot.steps.find(s => s.status === "current");
+                  const title = cur?.title ?? cur?.id;
+                  return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
+                })()}
                 <View style={styles.track}>
                   <View style={[styles.trackFill, { width: `${snapshot.progress * 100}%` as any }]} />
                 </View>
@@ -502,19 +511,35 @@ const styles = StyleSheet.create({
   stepper: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
   },
   dotCompleted: {
     backgroundColor: "#10b981",
   },
   dotCurrent: {
     backgroundColor: "#6366f1",
+  },
+  dotLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  dotLabelUpcoming: {
+    color: "#9ca3af",
+  },
+  stepTitle: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#374151",
+    marginBottom: 8,
   },
   track: {
     height: 4,
