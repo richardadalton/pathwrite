@@ -1505,7 +1505,7 @@ import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angula
 @Component({
   imports: [PathShellComponent, PathStepDirective],
   template: `
-    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (completed)="onDone($event)">
+    <pw-shell [path]="myPath" [initialData]="{ name: '' }" (complete)="onDone($event)">
       <ng-template pwStep="details"><app-details-form /></ng-template>
       <ng-template pwStep="review"><app-review-panel /></ng-template>
     </pw-shell>
@@ -1533,9 +1533,9 @@ export class MyComponent { ... }
 
 | Output | Payload | Description |
 |---|---|---|
-| `(completed)` | `PathData` | Path completed. |
-| `(cancelled)` | `PathData` | Path cancelled. |
-| `(pathEvent)` | `PathEvent` | Every engine event. |
+| `(complete)` | `PathData` | Path completed. |
+| `(cancel)` | `PathData` | Path cancelled. |
+| `(event)` | `PathEvent` | Every engine event. |
 
 #### Angular footer customisation (`pwShellFooter`)
 
@@ -1640,6 +1640,142 @@ Step content snippets are named after the step `id`. The shell also supports `he
 </PathShell>
 ```
 
+### React Native — `<PathShell>`
+
+```tsx
+import { PathShell } from "@daltonr/pathwrite-react-native";
+import { signupPath, INITIAL_DATA } from "./signup-path";
+import { DetailsStep } from "./DetailsStep";
+import { ReviewStep } from "./ReviewStep";
+
+export function SignupFlow() {
+  return (
+    <PathShell
+      path={signupPath}
+      initialData={INITIAL_DATA}
+      onComplete={(data) => console.log("Done!", data)}
+      steps={{
+        details: <DetailsStep />,
+        review:  <ReviewStep />,
+      }}
+    />
+  );
+}
+```
+
+Step content is provided as a `steps` map (identical to the web React adapter). The shell is built entirely from React Native primitives — `View`, `Text`, `Pressable`, `ScrollView` — so no CSS is involved. The default header shows numbered step dots, the current step title, and a progress bar.
+
+#### `PathShellProps`
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `path` | `PathDefinition` | *required* | The path definition to drive. |
+| `steps` | `Record<string, ReactNode>` | *required* | Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `engine` | `PathEngine` | — | External engine (e.g. from `restoreOrStart()`). Skips `autoStart` when provided. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
+| `onComplete` | `(data) => void` | — | Called when the path completes. |
+| `onCancel` | `(data) => void` | — | Called when the path is cancelled. |
+| `onEvent` | `(event) => void` | — | Called for every engine event. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress header (numbered dots, step title, and progress bar). Also hidden automatically for single-step top-level paths. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Next on right. `"form"`: Cancel on left, Next alone on right. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | `"summary"`: shell renders error list. `"inline"`: suppress, handle in step. `"both"`: render both. |
+| `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header with custom RN content. |
+| `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation buttons with custom RN content. |
+| `style` | `StyleProp<ViewStyle>` | — | Style override for the root container. |
+| `keyboardVerticalOffset` | `number` | `0` | Passed to `KeyboardAvoidingView`. Set to your navigation bar height when the shell sits below a React Navigation header. |
+
+#### Replacing the header or footer
+
+`renderHeader` and `renderFooter` receive React Native primitives, not HTML:
+
+```tsx
+<PathShell
+  path={myPath}
+  steps={{ a: <StepA />, b: <StepB /> }}
+  renderFooter={(snap, { next, previous }) => (
+    <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 16 }}>
+      <Pressable onPress={previous} disabled={snap.isFirstStep}>
+        <Text>← Back</Text>
+      </Pressable>
+      <Text>{snap.currentStepIndex + 1} / {snap.stepCount}</Text>
+      <Pressable onPress={next}>
+        <Text>{snap.isLastStep ? "Done" : "Next →"}</Text>
+      </Pressable>
+    </View>
+  )}
+/>
+```
+
+#### `restart()` via ref — `PathShellHandle`
+
+Unlike the web React adapter (which uses the `key` prop), the RN adapter exposes `restart()` imperatively via `forwardRef`:
+
+```tsx
+import { useRef } from "react";
+import { PathShell, PathShellHandle } from "@daltonr/pathwrite-react-native";
+
+export function MyFlow() {
+  const shellRef = useRef<PathShellHandle>(null);
+
+  return (
+    <>
+      <PathShell
+        ref={shellRef}
+        path={myPath}
+        steps={{ ... }}
+      />
+      <Pressable onPress={() => shellRef.current?.restart()}>
+        <Text>Try Again</Text>
+      </Pressable>
+    </>
+  );
+}
+```
+
+`PathShellHandle` exposes a single method: `restart()`. This resets the path to step 1 with the original `initialData` without unmounting the shell — useful for preserving scroll position in a parent `ScrollView`.
+
+#### Step components
+
+Step components use `usePathContext()`, identical to the web React adapter:
+
+```tsx
+import { usePathContext } from "@daltonr/pathwrite-react-native";
+
+export function DetailsStep() {
+  const { snapshot, setData, next } = usePathContext<MyData>();
+
+  return (
+    <View>
+      <TextInput
+        value={snapshot.data.name}
+        onChangeText={(text) => setData("name", text)}
+      />
+      <Pressable onPress={next}>
+        <Text>Continue</Text>
+      </Pressable>
+    </View>
+  );
+}
+```
+
+#### Key differences from web React
+
+| | Web React | React Native |
+|---|---|---|
+| Step content | `steps` map of `ReactNode` | `steps` map of `ReactNode` |
+| Styling | CSS / `className` | `StyleSheet` / inline styles |
+| Buttons | `<button>` | `<Pressable>` |
+| Scroll | Browser | `ScrollView` wraps step body |
+| Keyboard | Browser handles | `KeyboardAvoidingView` — set `keyboardVerticalOffset` |
+| `restart()` | `key` prop pattern | `ref` + `PathShellHandle` |
+| Context | `usePathContext()` | `usePathContext()` |
+
 ### Resetting the path
 
 There are two ways to reset a `<PathShell>` back to step 1.
@@ -1650,7 +1786,7 @@ There are two ways to reset a `<PathShell>` back to step 1.
 
 Destroy and recreate the shell using a conditional flag. Everything resets — the path engine, all child component state, scroll position within the shell — because the component is unmounted and remounted from scratch.
 
-**React** — use the built-in `key` prop. Changing `key` forces a fresh mount without needing a separate boolean flag:
+**React / React Native** — use the built-in `key` prop. Changing `key` forces a fresh mount without needing a separate boolean flag:
 
 ```tsx
 const [formKey, setFormKey] = useState(0);
@@ -1678,7 +1814,7 @@ const [formKey, setFormKey] = useState(0);
 **Angular:**
 ```html
 @if (isActive) {
-  <pw-shell [path]="myPath" (completed)="isActive = false"></pw-shell>
+  <pw-shell [path]="myPath" (complete)="isActive = false"></pw-shell>
 } @else {
   <button (click)="isActive = true">Try Again</button>
 }
@@ -1688,14 +1824,14 @@ Use this pattern when you want the entire component tree to start fresh. For mos
 
 ---
 
-**Option 2 — Call `restart()` on the shell ref** (Angular, Vue, Svelte)
+**Option 2 — Call `restart()` on the shell ref** (Angular, Vue, Svelte, React Native)
 
 Call `restart()` on a shell component reference to reset the path engine in-place, without unmounting the component. The path restarts from step 1 with the original `initialData`. Child component state and DOM scroll position are preserved.
 
 **Angular** — `#shell` already gives a component reference:
 
 ```html
-<pw-shell #shell [path]="myPath" (completed)="onDone($event)">
+<pw-shell #shell [path]="myPath" (complete)="onDone($event)">
   <ng-template pwStep="details"><app-details-form /></ng-template>
 </pw-shell>
 
@@ -1731,7 +1867,19 @@ const shellRef = ref();
 <button onclick={() => shellRef.restart()}>Try Again</button>
 ```
 
-**React** does not expose `restart()` on a ref because function components have no instance. Use the `key` prop pattern above — it is equally clean and achieves the same result.
+**React Native** — uses `forwardRef` and the `PathShellHandle` type:
+
+```tsx
+const shellRef = useRef<PathShellHandle>(null);
+
+<PathShell ref={shellRef} path={myPath} steps={{ ... }} />
+
+<Pressable onPress={() => shellRef.current?.restart()}>
+  <Text>Try Again</Text>
+</Pressable>
+```
+
+**React (web)** does not expose `restart()` on a ref because function components have no instance. Use the `key` prop pattern above — it is equally clean and achieves the same result.
 
 Use this pattern when you need to keep the shell mounted (e.g. to preserve a parent scroll position, or to drive a CSS transition on the shell element itself).
 
@@ -1901,9 +2049,9 @@ The four shell components follow their framework's idiomatic conventions, so pro
 
 | Concept | Angular | React | Vue | Svelte |
 |---------|---------|-------|-----|--------|
-| Path complete | `(completed)="fn($event)"` | `onComplete={fn}` | `@complete="fn"` | `oncomplete={fn}` |
-| Path cancelled | `(cancelled)="fn($event)"` | `onCancel={fn}` | `@cancel="fn"` | `oncancel={fn}` |
-| Every event | `(pathEvent)="fn($event)"` | `onEvent={fn}` | `@event="fn"` | `onevent={fn}` |
+| Path complete | `(complete)="fn($event)"` | `onComplete={fn}` | `@complete="fn"` | `oncomplete={fn}` |
+| Path cancelled | `(cancel)="fn($event)"` | `onCancel={fn}` | `@cancel="fn"` | `oncancel={fn}` |
+| Every event | `(event)="fn($event)"` | `onEvent={fn}` | `@event="fn"` | `onevent={fn}` |
 
 #### Step content wiring
 
@@ -2839,7 +2987,7 @@ const contactForm: PathDefinition = {
 
 **Angular:**
 ```html
-<pw-shell [path]="contactForm" [initialData]="{}" (completed)="submit($event)">
+<pw-shell [path]="contactForm" [initialData]="{}" (complete)="submit($event)">
   <ng-template pwStep="contact">
     <app-contact-form />
   </ng-template>

@@ -260,6 +260,7 @@ function handleStartSubWizard() {
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header (numbered dots, current step title, and progress bar). Also hidden automatically for single-step top-level paths. |
+| `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body wrapper with a plain `View`. Use when the step content contains a `FlatList` or other virtualized list to avoid the "VirtualizedList inside ScrollView" warning. The step is then responsible for its own scroll. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"` puts back on the left; `"form"` puts cancel on the left. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header entirely. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default nav buttons. |

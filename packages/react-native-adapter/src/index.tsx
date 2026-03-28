@@ -246,6 +246,13 @@ export interface PathShellProps {
    * Defaults to `0`.
    */
   keyboardVerticalOffset?: number;
+  /**
+   * When `true`, replaces the `ScrollView` body wrapper with a plain `View`.
+   * Use this when the step content contains a `FlatList`, `SectionList`, or
+   * other virtualized list to avoid the "VirtualizedList inside ScrollView"
+   * warning. The step is then responsible for managing its own scroll.
+   */
+  disableBodyScroll?: boolean;
 }
 
 /**
@@ -285,6 +292,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   renderFooter,
   style,
   keyboardVerticalOffset = 0,
+  disableBodyScroll = false,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -389,9 +397,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         )}
 
         {/* Body — step content */}
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-          {stepContent}
-        </ScrollView>
+        {disableBodyScroll
+          ? <View style={[styles.body, styles.bodyContent]}>{stepContent}</View>
+          : <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>{stepContent}</ScrollView>
+        }
 
         {/* Validation messages */}
         {validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && (
