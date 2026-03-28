@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { usePath, setPathContext } from './index.svelte.js';
   import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
-  import type { Snippet } from 'svelte';
+  import type { Snippet, Component } from 'svelte';
 
   /** Converts a camelCase or lowercase field key to a display label. */
   function formatFieldKey(key: string): string {
@@ -49,8 +49,8 @@
     // Optional override snippets for header and footer
     header?: Snippet<[PathSnapshot<any>]>;
     footer?: Snippet<[PathSnapshot<any>, object]>;
-    // All other props treated as step snippets keyed by step ID
-    [key: string]: Snippet | any;
+    // All other props treated as step components keyed by step ID
+    [key: string]: Component<any> | any;
   }
 
   let {
@@ -190,9 +190,9 @@
          register snippets by inner step ids directly. -->
     <div class="pw-shell__body">
       {#if snap.formId && stepSnippets[snap.formId]}
-        {@render stepSnippets[snap.formId]()}
+        <svelte:component this={stepSnippets[snap.formId]} />
       {:else if stepSnippets[snap.stepId]}
-        {@render stepSnippets[snap.stepId]()}
+        <svelte:component this={stepSnippets[snap.stepId]} />
       {:else}
         <p>No content for step "{snap.stepId}"</p>
       {/if}
