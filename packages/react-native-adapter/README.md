@@ -37,7 +37,7 @@ import {
 
 ## Quick Start — PathShell
 
-The fastest way to get started. `PathShell` manages the engine lifecycle, renders the active step, and provides navigation buttons.
+The fastest way to get started. `PathShell` manages the engine lifecycle, renders the active step, and provides navigation buttons. The default header shows numbered step dots (✓ when completed), the current step title, and a progress bar.
 
 ```tsx
 import { PathShell } from "@daltonr/pathwrite-react-native";
@@ -259,9 +259,9 @@ function handleStartSubWizard() {
 | `completeLabel` | `string` | `"Complete"` | Label for the next button on the last step. |
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress dots/bar. |
+| `hideProgress` | `boolean` | `false` | Hide the progress header (numbered dots, current step title, and progress bar). Also hidden automatically for single-step top-level paths. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"` puts back on the left; `"form"` puts cancel on the left. |
-| `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress area. |
+| `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header entirely. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default nav buttons. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
 
