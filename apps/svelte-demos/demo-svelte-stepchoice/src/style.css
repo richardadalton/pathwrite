@@ -1,0 +1,82 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; color: #1f2937; }
+
+.page { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; }
+.page-header { margin-bottom: 28px; }
+.page-header h1 { margin: 0 0 6px; font-size: 26px; color: #1f2937; }
+.subtitle { margin: 0; font-size: 15px; color: #5b677a; }
+
+/* ── Shell overrides ─────────────────────────────────────────────────────── */
+.pw-shell { padding: 0; gap: 0; max-width: 100%; }
+.pw-shell__body { background: #fff; border: 1px solid #dbe4f0; border-radius: 10px 10px 0 0; padding: 28px 28px 20px; }
+.pw-shell__footer { background: #fff; border: 1px solid #dbe4f0; border-top: none; border-radius: 0 0 10px 10px; padding: 16px 28px; display: flex; justify-content: space-between; gap: 8px; }
+.pw-shell__footer-left, .pw-shell__footer-right { display: flex; gap: 8px; }
+.pw-shell__btn { border: 1px solid #c2d0e5; background: #f8fbff; color: #1f2937; padding: 9px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.15s; }
+.pw-shell__btn:hover:not(:disabled) { background: #dbe4f0; }
+.pw-shell__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pw-shell__btn--next { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 500; }
+.pw-shell__btn--next:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; }
+.pw-shell__btn--cancel { background: transparent; border-color: transparent; color: #5b677a; }
+.pw-shell__btn--cancel:hover:not(:disabled) { background: #f3f4f6; }
+
+/* ── Step content ────────────────────────────────────────────────────────── */
+.form-body { display: flex; flex-direction: column; gap: 18px; }
+.step-intro { margin: 0 0 6px; font-size: 14px; color: #5b677a; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: baseline; gap: 4px; }
+.required { color: #dc2626; font-size: 13px; }
+.optional { font-size: 12px; color: #9ca3af; font-weight: 400; }
+.field input[type="text"], .field input[type="email"], .field select {
+  border: 1px solid #c2d0e5; border-radius: 6px; padding: 9px 12px; font-size: 14px;
+  font-family: inherit; color: #1f2937; background: #fff; width: 100%; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus, .field select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b677a' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+.field--error input, .field--error select { border-color: #dc2626; }
+.field--error input:focus, .field--error select:focus { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+.field-error { font-size: 13px; color: #dc2626; }
+
+/* ── Country step — radio cards ─────────────────────────────────────────── */
+.country-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.country-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px 16px; border: 2px solid #e5e7eb; border-radius: 10px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fff;
+}
+.country-card:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+.country-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.country-flag { font-size: 36px; }
+.country-name { font-size: 15px; font-weight: 600; color: #374151; }
+.country-card:has(input:checked) .country-name { color: #2563eb; }
+.country-error { font-size: 13px; color: #dc2626; margin-top: 4px; }
+
+/* ── Confirm step ────────────────────────────────────────────────────────── */
+.confirm-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
+.confirm-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; padding: 9px 16px; border-bottom: 1px solid #f1f3f7; font-size: 14px; }
+.confirm-row:last-child { border-bottom: none; }
+.confirm-key { color: #6b7280; font-weight: 500; }
+.confirm-section-title { font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 8px; }
+
+/* ── Result panels ───────────────────────────────────────────────────────── */
+.result-panel { border-radius: 12px; padding: 40px 32px; text-align: center; }
+.result-icon { font-size: 40px; margin-bottom: 14px; }
+.result-panel h2 { margin: 0 0 8px; font-size: 22px; }
+.result-panel p  { margin: 0 0 24px; font-size: 15px; }
+.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.success-panel h2 { color: #15803d; }
+.success-panel p  { color: #166534; }
+.cancel-panel { background: #fafafa; border: 1px solid #e5e7eb; }
+.cancel-panel h2 { color: #374151; }
+.cancel-panel p  { color: #6b7280; }
+.summary { background: #fff; border: 1px solid #d1fae5; border-radius: 10px; padding: 4px 0; margin: 0 auto 28px; max-width: 420px; text-align: left; }
+.summary-section { padding: 14px 20px; border-bottom: 1px solid #f0fdf4; }
+.summary-section:last-child { border-bottom: none; }
+.summary-section__title { margin: 0 0 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #15803d; }
+.summary-row { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 14px; margin-bottom: 6px; }
+.summary-row:last-child { margin-bottom: 0; }
+.summary-key { font-weight: 600; color: #374151; }
+.btn-primary { background: #2563eb; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #fff; color: #374151; border: 1px solid #c2d0e5; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+.btn-secondary:hover { background: #f3f4f6; }

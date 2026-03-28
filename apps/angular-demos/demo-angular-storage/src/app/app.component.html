@@ -1,0 +1,167 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Team Onboarding</h1>
+    <p class="subtitle">
+      Multi-session localStorage demo.
+      Start several sessions, close the tab, come back and resume any of them.
+    </p>
+  </div>
+
+  <!-- Fixed save indicator -->
+  @if (saveIndicator) {
+    <div class="save-indicator">✓ Progress saved</div>
+  }
+
+  <!-- ── Sessions list ──────────────────────────────────────────────────────── -->
+  @if (view === 'sessions') {
+    <section>
+      @if (sessionsLoading) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading saved sessions…</p>
+        </div>
+      } @else {
+        @if (sessions.length > 0) {
+          <div class="sessions-list">
+            <h2 class="sessions-title">In-Progress Onboardings</h2>
+            @for (session of sessions; track session.key) {
+              <div class="session-card">
+                <div class="session-card__icon">📋</div>
+                <div class="session-card__info">
+                  <p class="session-card__team">{{ session.teamName }}</p>
+                  <p class="session-card__meta">
+                    {{ session.memberCount }} member{{ session.memberCount !== 1 ? 's' : '' }}
+                    @if (session.memberCount > 0) {
+                      · {{ session.profilesDone }}/{{ session.memberCount }} profiles done
+                    }
+                    · {{ session.stepLabel }}
+                  </p>
+                  <p class="session-card__key">key: <code>{{ session.key }}</code></p>
+                </div>
+                <div class="session-card__actions">
+                  <button class="btn-resume" (click)="resumeSession(session.key)">Resume →</button>
+                  <button class="btn-delete-session" (click)="deleteSession(session.key)" title="Delete">🗑</button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-sessions">
+            <div class="empty-sessions__icon">🗂️</div>
+            <p>No saved onboardings yet.</p>
+            <p class="empty-sessions__hint">Start one below — it will be saved automatically as you work.</p>
+          </div>
+        }
+
+        <div class="new-session-bar">
+          <button class="btn-primary btn-new-session" (click)="startNew()">+ Start New Onboarding</button>
+          <p class="new-session-hint">Each session gets its own localStorage key and can be resumed independently.</p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
+  @if (view === 'wizard') {
+    <section>
+      <div class="wizard-topbar">
+        <button class="btn-back-sessions" (click)="exitToSessions()">← All Sessions</button>
+        <div class="wizard-topbar__right">
+          @if (isRestored) {
+            <span class="restored-badge">↩️ Restored</span>
+          }
+          <code class="session-key-chip">{{ activeSessionKey }}</code>
+        </div>
+      </div>
+
+      @if (wizardLoading) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading session…</p>
+        </div>
+      } @else if (showShell) {
+        <!--
+          autoStart="false": the shell does NOT call facade.start() on its own.
+          Instead, AppComponent.ngAfterViewChecked() calls facade.adoptEngine()
+          to connect the externally-restored PathEngine to this shell's facade.
+        -->
+        <pw-shell
+          [path]="teamOnboardingPath"
+          [autoStart]="false"
+          completeLabel="Submit Onboarding"
+          cancelLabel="Cancel"
+          (completed)="handleComplete($event)"
+          (cancelled)="handleCancel()"
+        >
+          <ng-template pwStep="team-setup">
+            <app-team-setup-step />
+          </ng-template>
+
+          <ng-template pwStep="member-profiles">
+            <app-member-profiles-step />
+          </ng-template>
+
+          <ng-template pwStep="summary">
+            <app-summary-step />
+          </ng-template>
+
+          <ng-template pwStep="background">
+            <app-background-step />
+          </ng-template>
+
+          <ng-template pwStep="goals">
+            <app-goals-step />
+          </ng-template>
+        </pw-shell>
+      }
+    </section>
+  }
+
+  <!-- ── Completed ──────────────────────────────────────────────────────────── -->
+  @if (view === 'completed' && completedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">🎉</div>
+      <h2>Onboarding Complete!</h2>
+      <p>
+        <strong>{{ completedData.teamName }}</strong> —
+        {{ completedMembers().length }} member{{ completedMembers().length !== 1 ? 's' : '' }} onboarded.
+      </p>
+
+      <div class="result-summary">
+        @for (member of completedMembers(); track $index) {
+          <div class="result-member-card">
+            <div class="result-member-header">
+              <span class="member-avatar">{{ member.name.charAt(0).toUpperCase() }}</span>
+              <div>
+                <p class="result-member-name">{{ member.name }}</p>
+                @if (member.role) { <p class="result-member-role">{{ member.role }}</p> }
+              </div>
+            </div>
+            @if (completedProfile($index); as prof) {
+              <div class="result-detail-grid">
+                <span class="result-key">Department</span>
+                <span>{{ prof.department }}</span>
+                <span class="result-key">Start Date</span>
+                <span>{{ formatDate(prof.startDate) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <button class="btn-primary" (click)="exitToSessions()">← Back to Sessions</button>
+    </section>
+  }
+
+  <!-- ── Cancelled ──────────────────────────────────────────────────────────── -->
+  @if (view === 'cancelled') {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">✖</div>
+      <h2>Onboarding Cancelled</h2>
+      <p>Your saved progress is still available to resume.</p>
+      <button class="btn-secondary" (click)="exitToSessions()">← Back to Sessions</button>
+    </section>
+  }
+
+</main>

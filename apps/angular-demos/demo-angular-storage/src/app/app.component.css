@@ -1,0 +1,338 @@
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.page-header {
+  margin-bottom: 28px;
+}
+
+.page-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  color: #1f2937;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #5b677a;
+}
+
+/* ── Save indicator ───────────────────────────────────────────────────────── */
+.save-indicator {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: #15803d;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 100;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Loading state ────────────────────────────────────────────────────────── */
+.loading-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Sessions list ────────────────────────────────────────────────────────── */
+.sessions-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: #374151;
+}
+
+.sessions-list {
+  margin-bottom: 24px;
+}
+
+.session-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+
+.session-card:hover { border-color: #93c5fd; }
+
+.session-card__icon { font-size: 24px; flex-shrink: 0; }
+
+.session-card__info { flex: 1; }
+
+.session-card__team {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.session-card__meta {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.session-card__key {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.session-card__key code {
+  font-family: ui-monospace, "SF Mono", monospace;
+  background: #f3f4f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.session-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-resume {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-resume:hover { background: #dbeafe; }
+
+.btn-delete-session {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-delete-session:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+
+/* ── Empty sessions ───────────────────────────────────────────────────────── */
+.empty-sessions {
+  text-align: center;
+  padding: 40px 20px;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.empty-sessions__icon { font-size: 36px; margin-bottom: 8px; }
+
+.empty-sessions p { margin: 0 0 4px; font-size: 14px; }
+.empty-sessions__hint { font-size: 13px !important; color: #9ca3af; }
+
+/* ── New session bar ──────────────────────────────────────────────────────── */
+.new-session-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.new-session-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* ── Wizard topbar ────────────────────────────────────────────────────────── */
+.wizard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-back-sessions {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-back-sessions:hover { background: #f3f4f6; }
+
+.wizard-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.restored-badge {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.session-key-chip {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+/* ── Result panels ────────────────────────────────────────────────────────── */
+.result-panel {
+  border-radius: 12px;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.result-icon { font-size: 40px; margin-bottom: 14px; }
+.result-panel h2 { margin: 0 0 8px; font-size: 22px; }
+.result-panel p  { margin: 0 0 24px; font-size: 15px; }
+
+.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.success-panel h2 { color: #15803d; }
+.success-panel p  { color: #166534; }
+
+.cancel-panel { background: #fafafa; border: 1px solid #e5e7eb; }
+.cancel-panel h2 { color: #374151; }
+.cancel-panel p  { color: #6b7280; }
+
+/* ── Completion result summary ────────────────────────────────────────────── */
+.result-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 auto 28px;
+  max-width: 480px;
+  text-align: left;
+}
+
+.result-member-card {
+  background: #fff;
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.result-member-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0fdf4;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.result-member-name { margin: 0 0 1px; font-size: 14px; font-weight: 600; color: #1f2937; }
+.result-member-role { margin: 0; font-size: 12px; color: #6b7280; }
+
+.result-detail-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 0;
+  padding: 8px 14px;
+}
+
+.result-detail-grid span { padding: 3px 0; font-size: 13px; }
+.result-key { font-weight: 600; color: #374151; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-new-session {
+  font-size: 15px;
+  padding: 11px 24px;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #c2d0e5;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: #f3f4f6; }

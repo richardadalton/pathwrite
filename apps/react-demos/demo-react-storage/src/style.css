@@ -1,0 +1,231 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; color: #1f2937; }
+
+.page { max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; }
+.page-header { margin-bottom: 28px; }
+.page-header h1 { margin: 0 0 6px; font-size: 26px; color: #1f2937; }
+.subtitle { margin: 0; font-size: 15px; color: #5b677a; }
+
+/* ── Form basics ─────────────────────────────────────────────────────────── */
+.form-body { display: flex; flex-direction: column; gap: 18px; }
+.step-intro { margin: 0; font-size: 14px; color: #5b677a; }
+.required   { color: #dc2626; font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.field-hint { font-size: 12px; color: #9ca3af; font-weight: 400; }
+.field input[type="text"],
+.field input[type="date"],
+.field textarea,
+textarea {
+  border: 1px solid #c2d0e5; border-radius: 6px; padding: 9px 12px; font-size: 14px;
+  font-family: inherit; color: #1f2937; background: #fff; width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s; resize: vertical;
+}
+.field input:focus, .field textarea:focus, textarea:focus {
+  outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.field--error input, .field--error textarea, .field--error select { border-color: #dc2626; }
+.field-error { font-size: 13px; color: #dc2626; margin: 0; }
+
+/* ── Team Setup step ─────────────────────────────────────────────────────── */
+.members-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.section-label { font-size: 14px; font-weight: 500; color: #374151; margin: 0; }
+.btn-add {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid #2563eb;
+  background: #eff6ff; color: #2563eb; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.btn-add:hover { background: #dbeafe; }
+
+.empty-members {
+  display: flex; align-items: center; gap: 12px; padding: 20px 16px;
+  background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; color: #6b7280; font-size: 14px;
+}
+.empty-members__icon { font-size: 24px; }
+
+.member-list { display: flex; flex-direction: column; gap: 8px; }
+.member-row {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px;
+}
+.member-number { font-size: 13px; font-weight: 700; color: #9ca3af; text-align: center; }
+.member-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.member-name-input,
+.member-role-input {
+  border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px;
+  font-size: 14px; font-family: inherit; color: #1f2937; width: 100%;
+}
+.member-name-input:focus, .member-role-input:focus {
+  outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+}
+.input--error { border-color: #dc2626 !important; }
+.btn-remove {
+  background: none; border: none; color: #9ca3af; font-size: 16px;
+  cursor: pointer; padding: 4px 6px; border-radius: 4px; line-height: 1;
+  transition: color 0.15s;
+}
+.btn-remove:hover { color: #dc2626; }
+
+/* ── Member Profiles step ────────────────────────────────────────────────── */
+.profile-list { display: flex; flex-direction: column; gap: 10px; }
+.profile-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff;
+}
+.profile-item--done { border-color: #bbf7d0; background: #f0fdf4; }
+.member-avatar {
+  width: 36px; height: 36px; border-radius: 50%; background: #dbeafe; color: #1d4ed8;
+  font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-item-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.profile-item-name { font-size: 14px; font-weight: 600; color: #1f2937; }
+.profile-item-role { font-size: 13px; color: #6b7280; }
+.profile-done-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-right: 4px; }
+.profile-done-dept { font-size: 13px; color: #374151; }
+.profile-done-badge { font-size: 12px; color: #15803d; font-weight: 600; }
+.btn-fill {
+  padding: 7px 14px; border-radius: 6px; border: 1px solid #2563eb;
+  background: #2563eb; color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s;
+}
+.btn-fill:hover:not(:disabled) { background: #1d4ed8; }
+.btn-fill:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-edit {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid #16a34a;
+  background: #f0fdf4; color: #15803d; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.btn-edit:hover:not(:disabled) { background: #dcfce7; }
+.btn-edit:disabled { opacity: 0.5; cursor: not-allowed; }
+.gate-done { margin: 0; font-size: 13px; color: #15803d; font-weight: 500; }
+.gate-pending { margin: 0; font-size: 13px; color: #9ca3af; font-style: italic; }
+
+/* ── Sub-wizard context banner ───────────────────────────────────────────── */
+.subwizard-context {
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px;
+}
+.subwizard-for { margin: 0 0 2px; font-size: 12px; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.subwizard-name { margin: 0; font-size: 15px; font-weight: 700; color: #1e40af; }
+.subwizard-role { font-weight: 400; color: #3b82f6; }
+
+/* ── Summary step ────────────────────────────────────────────────────────── */
+.review-section { margin-bottom: 4px; }
+.section-title { font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 8px; }
+.section-title-sub { font-size: 11px; font-weight: 400; color: #6b7280; text-transform: none; letter-spacing: 0; }
+.review-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+.review-row { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; padding: 9px 16px; border-bottom: 1px solid #f1f3f7; font-size: 14px; }
+.review-row:last-child { border-bottom: none; }
+.review-key { color: #6b7280; font-weight: 500; }
+.text-pending { color: #9ca3af; font-style: italic; }
+
+/* ── Sessions list ───────────────────────────────────────────────────────── */
+.sessions-title { font-size: 15px; font-weight: 600; color: #374151; margin: 0 0 12px; }
+.sessions-list { margin-bottom: 24px; }
+.session-card {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.session-card__icon { font-size: 28px; flex-shrink: 0; }
+.session-card__info { flex: 1; }
+.session-card__team { margin: 0 0 3px; font-size: 15px; font-weight: 600; color: #1f2937; }
+.session-card__meta { margin: 0 0 3px; font-size: 13px; color: #6b7280; }
+.session-card__key  { margin: 0; font-size: 12px; color: #9ca3af; }
+.session-card__key code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+.session-card__actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.btn-resume {
+  padding: 8px 16px; border-radius: 6px; border: 1px solid #2563eb;
+  background: #2563eb; color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s;
+}
+.btn-resume:hover { background: #1d4ed8; }
+.btn-delete-session {
+  background: none; border: 1px solid #e5e7eb; border-radius: 6px;
+  padding: 7px 10px; font-size: 16px; cursor: pointer; color: #9ca3af;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-delete-session:hover { border-color: #fecaca; color: #dc2626; }
+
+.empty-sessions {
+  text-align: center; padding: 48px 24px;
+  background: #fff; border: 1px dashed #d1d5db; border-radius: 12px; margin-bottom: 24px;
+}
+.empty-sessions__icon { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-sessions p { margin: 0 0 6px; font-size: 15px; color: #374151; }
+.empty-sessions__hint { font-size: 14px; color: #9ca3af !important; }
+
+.new-session-bar { text-align: center; }
+.btn-new-session { font-size: 15px; padding: 12px 28px; }
+.new-session-hint { margin: 10px 0 0; font-size: 13px; color: #9ca3af; }
+
+/* ── Loading state ───────────────────────────────────────────────────────── */
+.loading-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 48px 24px; color: #6b7280; font-size: 14px;
+}
+.spinner {
+  width: 28px; height: 28px; border: 3px solid #e5e7eb;
+  border-top-color: #2563eb; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Wizard topbar ───────────────────────────────────────────────────────── */
+.wizard-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.btn-back-sessions {
+  background: none; border: 1px solid #e5e7eb; border-radius: 6px;
+  padding: 7px 14px; font-size: 13px; font-weight: 500; color: #374151;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.btn-back-sessions:hover { background: #f3f4f6; }
+.wizard-topbar__right { display: flex; align-items: center; gap: 10px; }
+.restored-badge {
+  font-size: 12px; font-weight: 600; color: #7c3aed;
+  background: #ede9fe; border: 1px solid #c4b5fd; border-radius: 20px;
+  padding: 3px 10px;
+}
+.session-key-chip {
+  font-size: 11px; background: #f3f4f6; padding: 3px 8px; border-radius: 4px;
+  color: #6b7280; border: 1px solid #e5e7eb; max-width: 200px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block;
+}
+
+/* ── Save indicator ──────────────────────────────────────────────────────── */
+.save-indicator {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  background: #15803d; color: #fff; font-size: 13px; font-weight: 600;
+  padding: 8px 18px; border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: fade-in 0.2s ease;
+}
+@keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Result panels ───────────────────────────────────────────────────────── */
+.result-panel { border-radius: 12px; padding: 40px 32px; text-align: center; }
+.result-icon { font-size: 40px; margin-bottom: 14px; }
+.result-panel h2 { margin: 0 0 8px; font-size: 22px; }
+.result-panel p  { margin: 0 0 24px; font-size: 15px; }
+.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.success-panel h2 { color: #15803d; }
+.cancel-panel  { background: #fafafa; border: 1px solid #e5e7eb; }
+.cancel-panel h2 { color: #374151; }
+
+.result-summary { display: flex; flex-direction: column; gap: 10px; margin: 0 0 28px; max-width: 460px; margin-left: auto; margin-right: auto; }
+.result-member-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;
+  text-align: left;
+}
+.result-member-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.result-member-name { margin: 0; font-size: 14px; font-weight: 600; color: #1f2937; }
+.result-member-role { margin: 0; font-size: 13px; color: #6b7280; }
+.result-detail-grid { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 13px; }
+.result-key { color: #6b7280; font-weight: 500; }
+
+/* ── Shared buttons ──────────────────────────────────────────────────────── */
+.btn-primary   { background: #2563eb; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #fff; color: #374151; border: 1px solid #c2d0e5; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-family: inherit; cursor: pointer; }
+.btn-secondary:hover { background: #f3f4f6; }

@@ -1,0 +1,117 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Address Form</h1>
+    <p class="subtitle">StepChoice demo — the address step adapts based on your selected country.</p>
+  </div>
+
+  <!-- ── Completed ──────────────────────────────────────────────────────────── -->
+  @if (isCompleted && completedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">✓</div>
+      <h2>Address Saved!</h2>
+      <p>Your address has been recorded.</p>
+
+      <div class="summary">
+        <div class="summary-section">
+          <p class="summary-section__title">Country</p>
+          <div class="summary-row">
+            <span class="summary-key">Country</span>
+            <span>{{ completedData.country === 'US' ? '🇺🇸 United States' : '🇮🇪 Ireland' }}</span>
+          </div>
+        </div>
+
+        @if (completedData.country === 'US') {
+          <div class="summary-section">
+            <p class="summary-section__title">US Address</p>
+            <div class="summary-row">
+              <span class="summary-key">Street</span>
+              <span>{{ completedData.streetAddress }}{{ completedData.aptUnit ? ', ' + completedData.aptUnit : '' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">City</span>
+              <span>{{ completedData.city }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">State</span>
+              <span>{{ stateName(completedData.state) }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">ZIP Code</span>
+              <span>{{ completedData.zipCode }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="summary-section">
+            <p class="summary-section__title">Irish Address</p>
+            <div class="summary-row">
+              <span class="summary-key">Line 1</span>
+              <span>{{ completedData.addressLine1 }}</span>
+            </div>
+            @if (completedData.addressLine2) {
+              <div class="summary-row">
+                <span class="summary-key">Line 2</span>
+                <span>{{ completedData.addressLine2 }}</span>
+              </div>
+            }
+            <div class="summary-row">
+              <span class="summary-key">Town / City</span>
+              <span>{{ completedData.town }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">County</span>
+              <span>Co. {{ completedData.county }}</span>
+            </div>
+            @if (completedData.eircode) {
+              <div class="summary-row">
+                <span class="summary-key">Eircode</span>
+                <span>{{ completedData.eircode }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <button type="button" class="btn-primary" (click)="startOver()">Start Over</button>
+    </section>
+  }
+
+  <!-- ── Cancelled ──────────────────────────────────────────────────────────── -->
+  @if (isCancelled) {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">✖</div>
+      <h2>Cancelled</h2>
+      <p>Your address was not saved.</p>
+      <button type="button" class="btn-secondary" (click)="startOver()">Try Again</button>
+    </section>
+  }
+
+  <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
+  @if (!isCompleted && !isCancelled) {
+    <pw-shell
+      [path]="addressPath"
+      [initialData]="initialData"
+      completeLabel="Save Address"
+      cancelLabel="Cancel"
+      (completed)="onComplete($event)"
+      (cancelled)="onCancel()"
+    >
+      <ng-template pwStep="country">
+        <app-country-step />
+      </ng-template>
+
+      <ng-template pwStep="address-us">
+        <app-us-address-step />
+      </ng-template>
+
+      <ng-template pwStep="address-ie">
+        <app-ie-address-step />
+      </ng-template>
+
+      <ng-template pwStep="confirm">
+        <app-confirm-step />
+      </ng-template>
+    </pw-shell>
+  }
+
+</main>

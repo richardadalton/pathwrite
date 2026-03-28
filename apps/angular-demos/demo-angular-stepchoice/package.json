@@ -1,0 +1,28 @@
+{
+  "name": "@daltonr/pathwrite-demo-angular-stepchoice",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve --configuration development",
+    "build": "ng build --configuration production"
+  },
+  "dependencies": {
+    "@angular/common": "^17.3.12",
+    "@angular/compiler": "^17.3.12",
+    "@angular/core": "^17.3.12",
+    "@angular/forms": "^17.3.12",
+    "@angular/platform-browser": "^17.3.12",
+    "@angular/platform-browser-dynamic": "^17.3.12",
+    "@daltonr/pathwrite-angular": "^0.8.0",
+    "@daltonr/pathwrite-core": "^0.8.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.6.2",
+    "zone.js": "^0.14.8"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "17.3.17",
+    "@angular/cli": "17.3.17",
+    "@angular/compiler-cli": "17.3.12",
+    "typescript": "5.4.5"
+  }
+}
