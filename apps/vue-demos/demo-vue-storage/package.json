@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@daltonr/pathwrite-vue": "^0.8.0",
-    "@daltonr/pathwrite-store-http": "^0.8.0",
+    "@daltonr/pathwrite-store": "^0.8.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {

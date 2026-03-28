@@ -1,7 +1,7 @@
 {
-  "name": "@daltonr/pathwrite-store-http",
+  "name": "@daltonr/pathwrite-store",
   "version": "0.8.0",
-  "description": "Persistence adapters for PathEngine — LocalStorageStore (browser) and HttpStore (REST API)",
+  "description": "Persistence adapters for PathEngine — LocalStorageStore (browser), AsyncStorageStore (React Native / any async key-value store), and HttpStore (REST API)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,22 +25,22 @@
     "pathwrite",
     "wizard",
     "persistence",
+    "storage",
     "http",
-    "rest",
-    "api",
-    "state"
+    "localstorage",
+    "async-storage",
+    "react-native"
   ],
   "author": "Richard Dalton",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/daltonr/pathwrite.git",
-    "directory": "packages/store-http"
+    "directory": "packages/store"
   },
   "dependencies": {
     "@daltonr/pathwrite-core": "^0.8.0"
   },
-  "peerDependencies": {},
   "devDependencies": {
     "typescript": "^5.3.0",
     "vitest": "^1.0.0"

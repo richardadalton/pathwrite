@@ -30,7 +30,7 @@ export type {
 export interface UsePathOptions {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
-   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store-http`.
+   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
    *
    * When provided:
    * - `usePath` will **not** create its own engine.

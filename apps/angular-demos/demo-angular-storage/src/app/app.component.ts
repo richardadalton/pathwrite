@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { PathData } from "@daltonr/pathwrite-angular";
 import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
 import { PathEngine } from "@daltonr/pathwrite-angular";
-import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
 import type { WizardData, Person, MemberProfile } from "./wizard";
 import { TeamSetupStepComponent }      from "./steps/team-setup-step.component";
@@ -141,7 +141,7 @@ export class AppComponent implements OnInit {
       },
       initialData: INITIAL_DATA,
       observers: [
-        httpPersistence({
+        persistence({
           store: this.store,
           key,
           strategy: "onEveryChange",
@@ -163,7 +163,7 @@ export class AppComponent implements OnInit {
     this.completedData = data as unknown as WizardData;
     this.engine = null;
     this.view = "completed";
-    // httpPersistence auto-deletes the snapshot on completion; sync the list
+    // persistence auto-deletes the snapshot on completion; sync the list
     if (this.activeSessionKey) {
       this.sessions = this.sessions.filter(s => s.key !== this.activeSessionKey);
     }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { PathShell } from "@daltonr/pathwrite-react";
 import type { PathData } from "@daltonr/pathwrite-react";
 import { PathEngine } from "@daltonr/pathwrite-core";
-import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import {
   teamOnboardingPath,
   memberProfileSubPath,
@@ -114,7 +114,7 @@ export default function App() {
       },
       initialData: INITIAL_DATA,
       observers: [
-        httpPersistence({
+        persistence({
           store,
           key,
           strategy: "onEveryChange",
@@ -139,7 +139,7 @@ export default function App() {
   function handleComplete(data: PathData) {
     setCompletedData(data as WizardData);
     setView("completed");
-    // httpPersistence auto-deletes the snapshot on completion; sync the list
+    // persistence auto-deletes the snapshot on completion; sync the list
     if (activeKey) {
       setSessions(prev => prev.filter(s => s.key !== activeKey));
     }

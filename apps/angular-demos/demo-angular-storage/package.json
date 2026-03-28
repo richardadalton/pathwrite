@@ -15,7 +15,7 @@
     "@angular/platform-browser-dynamic": "^17.3.12",
     "@daltonr/pathwrite-angular": "^0.8.0",
     "@daltonr/pathwrite-core": "^0.8.0",
-    "@daltonr/pathwrite-store-http": "^0.8.0",
+    "@daltonr/pathwrite-store": "^0.8.0",
     "rxjs": "^7.8.1",
     "tslib": "^2.6.2",
     "zone.js": "^0.14.8"

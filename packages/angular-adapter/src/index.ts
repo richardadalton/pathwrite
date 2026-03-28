@@ -41,7 +41,7 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
 
   /**
    * Adopt an externally-managed `PathEngine` — for example, the engine returned
-   * by `restoreOrStart()` from `@daltonr/pathwrite-store-http`.
+   * by `restoreOrStart()` from `@daltonr/pathwrite-store`.
    *
    * The facade immediately reflects the engine's current state and forwards all
    * subsequent events. The **caller** is responsible for the engine's lifecycle

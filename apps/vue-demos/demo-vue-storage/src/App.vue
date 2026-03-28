@@ -2,7 +2,7 @@
 import { ref, shallowRef, onMounted, computed } from "vue";
 import { PathShell, PathEngine } from "@daltonr/pathwrite-vue";
 import type { PathData } from "@daltonr/pathwrite-vue";
-import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import { ApiStore } from "./ApiStore";
 import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
 import type { WizardData, Person, MemberProfile } from "./wizard";
@@ -164,7 +164,7 @@ function onSaveSuccess() {
 
 function makeObservers(key: string) {
   return [
-    httpPersistence({
+    persistence({
       store: store.value,
       key,
       strategy: "onEveryChange",
@@ -218,7 +218,7 @@ async function openSession(key: string) {
 function handleComplete(data: PathData) {
   completedData.value = data as unknown as WizardData;
   view.value = "completed";
-  // httpPersistence auto-deletes the snapshot on completion; sync the list
+  // persistence auto-deletes the snapshot on completion; sync the list
   if (activeSessionKey.value) {
     sessions.value = sessions.value.filter(s => s.key !== activeSessionKey.value);
   }

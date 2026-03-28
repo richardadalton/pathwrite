@@ -267,7 +267,7 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   @Input() path?: PathDefinition<any>;
   /**
    * An externally-managed `PathEngine` to adopt — for example, the engine
-   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store-http`.
+   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
    *
    * When provided the shell skips `autoStart` and immediately reflects the
    * engine's current state. Gate the shell's existence on the engine being

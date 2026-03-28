@@ -8,6 +8,5 @@
     "lib": ["ES2020", "DOM"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "examples"]
+  "exclude": ["node_modules", "dist", "test"]
 }
-

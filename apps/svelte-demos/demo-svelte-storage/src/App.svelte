@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { PathShell } from "@daltonr/pathwrite-svelte";
   import type { PathData, PathEngine } from "@daltonr/pathwrite-svelte";
-  import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store-http";
+  import { LocalStorageStore, httpPersistence, restoreOrStart } from "@daltonr/pathwrite-store";
   import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
   import type { WizardData, Person, MemberProfile } from "./wizard";
   import TeamSetupStep      from "./TeamSetupStep.svelte";
@@ -133,7 +133,7 @@
       },
       initialData: INITIAL_DATA,
       observers: [
-        httpPersistence({
+        persistence({
           store,
           key,
           strategy: "onEveryChange",
@@ -157,7 +157,7 @@
   function handleComplete(data: PathData) {
     completedData = data as unknown as WizardData;
     view = "completed";
-    // httpPersistence auto-deletes the snapshot on completion; sync the list
+    // persistence auto-deletes the snapshot on completion; sync the list
     if (activeSessionKey) {
       sessions = sessions.filter(s => s.key !== activeSessionKey);
     }

@@ -1,7 +1,7 @@
 import type { SerializedPathState, PathStore } from "@daltonr/pathwrite-core";
 
 /**
- * Minimal interface for a key-value string storage backend.
+ * Minimal interface for a synchronous key-value string storage backend.
  * Both `localStorage` and `sessionStorage` satisfy this interface, as does
  * any custom stub you inject for testing or SSR environments.
  */
@@ -112,16 +112,6 @@ export class LocalStorageStore implements PathStore {
   /**
    * Returns every key stored under this store's prefix, decoded back to the
    * original key strings passed to `save()`.
-   *
-   * Requires the underlying `StorageAdapter` to implement `getAllKeys()`.
-   * Throws if the adapter does not support key enumeration.
-   *
-   * ```ts
-   * const store = new LocalStorageStore({ prefix: "app:" });
-   * await store.save("wizard-a", stateA);
-   * await store.save("wizard-b", stateB);
-   * await store.list(); // → ["wizard-a", "wizard-b"]
-   * ```
    */
   async list(): Promise<string[]> {
     if (!this.storage.getAllKeys) {
@@ -142,9 +132,6 @@ export class LocalStorageStore implements PathStore {
 
   /**
    * Removes every entry stored under this store's prefix.
-   * Useful for "log out" / "reset all" scenarios.
-   *
-   * Requires the underlying `StorageAdapter` to implement `getAllKeys()`.
    */
   async clear(): Promise<void> {
     const keys = await this.list();

@@ -17,7 +17,7 @@
     "apps/vue-demos/*"
   ],
   "scripts": {
-    "build": "npm run build -w packages/core && npm run build -w packages/react-adapter && npm run build -w packages/react-native-adapter && npm run build -w packages/vue-adapter && npm run build -w packages/store-http && npm run build -w packages/svelte-adapter && npm run build -w packages/angular-adapter",
+    "build": "npm run build -w packages/core && npm run build -w packages/react-adapter && npm run build -w packages/react-native-adapter && npm run build -w packages/vue-adapter && npm run build -w packages/store && npm run build -w packages/svelte-adapter && npm run build -w packages/angular-adapter",
     "clean": "npm run clean -ws --if-present && rm -rf packages/*/dist packages/*/*.tsbuildinfo",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -26,8 +26,8 @@
     "changeset": "changeset",
     "smoke:demos": "node ./scripts/smoke-demos.mjs",
     "version": "changeset version",
-    "publish:dry": "npm run prepublish:check && npm publish --dry-run -w packages/core && npm publish --dry-run -w packages/store-http && npm publish --dry-run -w packages/angular-adapter && npm publish --dry-run -w packages/react-adapter && npm publish --dry-run -w packages/react-native-adapter && npm publish --dry-run -w packages/vue-adapter && npm publish --dry-run -w packages/svelte-adapter",
-    "publish:all": "npm run prepublish:check && npm publish -w packages/core && npm publish -w packages/store-http && npm publish -w packages/angular-adapter && npm publish -w packages/react-adapter && npm publish -w packages/react-native-adapter && npm publish -w packages/vue-adapter && npm publish -w packages/svelte-adapter",
+    "publish:dry": "npm run prepublish:check && npm publish --dry-run -w packages/core && npm publish --dry-run -w packages/store && npm publish --dry-run -w packages/angular-adapter && npm publish --dry-run -w packages/react-adapter && npm publish --dry-run -w packages/react-native-adapter && npm publish --dry-run -w packages/vue-adapter && npm publish --dry-run -w packages/svelte-adapter",
+    "publish:all": "npm run prepublish:check && npm publish -w packages/core && npm publish -w packages/store && npm publish -w packages/angular-adapter && npm publish -w packages/react-adapter && npm publish -w packages/react-native-adapter && npm publish -w packages/vue-adapter && npm publish -w packages/svelte-adapter",
     "demo:angular:form": "npm run -w @daltonr/pathwrite-demo-angular-form start",
     "demo:angular:wizard": "npm run -w @daltonr/pathwrite-demo-angular-wizard start",
     "demo:angular:subwizard": "npm run -w @daltonr/pathwrite-demo-angular-subwizard start",
