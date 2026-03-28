@@ -284,7 +284,7 @@ describe("PathEngine (property) — data contracts", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathEngine (property) — restart", () => {
-  it("restart always resets to step 0 with fresh data regardless of prior navigation", async () => {
+  it("restart always resets to step 0 with original initialData regardless of prior navigation", async () => {
     await fc.assert(fc.asyncProperty(
       arbPlainPath,
       arbActions,
@@ -293,18 +293,18 @@ describe("PathEngine (property) — restart", () => {
         fc.oneof(fc.string(), fc.integer(), fc.boolean()),
         { maxKeys: 4 }
       ),
-      async (path, actions, freshData) => {
+      async (path, actions, initialData) => {
         const engine = new PathEngine();
-        await engine.start(path);
+        await engine.start(path, initialData);
         for (const action of actions) {
           if (!engine.snapshot()) break;
           action === "next" ? await engine.next() : await engine.previous();
         }
-        await engine.restart(path, freshData);
+        await engine.restart();
         const snap = engine.snapshot()!;
         expect(snap.stepIndex).toBe(0);
         expect(snap.pathId).toBe(path.id);
-        for (const [key, value] of Object.entries(freshData)) {
+        for (const [key, value] of Object.entries(initialData)) {
           expect(snap.data[key]).toStrictEqual(value);
         }
       }

@@ -276,19 +276,13 @@ describe("usePath — scope disposal", () => {
 // ---------------------------------------------------------------------------
 
 describe("usePath — restart()", () => {
-  it("starts from step 1 when no path has been started", async () => {
-    const { path } = createPath();
-    await path.restart(twoStepPath());
-    expect(path.snapshot.value?.stepId).toBe("step1");
-  });
-
   it("resets to step 1 from mid-flow", async () => {
     const { path } = createPath();
     await path.start(twoStepPath());
     await path.next();
     expect(path.snapshot.value?.stepId).toBe("step2");
 
-    await path.restart(twoStepPath());
+    await path.restart();
     expect(path.snapshot.value?.stepId).toBe("step1");
   });
 
@@ -299,16 +293,17 @@ describe("usePath — restart()", () => {
     await path.next();
     expect(path.snapshot.value).toBeNull();
 
-    await path.restart(twoStepPath());
+    await path.restart();
     expect(path.snapshot.value?.stepId).toBe("step1");
   });
 
-  it("seeds fresh initialData on restart", async () => {
+  it("returns to original initialData passed to start()", async () => {
     const { path } = createPath();
-    await path.start(twoStepPath());
+    await path.start(twoStepPath(), { name: "Bob" });
     await path.setData("name" as never, "Alice");
+    expect(path.snapshot.value?.data.name).toBe("Alice");
 
-    await path.restart(twoStepPath(), { name: "Bob" });
+    await path.restart();
     expect(path.snapshot.value?.data.name).toBe("Bob");
   });
 });

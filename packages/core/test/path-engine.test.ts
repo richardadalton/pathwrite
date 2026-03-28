@@ -471,7 +471,7 @@ describe("PathEngine — stateChanged cause field", () => {
     await engine.start(twoStepPath());
     await engine.next();
     const events = collectEvents(engine);
-    await engine.restart(twoStepPath());
+    await engine.restart();
     const causes = stateChangedCauses(events);
     expect(causes.length).toBeGreaterThan(0);
     expect(causes.every((c) => c === "start")).toBe(true);
@@ -1262,7 +1262,7 @@ describe("PathEngine — hasAttemptedNext", () => {
     await engine.start(threeStepPath());
     await engine.next(); // advances to step2
     
-    await engine.restart(threeStepPath(), {});
+    await engine.restart();
     expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 });
@@ -2235,10 +2235,9 @@ describe("PathEngine — guard error resilience", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathEngine — restart()", () => {
-  it("starts the path from step 1 when no path has ever been started", async () => {
+  it("throws if restart() is called before start()", async () => {
     const engine = new PathEngine();
-    await engine.restart(twoStepPath());
-    expect(engine.snapshot()?.stepId).toBe("step1");
+    expect(() => engine.restart()).toThrow("Cannot restart: engine has not been started");
   });
 
   it("restarts to step 1 while a path is mid-flow", async () => {
@@ -2247,7 +2246,7 @@ describe("PathEngine — restart()", () => {
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step2");
 
-    await engine.restart(twoStepPath());
+    await engine.restart();
     expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
@@ -2258,7 +2257,7 @@ describe("PathEngine — restart()", () => {
     await engine.next(); // completes
     expect(engine.snapshot()).toBeNull();
 
-    await engine.restart(twoStepPath());
+    await engine.restart();
     expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
@@ -2268,17 +2267,18 @@ describe("PathEngine — restart()", () => {
     await engine.startSubPath(twoStepPath("sub"));
     expect(engine.snapshot()?.nestingLevel).toBe(1);
 
-    await engine.restart(twoStepPath("fresh"));
-    expect(engine.snapshot()?.pathId).toBe("fresh");
+    await engine.restart();
+    expect(engine.snapshot()?.pathId).toBe("parent");
     expect(engine.snapshot()?.nestingLevel).toBe(0);
   });
 
-  it("seeds fresh data via initialData", async () => {
+  it("returns to the original initialData passed to start()", async () => {
     const engine = new PathEngine();
-    await engine.start(twoStepPath());
+    await engine.start(twoStepPath(), { name: "Bob" });
     await engine.setData("name", "Alice");
+    expect(engine.snapshot()?.data.name).toBe("Alice");
 
-    await engine.restart(twoStepPath(), { name: "Bob" });
+    await engine.restart();
     expect(engine.snapshot()?.data.name).toBe("Bob");
   });
 
@@ -2288,7 +2288,7 @@ describe("PathEngine — restart()", () => {
     engine.subscribe((e) => events.push(e));
 
     await engine.start(twoStepPath());
-    await engine.restart(twoStepPath());
+    await engine.restart();
 
     expect(events.some((e) => e.type === "cancelled")).toBe(false);
   });
@@ -2298,22 +2298,10 @@ describe("PathEngine — restart()", () => {
     const events: PathEvent[] = [];
     engine.subscribe((e) => events.push(e));
 
-    await engine.restart(twoStepPath());
+    await engine.start(twoStepPath());
+    await engine.restart();
 
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);
-  });
-
-  it("restarts with a different path definition", async () => {
-    const engine = new PathEngine();
-    await engine.start(twoStepPath("original"));
-
-    const threeStep: PathDefinition = {
-      id: "replacement",
-      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
-    };
-    await engine.restart(threeStep);
-    expect(engine.snapshot()?.pathId).toBe("replacement");
-    expect(engine.snapshot()?.stepCount).toBe(3);
   });
 });
 
@@ -2412,7 +2400,7 @@ describe("PathEngine — isDirty", () => {
     await engine.setData("name", "Alice");
     expect(engine.snapshot()?.isDirty).toBe(true);
 
-    await engine.restart(twoStepPath(), { name: "" });
+    await engine.restart();
     expect(engine.snapshot()?.isDirty).toBe(false);
   });
 
@@ -2536,7 +2524,7 @@ describe("PathEngine — stepEnteredAt", () => {
     const firstTimestamp = engine.snapshot()?.stepEnteredAt;
     
     await new Promise(resolve => setTimeout(resolve, 10));
-    await engine.restart(twoStepPath("test"), { name: "Bob" });
+    await engine.restart();
     const restartTimestamp = engine.snapshot()?.stepEnteredAt;
     
     expect(restartTimestamp).toBeGreaterThan(firstTimestamp!);

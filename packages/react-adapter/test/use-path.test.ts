@@ -355,19 +355,13 @@ describe("usePath — cleanup", () => {
 // ---------------------------------------------------------------------------
 
 describe("usePath — restart()", () => {
-  it("starts from step 1 when no path has been started", async () => {
-    const { result } = renderHook(() => usePath());
-    await act(() => result.current.restart(twoStepPath()));
-    expect(result.current.snapshot?.stepId).toBe("step1");
-  });
-
   it("resets to step 1 from mid-flow", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.next());
     expect(result.current.snapshot?.stepId).toBe("step2");
 
-    await act(() => result.current.restart(twoStepPath()));
+    await act(() => result.current.restart());
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 
@@ -378,16 +372,17 @@ describe("usePath — restart()", () => {
     await act(() => result.current.next());
     expect(result.current.snapshot).toBeNull();
 
-    await act(() => result.current.restart(twoStepPath()));
+    await act(() => result.current.restart());
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 
-  it("seeds fresh initialData on restart", async () => {
+  it("returns to original initialData passed to start()", async () => {
     const { result } = renderHook(() => usePath());
-    await act(() => result.current.start(twoStepPath()));
+    await act(() => result.current.start(twoStepPath(), { name: "Bob" }));
     await act(() => result.current.setData("name" as never, "Alice"));
+    expect(result.current.snapshot?.data.name).toBe("Alice");
 
-    await act(() => result.current.restart(twoStepPath(), { name: "Bob" }));
+    await act(() => result.current.restart());
     expect(result.current.snapshot?.data.name).toBe("Bob");
   });
 });

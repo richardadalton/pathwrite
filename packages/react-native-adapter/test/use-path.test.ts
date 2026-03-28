@@ -150,7 +150,7 @@ describe("usePath — navigation", () => {
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.next());
     expect(result.current.snapshot?.stepId).toBe("step2");
-    await act(() => result.current.restart(twoStepPath()));
+    await act(() => result.current.restart());
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 });

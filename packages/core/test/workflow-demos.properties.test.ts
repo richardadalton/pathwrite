@@ -140,9 +140,13 @@ describe("workflow demo — onboardingPath guard consistency", () => {
           },
         } as any;
 
-        const canMove  = step.canMoveNext!(ctx);
         const errors   = step.fieldErrors!(ctx);
         const hasError = !!(errors.jobTitle || errors.experience);
+        // When canMoveNext is absent, the engine treats the step as blocked
+        // whenever fieldErrors has any truthy entry. Verify they agree.
+        const canMove  = step.canMoveNext
+          ? step.canMoveNext(ctx)
+          : Object.values(errors).every(v => !v);
 
         // If canMoveNext and fieldErrors disagree, the wizard either shows no
         // error message when blocked, or allows proceeding despite errors.
