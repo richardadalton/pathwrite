@@ -200,6 +200,8 @@ export class AppComponent implements OnInit, AfterViewChecked {
   protected async exitToSessions(): Promise<void> {
     this.showShell = false;
     this.activeSessionKey = null;
+    this.engineAdopted = false;
+    this.pendingEngine = null;
     this.view = "sessions";
     await this.loadSessionList();
   }
