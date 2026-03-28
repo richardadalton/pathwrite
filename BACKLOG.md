@@ -48,9 +48,10 @@ Fixed automatically: `usePath` now calls `toRaw(options?.engine)` before using t
 
 ## Svelte
 
-### BL-08 — Warn in JSDoc that destructuring `snapshot` loses reactivity
-`const { snapshot } = usePath()` silently copies the current value instead of the getter, breaking reactivity. This is the single most dangerous footgun in the Svelte adapter. Add a `@warn` JSDoc block and a runtime `console.warn` (dev-only) if it can be detected.
-**Affects:** svelte adapter, docs.
+### ~~BL-08 — Warn in JSDoc that destructuring `snapshot` loses reactivity~~ ✓ Done
+~~`const { snapshot } = usePath()` silently copies the current value instead of the getter, breaking reactivity. This is the single most dangerous footgun in the Svelte adapter. Add a `@warn` JSDoc block and a runtime `console.warn` (dev-only) if it can be detected.~~
+~~**Affects:** svelte adapter, docs.~~
+Added prominent ⚠️ warnings to both the `usePath()` JSDoc and the `snapshot` property on `UsePathReturn`. Runtime detection is not feasible (confirmed via Svelte docs research — this is expected `$state` behaviour with no interception point). The `$derived` escape hatch is documented for users who need a local variable.
 
 ### BL-09 — Consolidate PathShell import path for Svelte
 The demos import `PathShell` via `"@daltonr/pathwrite-svelte/PathShell.svelte"` (the direct path) rather than `"@daltonr/pathwrite-svelte"` (the package index re-export). Ensure `PathShell` is cleanly re-exported from the package index so both paths work and the canonical one is documented.

@@ -44,7 +44,12 @@ export interface UsePathOptions {
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
-  /** Current path snapshot, or `null` when no path is active. Reactive via `$state`. */
+  /**
+   * Current path snapshot, or `null` when no path is active. Reactive via `$state`.
+   *
+   * ⚠️ **Do not destructure.** `const { snapshot } = usePath()` captures the value
+   * once and loses reactivity. Always access as `path.snapshot`.
+   */
   readonly snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
@@ -81,8 +86,35 @@ export interface UsePathReturn<TData extends PathData = PathData> {
  * Call this from inside a Svelte component to get a reactive snapshot.
  * Cleanup is automatic via onDestroy.
  *
- * **Note:** `snapshot` is a reactive getter — access it via the returned
- * object (e.g. `path.snapshot`). Destructuring `snapshot` will lose reactivity.
+ * ---
+ *
+ * ⚠️ **Do not destructure `snapshot`.**
+ *
+ * `snapshot` is a reactive getter. Destructuring it copies the value once
+ * and severs the reactive connection — your component will stop updating.
+ *
+ * ```svelte
+ * // ❌ Broken — snapshot is captured once and never updates
+ * const { snapshot, next } = usePath();
+ *
+ * // ✅ Correct — snapshot is read through the live object on every render
+ * const path = usePath();
+ * // use path.snapshot in your template
+ * ```
+ *
+ * Other properties (`next`, `previous`, `setData`, etc.) are plain functions
+ * and are safe to destructure.
+ *
+ * If you need a local variable that stays reactive, use `$derived`:
+ * ```svelte
+ * const path = usePath();
+ * const snapshot = $derived(path.snapshot);
+ * ```
+ *
+ * This is expected Svelte 5 behaviour — see the
+ * [Svelte $state docs](https://svelte.dev/docs/svelte/$state) for details.
+ *
+ * ---
  *
  * @example
  * ```svelte
