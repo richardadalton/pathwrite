@@ -90,8 +90,8 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "../wizar
 
       @if (allDone()) {
         <p class="gate-done">✓ All {{ members().length }} profiles complete — click Next to review.</p>
-      } @else if (attempted() && errors()['_']; as msg) {
-        <p class="gate-pending">⏳ {{ msg }}</p>
+      } @else if (attempted() && errors()['_']) {
+        <p class="gate-pending">⏳ {{ errors()['_'] }}</p>
       }
     </div>
   `
