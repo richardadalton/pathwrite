@@ -30,9 +30,10 @@ Removed redundant `canMoveNext` from the "about-you" step in the React, Vue, and
 ~~**Affects:** react adapter.~~
 Added `useField<TData, K>(field)` to `@daltonr/pathwrite-react`. Returns `{ value: string, onChange }` bound to `snapshot.data[field]` — spread directly onto any `<input>`, `<select>`, or `<textarea>`. Updated the react-form `ContactStep` demo to use it for all four fields.
 
-### BL-06 — `usePath().restart()` should not require re-passing path and initialData
-`PathShell` exposes a `restart()` handle via `ref` that correctly captures `path` and `initialData` at mount time. But the lower-level `usePath().restart(path, initialData)` always requires re-passing them. Consider overloading or a `createRestarter(path, initialData)` helper.
-**Affects:** react adapter.
+### ~~BL-06 — `usePath().restart()` should not require re-passing path and initialData~~ ✓ Done
+~~`PathShell` exposes a `restart()` handle via `ref` that correctly captures `path` and `initialData` at mount time. But the lower-level `usePath().restart(path, initialData)` always requires re-passing them.~~
+~~**Affects:** react adapter.~~
+Fixed at the core level: `PathEngine.restart()` is now zero-argument. `start(path, initialData)` stores the root path and initialData internally; `restart()` replays them automatically. All adapters and the `PathShell` component updated accordingly.
 
 ---
 
