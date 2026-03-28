@@ -16,11 +16,6 @@ All 5 adapters now default to `"summary"`. All existing demos updated with expli
 Step components are only mounted when a snapshot is active; the null case is impossible at runtime. The current `PathSnapshot | null` return type forces `snapshot!.data` or `snapshot?.data ?? {}` guards throughout every step component. Return `PathSnapshot<TData>` (non-null) from the context helpers.
 **Affects:** react, vue, svelte, angular, react-native adapters.
 
-### BL-03 — Unify step ID convention between Svelte and the other adapters
-Svelte requires camelCase step IDs (`"selectPlan"`) because prop names can't contain hyphens; all other adapters use kebab-case (`"select-plan"`). Path definitions are supposed to be framework-agnostic but currently aren't portable to Svelte without renaming.
-Two options: (a) make Svelte PathShell normalize camelCase prop keys to kebab-case before lookup, or (b) add a `steps` prop (plain `Record<string, Component>` like React) as an alternative to the spread-props pattern.
-**Affects:** svelte adapter.
-
 ### ~~BL-04 — Document `canMoveNext` auto-derivation from `fieldErrors` more prominently~~ ✓ Done
 ~~The engine auto-derives `canMoveNext: true` when `fieldErrors` is defined and returns no messages, and `canMoveNext` is not explicitly set. Several demos still define redundant `canMoveNext` guards that just duplicate the fieldErrors logic. This should be the documented "default pattern" front-and-centre.~~
 ~~**Affects:** docs, demos.~~
@@ -42,9 +37,10 @@ Every React step component writes `onChange={e => setData("field", e.target.valu
 
 ## Vue
 
-### BL-07 — Warn prominently about `shallowRef` requirement for external engines
-Using `ref(engine)` instead of `shallowRef(engine)` causes Vue to deep-proxy the `PathEngine` class, stripping its private members. The failure mode is a confusing type error. Add a `console.warn` in the adapter when it detects a deep-proxied engine, and add a prominent docs/JSDoc warning.
-**Affects:** vue adapter, docs.
+### ~~BL-07 — Warn prominently about `shallowRef` requirement for external engines~~ ✓ Done
+~~Using `ref(engine)` instead of `shallowRef(engine)` causes Vue to deep-proxy the `PathEngine` class, stripping its private members. The failure mode is a confusing type error. Add a `console.warn` in the adapter when it detects a deep-proxied engine, and add a prominent docs/JSDoc warning.~~
+~~**Affects:** vue adapter, docs.~~
+Fixed automatically: `usePath` now calls `toRaw(options?.engine)` before using the engine, stripping any Vue reactive proxy the caller may have applied. `ref(engine)` and `shallowRef(engine)` are now both safe.
 
 ---
 

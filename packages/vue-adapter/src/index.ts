@@ -2,6 +2,7 @@ import {
   ref,
   shallowRef,
   readonly,
+  toRaw,
   onScopeDispose,
   defineComponent,
   h,
@@ -78,7 +79,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 // ---------------------------------------------------------------------------
 
 export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  const engine = options?.engine ?? new PathEngine();
+  // toRaw() strips any Vue reactive proxy the caller may have accidentally applied
+  // (e.g. ref(engine) instead of shallowRef(engine)). PathEngine uses private class
+  // fields that are inaccessible through a Proxy, so we always work on the raw instance.
+  const engine = toRaw(options?.engine) ?? new PathEngine();
 
   // Seed immediately from existing engine state — essential when restoring a
   // persisted path (the engine is already started before usePath is called).
