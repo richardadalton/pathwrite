@@ -488,7 +488,6 @@ a:hover { color: #c4b5fd; }
 
 /* ===== VALUE CARD — ARTIFACT HIGHLIGHT ===== */
 .value-card--artifact {
-  grid-column: 1 / -1;
   background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(34,211,238,0.05) 100%);
   border-color: rgba(139, 92, 246, 0.35);
 }
