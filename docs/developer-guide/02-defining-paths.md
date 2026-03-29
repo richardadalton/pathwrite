@@ -331,3 +331,5 @@ Note that `fieldWarnings` are never gated by `hasAttemptedNext`. Because warning
 ---
 
 You now know how to describe a path. Chapter 3 covers what happens when a user moves through it.
+
+© 2026 Devjoy Ltd. MIT License.

@@ -23,6 +23,17 @@ PathDefinition  →  PathEngine  →  PathSnapshot
    pure TypeScript             framework adapter re-renders UI
 ```
 
+If you write code professionally, you already have an analogy for this model:
+
+| Pathwrite | Analogy |
+|---|---|
+| `PathDefinition` | Source code — inert, declarative, describes what should happen |
+| `PathEngine` | Interpreter — reads the source and executes it |
+| `PathSnapshot` | Program state — the current position, variables, and values held in memory |
+| Adapters | Interface — tools that surface program state to a human (debugger, UI layer) |
+
+Source code does nothing on its own. An interpreter reads it and executes it. At any point in time the interpreter holds program state. Tools like debuggers and UI layers surface that state to humans. The mapping is exact.
+
 ---
 
 ## What "headless" means in practice
@@ -160,3 +171,5 @@ Put it all together and the data flow is a closed loop:
 The engine never reaches up into the UI. The UI never reaches into the engine's internals. The adapter is the only coupling point, and it is provided for you.
 
 Chapter 2 covers the `PathDefinition` in detail — the full set of step properties, validation hooks, lifecycle callbacks, and the `StepChoice` pattern for conditional form variants.
+
+© 2026 Devjoy Ltd. MIT License.

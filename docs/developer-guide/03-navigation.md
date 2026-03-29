@@ -241,3 +241,5 @@ function AddressStep() {
 ---
 
 All the navigation so far has been synchronous. Chapter 4 covers async guards — the most powerful feature in the engine.
+
+© 2026 Devjoy Ltd. MIT License.

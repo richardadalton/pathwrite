@@ -86,3 +86,5 @@ Override properties inside a `prefers-color-scheme: dark` media query or your ow
   }
 }
 ```
+
+© 2026 Devjoy Ltd. MIT License.

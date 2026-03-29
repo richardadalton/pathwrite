@@ -354,3 +354,5 @@ const [formKey, setFormKey] = useState(0);
 ```
 
 This is the idiomatic React approach — there is no `ref.restart()` method because function components have no instance.
+
+© 2026 Devjoy Ltd. MIT License.

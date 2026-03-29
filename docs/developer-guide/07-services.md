@@ -295,3 +295,5 @@ No `vi.spyOn(globalThis, "fetch")`. No `msw` server. No network. The guard is te
 ---
 
 Services handle live data during a path. Persistence handles what happens between sessions — saving progress so users can pick up where they left off.
+
+© 2026 Devjoy Ltd. MIT License.

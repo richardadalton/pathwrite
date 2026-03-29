@@ -498,3 +498,5 @@ export class MyComponent {
   @ViewChild('shell', { read: PathShellComponent }) shell!: PathShellComponent;
 }
 ```
+
+© 2026 Devjoy Ltd. MIT License.

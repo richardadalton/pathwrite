@@ -39,6 +39,7 @@ interface PathSnapshot<TData = PathData> { ... }
 | `stepEnteredAt` | `number` | `Date.now()` timestamp when the current step was entered. |
 | `hasPersistence` | `boolean` | `true` when a `PathStore` is attached via an observer. |
 | `error` | `{ message: string; phase: string; retryCount: number } \| null` | Details of the most recent async error. Non-null when `status === "error"`. |
+| `formId` | `string \| undefined` | When the current step is a `StepChoice`, this is the ID of the selected inner step variant. `undefined` for regular steps. Use to decide which form component to render. |
 | `data` | `TData` | Copy of the current path data. Mutating this object has no effect on the engine. |
 
 ### `PathStatus` values
@@ -393,3 +394,61 @@ const engine = new PathEngine({
 ```
 
 For removable one-off listeners, use `engine.subscribe()` instead.
+
+---
+
+## Utility functions
+
+### `matchesStrategy(strategy, event)`
+
+```typescript
+function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): boolean
+```
+
+Returns `true` if the given event should trigger work under the given `ObserverStrategy`. Use this when writing custom `PathObserver` implementations so your observer honours the same strategy semantics as the built-in persistence helpers:
+
+```typescript
+const observer: PathObserver = (event, engine) => {
+  if (matchesStrategy("onNext", event)) {
+    store.save(key, engine.exportState()!);
+  }
+};
+```
+
+The `ObserverStrategy` values and when `matchesStrategy` returns `true` for each:
+
+| Strategy | Fires when |
+|---|---|
+| `"onEveryChange"` | A `stateChanged` event where `status` is `"idle"` or `"error"`, or a `"resumed"` event |
+| `"onNext"` | A `stateChanged` event caused by `next` where `status` is `"idle"` or `"error"` |
+| `"onSubPathComplete"` | A `"resumed"` event (sub-path finished or cancelled) |
+| `"onComplete"` | A `"completed"` event |
+| `"manual"` | Never — caller decides when to save |
+
+---
+
+### `errorPhaseMessage(phase)`
+
+```typescript
+function errorPhaseMessage(phase: string): string
+```
+
+Converts an `error.phase` string from `snapshot.error` into a human-readable fallback message. Used by `PathShell` to populate the error panel when no custom message is provided.
+
+| Phase | Message |
+|---|---|
+| `"entering"` | `"Failed to load this step."` |
+| `"validating"` | `"The check could not be completed."` |
+| `"leaving"` | `"Failed to save your progress."` |
+| `"completing"` | `"Your submission could not be sent."` |
+| anything else | `"An unexpected error occurred."` |
+
+Call it directly when building a custom shell or error display:
+
+```typescript
+const message = errorPhaseMessage(snapshot.error.phase);
+```
+
+---
+
+© 2026 Devjoy Ltd. MIT License.

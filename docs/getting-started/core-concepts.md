@@ -105,3 +105,5 @@ The only things that cross layer boundaries are:
 - **up**: snapshot updates triggering re-renders
 
 The engine knows nothing about your UI. Your UI knows nothing about the engine's internals. The adapter is the only coupling point, and it is provided for you.
+
+© 2026 Devjoy Ltd. MIT License.

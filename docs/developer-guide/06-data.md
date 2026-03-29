@@ -285,3 +285,5 @@ All adapters accept `PathDefinition<any>` at their public boundary, so a `PathDe
 ---
 
 The factory pattern sets up cleanly for Chapter 7, where services — the external dependencies your guards need — are injected through exactly this mechanism.
+
+© 2026 Devjoy Ltd. MIT License.

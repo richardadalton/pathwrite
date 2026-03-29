@@ -381,3 +381,5 @@ const shellRef = ref();
 ```
 
 `restart()` resets to step 1 with the original `:initial-data` without unmounting the component.
+
+© 2026 Devjoy Ltd. MIT License.

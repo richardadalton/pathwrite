@@ -253,3 +253,5 @@ Because `canMoveNext` cannot return a data patch (only `onEnter` and `onLeave` c
 ---
 
 Async patterns work the same way inside sub-paths, which are the engine's mechanism for branching and nested flows — covered next.
+
+© 2026 Devjoy Ltd. MIT License.

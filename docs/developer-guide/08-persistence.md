@@ -377,3 +377,5 @@ const engine = new PathEngine({
 ---
 
 Persistence is the last piece of the single-app story. Chapter 9 takes the next step: treating the workflow itself as a publishable, versioned package that multiple apps and frameworks can share.
+
+© 2026 Devjoy Ltd. MIT License.

@@ -299,3 +299,5 @@ When using `usePath` directly, step children need access to the engine too. Wrap
 - **Developer Guide §6** — navigation guards (`canMoveNext`, `canMovePrevious`, `shouldSkip`) in depth
 - **Developer Guide §9** — sub-paths for nested flows
 - **Persistence Guide** — save and restore wizard state with `LocalStorageStore` or `HttpStore`
+
+© 2026 Devjoy Ltd. MIT License.

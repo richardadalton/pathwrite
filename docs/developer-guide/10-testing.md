@@ -604,3 +604,5 @@ The boundary is clear: you wrote it, you test it. Everything else is the engine'
 ---
 
 The final chapter steps back from mechanics and looks at the broader range of problems Pathwrite can solve — including many that don't look like wizards at all.
+
+© 2026 Devjoy Ltd. MIT License.

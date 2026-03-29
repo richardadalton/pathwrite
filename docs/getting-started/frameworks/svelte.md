@@ -377,3 +377,5 @@ export const applicationPath: PathDefinition<ApplicationData> = {
 ```
 
 `restart()` resets to step 1 with the original `initialData` without unmounting the component.
+
+© 2026 Devjoy Ltd. MIT License.

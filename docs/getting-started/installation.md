@@ -71,3 +71,5 @@ npm run demo               # Console demo (no browser needed)
 ```
 
 Each demo app is a self-contained example that covers path definition, step navigation, validation, and completion handling.
+
+© 2026 Devjoy Ltd. MIT License.

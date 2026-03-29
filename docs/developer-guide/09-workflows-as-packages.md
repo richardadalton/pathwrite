@@ -351,9 +351,7 @@ When a consuming app updates to a new major version, TypeScript catches every mi
 
 ## Testing in isolation
 
-The payoff is here. Because the workflow package has no framework dependencies, you can test the entire business process — every guard, every skip condition, every error message — with nothing but `PathEngine` and a mock service.
-
-No browser. No `jsdom`. No `renderHook`. No `TestBed`. No mounted component. Just TypeScript running in Node.
+Because the workflow package has no framework dependencies, your tests import `PathEngine`, your path factory, and nothing else. For testing you want a `FastMockServices` — an implementation of the service interface that resolves immediately, with no `setTimeout`, so tests run in milliseconds:
 
 ```ts
 // test/onboarding.test.ts
@@ -408,10 +406,10 @@ it("paid plan users see billing", async () => {
 });
 ```
 
-The test is pure logic. It starts at the beginning of the flow, drives navigation forward with `next()`, and asserts on the resulting step ID. There is nothing to mount, nothing to render, nothing to wait for except the async mock itself — which resolves immediately because `FastMockServices` has no `setTimeout`.
-
-Chapter 10 covers this testing approach in full, including `fieldErrors`, guards, sub-paths, and property-based tests.
+Chapter 10 covers the full testing approach — `fieldErrors`, guards, sub-paths, and property-based tests.
 
 ---
 
 You can now build, package, and share workflows. Chapter 10 shows you how to test them thoroughly.
+
+© 2026 Devjoy Ltd. MIT License.

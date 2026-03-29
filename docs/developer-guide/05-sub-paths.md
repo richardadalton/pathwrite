@@ -286,3 +286,5 @@ if (snapshot.pathId === "course" && snapshot.stepId === "review") {
 ---
 
 Sub-paths, like the main path, carry typed data. Chapter 6 covers how to type that data — and the rest of your path — with TypeScript.
+
+© 2026 Devjoy Ltd. MIT License.

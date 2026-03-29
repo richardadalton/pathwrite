@@ -409,3 +409,5 @@ export function OnboardingScreen() {
 The `usePath` and `usePathContext` hooks use only `useSyncExternalStore`, `useCallback`, and `useRef` — standard React hooks that work identically in jsdom and on-device. You can test hook behaviour with `@testing-library/react` in a jsdom environment without a simulator.
 
 `PathShell` component tests require `@testing-library/react-native` and a React Native test environment (Jest with the `react-native` preset, or Expo's Jest preset).
+
+© 2026 Devjoy Ltd. MIT License.
