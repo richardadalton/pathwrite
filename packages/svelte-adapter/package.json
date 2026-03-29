@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-svelte",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "type": "module",
   "license": "MIT",
   "description": "Svelte 5 adapter for @daltonr/pathwrite-core — runes-based reactive bindings and optional PathShell component.",
@@ -52,7 +52,7 @@
     "svelte": ">=5.0.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.10.0"
+    "@daltonr/pathwrite-core": "^0.10.1"
   },
   "devDependencies": {
     "@sveltejs/package": "^2.5.7",

@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-store",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Persistence adapters for PathEngine — LocalStorageStore (browser), AsyncStorageStore (React Native / any async key-value store), and HttpStore (REST API)",
   "type": "module",
   "main": "dist/index.js",
@@ -39,7 +39,7 @@
     "directory": "packages/store"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.10.0"
+    "@daltonr/pathwrite-core": "^0.10.1"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-store
 
+## 0.10.1
+
+### Patch Changes
+
+- Merge defineServices and ServiceUnavailableError into core. Fix camelCase fallback for hyphenated step IDs in Svelte PathShell. Update all package READMEs and documentation.
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.10.1
+
 ## 0.9.0
 
 ### Minor Changes
