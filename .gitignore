@@ -51,5 +51,4 @@ feedback-*.md
 docs/feedback/
 .vite
 .tmp/
-docs
 BACKLOG.md
