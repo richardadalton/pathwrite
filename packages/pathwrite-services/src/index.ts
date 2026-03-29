@@ -240,7 +240,7 @@ export function defineServices<T extends Record<string, AnyFn>>(
           if (methodConfig.cache !== "auto") continue;
           const baseKey = `${keyPrefix}${methodName}`;
           const raw = syncStorage.getItem(baseKey);
-          if (raw !== null && !(raw instanceof Promise)) {
+          if (raw !== null && !((raw as unknown) instanceof Promise)) {
             try {
               memCache.set(baseKey, JSON.parse(raw));
             } catch {
