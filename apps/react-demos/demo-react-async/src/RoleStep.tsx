@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePathContext } from "@daltonr/pathwrite-react";
-import type { ApplicationData } from "./application-path";
-import type { ApplicationServices, Role } from "./services";
+import type { ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
+import type { ApplicationServices, Role } from "@daltonr/pathwrite-demo-workflow-job-application";
 
 export function RoleStep() {
   const { snapshot, setData, services } = usePathContext<ApplicationData, ApplicationServices>();

@@ -1,0 +1,37 @@
+/*
+ * Demo Angular Async — Application Styles
+ * Shell CSS is imported via angular.json from node_modules/@daltonr/pathwrite-angular/dist/index.css
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; color: #1f2937; }
+
+.page { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; }
+.page-header { margin-bottom: 28px; }
+.page-header h1 { margin: 0 0 6px; font-size: 26px; color: #1f2937; }
+.subtitle { margin: 0; font-size: 15px; color: #5b677a; }
+.subtitle code { font-size: 13px; background: #eef2ff; color: #4f46e5; padding: 1px 5px; border-radius: 4px; }
+
+/* ── Shell overrides ─────────────────────────────────────────────────────── */
+.pw-shell { padding: 0; gap: 0; max-width: 100%; }
+.pw-shell__body { background: #fff; border: 1px solid #dbe4f0; border-radius: 10px 10px 0 0; padding: 28px 28px 20px; }
+.pw-shell__footer { background: #fff; border: 1px solid #dbe4f0; border-top: none; border-radius: 0 0 10px 10px; padding: 16px 28px; display: flex; justify-content: space-between; gap: 8px; }
+.pw-shell__footer-left, .pw-shell__footer-right { display: flex; gap: 8px; }
+.pw-shell__btn { border: 1px solid #c2d0e5; background: #f8fbff; color: #1f2937; padding: 9px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.15s; }
+.pw-shell__btn:hover:not(:disabled) { background: #dbe4f0; }
+.pw-shell__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pw-shell__btn--next { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 500; }
+.pw-shell__btn--next:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; }
+.pw-shell__btn--cancel { background: transparent; border-color: transparent; color: #5b677a; }
+.pw-shell__btn--cancel:hover:not(:disabled) { background: #f3f4f6; }
+
+/* ── Result panel ────────────────────────────────────────────────────────── */
+.result-panel { border-radius: 12px; padding: 40px 32px; text-align: center; }
+.result-icon { font-size: 36px; font-weight: 700; color: #15803d; margin-bottom: 14px; }
+.result-panel h2 { margin: 0 0 8px; font-size: 22px; }
+.result-panel p { margin: 0 0 24px; font-size: 15px; }
+.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.success-panel h2 { color: #15803d; }
+.success-panel p { color: #166534; }
+.btn-primary { background: #2563eb; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+.btn-primary:hover { background: #1d4ed8; }

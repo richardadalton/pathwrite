@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { PathShell } from "@daltonr/pathwrite-react";
-import { services } from "./services";
-import { createApplicationPath, INITIAL_DATA, type ApplicationData } from "./application-path";
+import { services, createApplicationPath, INITIAL_DATA, type ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
 import { RoleStep }         from "./RoleStep";
 import { ExperienceStep }   from "./ExperienceStep";
 import { EligibilityStep }  from "./EligibilityStep";
@@ -59,7 +58,7 @@ export default function App() {
           "role":         <RoleStep />,
           "experience":   <ExperienceStep />,
           "eligibility":  <EligibilityStep />,
-          "cover-letter": <CoverLetterStep />,
+          "coverLetter":  <CoverLetterStep />,
           "review":       <ReviewStep />,
         }}
       />

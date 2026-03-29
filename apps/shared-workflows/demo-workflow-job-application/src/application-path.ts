@@ -1,35 +1,35 @@
 import type { PathDefinition } from "@daltonr/pathwrite-core";
-import type { ApplicationServices, Role } from "./services";
+import type { ApplicationServices } from "./services";
 
 // ---------------------------------------------------------------------------
-// Path data shape
+// Workflow data shape — the fields collected across all steps.
 // ---------------------------------------------------------------------------
 
 export interface ApplicationData {
-  // Step 1 — role selection
   roleId: string;
-
-  // Step 2 — experience
   yearsExperience: string;
   skills: string;
-
-  // Step 4 — cover letter (only for eng / data roles)
   coverLetter: string;
-
   [key: string]: unknown;
 }
 
 export const INITIAL_DATA: ApplicationData = {
-  roleId:           "",
-  yearsExperience:  "",
-  skills:           "",
-  coverLetter:      "",
+  roleId:          "",
+  yearsExperience: "",
+  skills:          "",
+  coverLetter:     "",
 };
 
 // ---------------------------------------------------------------------------
-// Path factory — closes over services so guards can call them.
-// Exporting a factory function (not a constant) is the idiomatic pattern
-// when steps need to call external services.
+// Workflow factory — framework-agnostic PathDefinition.
+//
+// This is the first-class artifact: pure business logic with no UI, no
+// framework imports, and no rendering concerns. The same definition runs
+// in React, Vue, Angular, Svelte, and React Native — the adapter renders
+// it; this file defines what happens.
+//
+// The factory pattern (vs. a plain constant) lets guards close over the
+// services instance, keeping async calls out of the path definition itself.
 // ---------------------------------------------------------------------------
 
 export function createApplicationPath(
@@ -68,15 +68,11 @@ export function createApplicationPath(
         id: "eligibility",
         title: "Eligibility Check",
 
-        // --- Async canMoveNext -----------------------------------------------
-        // This is the async guard. The engine awaits this before deciding
-        // whether to advance. While it is pending:
-        //   - status === "validating"
-        //   - the Next button shows a CSS spinner (shell.css pw-shell__btn--loading)
-        //   - all navigation buttons are disabled
-        //
-        // If it returns { allowed: false }, the user stays on this step.
-        // The shell renders result.reason as snapshot.blockingError automatically.
+        // Async guard — the engine awaits this before advancing.
+        // While pending: status === "validating", navigation is disabled,
+        // and the Next button shows a loading state.
+        // { allowed: false, reason } keeps the user on this step and
+        // surfaces reason as snapshot.blockingError.
         canMoveNext: async ({ data }) => {
           const years = Number(data.yearsExperience);
           const result = await svc.checkEligibility(years);
@@ -86,17 +82,15 @@ export function createApplicationPath(
       },
 
       {
-        id: "cover-letter",
+        // camelCase ID — required by the Svelte adapter, which maps step IDs
+        // to component prop names (JS identifiers cannot contain hyphens).
+        // camelCase is accepted by all other adapters too.
+        id: "coverLetter",
         title: "Cover Letter",
 
-        // --- Async shouldSkip -----------------------------------------------
-        // svc.requiresCoverLetter() is async. While it resolves, stepCount is
-        // optimistic (includes this step). Once navigation walks past it and the
-        // result is cached in resolvedSkips, the progress bar updates to reflect
-        // the true visible count.
-        //
-        // Try selecting "Software Engineer" or "Data Scientist" — the cover
-        // letter step appears. Any other role — it is silently skipped.
+        // Async shouldSkip — resolves which roles need a cover letter.
+        // stepCount is optimistic until the result resolves and is cached
+        // in resolvedSkips; the progress bar then reflects the true count.
         shouldSkip: async ({ data }) => {
           const needed = await svc.requiresCoverLetter(data.roleId);
           return !needed;

@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
-// Service interface — what the path definition depends on.
-// In a real app this would be an API client or injected service class.
+// Service interface — defines what the workflow depends on.
+// In a real app this would be an API client, injected service, or similar.
+// The interface is the contract; the mock below is for demos only.
 // ---------------------------------------------------------------------------
 
 export interface Role {
@@ -14,26 +15,27 @@ export interface EligibilityResult {
 }
 
 export interface ApplicationServices {
-  /** Fetch the list of open roles. Called from step components via usePathContext. */
+  /** Fetch the list of open roles. */
   getRoles(): Promise<Role[]>;
 
   /**
    * Check whether the applicant meets minimum requirements.
-   * Returns false (with a reason) when `yearsExperience < 2`.
-   * Called from canMoveNext — async guard enforcement.
+   * Returns `{ eligible: false, reason }` when `yearsExperience < 2`.
+   * Used in the eligibility step's async `canMoveNext` guard.
    */
   checkEligibility(yearsExperience: number): Promise<EligibilityResult>;
 
   /**
    * Check whether the selected role requires a cover letter.
-   * Called from shouldSkip — demonstrates async shouldSkip with accurate
-   * stepCount/progress once the result resolves.
+   * Used in the cover-letter step's async `shouldSkip` to conditionally
+   * include or skip that step; the step count updates once it resolves.
    */
   requiresCoverLetter(roleId: string): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
 // Mock implementation — simulates realistic network latency.
+// Replace with a real implementation in production.
 // ---------------------------------------------------------------------------
 
 function delay(ms: number): Promise<void> {
@@ -53,7 +55,7 @@ export class MockApplicationServices implements ApplicationServices {
   }
 
   async checkEligibility(yearsExperience: number): Promise<EligibilityResult> {
-    await delay(900); // deliberate pause so the spinner is clearly visible
+    await delay(900); // deliberate pause so the loading state is clearly visible
     if (yearsExperience < 2) {
       return {
         eligible: false,
@@ -66,11 +68,11 @@ export class MockApplicationServices implements ApplicationServices {
   async requiresCoverLetter(roleId: string): Promise<boolean> {
     await delay(600); // simulate a role-config lookup
     // Engineering and data science roles require a cover letter;
-    // other roles skip straight to Review.
+    // all other roles skip straight to Review.
     return roleId === "eng" || roleId === "data";
   }
 }
 
-// Module-level singleton — shared by the path factory and step components.
-// In a real app this would typically come from a DI container or React context.
+// Convenience singleton — import `services` directly in non-DI frameworks.
+// Angular demos should ignore this and use @Injectable instead.
 export const services = new MockApplicationServices();

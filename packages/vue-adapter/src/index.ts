@@ -246,7 +246,7 @@ export const PathShell = defineComponent({
      * Services object passed through context to all step components.
      * Step components access it via `usePathContext<TData, TServices>()`.
      */
-    services: { type: Object as PropType<unknown>, default: undefined }
+    services: { type: Object as PropType<object | null>, default: null }
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {

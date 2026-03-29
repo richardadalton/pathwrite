@@ -1,5 +1,5 @@
 import { usePathContext } from "@daltonr/pathwrite-react";
-import type { ApplicationData } from "./application-path";
+import type { ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
 
 export function EligibilityStep() {
   const { snapshot } = usePathContext<ApplicationData>();
@@ -7,6 +7,9 @@ export function EligibilityStep() {
 
   // status === "validating" means canMoveNext is currently running.
   const guardRunning = snap.status === "validating";
+  // blockingError is set when canMoveNext returns { allowed: false, reason }.
+  // We render it here because the shell uses validationDisplay="inline".
+  const blockingError = snap.hasAttemptedNext ? snap.blockingError : null;
 
   return (
     <div className="form-body">
@@ -29,6 +32,10 @@ export function EligibilityStep() {
           <span>{(snap.data.skills as string) || "—"}</span>
         </div>
       </div>
+
+      {blockingError && (
+        <p className="field-error" style={{ marginTop: 12 }}>{blockingError}</p>
+      )}
 
       {!guardRunning && (
         <p className="hint">

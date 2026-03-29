@@ -1,0 +1,55 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Job Application</h1>
+    <p class="subtitle">
+      Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code>
+      with accurate progress, <code>loadingLabel</code>, and service injection via
+      Angular DI (<code>inject(MockApplicationServices)</code> in step components).
+    </p>
+  </div>
+
+  <!-- ── Completed ──────────────────────────────────────────────────────────── -->
+  @if (isCompleted && completedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">✓</div>
+      <h2>Application Submitted</h2>
+      <p>Your application for role <strong>{{ completedData.roleId }}</strong> was received.</p>
+      <button type="button" class="btn-primary" (click)="startOver()">Submit Another</button>
+    </section>
+  }
+
+  <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
+  @if (!isCompleted) {
+    <pw-shell
+      [path]="applicationPath"
+      [initialData]="initialData"
+      completeLabel="Submit Application"
+      loadingLabel="Please wait…"
+      [hideCancel]="true"
+      validationDisplay="inline"
+      (complete)="onComplete($event)"
+    >
+      <ng-template pwStep="role">
+        <app-role-step />
+      </ng-template>
+
+      <ng-template pwStep="experience">
+        <app-experience-step />
+      </ng-template>
+
+      <ng-template pwStep="eligibility">
+        <app-eligibility-step />
+      </ng-template>
+
+      <ng-template pwStep="coverLetter">
+        <app-cover-letter-step />
+      </ng-template>
+
+      <ng-template pwStep="review">
+        <app-review-step />
+      </ng-template>
+    </pw-shell>
+  }
+
+</main>

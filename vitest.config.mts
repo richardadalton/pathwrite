@@ -5,10 +5,14 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 export default defineConfig({
   plugins: [svelte({ hot: false })],
   test: {
-    include: ["packages/**/test/**/*.test.ts"]
+    include: [
+      "packages/**/test/**/*.test.ts",
+      "apps/shared-workflows/**/test/**/*.test.ts",
+    ]
   },
   resolve: {
     alias: {
+      "@daltonr/pathwrite-demo-workflow-job-application": fileURLToPath(new URL("apps/shared-workflows/demo-workflow-job-application/src/index.ts", import.meta.url)),
       "@daltonr/pathwrite-core": fileURLToPath(new URL("packages/core/src/index.ts", import.meta.url)),
       "@daltonr/pathwrite-angular/shell": fileURLToPath(new URL("packages/angular-adapter/src/shell.ts", import.meta.url)),
       "@daltonr/pathwrite-angular": fileURLToPath(new URL("packages/angular-adapter/src/index.ts", import.meta.url)),

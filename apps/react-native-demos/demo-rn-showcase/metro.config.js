@@ -13,6 +13,7 @@ config.watchFolders = [workspaceRoot];
 config.resolver.extraNodeModules = {
   "@daltonr/pathwrite-core": path.resolve(workspaceRoot, "packages/core"),
   "@daltonr/pathwrite-react-native": path.resolve(workspaceRoot, "packages/react-native-adapter"),
+  "@daltonr/pathwrite-demo-workflow-job-application": path.resolve(workspaceRoot, "apps/shared-workflows/demo-workflow-job-application"),
 };
 
 // Only look in the app's own node_modules — not the monorepo root.

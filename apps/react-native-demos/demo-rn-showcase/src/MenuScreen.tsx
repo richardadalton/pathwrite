@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 
-type Screen = "form" | "features";
+type Screen = "form" | "features" | "async";
 
 interface Props {
   onSelect: (screen: Screen) => void;
@@ -32,6 +32,15 @@ const DEMOS: { id: Screen; title: string; description: string; tag: string }[] =
       "steps (shouldSkip), branching forms (StepChoice), and a nested " +
       "sub-wizard.",
     tag: "guards · shouldSkip · StepChoice · subPath",
+  },
+  {
+    id: "async",
+    title: "Async Features",
+    description:
+      "Job application form demonstrating async canMoveNext guards, async " +
+      "shouldSkip with accurate progress, loadingLabel, and service injection " +
+      "via usePathContext<TData, TServices>().",
+    tag: "async guards · async shouldSkip · loadingLabel · services",
   },
 ];
 

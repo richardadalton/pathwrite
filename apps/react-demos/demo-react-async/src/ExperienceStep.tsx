@@ -1,5 +1,5 @@
 import { usePathContext } from "@daltonr/pathwrite-react";
-import type { ApplicationData } from "./application-path";
+import type { ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
 
 export function ExperienceStep() {
   const { snapshot, setData } = usePathContext<ApplicationData>();
