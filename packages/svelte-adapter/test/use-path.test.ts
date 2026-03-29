@@ -27,7 +27,7 @@ vi.mock("svelte", async () => {
 });
 
 // Import AFTER mocking so the mock is in place
-import { usePath, usePathContext, setPathContext, bindData } from "../src/index.svelte";
+import { usePath, usePathContext, setPathContext, bindData, stepIdToCamelCase } from "../src/index.svelte";
 import type { UsePathOptions, UsePathReturn, PathContext } from "../src/index.svelte";
 
 // ---------------------------------------------------------------------------
@@ -658,3 +658,28 @@ describe("usePath — guards and validation", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// stepIdToCamelCase
+// ---------------------------------------------------------------------------
+
+describe("stepIdToCamelCase", () => {
+  it("converts a single-hyphen id", () => {
+    expect(stepIdToCamelCase("cover-letter")).toBe("coverLetter");
+  });
+
+  it("converts a multi-hyphen id", () => {
+    expect(stepIdToCamelCase("personal-contact-info")).toBe("personalContactInfo");
+  });
+
+  it("leaves an already-camelCase id unchanged", () => {
+    expect(stepIdToCamelCase("coverLetter")).toBe("coverLetter");
+  });
+
+  it("leaves a plain lowercase id unchanged", () => {
+    expect(stepIdToCamelCase("review")).toBe("review");
+  });
+
+  it("does not capitalise the first segment", () => {
+    expect(stepIdToCamelCase("step-one")).toBe("stepOne");
+  });
+});

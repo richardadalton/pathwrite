@@ -57,7 +57,7 @@ function startOver() {
       <template #role><RoleStep /></template>
       <template #experience><ExperienceStep /></template>
       <template #eligibility><EligibilityStep /></template>
-      <template #coverLetter><CoverLetterStep /></template>
+      <template #cover-letter><CoverLetterStep /></template>
       <template #review><ReviewStep /></template>
     </PathShell>
   </main>

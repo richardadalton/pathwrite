@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { usePath, setPathContext, formatFieldKey, errorPhaseMessage } from './index.svelte.js';
+  import { usePath, setPathContext, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
   import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
   import type { Snippet, Component } from 'svelte';
 
@@ -115,6 +115,14 @@
     }
   });
 
+  function warnMissingStep(stepId: string): void {
+    const camel = stepIdToCamelCase(stepId);
+    const hint = camel !== stepId
+      ? ` No snippet found for "${stepId}" or its camelCase form "${camel}". If your step ID contains hyphens, pass the snippet as a camelCase prop: ${camel}={YourComponent}.`
+      : ` No snippet found for "${stepId}".`;
+    console.warn(`[PathShell]${hint}`);
+  }
+
   let snap = $derived(pathReturn.snapshot);
   let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData), retry, suspend });
 
@@ -194,7 +202,10 @@
 
     <!-- Body: current step rendered via named snippet.
          Prefer formId (inner step id of a StepChoice) so consumers can
-         register snippets by inner step ids directly. -->
+         register snippets by inner step ids directly.
+         Hyphenated step IDs (e.g. "cover-letter") are normalised to camelCase
+         ("coverLetter") as a fallback, since Svelte props must be valid JS
+         identifiers. -->
     <div class="pw-shell__body">
       {#if snap.formId && stepSnippets[snap.formId]}
         {@const StepComponent = stepSnippets[snap.formId]}
@@ -202,7 +213,11 @@
       {:else if stepSnippets[snap.stepId]}
         {@const StepComponent = stepSnippets[snap.stepId]}
         <StepComponent />
+      {:else if stepSnippets[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
+        {@const StepComponent = stepSnippets[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
+        <StepComponent />
       {:else}
+        {warnMissingStep(snap.stepId)}
         <p>No content for step "{snap.stepId}"</p>
       {/if}
     </div>

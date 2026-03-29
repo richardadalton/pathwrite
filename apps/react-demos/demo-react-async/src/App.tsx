@@ -58,7 +58,7 @@ export default function App() {
           "role":         <RoleStep />,
           "experience":   <ExperienceStep />,
           "eligibility":  <EligibilityStep />,
-          "coverLetter":  <CoverLetterStep />,
+          "cover-letter": <CoverLetterStep />,
           "review":       <ReviewStep />,
         }}
       />

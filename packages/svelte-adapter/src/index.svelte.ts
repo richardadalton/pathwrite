@@ -310,6 +310,16 @@ export function bindData<TData extends PathData, K extends string & keyof TData>
   };
 }
 
+/**
+ * Converts a hyphenated step ID to camelCase.
+ * Used internally by PathShell to resolve step snippets when a step ID contains
+ * hyphens (e.g. "cover-letter" → "coverLetter"), since Svelte prop names must
+ * be valid JavaScript identifiers.
+ */
+export function stepIdToCamelCase(id: string): string {
+  return id.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
 // Export PathShell component
 export { default as PathShell } from "./PathShell.svelte";
 

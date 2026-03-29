@@ -83,7 +83,7 @@ export function AsyncDemo({ onBack }: Props) {
             "role":         <RoleStep />,
             "experience":   <ExperienceStep />,
             "eligibility":  <EligibilityStep />,
-            "coverLetter":  <CoverLetterStep />,
+            "cover-letter": <CoverLetterStep />,
             "review":       <ReviewStep />,
           }}
         />

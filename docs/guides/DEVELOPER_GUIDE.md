@@ -1647,6 +1647,8 @@ Use the `pwShellFooter` directive to replace the default navigation buttons. The
 
 Step content is provided as **Svelte 5 snippets** whose names match the step `id`. The shell collects all snippets via `...rest` props and renders the active one with `{@render}`.
 
+> **Hyphenated step IDs.** Svelte prop names must be valid JavaScript identifiers, so a step defined with `id: "cover-letter"` cannot be passed as `{#snippet cover-letter()}` (syntax error). `PathShell` automatically falls back to a camelCase lookup — pass the snippet as `{#snippet coverLetter()}` and it will be matched to the `"cover-letter"` step. This means your workflow definition can use whichever casing makes sense for the project; the Svelte shell handles the normalisation silently. A `console.warn` is emitted if no snippet is found under either the original ID or its camelCase form.
+
 #### Svelte props
 
 | Prop | Type | Default | Description |

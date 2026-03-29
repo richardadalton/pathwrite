@@ -82,10 +82,7 @@ export function createApplicationPath(
       },
 
       {
-        // camelCase ID — required by the Svelte adapter, which maps step IDs
-        // to component prop names (JS identifiers cannot contain hyphens).
-        // camelCase is accepted by all other adapters too.
-        id: "coverLetter",
+        id: "cover-letter",
         title: "Cover Letter",
 
         // Async shouldSkip — resolves which roles need a cover letter.
