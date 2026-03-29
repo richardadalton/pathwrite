@@ -81,7 +81,7 @@
 
   // Initialize path engine
   const pathReturn = usePath({
-    engine: engineProp,
+    get engine() { return engineProp; },
     onEvent: (event) => {
       onevent?.(event);
       if (event.type === 'completed') oncomplete?.(event.data);
@@ -103,7 +103,7 @@
     restart: () => restartFn(path, initialData),
     retry,
     suspend,
-    services,
+    get services() { return services; },
   });
 
   // Auto-start the path when no external engine is provided
@@ -197,9 +197,11 @@
          register snippets by inner step ids directly. -->
     <div class="pw-shell__body">
       {#if snap.formId && stepSnippets[snap.formId]}
-        <svelte:component this={stepSnippets[snap.formId]} />
+        {@const StepComponent = stepSnippets[snap.formId]}
+        <StepComponent />
       {:else if stepSnippets[snap.stepId]}
-        <svelte:component this={stepSnippets[snap.stepId]} />
+        {@const StepComponent = stepSnippets[snap.stepId]}
+        <StepComponent />
       {:else}
         <p>No content for step "{snap.stepId}"</p>
       {/if}
