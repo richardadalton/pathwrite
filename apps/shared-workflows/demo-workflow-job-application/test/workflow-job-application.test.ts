@@ -196,7 +196,7 @@ describe("createApplicationPath — eligibility guard", () => {
     await engine.next(); // role → experience
     await engine.next(); // experience → eligibility
     await engine.next(); // eligibility → coverLetter (eng requires it)
-    expect(engine.snapshot()?.stepId).toBe("coverLetter");
+    expect(engine.snapshot()?.stepId).toBe("cover-letter");
   });
 
   it("clears blockingError after the guard passes on retry", async () => {
@@ -215,7 +215,7 @@ describe("createApplicationPath — eligibility guard", () => {
     engine.setData("yearsExperience", "5");
     await engine.next(); // guard now passes — blockingError cleared
     expect(engine.snapshot()?.blockingError).toBeNull();
-    expect(engine.snapshot()?.stepId).toBe("coverLetter");
+    expect(engine.snapshot()?.stepId).toBe("cover-letter");
   });
 });
 
@@ -240,12 +240,12 @@ describe("createApplicationPath — coverLetter shouldSkip", () => {
 
   it("includes coverLetter for 'eng' role", async () => {
     const engine = await advanceToAfterEligibility("eng");
-    expect(engine.snapshot()?.stepId).toBe("coverLetter");
+    expect(engine.snapshot()?.stepId).toBe("cover-letter");
   });
 
   it("includes coverLetter for 'data' role", async () => {
     const engine = await advanceToAfterEligibility("data");
-    expect(engine.snapshot()?.stepId).toBe("coverLetter");
+    expect(engine.snapshot()?.stepId).toBe("cover-letter");
   });
 
   it("skips coverLetter for 'pm' role", async () => {

@@ -270,7 +270,7 @@ describe("createApplicationPath (property) — coverLetter routing", () => {
         await engine.next();
         const stepId = engine.snapshot()?.stepId;
         if (roleId === "eng" || roleId === "data") {
-          expect(stepId).toBe("coverLetter");
+          expect(stepId).toBe("cover-letter");
         } else {
           expect(stepId).toBe("review");
         }
