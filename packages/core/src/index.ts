@@ -526,6 +526,8 @@ interface ActivePath {
   stepEnteredAt: number;
   /** The selected inner step when the current slot is a StepChoice. Cached on entry. */
   resolvedChoiceStep?: PathStep;
+  /** Step IDs that have been confirmed skipped via shouldSkip during navigation. Used for accurate stepCount / progress in snapshots. */
+  resolvedSkips: Set<string>;
 }
 
 function isStepChoice(item: PathStep | StepChoice): item is StepChoice {
@@ -578,6 +580,7 @@ export class PathEngine {
    */
   private _retryCount = 0;
   private _hasPersistence = false;
+  private _hasWarnedAsyncShouldSkip = false;
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -630,6 +633,7 @@ export class PathEngine {
         currentStepIndex: stackItem.currentStepIndex,
         data: { ...stackItem.data },
         visitedStepIds: new Set(stackItem.visitedStepIds),
+        resolvedSkips: new Set(),
         subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined,
         stepEntryData: stackItem.stepEntryData ? { ...stackItem.stepEntryData } : { ...stackItem.data },
         stepEnteredAt: stackItem.stepEnteredAt ?? Date.now()
@@ -649,6 +653,7 @@ export class PathEngine {
       currentStepIndex: state.currentStepIndex,
       data: { ...state.data },
       visitedStepIds: new Set(state.visitedStepIds),
+      resolvedSkips: new Set(),
       // Active path's subPathMeta is not serialized (it's transient metadata
       // from the parent when this path was started). On restore, it's undefined.
       subPathMeta: undefined,
@@ -868,25 +873,34 @@ export class PathEngine {
     const item = this.getCurrentItem(active);
     const effectiveStep = this.getEffectiveStep(active);
     const { steps } = active.definition;
-    const stepCount = steps.length;
+
+    // Filter out steps confirmed as skipped during navigation. Steps not yet
+    // evaluated (e.g. on first render) are included optimistically.
+    const visibleSteps = steps.filter(s => !active.resolvedSkips.has(s.id));
+    const stepCount = visibleSteps.length;
+    const visibleIndex = visibleSteps.findIndex(s => s.id === item.id);
+    // Fall back to raw index if not found (should not happen in normal use)
+    const effectiveStepIndex = visibleIndex >= 0 ? visibleIndex : active.currentStepIndex;
 
     // Build rootProgress from the bottom of the stack (the top-level path)
     let rootProgress: RootProgress | undefined;
     if (this.pathStack.length > 0) {
       const root = this.pathStack[0];
-      const rootSteps = root.definition.steps;
-      const rootStepCount = rootSteps.length;
+      const rootVisibleSteps = root.definition.steps.filter(s => !root.resolvedSkips.has(s.id));
+      const rootStepCount = rootVisibleSteps.length;
+      const rootVisibleIndex = rootVisibleSteps.findIndex(s => s.id === root.definition.steps[root.currentStepIndex]?.id);
+      const rootEffectiveIndex = rootVisibleIndex >= 0 ? rootVisibleIndex : root.currentStepIndex;
       rootProgress = {
         pathId: root.definition.id,
-        stepIndex: root.currentStepIndex,
+        stepIndex: rootEffectiveIndex,
         stepCount: rootStepCount,
-        progress: rootStepCount <= 1 ? 1 : root.currentStepIndex / (rootStepCount - 1),
-        steps: rootSteps.map((s, i) => ({
+        progress: rootStepCount <= 1 ? 1 : rootEffectiveIndex / (rootStepCount - 1),
+        steps: rootVisibleSteps.map((s, i) => ({
           id: s.id,
           title: s.title,
           meta: s.meta,
-          status: i < root.currentStepIndex ? "completed" as const
-            : i === root.currentStepIndex ? "current" as const
+          status: i < rootEffectiveIndex ? "completed" as const
+            : i === rootEffectiveIndex ? "current" as const
             : "upcoming" as const
         }))
       };
@@ -898,20 +912,20 @@ export class PathEngine {
       stepTitle: effectiveStep.title ?? item.title,
       stepMeta: effectiveStep.meta ?? item.meta,
       formId: isStepChoice(item) ? effectiveStep.id : undefined,
-      stepIndex: active.currentStepIndex,
+      stepIndex: effectiveStepIndex,
       stepCount,
-      progress: stepCount <= 1 ? 1 : active.currentStepIndex / (stepCount - 1),
-      steps: steps.map((s, i) => ({
+      progress: stepCount <= 1 ? 1 : effectiveStepIndex / (stepCount - 1),
+      steps: visibleSteps.map((s, i) => ({
         id: s.id,
         title: s.title,
         meta: s.meta,
-        status: i < active.currentStepIndex ? "completed" as const
-          : i === active.currentStepIndex ? "current" as const
+        status: i < effectiveStepIndex ? "completed" as const
+          : i === effectiveStepIndex ? "current" as const
           : "upcoming" as const
       })),
-      isFirstStep: active.currentStepIndex === 0,
+      isFirstStep: effectiveStepIndex === 0,
       isLastStep:
-        active.currentStepIndex === stepCount - 1 &&
+        effectiveStepIndex === stepCount - 1 &&
         this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       rootProgress,
@@ -990,6 +1004,7 @@ export class PathEngine {
       currentStepIndex: 0,
       data: { ...initialData },
       visitedStepIds: new Set(),
+      resolvedSkips: new Set(),
       subPathMeta: undefined,
       stepEntryData: { ...initialData },  // Will be updated in enterCurrentStep
       stepEnteredAt: 0  // Will be set in enterCurrentStep
@@ -1398,15 +1413,36 @@ export class PathEngine {
       active.currentStepIndex < active.definition.steps.length
     ) {
       const item = active.definition.steps[active.currentStepIndex];
-      if (!item.shouldSkip) break;
+      if (!item.shouldSkip) {
+        // This step has no shouldSkip — it is definitely visible. Remove it from
+        // the cache in case a previous navigation had marked it as skipped.
+        active.resolvedSkips.delete(item.id);
+        break;
+      }
       const ctx: PathStepContext = {
         pathId: active.definition.id,
         stepId: item.id,
         data: { ...active.data },
         isFirstEntry: !active.visitedStepIds.has(item.id)
       };
-      const skip = await item.shouldSkip(ctx);
-      if (!skip) break;
+      const rawResult = item.shouldSkip(ctx);
+      if (rawResult && typeof (rawResult as Promise<boolean>).then === "function") {
+        if (!this._hasWarnedAsyncShouldSkip) {
+          this._hasWarnedAsyncShouldSkip = true;
+          console.warn(
+            `[Pathwrite] Step "${item.id}" has an async shouldSkip. ` +
+            `snapshot().stepCount and progress may be approximate until after the first navigation.`
+          );
+        }
+      }
+      const skip = await rawResult;
+      if (!skip) {
+        // This step resolved as NOT skipped — remove from cache in case it was
+        // previously skipped (data changed since last navigation).
+        active.resolvedSkips.delete(item.id);
+        break;
+      }
+      active.resolvedSkips.add(item.id);
       active.currentStepIndex += direction;
     }
   }

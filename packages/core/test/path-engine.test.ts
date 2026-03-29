@@ -1606,6 +1606,70 @@ describe("PathEngine — async hooks and guards", () => {
     expect(engine.snapshot()?.stepId).toBe("step3");
   });
 
+  it("snapshot reflects accurate stepCount and progress after async skip resolves", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
+        { id: "step3" }
+      ]
+    });
+    // After start: step1 (index 0). skip-me was checked at start — not applicable at step 1.
+    // step1 is index 0 in visible steps [step1, step3] = stepCount 2
+    await engine.next();
+    const snap = engine.snapshot()!;
+    // After navigating: skip-me is now in resolvedSkips
+    expect(snap.stepId).toBe("step3");
+    expect(snap.stepCount).toBe(2);        // skip-me excluded
+    expect(snap.stepIndex).toBe(1);        // step3 is index 1 in [step1, step3]
+    expect(snap.progress).toBe(1);         // last visible step
+    expect(snap.isLastStep).toBe(true);
+    expect(snap.steps.map(s => s.id)).toEqual(["step1", "step3"]);
+  });
+
+  it("snapshot stepCount is optimistic (full count) before first navigation", async () => {
+    // Before any navigation, resolvedSkips is empty so stepCount = steps.length
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
+        { id: "step3" }
+      ]
+    });
+    const snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("step1");
+    // Before navigation: skip-me not yet resolved for this position, count is optimistic
+    expect(snap.stepCount).toBe(3);
+  });
+
+  it("removes a step from resolvedSkips when it stops being skipped", async () => {
+    let shouldSkipStep2 = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1" },
+        { id: "step2", shouldSkip: () => shouldSkipStep2 },
+        { id: "step3" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step3");
+    expect(engine.snapshot()?.stepCount).toBe(2); // step2 skipped
+
+    // step2 should no longer be skipped
+    shouldSkipStep2 = false;
+    await engine.previous();
+
+    // Engine walks back through step2 — resolves as not-skipped, lands on step2
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.stepCount).toBe(3); // step2 now visible
+  });
+
   it("status is not 'idle' in intermediate stateChanged events during next", async () => {
     const statusesSeen = new Set<string>();
     const engine = new PathEngine();
