@@ -13,6 +13,9 @@ export interface ApplicationData {
   yearsExperience: string;
   skills: string;
 
+  // Step 4 — cover letter (only for eng / data roles)
+  coverLetter: string;
+
   [key: string]: unknown;
 }
 
@@ -20,6 +23,7 @@ export const INITIAL_DATA: ApplicationData = {
   roleId:           "",
   yearsExperience:  "",
   skills:           "",
+  coverLetter:      "",
 };
 
 // ---------------------------------------------------------------------------
@@ -79,6 +83,32 @@ export function createApplicationPath(
           if (!result.eligible) return { allowed: false, reason: result.reason };
           return true;
         },
+      },
+
+      {
+        id: "cover-letter",
+        title: "Cover Letter",
+
+        // --- Async shouldSkip -----------------------------------------------
+        // svc.requiresCoverLetter() is async. While it resolves, stepCount is
+        // optimistic (includes this step). Once navigation walks past it and the
+        // result is cached in resolvedSkips, the progress bar updates to reflect
+        // the true visible count.
+        //
+        // Try selecting "Software Engineer" or "Data Scientist" — the cover
+        // letter step appears. Any other role — it is silently skipped.
+        shouldSkip: async ({ data }) => {
+          const needed = await svc.requiresCoverLetter(data.roleId);
+          return !needed;
+        },
+
+        fieldErrors: ({ data }) => ({
+          coverLetter: !data.coverLetter?.trim()
+            ? "Please write a short cover letter."
+            : data.coverLetter.trim().length < 20
+              ? "Cover letter must be at least 20 characters."
+              : undefined,
+        }),
       },
 
       {

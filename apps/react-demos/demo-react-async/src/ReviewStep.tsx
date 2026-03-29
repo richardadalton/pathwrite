@@ -25,6 +25,12 @@ export function ReviewStep() {
           <span className="summary-key">Skills</span>
           <span>{data.skills as string}</span>
         </div>
+        {data.coverLetter && (
+          <div className="summary-row">
+            <span className="summary-key">Cover Letter</span>
+            <span>{data.coverLetter as string}</span>
+          </div>
+        )}
       </div>
     </div>
   );

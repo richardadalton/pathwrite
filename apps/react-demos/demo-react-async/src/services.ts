@@ -23,6 +23,13 @@ export interface ApplicationServices {
    * Called from canMoveNext — async guard enforcement.
    */
   checkEligibility(yearsExperience: number): Promise<EligibilityResult>;
+
+  /**
+   * Check whether the selected role requires a cover letter.
+   * Called from shouldSkip — demonstrates async shouldSkip with accurate
+   * stepCount/progress once the result resolves.
+   */
+  requiresCoverLetter(roleId: string): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,6 +61,13 @@ export class MockApplicationServices implements ApplicationServices {
       };
     }
     return { eligible: true };
+  }
+
+  async requiresCoverLetter(roleId: string): Promise<boolean> {
+    await delay(600); // simulate a role-config lookup
+    // Engineering and data science roles require a cover letter;
+    // other roles skip straight to Review.
+    return roleId === "eng" || roleId === "data";
   }
 }
 
