@@ -169,14 +169,14 @@ Both generics on `usePathContext<HiringData, HiringServices>()` are type-level a
 
 ---
 
-## The @daltonr/pathwrite-services package
+## defineServices
 
 Guards run on every navigation attempt. If `checkEligibility` makes a network round-trip every time the user taps Next, a three-step wizard with one eligibility guard produces three identical API calls. For reference data that doesn't change during a session — role lists, country codes, approver names — that is pure waste.
 
-`@daltonr/pathwrite-services` wraps your service functions to add caching, in-flight deduplication, and automatic retry. It has no dependency on the rest of Pathwrite; it is a standalone utility that works with plain async functions.
+`defineServices` wraps your service functions to add caching, in-flight deduplication, and automatic retry. It is exported from `@daltonr/pathwrite-core`.
 
 ```typescript
-import { defineServices } from "@daltonr/pathwrite-services";
+import { defineServices } from "@daltonr/pathwrite-core";
 import * as api from "./api";
 
 export const hiringServices = defineServices(
@@ -202,7 +202,7 @@ export const hiringServices = defineServices(
 **`retry`** sets the number of additional attempts on failure. Retries use exponential back-off starting at 200 ms. When all attempts are exhausted, `defineServices` throws a `ServiceUnavailableError`. If that error propagates out of a guard, the engine catches it and moves to the `"error"` status, surfacing a retry UI to the user.
 
 ```typescript
-import { ServiceUnavailableError } from "@daltonr/pathwrite-services";
+import { ServiceUnavailableError } from "@daltonr/pathwrite-core";
 
 // If checkEligibility fails after 3 attempts (the initial call + 2 retries),
 // a ServiceUnavailableError is thrown. The engine catches it automatically

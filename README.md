@@ -88,7 +88,7 @@ npm install @daltonr/pathwrite-store-http
 | [`@daltonr/pathwrite-angular`](packages/angular-adapter) | `PathFacade` injectable and `<pw-shell>` component. State as `Observable` and Signal. |
 | [`@daltonr/pathwrite-svelte`](packages/svelte-adapter) | `usePath()` with Svelte 5 runes and `PathShell` snippets. |
 | [`@daltonr/pathwrite-react-native`](packages/react-native-adapter) | `usePath()` hook and `PathShell` for Expo and bare React Native. |
-| [`@daltonr/pathwrite-store-http`](packages/store-http) | `HttpStore` and `LocalStorageStore` with `httpPersistence` observer and `restoreOrStart`. |
+| [`@daltonr/pathwrite-store-http`](packages/store) | `HttpStore` and `LocalStorageStore` with `httpPersistence` observer and `restoreOrStart`. |
 
 ## Documentation
 

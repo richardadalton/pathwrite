@@ -1679,3 +1679,238 @@ export class PathEngine {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Services utilities
+//
+// Wraps plain async service functions with declarative caching, in-flight
+// deduplication, configurable retry, and prefetch.
+// ---------------------------------------------------------------------------
+
+/** Synchronous key-value store (e.g. localStorage, sessionStorage). */
+export interface SyncServiceStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+/** Asynchronous key-value store (e.g. React Native AsyncStorage). */
+export interface AsyncServiceStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
+}
+
+/** Union accepted by defineServices — sync or async storage. */
+export type ServiceCacheStorage = SyncServiceStorage | AsyncServiceStorage;
+
+export type CachePolicy = "auto" | "none";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFn = (...args: any[]) => Promise<any>;
+
+export interface ServiceMethodConfig<F extends AnyFn> {
+  fn: F;
+  cache: CachePolicy;
+  retry?: number;
+}
+
+type ServiceConfig<T extends Record<string, AnyFn>> = {
+  [K in keyof T]: ServiceMethodConfig<T[K]>;
+};
+
+export interface DefineServicesOptions {
+  storage?: ServiceCacheStorage;
+  keyPrefix?: string;
+}
+
+/**
+ * Thrown when all retry attempts for a service method have been exhausted.
+ */
+export class ServiceUnavailableError extends Error {
+  constructor(
+    public readonly method: string,
+    public readonly attempts: number,
+    public readonly cause: unknown
+  ) {
+    super(`Service method "${method}" failed after ${attempts} attempt(s).`);
+    this.name = "ServiceUnavailableError";
+  }
+}
+
+export type PrefetchManifest<T extends Record<string, AnyFn>> = {
+  [K in keyof T]?: Parameters<T[K]>[] | undefined;
+};
+
+export type DefinedServices<T extends Record<string, AnyFn>> = T & {
+  prefetch(manifest?: PrefetchManifest<T>): Promise<void>;
+};
+
+function _svcStorageGet(
+  storage: ServiceCacheStorage,
+  key: string
+): Promise<string | null> {
+  const result = storage.getItem(key);
+  if (result instanceof Promise) return result;
+  return Promise.resolve(result);
+}
+
+function _svcStorageSet(
+  storage: ServiceCacheStorage,
+  key: string,
+  value: string
+): Promise<void> {
+  const result = storage.setItem(key, value);
+  if (result instanceof Promise) return result;
+  return Promise.resolve();
+}
+
+function _svcSerializeArgs(args: unknown[]): string {
+  try {
+    return JSON.stringify(args);
+  } catch {
+    return args.map(String).join(",");
+  }
+}
+
+async function _svcWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number,
+  methodName: string
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 200 * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw new ServiceUnavailableError(methodName, maxRetries + 1, lastErr);
+}
+
+/**
+ * Wraps a set of async service methods with caching, deduplication, and retry.
+ *
+ * @example
+ * ```ts
+ * const services = defineServices(
+ *   {
+ *     getRoles:   { fn: api.getRoles,   cache: 'auto' },
+ *     getUser:    { fn: api.getUser,    cache: 'auto', retry: 2 },
+ *     submitForm: { fn: api.submitForm, cache: 'none' },
+ *   },
+ *   { storage: localStorage, keyPrefix: 'myapp:svc:' }
+ * );
+ *
+ * await services.prefetch();
+ * const roles = await services.getRoles();
+ * ```
+ */
+export function defineServices<T extends Record<string, AnyFn>>(
+  config: ServiceConfig<T>,
+  options: DefineServicesOptions = {}
+): DefinedServices<T> {
+  const { storage, keyPrefix = "pw-svc:" } = options;
+  const memCache = new Map<string, unknown>();
+  const inFlight = new Map<string, Promise<unknown>>();
+
+  if (storage) {
+    const syncStorage = storage as SyncServiceStorage;
+    if (typeof syncStorage.getItem === "function") {
+      try {
+        for (const [methodName, methodConfig] of Object.entries(config)) {
+          if (methodConfig.cache !== "auto") continue;
+          const baseKey = `${keyPrefix}${methodName}`;
+          const raw = syncStorage.getItem(baseKey);
+          if (raw !== null && !((raw as unknown) instanceof Promise)) {
+            try { memCache.set(baseKey, JSON.parse(raw)); } catch { /* ignore */ }
+          }
+        }
+      } catch { /* storage unavailable */ }
+    }
+  }
+
+  function cacheKey(methodName: string, args: unknown[]): string {
+    return args.length === 0
+      ? `${keyPrefix}${methodName}`
+      : `${keyPrefix}${methodName}:${_svcSerializeArgs(args)}`;
+  }
+
+  async function callMethod(
+    methodName: string,
+    methodConfig: ServiceMethodConfig<AnyFn>,
+    args: unknown[]
+  ): Promise<unknown> {
+    if (methodConfig.cache === "none") {
+      return _svcWithRetry(() => methodConfig.fn(...args), methodConfig.retry ?? 0, methodName);
+    }
+
+    const key = cacheKey(methodName, args);
+    if (memCache.has(key)) return memCache.get(key);
+
+    if (storage) {
+      const existing = await _svcStorageGet(storage, key);
+      if (existing !== null) {
+        try {
+          const parsed = JSON.parse(existing);
+          memCache.set(key, parsed);
+          return parsed;
+        } catch { /* corrupt — fall through */ }
+      }
+    }
+
+    if (inFlight.has(key)) return inFlight.get(key);
+
+    const promise = _svcWithRetry(
+      () => methodConfig.fn(...args),
+      methodConfig.retry ?? 0,
+      methodName
+    )
+      .then(async (value) => {
+        memCache.set(key, value);
+        inFlight.delete(key);
+        if (storage) {
+          try { await _svcStorageSet(storage, key, JSON.stringify(value)); } catch { /* non-fatal */ }
+        }
+        return value;
+      })
+      .catch((err) => { inFlight.delete(key); throw err; });
+
+    inFlight.set(key, promise);
+    return promise;
+  }
+
+  const wrapped: Record<string, AnyFn> = {};
+
+  for (const [methodName, methodConfig] of Object.entries(config)) {
+    wrapped[methodName] = (...args: unknown[]) =>
+      callMethod(methodName, methodConfig as ServiceMethodConfig<AnyFn>, args);
+  }
+
+  wrapped.prefetch = async (manifest?: PrefetchManifest<T>): Promise<void> => {
+    const tasks: Promise<unknown>[] = [];
+    if (manifest) {
+      for (const [methodName, argSets] of Object.entries(manifest) as [string, Parameters<AnyFn>[] | undefined][]) {
+        const methodConfig = config[methodName];
+        if (!methodConfig || methodConfig.cache === "none") continue;
+        if (!argSets || argSets.length === 0) {
+          tasks.push(callMethod(methodName, methodConfig, []));
+        } else {
+          for (const argSet of argSets) tasks.push(callMethod(methodName, methodConfig, argSet));
+        }
+      }
+    } else {
+      for (const [methodName, methodConfig] of Object.entries(config)) {
+        if (methodConfig.cache !== "auto" || methodConfig.fn.length > 0) continue;
+        tasks.push(callMethod(methodName, methodConfig, []));
+      }
+    }
+    await Promise.allSettled(tasks);
+  };
+
+  return wrapped as DefinedServices<T>;
+}

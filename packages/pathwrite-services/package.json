@@ -1,5 +1,6 @@
 {
   "name": "@daltonr/pathwrite-services",
+  "private": true,
   "version": "0.10.0",
   "description": "Service layer helpers for Pathwrite — defineServices wraps async functions with declarative caching, in-flight deduplication, retry, and prefetch.",
   "type": "module",

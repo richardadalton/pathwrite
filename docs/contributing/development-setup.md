@@ -34,8 +34,7 @@ Build order matters. The `build` script runs packages in the correct sequence:
 
 1. `packages/core` — must be first; all adapters depend on it
 2. `packages/react-adapter`, `packages/react-native-adapter`, `packages/vue-adapter`, `packages/store`, `packages/svelte-adapter`, `packages/angular-adapter` — adapters built in parallel (the script sequences them explicitly)
-3. `packages/pathwrite-services` — built after adapters
-4. `apps/shared-workflows/demo-workflow-job-application` — built last; this shared workflow package is consumed by demo apps
+3. `apps/shared-workflows/demo-workflow-job-application` — built last; this shared workflow package is consumed by demo apps
 
 Each package uses its own `tsconfig.json` extending `tsconfig.base.json` at the repo root. Angular uses `ngc`; Svelte uses `svelte-package`; all others use `tsc`.
 

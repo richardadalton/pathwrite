@@ -85,6 +85,32 @@ Returned by `engine.snapshot()`. All properties are read-only.
 | `progress` | `number` | Completion fraction in the range `[0, 1]`. |
 | `isDirty` | `boolean` | `true` if any data field has changed since entering the current step. |
 
+## defineServices
+
+`defineServices` wraps async service functions with caching, in-flight deduplication, and retry — useful for guards that call external APIs on every navigation attempt.
+
+```typescript
+import { defineServices, ServiceUnavailableError } from "@daltonr/pathwrite-core";
+
+const services = defineServices(
+  {
+    getRoles:    { fn: api.getRoles,    cache: "auto" },
+    getUser:     { fn: api.getUser,     cache: "auto", retry: 2 },
+    submitForm:  { fn: api.submitForm,  cache: "none" },
+  },
+  { storage: localStorage, keyPrefix: "myapp:svc:" }
+);
+
+await services.prefetch();           // warm zero-arg cached methods
+const roles = await services.getRoles();
+```
+
+| Option | Values | Description |
+|---|---|---|
+| `cache` | `"auto"` \| `"none"` | `"auto"` caches the first result and deduplicates concurrent calls. `"none"` always calls through. |
+| `retry` | `number` (default `0`) | Additional attempts on failure, with exponential back-off starting at 200 ms. Exhausted retries throw `ServiceUnavailableError`. |
+| `storage` | `SyncServiceStorage \| AsyncServiceStorage` | Optional persistent cache (e.g. `localStorage`, React Native `AsyncStorage`). |
+
 ## Further reading
 
 - [docs/reference/core-api.md](../../docs/reference/core-api.md) — full method and type reference
