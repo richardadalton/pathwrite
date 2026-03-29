@@ -480,7 +480,7 @@
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">my-workflows/src/job-application.ts</span>
+            <span class="code-block__filename">my-app-workflows/src/job-application.ts</span>
           </div>
 <pre><code><span class="cm">// Pure TypeScript — no React, no Vue, no Angular.</span>
 <span class="cm">// This file is the entire workflow. Ship it as its own npm package.</span>
@@ -523,12 +523,12 @@
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">my-workflows/test/job-application.test.ts</span>
+            <span class="code-block__filename">my-app-workflows/test/job-application.test.ts</span>
           </div>
 <pre><code><span class="cm">// No framework. No DOM. No component mounting.</span>
 <span class="cm">// Every guard, route, and conditional step is testable as pure logic.</span>
 <span class="kw">import</span> { PathEngine } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
-<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"../src/job-application"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>;
 
 <span class="kw">const</span> fast = {
   checkEligibility: <span class="kw">async</span> (y) =&gt; y &gt;= 2 ? { eligible: <span class="kw">true</span> } : { eligible: <span class="kw">false</span>, reason: <span class="str">"Min 2 years required"</span> },
