@@ -1,8 +1,6 @@
 # @daltonr/pathwrite-react-native
 
-React Native adapter for `@daltonr/pathwrite-core`. Exposes path state as reactive React state via `useSyncExternalStore`, with stable action callbacks, an optional context provider, and an optional `PathShell` default UI built from React Native primitives.
-
-Works with Expo (managed and bare workflow) and bare React Native projects. Targets iOS and Android.
+React Native adapter for Pathwrite — exposes path engine state via `useSyncExternalStore` with stable callbacks, an optional context provider, and an optional `PathShell` default UI built from React Native primitives.
 
 ## Installation
 
@@ -10,293 +8,191 @@ Works with Expo (managed and bare workflow) and bare React Native projects. Targ
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-react-native
 ```
 
-Peer dependencies: `react >= 18.0.0`, `react-native >= 0.72.0`.
-
-## Exports
-
-```typescript
-import {
-  PathShell,         // React Native UI shell
-  usePath,           // Hook — creates a scoped engine
-  usePathContext,    // Hook — reads the nearest PathProvider
-  PathProvider,      // Context provider
-  // Core types re-exported for convenience:
-  PathEngine,
-  PathData,
-  PathDefinition,
-  PathEvent,
-  PathSnapshot,
-  PathStep,
-  PathStepContext,
-  StepChoice,
-  SerializedPathState,
-} from "@daltonr/pathwrite-react-native";
-```
+Peer dependencies: `react-native >= 0.73.0`, `react >= 18.0.0`
 
 ---
 
-## Quick Start — PathShell
-
-The fastest way to get started. `PathShell` manages the engine lifecycle, renders the active step, and provides navigation buttons. The default header shows numbered step dots (✓ when completed), the current step title, and a progress bar.
+## Quick start
 
 ```tsx
-import { PathShell } from "@daltonr/pathwrite-react-native";
-import { myPath, INITIAL_DATA } from "./my-path";
-import { DetailsStep } from "./DetailsStep";
-import { ReviewStep } from "./ReviewStep";
+import { PathShell, usePathContext } from "@daltonr/pathwrite-react-native";
+import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 
-export function MyFlow() {
-  return (
-    <PathShell
-      path={myPath}
-      initialData={INITIAL_DATA}
-      onComplete={(data) => console.log("Done!", data)}
-      steps={{
-        details: <DetailsStep />,
-        review:  <ReviewStep />,
-      }}
-    />
-  );
+interface SignupData extends PathData {
+  name: string;
 }
-```
 
-Inside step components, use `usePathContext()` to read state and dispatch actions:
+const signupPath: PathDefinition<SignupData> = {
+  id: "signup",
+  steps: [
+    { id: "details", title: "Your Details", canMoveNext: ({ data }) => data.name.trim().length >= 2 },
+    { id: "review",  title: "Review" },
+  ],
+};
 
-```tsx
-import { usePathContext } from "@daltonr/pathwrite-react-native";
-import type { MyData } from "./my-path";
-
-export function DetailsStep() {
-  const { snapshot, setData } = usePathContext<MyData>();
-  const name = snapshot?.data.name ?? "";
-
+function DetailsStep() {
+  const { snapshot, setData } = usePathContext<SignupData>();
+  if (!snapshot) return null;
   return (
     <TextInput
-      value={name}
+      value={snapshot.data.name}
       onChangeText={(text) => setData("name", text)}
       placeholder="Your name"
     />
   );
 }
-```
 
----
-
-## Option A — `usePath` hook (component-scoped)
-
-Each call creates an isolated engine. Good when a single screen owns the path.
-
-```tsx
-import { usePath } from "@daltonr/pathwrite-react-native";
-import { myPath } from "./my-path";
-
-function MyScreen() {
-  const { snapshot, start, next, previous, setData } = usePath({
-    onEvent(event) {
-      if (event.type === "completed") console.log("Done!", event.data);
-    }
-  });
-
-  useEffect(() => {
-    start(myPath, { name: "" });
-  }, []);
-
+function ReviewStep() {
+  const { snapshot } = usePathContext<SignupData>();
   if (!snapshot) return null;
+  return <Text>Signing up as {snapshot.data.name}</Text>;
+}
 
+export function SignupFlow() {
   return (
-    <View>
-      <Text>{snapshot.stepTitle ?? snapshot.stepId}</Text>
-      <Text>Step {snapshot.stepIndex + 1} of {snapshot.stepCount}</Text>
-      <Pressable onPress={previous} disabled={snapshot.isNavigating}>
-        <Text>Back</Text>
-      </Pressable>
-      <Pressable onPress={next} disabled={snapshot.isNavigating || !snapshot.canMoveNext}>
-        <Text>{snapshot.isLastStep ? "Complete" : "Next"}</Text>
-      </Pressable>
-    </View>
+    <PathShell
+      path={signupPath}
+      initialData={{ name: "" }}
+      onComplete={(data) => console.log("Done!", data)}
+      steps={{ details: <DetailsStep />, review: <ReviewStep /> }}
+    />
   );
 }
 ```
 
-## Option B — `PathProvider` + `usePathContext` (tree-scoped)
-
-Share one engine across a component tree — step components read state without prop-drilling.
-
-```tsx
-import { PathProvider } from "@daltonr/pathwrite-react-native";
-
-// Root — start the path once, then render children
-function WizardRoot() {
-  const { snapshot, start, next } = usePathContext();
-  useEffect(() => { start(myPath, {}); }, []);
-  return (
-    <View>
-      {snapshot && <Text>Step {snapshot.stepIndex + 1}</Text>}
-      <Pressable onPress={next}><Text>Next</Text></Pressable>
-    </View>
-  );
-}
-
-// Wrap in the provider at the navigation/screen level
-export function WizardScreen() {
-  return (
-    <PathProvider>
-      <WizardRoot />
-    </PathProvider>
-  );
-}
-```
+Step components call `usePathContext()` to access engine state — no prop drilling needed. `<PathShell>` provides the context automatically.
 
 ---
 
-## Path definition
+## Metro config
 
-Path definitions are plain objects — no classes, no decorators, framework-agnostic.
+Metro does not follow symlinks by default, so workspace packages installed above the app root are invisible to the bundler. This is the most common setup issue when using Pathwrite in a monorepo. Create or update `metro.config.js` in your React Native or Expo app:
 
-```typescript
-import type { PathDefinition } from "@daltonr/pathwrite-react-native";
+```js
+// metro.config.js
+const { getDefaultConfig } = require("expo/metro-config");
+// For bare React Native: const { getDefaultConfig } = require("@react-native/metro-config");
+const path = require("path");
 
-interface MyData {
-  name: string;
-  agreed: boolean;
-}
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, "../../..");  // adjust depth to your repo
 
-export const myPath: PathDefinition<MyData> = {
-  id: "onboarding",
-  steps: [
-    {
-      id: "name",
-      title: "Your Name",
-      canMoveNext: ({ data }) => data.name.trim().length >= 2,
-    },
-    {
-      id: "terms",
-      title: "Terms",
-      canMoveNext: ({ data }) => data.agreed,
-    },
-    {
-      id: "done",
-      title: "All Done",
-    },
-  ],
+const config = getDefaultConfig(projectRoot);
+
+// 1. Watch workspace source files outside the app root.
+config.watchFolders = [workspaceRoot];
+
+// 2. Map package names directly to their source directories.
+config.resolver.extraNodeModules = {
+  "@daltonr/pathwrite-core":         path.resolve(workspaceRoot, "packages/core"),
+  "@daltonr/pathwrite-react-native": path.resolve(workspaceRoot, "packages/react-native-adapter"),
+  // Add any other workspace packages your app imports here.
 };
+
+// 3. Restrict node_modules lookup to the app's own folder.
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, "node_modules"),
+];
+
+// 4. Pin react/react-native/scheduler to the app's own copies.
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    moduleName === "react"        || moduleName.startsWith("react/")        ||
+    moduleName === "react-native" || moduleName.startsWith("react-native/") ||
+    moduleName === "scheduler"    || moduleName.startsWith("scheduler/")
+  ) {
+    try {
+      return { filePath: require.resolve(moduleName, { paths: [projectRoot] }), type: "sourceFile" };
+    } catch { /* fall through */ }
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
+module.exports = config;
 ```
+
+Every new workspace package your app imports must be added to `extraNodeModules`. After changing this file, restart Metro with `npx expo start --clear` (or `npx react-native start --reset-cache` for bare RN).
 
 ---
 
-## Conditional steps — `shouldSkip`
+## usePath / PathShell
 
-Steps with a `shouldSkip` guard are removed from the flow when the guard returns `true`. The progress indicator updates automatically.
+The API is identical to `@daltonr/pathwrite-react`. `usePath` creates an engine instance scoped to the calling component; `usePathContext` reads the nearest `PathShell` or `PathProvider` ancestor.
 
-```typescript
-{
-  id: "address-details",
-  shouldSkip: ({ data }) => data.deliveryMethod !== "postal",
-}
-```
+### usePath return value
 
----
+| Field | Type | Description |
+|---|---|---|
+| `snapshot` | `PathSnapshot \| null` | Current state. `null` when no path is active. |
+| `start(definition, data?)` | function | Start a path. |
+| `next()` | function | Advance one step. Completes on the last step. |
+| `previous()` | function | Go back one step. |
+| `cancel()` | function | Cancel the active path or sub-path. |
+| `goToStep(stepId)` | function | Jump to a step by ID, bypassing guards. |
+| `goToStepChecked(stepId)` | function | Jump to a step by ID, checking the current step's guard first. |
+| `setData(key, value)` | function | Update a single data field. Type-checked when `TData` is provided. |
+| `resetStep()` | function | Restore data to step-entry state. |
+| `startSubPath(definition, data?, meta?)` | function | Push a sub-path. |
+| `restart(definition, data?)` | function | Tear down any active path and start fresh. |
 
-## Conditional forms — `StepChoice`
+All returned callbacks are referentially stable.
 
-A `StepChoice` step selects one inner step at runtime based on current data. Useful for showing different form variants without branching the path definition.
-
-```typescript
-{
-  id: "address",
-  select: ({ data }) => data.country === "US" ? "address-us" : "address-ie",
-  steps: [
-    { id: "address-us", title: "US Address" },
-    { id: "address-ie", title: "Irish Address" },
-  ],
-}
-```
-
-The snapshot exposes both `stepId` (the outer choice id, `"address"`) and `formId` (the selected inner step, `"address-us"`). When using `PathShell`, pass both inner step IDs as keys in the `steps` map — the shell resolves the correct one automatically:
-
-```tsx
-<PathShell
-  path={myPath}
-  steps={{
-    name:       <NameStep />,
-    "address-us": <USAddressStep />,
-    "address-ie": <IrishAddressStep />,
-    done:       <DoneStep />,
-  }}
-/>
-```
-
----
-
-## Sub-paths
-
-Push a sub-path onto the stack from within a step. The parent path resumes from the same step when the sub-path completes.
-
-```typescript
-const { startSubPath } = usePathContext();
-
-function handleStartSubWizard() {
-  startSubPath(subWizardPath, {});
-}
-```
-
----
-
-## PathShell props
+### PathShell props
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `path` | `PathDefinition` | required | The path to drive. |
-| `steps` | `Record<string, ReactNode>` | required | Map of step ID → content. |
+| `steps` | `Record<string, ReactNode>` | required | Map of step ID to content. Keys must exactly match step IDs. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | Externally managed engine (e.g., from `restoreOrStart()`). |
+| `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
-| `onComplete` | `(data) => void` | — | Called when the path completes. |
-| `onCancel` | `(data) => void` | — | Called when the path is cancelled. |
-| `onEvent` | `(event) => void` | — | Called for every engine event. |
+| `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
+| `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
+| `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |
 | `backLabel` | `string` | `"Previous"` | Label for the back button. |
 | `nextLabel` | `string` | `"Next"` | Label for the next button. |
 | `completeLabel` | `string` | `"Complete"` | Label for the next button on the last step. |
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
-| `hideProgress` | `boolean` | `false` | Hide the progress header (numbered dots, current step title, and progress bar). Also hidden automatically for single-step top-level paths. |
-| `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body wrapper with a plain `View`. Use when the step content contains a `FlatList` or other virtualized list to avoid the "VirtualizedList inside ScrollView" warning. The step is then responsible for its own scroll. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"` puts back on the left; `"form"` puts cancel on the left. |
+| `hideProgress` | `boolean` | `false` | Hide the progress header. Also hidden automatically for single-step paths. |
+| `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body with a plain `View`. Use when a step contains a `FlatList` or other virtualized list. |
+| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left. `"form"`: Cancel on left, no Back. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header entirely. |
-| `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default nav buttons. |
+| `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation buttons. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
 
----
+### PathShellHandle and the restart() ref pattern
 
-## usePath options and return value
+`PathShell` is a `forwardRef` component that exposes a `PathShellHandle`. Use a ref to call `restart()` imperatively from outside the shell — for example, from a parent screen's header button:
 
-```typescript
-usePath(options?: {
-  engine?: PathEngine;       // Use an externally-managed engine
-  onEvent?: (event: PathEvent) => void;
-})
+```tsx
+import { useRef } from "react";
+import { PathShell, PathShellHandle } from "@daltonr/pathwrite-react-native";
+
+export function OnboardingScreen() {
+  const shellRef = useRef<PathShellHandle>(null);
+
+  return (
+    <PathShell
+      ref={shellRef}
+      path={myPath}
+      initialData={{ name: "" }}
+      onComplete={(data) => console.log(data)}
+      steps={{ name: <NameStep /> }}
+    />
+  );
+}
 ```
 
-Returns `UsePathReturn<TData>`:
+---
 
-| Field | Type | Description |
-|---|---|---|
-| `snapshot` | `PathSnapshot<TData> \| null` | Current state. `null` when no path is active. |
-| `start` | `(path, data?) => void` | Start a path. |
-| `startSubPath` | `(path, data?, meta?) => void` | Push a sub-path. |
-| `next` | `() => void` | Advance. Completes on the last step. |
-| `previous` | `() => void` | Go back. |
-| `cancel` | `() => void` | Cancel the active path. |
-| `goToStep` | `(stepId) => void` | Jump to a step (no guard check). |
-| `goToStepChecked` | `(stepId) => void` | Jump to a step (checks current step guard first). |
-| `setData` | `(key, value) => void` | Update one data field. |
-| `resetStep` | `() => void` | Restore data to step-entry state. |
-| `restart` | `(path, data?) => void` | Tear down and restart fresh. |
+## Further reading
+
+- [React Native getting started guide](../../docs/getting-started/frameworks/react-native.md)
+- [Navigation guide](../../docs/guides/navigation.md)
+- [Full docs](../../docs/README.md)
 
 ---
 
-## Testing
-
-Hook tests (`usePath`, `usePathContext`) use `@testing-library/react` in a jsdom environment — no device or simulator required. The hooks are pure React (they use only `useSyncExternalStore`, `useCallback`, `useRef`) and work identically in both RN and web contexts.
-
-PathShell component tests require `@testing-library/react-native` and a React Native test environment (e.g., Jest with `react-native` preset or Expo's Jest preset).
+© 2026 Devjoy Ltd. MIT License.
