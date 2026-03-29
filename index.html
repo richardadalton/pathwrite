@@ -641,6 +641,8 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
           <span class="attr">(completed)</span>="handleSubmit($event)"&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="role"&gt;&lt;<span class="tag">app-role-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="experience"&gt;&lt;<span class="tag">app-experience-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="eligibility"&gt;&lt;<span class="tag">app-eligibility-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="cover-letter"&gt;&lt;<span class="tag">app-cover-letter-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="review"&gt;&lt;<span class="tag">app-review-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
 &lt;/<span class="tag">pw-shell</span>&gt;</code></pre>
         </div>
@@ -667,6 +669,8 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
            <span class="attr">oncomplete</span>={handleSubmit}&gt;
   {<span class="kw">#snippet</span> role()}&lt;<span class="tag">RoleStep</span> /&gt;{/<span class="kw">snippet</span>}
   {<span class="kw">#snippet</span> experience()}&lt;<span class="tag">ExperienceStep</span> /&gt;{/<span class="kw">snippet</span>}
+  {<span class="kw">#snippet</span> eligibility()}&lt;<span class="tag">EligibilityStep</span> /&gt;{/<span class="kw">snippet</span>}
+  {<span class="kw">#snippet</span> coverLetter()}&lt;<span class="tag">CoverLetterStep</span> /&gt;{/<span class="kw">snippet</span>}
   {<span class="kw">#snippet</span> review()}&lt;<span class="tag">ReviewStep</span> /&gt;{/<span class="kw">snippet</span>}
 &lt;/<span class="tag">PathShell</span>&gt;</code></pre>
         </div>
