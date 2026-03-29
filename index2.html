@@ -109,6 +109,20 @@
       background: var(--color-bg);
     }
 
+    .tabs__tab--sep {
+      margin-left: 1.5rem;
+      position: relative;
+    }
+    .tabs__tab--sep::before {
+      content: '';
+      position: absolute;
+      left: -0.875rem;
+      top: 25%;
+      height: 50%;
+      width: 1px;
+      background: var(--color-border);
+    }
+
     /* Mobile demo section */
     .mobile-demo {
       padding: 5rem 0;
@@ -378,149 +392,6 @@
   </div>
 </section>
 
-<!-- ===== WORKFLOW AS ARTIFACT ===== -->
-<section class="artifact section section--dark" id="artifact">
-  <div class="container">
-    <h2 class="section__title">Your flow logic, packaged and shared</h2>
-    <p class="section__subtitle">The same <code>PathDefinition</code> that powers your web checkout also drives your mobile onboarding &mdash; imported as a dependency, not copy-pasted.</p>
-
-    <div class="artifact-layout">
-      <div class="artifact-flow">
-        <div class="artifact-flow__pkg">
-          <div class="artifact-flow__pkg-icon">📦</div>
-          <div class="artifact-flow__pkg-name">my-app-workflows</div>
-          <div class="artifact-flow__pkg-sub">Pure TypeScript &middot; No framework deps</div>
-        </div>
-        <div class="artifact-flow__arrows">
-          <div class="artifact-flow__arrow artifact-flow__arrow--react">React</div>
-          <div class="artifact-flow__arrow artifact-flow__arrow--vue">Vue</div>
-          <div class="artifact-flow__arrow artifact-flow__arrow--angular">Angular</div>
-          <div class="artifact-flow__arrow artifact-flow__arrow--svelte">Svelte</div>
-          <div class="artifact-flow__arrow artifact-flow__arrow--rn">React Native</div>
-        </div>
-      </div>
-
-      <div class="artifact-tabs" id="artifact-tabs">
-        <div class="tabs__bar">
-          <button class="tabs__tab tabs__tab--active" data-tab="wf-package" onclick="switchArtifactTab('wf-package')">Define</button>
-          <button class="tabs__tab" data-tab="wf-test" onclick="switchArtifactTab('wf-test')">Test in Isolation</button>
-          <button class="tabs__tab" data-tab="wf-use" onclick="switchArtifactTab('wf-use')">Use Anywhere</button>
-        </div>
-
-        <div class="tabs__panel tabs__panel--active" id="artifact-panel-wf-package">
-          <div class="code-block">
-            <div class="code-block__header">
-              <span class="code-block__dot code-block__dot--red"></span>
-              <span class="code-block__dot code-block__dot--yellow"></span>
-              <span class="code-block__dot code-block__dot--green"></span>
-              <span class="code-block__filename">my-workflows/src/job-application.ts</span>
-            </div>
-<pre><code><span class="cm">// Pure TypeScript — no React, no Vue, no Angular.</span>
-<span class="cm">// This file is the entire workflow. Ship it as an npm package.</span>
-<span class="kw">import type</span> { PathDefinition } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
-
-<span class="kw">export interface</span> <span class="type">ApplicationServices</span> {
-  checkEligibility(years: <span class="type">number</span>): Promise&lt;{ eligible: <span class="type">boolean</span>; reason?: <span class="type">string</span> }&gt;;
-  requiresCoverLetter(roleId: <span class="type">string</span>): Promise&lt;<span class="type">boolean</span>&gt;;
-}
-
-<span class="kw">export function</span> <span class="fn">createApplicationPath</span>(svc: <span class="type">ApplicationServices</span>) {
-  <span class="kw">return</span> {
-    id: <span class="str">"job-application"</span>,
-    steps: [
-      { id: <span class="str">"role"</span>,    title: <span class="str">"Role"</span>,    canMoveNext: ({ data }) =&gt; !!data.roleId },
-      { id: <span class="str">"experience"</span>, title: <span class="str">"Experience"</span> },
-      {
-        id: <span class="str">"eligibility"</span>, title: <span class="str">"Eligibility"</span>,
-        canMoveNext: <span class="kw">async</span> ({ data }) =&gt; {
-          <span class="kw">const</span> r = <span class="kw">await</span> svc.checkEligibility(Number(data.yearsExperience));
-          <span class="kw">return</span> r.eligible ? <span class="kw">true</span> : { allowed: <span class="kw">false</span>, reason: r.reason! };
-        },
-      },
-      {
-        id: <span class="str">"cover-letter"</span>, title: <span class="str">"Cover Letter"</span>,
-        shouldSkip: <span class="kw">async</span> ({ data }) =&gt; !(await svc.requiresCoverLetter(data.roleId)),
-      },
-      { id: <span class="str">"review"</span>, title: <span class="str">"Review"</span> },
-    ],
-  } <span class="kw">satisfies</span> PathDefinition&lt;<span class="type">ApplicationData</span>&gt;;
-}</code></pre>
-          </div>
-        </div>
-
-        <div class="tabs__panel" id="artifact-panel-wf-test">
-          <div class="code-block">
-            <div class="code-block__header">
-              <span class="code-block__dot code-block__dot--red"></span>
-              <span class="code-block__dot code-block__dot--yellow"></span>
-              <span class="code-block__dot code-block__dot--green"></span>
-              <span class="code-block__filename">my-workflows/test/job-application.test.ts</span>
-            </div>
-<pre><code><span class="cm">// No framework. No DOM. No component mounting.</span>
-<span class="cm">// Test routing, guards, and validation as pure logic.</span>
-<span class="kw">import</span> { PathEngine } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
-<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"../src/job-application"</span>;
-
-<span class="kw">const</span> fast = {
-  checkEligibility: <span class="kw">async</span> (y) =&gt; y &gt;= 2 ? { eligible: <span class="kw">true</span> } : { eligible: <span class="kw">false</span>, reason: <span class="str">"Min 2 years required"</span> },
-  requiresCoverLetter: <span class="kw">async</span> (id) =&gt; id === <span class="str">"eng"</span> || id === <span class="str">"data"</span>,
-};
-
-it(<span class="str">"blocks navigation when experience &lt; 2 years"</span>, <span class="kw">async</span> () =&gt; {
-  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
-  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"eng"</span>, yearsExperience: <span class="str">"1"</span> });
-  <span class="kw">await</span> engine.next(); <span class="cm">// → experience</span>
-  <span class="kw">await</span> engine.next(); <span class="cm">// → eligibility</span>
-  <span class="kw">await</span> engine.next(); <span class="cm">// guard blocks</span>
-  expect(engine.snapshot()?.stepId).toBe(<span class="str">"eligibility"</span>);
-  expect(engine.snapshot()?.blockingError).toBeTruthy();
-});
-
-it(<span class="str">"skips cover letter for non-engineering roles"</span>, <span class="kw">async</span> () =&gt; {
-  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
-  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"pm"</span>, yearsExperience: <span class="str">"5"</span> });
-  <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next();
-  expect(engine.snapshot()?.stepId).toBe(<span class="str">"review"</span>); <span class="cm">// cover-letter skipped</span>
-});</code></pre>
-          </div>
-        </div>
-
-        <div class="tabs__panel" id="artifact-panel-wf-use">
-          <div class="code-block">
-            <div class="code-block__header">
-              <span class="code-block__dot code-block__dot--red"></span>
-              <span class="code-block__dot code-block__dot--yellow"></span>
-              <span class="code-block__dot code-block__dot--green"></span>
-              <span class="code-block__filename">my-react-app/App.tsx &nbsp;&nbsp;·&nbsp;&nbsp; my-vue-app/App.vue &nbsp;&nbsp;·&nbsp;&nbsp; my-ng-app/app.component.html</span>
-            </div>
-<pre><code><span class="cm">// React</span>
-<span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react"</span>;
-<span class="kw">import</span> { createApplicationPath, services } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>;
-
-&lt;<span class="tag">PathShell</span> <span class="attr">path</span>={createApplicationPath(services)}
-  <span class="attr">steps</span>={{ role: &lt;<span class="tag">RoleStep</span> /&gt;, experience: &lt;<span class="tag">ExperienceStep</span> /&gt;, review: &lt;<span class="tag">ReviewStep</span> /&gt; }} /&gt;
-
-<span class="cm">// Vue — identical workflow import, different shell syntax</span>
-<span class="kw">import</span> { createApplicationPath, services } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>;
-
-&lt;<span class="tag">PathShell</span> <span class="attr">:path</span>="createApplicationPath(services)"&gt;
-  &lt;<span class="tag">template</span> <span class="attr">#role</span>&gt;&lt;<span class="tag">RoleStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
-  &lt;<span class="tag">template</span> <span class="attr">#review</span>&gt;&lt;<span class="tag">ReviewStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
-&lt;/<span class="tag">PathShell</span>&gt;
-
-<span class="cm">// Angular — same import, Angular DI wires services automatically</span>
-&lt;<span class="tag">pw-shell</span> <span class="attr">[path]</span>="applicationPath" <span class="attr">(completed)</span>="onDone($event)"&gt;
-  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="role"&gt;&lt;<span class="tag">app-role-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
-&lt;/<span class="tag">pw-shell</span>&gt;</code></pre>
-          </div>
-          <p class="code-caption" style="margin-top:1rem">One workflow package. Five adapters. Zero duplication. The business rules live in exactly one place.</p>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ===== COMPARISON ===== -->
 <section class="proof section" id="compare">
   <div class="container">
@@ -590,146 +461,253 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
   </div>
 </section>
 
-<!-- ===== FRAMEWORK TABS ===== -->
-<section class="section" id="adapters">
+<!-- ===== DEFINE / TEST / USE ===== -->
+<section class="section section--dark" id="artifact">
   <div class="container">
-    <h2 class="section__title">One path, five adapters</h2>
-    <p class="section__subtitle">Drop in <code>PathShell</code> for an instant wizard UI in your framework. Swap it for <code>usePath()</code> when you want full control.</p>
+    <h2 class="section__title">Define once. Test without a browser. Ship to every framework.</h2>
+    <p class="section__subtitle">The same job-application flow &mdash; from pure TypeScript to headless tests to React, Vue, Angular, Svelte, and React Native.</p>
 
-    <div class="tabs" id="framework-tabs">
+    <div class="tabs" id="combo-tabs">
       <div class="tabs__bar">
-        <button class="tabs__tab tabs__tab--active" data-tab="vue" onclick="switchTab('vue')">Vue</button>
-        <button class="tabs__tab" data-tab="angular" onclick="switchTab('angular')">Angular</button>
-        <button class="tabs__tab" data-tab="svelte" onclick="switchTab('svelte')">Svelte</button>
-        <button class="tabs__tab" data-tab="react" onclick="switchTab('react')">React</button>
-        <button class="tabs__tab" data-tab="rn" onclick="switchTab('rn')">React Native</button>
+        <button class="tabs__tab tabs__tab--active" data-tab="define" onclick="switchComboTab('define')">Define</button>
+        <button class="tabs__tab" data-tab="test" onclick="switchComboTab('test')">Test</button>
+        <button class="tabs__tab tabs__tab--sep" data-tab="react" onclick="switchComboTab('react')">React</button>
+        <button class="tabs__tab" data-tab="vue" onclick="switchComboTab('vue')">Vue</button>
+        <button class="tabs__tab" data-tab="angular" onclick="switchComboTab('angular')">Angular</button>
+        <button class="tabs__tab" data-tab="svelte" onclick="switchComboTab('svelte')">Svelte</button>
+        <button class="tabs__tab" data-tab="rn" onclick="switchComboTab('rn')">React Native</button>
       </div>
 
-      <div class="tabs__panel" id="panel-react">
+      <!-- Define -->
+      <div class="tabs__panel tabs__panel--active" id="combo-panel-define">
         <div class="code-block">
           <div class="code-block__header">
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">CheckoutWizard.tsx</span>
+            <span class="code-block__filename">my-workflows/src/job-application.ts</span>
           </div>
-<pre><code><span class="cm">// swap the import for @daltonr/pathwrite-react-native and it just works</span>
-<span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react"</span>;
+<pre><code><span class="cm">// Pure TypeScript — no React, no Vue, no Angular.</span>
+<span class="cm">// This file is the entire workflow. Ship it as its own npm package.</span>
+<span class="kw">import type</span> { PathDefinition } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
 
-<span class="kw">export default function</span> <span class="fn">Checkout</span>() {
+<span class="kw">export interface</span> <span class="type">ApplicationServices</span> {
+  checkEligibility(years: <span class="type">number</span>): Promise&lt;{ eligible: <span class="type">boolean</span>; reason?: <span class="type">string</span> }&gt;;
+  requiresCoverLetter(roleId: <span class="type">string</span>): Promise&lt;<span class="type">boolean</span>&gt;;
+}
+
+<span class="kw">export function</span> <span class="fn">createApplicationPath</span>(svc: <span class="type">ApplicationServices</span>) {
+  <span class="kw">return</span> {
+    id: <span class="str">"job-application"</span>,
+    steps: [
+      { id: <span class="str">"role"</span>,         title: <span class="str">"Role"</span>,         canMoveNext: ({ data }) =&gt; !!data.roleId },
+      { id: <span class="str">"experience"</span>,    title: <span class="str">"Experience"</span> },
+      {
+        id: <span class="str">"eligibility"</span>,  title: <span class="str">"Eligibility"</span>,
+        canMoveNext: <span class="kw">async</span> ({ data }) =&gt; {
+          <span class="kw">const</span> r = <span class="kw">await</span> svc.checkEligibility(Number(data.yearsExperience));
+          <span class="kw">return</span> r.eligible ? <span class="kw">true</span> : { allowed: <span class="kw">false</span>, reason: r.reason! };
+        },
+      },
+      {
+        id: <span class="str">"cover-letter"</span>,  title: <span class="str">"Cover Letter"</span>,
+        shouldSkip: <span class="kw">async</span> ({ data }) =&gt; !(await svc.requiresCoverLetter(data.roleId)),
+      },
+      { id: <span class="str">"review"</span>,        title: <span class="str">"Review"</span> },
+    ],
+  } <span class="kw">satisfies</span> PathDefinition&lt;<span class="type">ApplicationData</span>&gt;;
+}</code></pre>
+        </div>
+        <p class="code-caption">Guards, async conditions, and lifecycle hooks &mdash; all plain TypeScript. Zero UI coupling.</p>
+      </div>
+
+      <!-- Test -->
+      <div class="tabs__panel" id="combo-panel-test">
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">my-workflows/test/job-application.test.ts</span>
+          </div>
+<pre><code><span class="cm">// No framework. No DOM. No component mounting.</span>
+<span class="cm">// Every guard, route, and conditional step is testable as pure logic.</span>
+<span class="kw">import</span> { PathEngine } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"../src/job-application"</span>;
+
+<span class="kw">const</span> fast = {
+  checkEligibility: <span class="kw">async</span> (y) =&gt; y &gt;= 2 ? { eligible: <span class="kw">true</span> } : { eligible: <span class="kw">false</span>, reason: <span class="str">"Min 2 years required"</span> },
+  requiresCoverLetter: <span class="kw">async</span> (id) =&gt; id === <span class="str">"eng"</span> || id === <span class="str">"data"</span>,
+};
+
+it(<span class="str">"blocks navigation when experience &lt; 2 years"</span>, <span class="kw">async</span> () =&gt; {
+  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
+  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"eng"</span>, yearsExperience: <span class="str">"1"</span> });
+  <span class="kw">await</span> engine.next(); <span class="cm">// &#x2192; experience</span>
+  <span class="kw">await</span> engine.next(); <span class="cm">// &#x2192; eligibility</span>
+  <span class="kw">await</span> engine.next(); <span class="cm">// guard blocks &mdash; stays on eligibility</span>
+  expect(engine.snapshot()?.stepId).toBe(<span class="str">"eligibility"</span>);
+  expect(engine.snapshot()?.blockingError).toBeTruthy();
+});
+
+it(<span class="str">"skips cover letter for non-engineering roles"</span>, <span class="kw">async</span> () =&gt; {
+  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
+  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"pm"</span>, yearsExperience: <span class="str">"5"</span> });
+  <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next();
+  expect(engine.snapshot()?.stepId).toBe(<span class="str">"review"</span>); <span class="cm">// cover-letter was skipped</span>
+});</code></pre>
+        </div>
+        <p class="code-caption">CI runs these in milliseconds. No browser, no Playwright, no mounted components.</p>
+      </div>
+
+      <!-- React -->
+      <div class="tabs__panel" id="combo-panel-react">
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">my-react-app/JobApplication.tsx</span>
+          </div>
+<pre><code><span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; shared package</span>
+<span class="kw">import</span> { apiServices } <span class="kw">from</span> <span class="str">"./services"</span>;
+
+<span class="kw">export default function</span> <span class="fn">JobApplication</span>() {
   <span class="kw">return</span> (
     &lt;<span class="tag">PathShell</span>
-      <span class="attr">path</span>={checkoutPath}
-      <span class="attr">initialData</span>={{ items: [], total: 0 }}
-      <span class="attr">onComplete</span>={handleOrder}
+      <span class="attr">path</span>={createApplicationPath(apiServices)}
+      <span class="attr">initialData</span>={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
+      <span class="attr">onComplete</span>={handleSubmit}
       <span class="attr">steps</span>={{
-        cart:     &lt;<span class="tag">CartStep</span> /&gt;,
-        shipping: &lt;<span class="tag">ShippingStep</span> /&gt;,
-        payment:  &lt;<span class="tag">PaymentStep</span> /&gt;,
-        confirm:  &lt;<span class="tag">ConfirmStep</span> /&gt;,
+        role:           &lt;<span class="tag">RoleStep</span> /&gt;,
+        experience:     &lt;<span class="tag">ExperienceStep</span> /&gt;,
+        eligibility:    &lt;<span class="tag">EligibilityStep</span> /&gt;,
+        "cover-letter": &lt;<span class="tag">CoverLetterStep</span> /&gt;,
+        review:         &lt;<span class="tag">ReviewStep</span> /&gt;,
       }}
     /&gt;
   );
 }</code></pre>
         </div>
+        <p class="code-caption">The workflow logic stays in <code>my-app-workflows</code>. This file is UI only.</p>
       </div>
 
-      <div class="tabs__panel" id="panel-rn">
+      <!-- Vue -->
+      <div class="tabs__panel" id="combo-panel-vue">
         <div class="code-block">
           <div class="code-block__header">
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">CheckoutWizard.tsx</span>
-          </div>
-<pre><code><span class="cm">// identical to React — only this import line differs</span>
-<span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react-native"</span>;
-
-<span class="kw">export default function</span> <span class="fn">Checkout</span>() {
-  <span class="kw">return</span> (
-    &lt;<span class="tag">PathShell</span>
-      <span class="attr">path</span>={checkoutPath}
-      <span class="attr">initialData</span>={{ items: [], total: 0 }}
-      <span class="attr">onComplete</span>={handleOrder}
-      <span class="attr">steps</span>={{
-        cart:     &lt;<span class="tag">CartStep</span> /&gt;,
-        shipping: &lt;<span class="tag">ShippingStep</span> /&gt;,
-        payment:  &lt;<span class="tag">PaymentStep</span> /&gt;,
-        confirm:  &lt;<span class="tag">ConfirmStep</span> /&gt;,
-      }}
-    /&gt;
-  );
-}</code></pre>
-        </div>
-      </div>
-
-      <div class="tabs__panel tabs__panel--active" id="panel-vue">
-        <div class="code-block">
-          <div class="code-block__header">
-            <span class="code-block__dot code-block__dot--red"></span>
-            <span class="code-block__dot code-block__dot--yellow"></span>
-            <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">CheckoutWizard.vue</span>
+            <span class="code-block__filename">my-vue-app/JobApplication.vue</span>
           </div>
 <pre><code>&lt;<span class="tag">script setup</span>&gt;
 <span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-vue"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; shared package</span>
+<span class="kw">import</span> { apiServices } <span class="kw">from</span> <span class="str">"./services"</span>;
+<span class="kw">const</span> path = createApplicationPath(apiServices);
 &lt;/<span class="tag">script</span>&gt;
 
 &lt;<span class="tag">template</span>&gt;
-  &lt;<span class="tag">PathShell</span> <span class="attr">:path</span>="checkoutPath" <span class="attr">:initial-data</span>="{ items: [] }"
-             <span class="attr">@complete</span>="handleOrder"&gt;
-    &lt;<span class="tag">template</span> <span class="attr">#cart</span>&gt;&lt;<span class="tag">CartStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
-    &lt;<span class="tag">template</span> <span class="attr">#shipping</span>&gt;&lt;<span class="tag">ShippingStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
-    &lt;<span class="tag">template</span> <span class="attr">#payment</span>&gt;&lt;<span class="tag">PaymentStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
-    &lt;<span class="tag">template</span> <span class="attr">#confirm</span>&gt;&lt;<span class="tag">ConfirmStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+  &lt;<span class="tag">PathShell</span> <span class="attr">:path</span>="path" <span class="attr">:initial-data</span>="{ roleId: '', yearsExperience: '' }"
+             <span class="attr">@complete</span>="handleSubmit"&gt;
+    &lt;<span class="tag">template</span> <span class="attr">#role</span>&gt;&lt;<span class="tag">RoleStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+    &lt;<span class="tag">template</span> <span class="attr">#experience</span>&gt;&lt;<span class="tag">ExperienceStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+    &lt;<span class="tag">template</span> <span class="attr">#eligibility</span>&gt;&lt;<span class="tag">EligibilityStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+    &lt;<span class="tag">template</span> <span class="attr">#cover-letter</span>&gt;&lt;<span class="tag">CoverLetterStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+    &lt;<span class="tag">template</span> <span class="attr">#review</span>&gt;&lt;<span class="tag">ReviewStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
   &lt;/<span class="tag">PathShell</span>&gt;
 &lt;/<span class="tag">template</span>&gt;</code></pre>
         </div>
+        <p class="code-caption">Same workflow package import. Vue-idiomatic slot syntax replaces JSX &mdash; the business logic is unchanged.</p>
       </div>
 
-      <div class="tabs__panel" id="panel-angular">
+      <!-- Angular -->
+      <div class="tabs__panel" id="combo-panel-angular">
         <div class="code-block">
           <div class="code-block__header">
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">checkout.component.html</span>
+            <span class="code-block__filename">my-ng-app/job-application.component.ts + .html</span>
           </div>
-<pre><code>&lt;<span class="tag">pw-shell</span>
-  <span class="attr">[path]</span>="checkoutPath"
-  <span class="attr">[initialData]</span>="{ items: [] }"
-  <span class="attr">(completed)</span>="handleOrder($event)"&gt;
+<pre><code><span class="cm">// job-application.component.ts</span>
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; shared package</span>
+<span class="kw">import</span> { ApiServices } <span class="kw">from</span> <span class="str">"./api.service"</span>;
 
-  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="cart"&gt;
-    &lt;<span class="tag">app-cart-step</span> /&gt;
-  &lt;/<span class="tag">ng-template</span>&gt;
-  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="shipping"&gt;
-    &lt;<span class="tag">app-shipping-step</span> /&gt;
-  &lt;/<span class="tag">ng-template</span>&gt;
+<span class="kw">export class</span> <span class="type">JobApplicationComponent</span> {
+  path = createApplicationPath(<span class="kw">inject</span>(ApiServices));
+}
 
+<span class="cm">// job-application.component.html</span>
+&lt;<span class="tag">pw-shell</span> <span class="attr">[path]</span>="path" <span class="attr">[initialData]</span>="{ roleId: '', yearsExperience: '' }"
+          <span class="attr">(completed)</span>="handleSubmit($event)"&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="role"&gt;&lt;<span class="tag">app-role-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="experience"&gt;&lt;<span class="tag">app-experience-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="review"&gt;&lt;<span class="tag">app-review-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
 &lt;/<span class="tag">pw-shell</span>&gt;</code></pre>
         </div>
+        <p class="code-caption">Angular DI injects real services at runtime. The workflow package never imports Angular.</p>
       </div>
 
-      <div class="tabs__panel" id="panel-svelte">
+      <!-- Svelte -->
+      <div class="tabs__panel" id="combo-panel-svelte">
         <div class="code-block">
           <div class="code-block__header">
             <span class="code-block__dot code-block__dot--red"></span>
             <span class="code-block__dot code-block__dot--yellow"></span>
             <span class="code-block__dot code-block__dot--green"></span>
-            <span class="code-block__filename">Checkout.svelte</span>
+            <span class="code-block__filename">my-svelte-app/JobApplication.svelte</span>
           </div>
 <pre><code>&lt;<span class="tag">script</span>&gt;
   <span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-svelte"</span>;
+  <span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; shared package</span>
+  <span class="kw">import</span> { apiServices } <span class="kw">from</span> <span class="str">"./services"</span>;
+  <span class="kw">const</span> path = createApplicationPath(apiServices);
 &lt;/<span class="tag">script</span>&gt;
 
-&lt;<span class="tag">PathShell</span> path={checkoutPath} initialData={{ items: [] }}
-           <span class="attr">oncomplete</span>={handleOrder}&gt;
-  {<span class="kw">#snippet</span> cart()}&lt;<span class="tag">CartStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> shipping()}&lt;<span class="tag">ShippingStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> payment()}&lt;<span class="tag">PaymentStep</span> /&gt;{/<span class="kw">snippet</span>}
+&lt;<span class="tag">PathShell</span> {path} initialData={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
+           <span class="attr">oncomplete</span>={handleSubmit}&gt;
+  {<span class="kw">#snippet</span> role()}&lt;<span class="tag">RoleStep</span> /&gt;{/<span class="kw">snippet</span>}
+  {<span class="kw">#snippet</span> experience()}&lt;<span class="tag">ExperienceStep</span> /&gt;{/<span class="kw">snippet</span>}
+  {<span class="kw">#snippet</span> review()}&lt;<span class="tag">ReviewStep</span> /&gt;{/<span class="kw">snippet</span>}
 &lt;/<span class="tag">PathShell</span>&gt;</code></pre>
         </div>
+        <p class="code-caption">Svelte 5 snippets replace JSX. The workflow import is identical to every other framework.</p>
+      </div>
+
+      <!-- React Native -->
+      <div class="tabs__panel" id="combo-panel-rn">
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">my-rn-app/JobApplication.tsx</span>
+          </div>
+<pre><code><span class="cm">// The only difference from the React web version is this import.</span>
+<span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react-native"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; same shared package</span>
+<span class="kw">import</span> { apiServices } <span class="kw">from</span> <span class="str">"./services"</span>;
+
+<span class="kw">export default function</span> <span class="fn">JobApplication</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">PathShell</span>
+      <span class="attr">path</span>={createApplicationPath(apiServices)}
+      <span class="attr">initialData</span>={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
+      <span class="attr">onComplete</span>={handleSubmit}
+      <span class="attr">steps</span>={{
+        role:           &lt;<span class="tag">RoleStep</span> /&gt;,
+        experience:     &lt;<span class="tag">ExperienceStep</span> /&gt;,
+        "cover-letter": &lt;<span class="tag">CoverLetterStep</span> /&gt;,
+        review:         &lt;<span class="tag">ReviewStep</span> /&gt;,
+      }}
+    /&gt;
+  );
+}</code></pre>
+        </div>
+        <p class="code-caption">Same workflow, same tests, iOS and Android. See it running live below.</p>
       </div>
 
     </div>
@@ -887,18 +865,11 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
 </footer>
 
 <script>
-  function switchTab(id) {
-    document.querySelectorAll('#framework-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
-    document.querySelectorAll('#framework-tabs .tabs__panel').forEach(p => p.classList.remove('tabs__panel--active'));
-    document.querySelector(`#framework-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
-    document.getElementById(`panel-${id}`).classList.add('tabs__panel--active');
-  }
-
-  function switchArtifactTab(id) {
-    document.querySelectorAll('#artifact-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
-    document.querySelectorAll('#artifact-tabs .tabs__panel').forEach(p => p.classList.remove('tabs__panel--active'));
-    document.querySelector(`#artifact-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
-    document.getElementById(`artifact-panel-${id}`).classList.add('tabs__panel--active');
+  function switchComboTab(id) {
+    document.querySelectorAll('#combo-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
+    document.querySelectorAll('#combo-tabs .tabs__panel').forEach(p => p.classList.remove('tabs__panel--active'));
+    document.querySelector(`#combo-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
+    document.getElementById(`combo-panel-${id}`).classList.add('tabs__panel--active');
   }
 </script>
 
