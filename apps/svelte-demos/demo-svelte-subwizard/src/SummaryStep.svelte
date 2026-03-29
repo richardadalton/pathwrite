@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { AVAILABLE_APPROVERS } from "./approval";
   import type { DocumentData, ApproverResult } from "./types";
 
-  const ctx = getPathContext<DocumentData>();
+  const ctx = usePathContext<DocumentData>();
   let data    = $derived(ctx.snapshot?.data);
   let results = $derived((data?.approvalResults ?? {}) as Record<string, ApproverResult>);
 

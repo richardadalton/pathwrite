@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import type { ContactData } from "./path";
 
-  // getPathContext() retrieves the context provided by PathShell —
+  // usePathContext() retrieves the context provided by PathShell —
   // no props, no template refs needed.
-  const ctx = getPathContext<ContactData>();
+  const ctx = usePathContext<ContactData>();
 
   const SUBJECTS = [
     "General Enquiry",

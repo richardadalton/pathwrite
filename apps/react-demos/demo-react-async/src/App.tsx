@@ -39,8 +39,8 @@ export default function App() {
       <div className="page-header">
         <h1>Job Application</h1>
         <p className="subtitle">
-          Demonstrates async <code>onEnter</code> (data loading) and async{" "}
-          <code>canMoveNext</code> (guard enforcement) with a real spinner.
+          Demonstrates async <code>canMoveNext</code> guards, service injection via{" "}
+          <code>usePathContext</code>, and loading reference data inside step components.
         </p>
       </div>
 

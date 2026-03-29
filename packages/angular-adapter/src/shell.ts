@@ -26,7 +26,9 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
-  RootProgress
+  RootProgress,
+  formatFieldKey,
+  errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
 import { PathFacade } from "./index";
 
@@ -220,10 +222,43 @@ export class PathShellFooterDirective {
         </li>
       </ul>
 
+      <!-- Blocking error — guard returned { allowed: false, reason } -->
+      <p class="pw-shell__blocking-error"
+         *ngIf="validationDisplay !== 'inline' && s.hasAttemptedNext && s.blockingError">
+        {{ s.blockingError }}
+      </p>
+
+      <!-- Error panel — replaces footer when an async operation has failed -->
+      <div class="pw-shell__error" *ngIf="s.status === 'error' && s.error; else footerOrCustom">
+        <div class="pw-shell__error-title">{{ s.error!.retryCount >= 2 ? 'Still having trouble.' : 'Something went wrong.' }}</div>
+        <div class="pw-shell__error-message">{{ errorPhaseMessage(s.error!.phase) }}{{ s.error!.message ? ' ' + s.error!.message : '' }}</div>
+        <div class="pw-shell__error-actions">
+          <button
+            *ngIf="s.error!.retryCount < 2"
+            type="button"
+            class="pw-shell__btn pw-shell__btn--retry"
+            (click)="facade.retry()"
+          >Try again</button>
+          <button
+            *ngIf="s.hasPersistence"
+            type="button"
+            [class]="'pw-shell__btn ' + (s.error!.retryCount >= 2 ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend')"
+            (click)="facade.suspend()"
+          >Save and come back later</button>
+          <button
+            *ngIf="s.error!.retryCount >= 2 && !s.hasPersistence"
+            type="button"
+            class="pw-shell__btn pw-shell__btn--retry"
+            (click)="facade.retry()"
+          >Try again</button>
+        </div>
+      </div>
       <!-- Footer — custom or default navigation buttons -->
-      <ng-container *ngIf="customFooter; else defaultFooter">
-        <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
-      </ng-container>
+      <ng-template #footerOrCustom>
+        <ng-container *ngIf="customFooter; else defaultFooter">
+          <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+        </ng-container>
+      </ng-template>
       <ng-template #defaultFooter>
         <div class="pw-shell__footer">
           <div class="pw-shell__footer-left">
@@ -232,7 +267,7 @@ export class PathShellFooterDirective {
               *ngIf="getResolvedFooterLayout(s) === 'form' && !hideCancel"
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
-              [disabled]="s.isNavigating"
+              [disabled]="s.status !== 'idle'"
               (click)="facade.cancel()"
             >{{ cancelLabel }}</button>
             <!-- Wizard mode: Back on the left -->
@@ -240,7 +275,7 @@ export class PathShellFooterDirective {
               *ngIf="getResolvedFooterLayout(s) === 'wizard' && !s.isFirstStep"
               type="button"
               class="pw-shell__btn pw-shell__btn--back"
-              [disabled]="s.isNavigating || !s.canMovePrevious"
+              [disabled]="s.status !== 'idle' || !s.canMovePrevious"
               (click)="facade.previous()"
             >{{ backLabel }}</button>
           </div>
@@ -250,17 +285,17 @@ export class PathShellFooterDirective {
               *ngIf="getResolvedFooterLayout(s) === 'wizard' && !hideCancel"
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
-              [disabled]="s.isNavigating"
+              [disabled]="s.status !== 'idle'"
               (click)="facade.cancel()"
             >{{ cancelLabel }}</button>
             <!-- Both modes: Submit on the right -->
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--next"
-              [class.pw-shell__btn--loading]="s.isNavigating"
-              [disabled]="s.isNavigating"
+              [class.pw-shell__btn--loading]="s.status !== 'idle'"
+              [disabled]="s.status !== 'idle'"
               (click)="facade.next()"
-            >{{ s.isLastStep ? completeLabel : nextLabel }}</button>
+            >{{ s.status !== 'idle' && loadingLabel ? loadingLabel : s.isLastStep ? completeLabel : nextLabel }}</button>
           </div>
         </div>
       </ng-template>
@@ -295,6 +330,8 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   @Input() nextLabel = "Next";
   /** Label for the Next button when on the last step. */
   @Input() completeLabel = "Complete";
+  /** Label shown on the Next/Complete button while an async operation is in progress. When undefined, the button keeps its label and shows a CSS spinner only. */
+  @Input() loadingLabel?: string;
   /** Label for the Cancel button. */
   @Input() cancelLabel = "Cancel";
   /** Hide the Cancel button entirely. */
@@ -412,9 +449,6 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
       : this.footerLayout;
   }
 
-  /** Converts a camelCase or lowercase field key to a display label.
-   *  e.g. "firstName" → "First Name", "email" → "Email" */
-  protected formatFieldKey(key: string): string {
-    return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
-  }
+  protected errorPhaseMessage = errorPhaseMessage;
+  protected formatFieldKey = formatFieldKey;
 }

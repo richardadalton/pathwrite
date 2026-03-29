@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "../onboarding.types";
 
 @Component({
@@ -103,7 +103,7 @@ import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "../onboard
   `
 })
 export class ReviewStepComponent {
-  protected readonly path = injectPath<OnboardingData>();
+  protected readonly path = usePathContext<OnboardingData>();
 
   protected experienceLabel(value: string): string {
     return EXPERIENCE_LABELS[value] ?? value;

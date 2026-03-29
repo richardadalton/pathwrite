@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { ApprovalData } from "../approval.types";
 
 @Component({
@@ -29,7 +29,7 @@ import type { ApprovalData } from "../approval.types";
   `
 })
 export class ViewDocumentStepComponent {
-  protected readonly path = injectPath<ApprovalData>();
+  protected readonly path = usePathContext<ApprovalData>();
   protected get data(): ApprovalData { return this.path.snapshot()!.data; }
 }
 

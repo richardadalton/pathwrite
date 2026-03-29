@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 
 interface ContactData {
   name: string;
@@ -10,7 +10,7 @@ interface ContactData {
 }
 
 /**
- * Demonstrates the modern `injectPath()` API (new in v0.6.0) for accessing
+ * Demonstrates the modern `usePathContext()` API (new in v0.6.0) for accessing
  * the path engine. No template references needed — just inject and use signals.
  */
 @Component({
@@ -192,7 +192,7 @@ interface ContactData {
 })
 export class ContactStepComponent {
   // ── Signal-based path access (modern Angular pattern, new in v0.6.0) ────
-  protected readonly path = injectPath<ContactData>();
+  protected readonly path = usePathContext<ContactData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? (s.fieldErrors ?? {}) : {};

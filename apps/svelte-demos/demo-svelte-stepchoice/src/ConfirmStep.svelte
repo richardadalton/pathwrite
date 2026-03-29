@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import type { AddressData } from "./address-path";
 
-  const ctx = getPathContext<AddressData>();
+  const ctx = usePathContext<AddressData>();
 
   const COUNTRY_NAMES: Record<string, string> = { US: "United States", IE: "Ireland" };
 </script>

@@ -119,7 +119,7 @@ describe("usePath — navigation", () => {
     const path: PathDefinition = {
       id: "guarded",
       steps: [
-        { id: "step1", canMoveNext: () => false },
+        { id: "step1", canMoveNext: () => ({ allowed: false }) },
         { id: "step2" },
       ],
     };
@@ -179,7 +179,7 @@ describe("usePath — guards", () => {
     const path: PathDefinition = {
       id: "blocked",
       steps: [
-        { id: "step1", canMoveNext: () => false },
+        { id: "step1", canMoveNext: () => ({ allowed: false }) },
         { id: "step2" },
       ],
     };

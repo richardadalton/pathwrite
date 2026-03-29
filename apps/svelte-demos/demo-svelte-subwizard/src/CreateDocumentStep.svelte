@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import type { DocumentData } from "./types";
 
-  const ctx = getPathContext<DocumentData>();
+  const ctx = usePathContext<DocumentData>();
   let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 </script>
 

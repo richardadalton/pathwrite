@@ -28,6 +28,8 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
+  formatFieldKey,
+  errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -237,6 +239,8 @@ export interface PathShellProps {
   nextLabel?: string;
   /** Label for the Complete button (last step). Defaults to "Complete". */
   completeLabel?: string;
+  /** Label shown on the Next/Complete button while an async operation is in progress. When undefined, an ActivityIndicator spinner is shown instead. */
+  loadingLabel?: string;
   /** Label for the Cancel button. Defaults to "Cancel". */
   cancelLabel?: string;
   /** If true, hide the Cancel button. */
@@ -311,6 +315,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   backLabel = "Previous",
   nextLabel = "Next",
   completeLabel = "Complete",
+  loadingLabel,
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
@@ -459,26 +464,68 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
           </View>
         )}
 
-        {/* Footer — navigation or custom */}
-        {renderFooter
+        {/* Blocking error — guard returned { allowed: false, reason } */}
+        {validationDisplay !== "inline" && snapshot.hasAttemptedNext && snapshot.blockingError && (
+          <Text style={styles.blockingError}>{snapshot.blockingError}</Text>
+        )}
+
+        {/* Error panel — replaces footer when an async operation has failed */}
+        {snapshot.status === "error" && snapshot.error
+          ? (() => {
+              const err = snapshot.error!;
+              const escalated = err.retryCount >= 2;
+              return (
+                <View style={styles.errorPanel}>
+                  <Text style={styles.errorTitle}>
+                    {escalated ? "Still having trouble." : "Something went wrong."}
+                  </Text>
+                  <Text style={styles.errorMessage}>
+                    {errorPhaseMessage(err.phase)}{err.message ? ` ${err.message}` : ""}
+                  </Text>
+                  <View style={styles.errorActions}>
+                    {!escalated && (
+                      <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                        <Text style={styles.btnPrimaryText}>Try again</Text>
+                      </Pressable>
+                    )}
+                    {snapshot.hasPersistence && (
+                      <Pressable
+                        style={[styles.btn, escalated ? styles.btnRetry : styles.btnSuspend]}
+                        onPress={suspend}
+                      >
+                        <Text style={escalated ? styles.btnPrimaryText : styles.btnCancelText}>
+                          Save and come back later
+                        </Text>
+                      </Pressable>
+                    )}
+                    {escalated && !snapshot.hasPersistence && (
+                      <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                        <Text style={styles.btnPrimaryText}>Try again</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              );
+            })()
+          : renderFooter
           ? renderFooter(snapshot, actions)
           : (
             <View style={styles.footer}>
               <View style={styles.footerLeft}>
                 {isFormMode && !hideCancel && (
                   <Pressable
-                    style={[styles.btn, styles.btnCancel, snapshot.isNavigating && styles.btnDisabled]}
+                    style={[styles.btn, styles.btnCancel, snapshot.status !== "idle" && styles.btnDisabled]}
                     onPress={cancel}
-                    disabled={snapshot.isNavigating}
+                    disabled={snapshot.status !== "idle"}
                   >
                     <Text style={styles.btnCancelText}>{cancelLabel}</Text>
                   </Pressable>
                 )}
                 {!isFormMode && !snapshot.isFirstStep && (
                   <Pressable
-                    style={[styles.btn, styles.btnBack, (snapshot.isNavigating || !snapshot.canMovePrevious) && styles.btnDisabled]}
+                    style={[styles.btn, styles.btnBack, (snapshot.status !== "idle" || !snapshot.canMovePrevious) && styles.btnDisabled]}
                     onPress={previous}
-                    disabled={snapshot.isNavigating || !snapshot.canMovePrevious}
+                    disabled={snapshot.status !== "idle" || !snapshot.canMovePrevious}
                   >
                     <Text style={styles.btnBackText}>← {backLabel}</Text>
                   </Pressable>
@@ -487,21 +534,23 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
               <View style={styles.footerRight}>
                 {!isFormMode && !hideCancel && (
                   <Pressable
-                    style={[styles.btn, styles.btnCancel, snapshot.isNavigating && styles.btnDisabled]}
+                    style={[styles.btn, styles.btnCancel, snapshot.status !== "idle" && styles.btnDisabled]}
                     onPress={cancel}
-                    disabled={snapshot.isNavigating}
+                    disabled={snapshot.status !== "idle"}
                   >
                     <Text style={styles.btnCancelText}>{cancelLabel}</Text>
                   </Pressable>
                 )}
                 <Pressable
-                  style={[styles.btn, styles.btnPrimary, snapshot.isNavigating && styles.btnDisabled]}
+                  style={[styles.btn, styles.btnPrimary, snapshot.status !== "idle" && styles.btnDisabled]}
                   onPress={next}
-                  disabled={snapshot.isNavigating || !snapshot.canMoveNext}
+                  disabled={snapshot.status !== "idle" || !snapshot.canMoveNext}
                 >
-                  {snapshot.isNavigating
-                    ? <ActivityIndicator size="small" color="#ffffff" />
-                    : <Text style={styles.btnPrimaryText}>{snapshot.isLastStep ? completeLabel : `${nextLabel} →`}</Text>
+                  {snapshot.status !== "idle" && loadingLabel
+                    ? <Text style={styles.btnPrimaryText}>{loadingLabel}</Text>
+                    : snapshot.status !== "idle"
+                      ? <ActivityIndicator size="small" color="#ffffff" />
+                      : <Text style={styles.btnPrimaryText}>{snapshot.isLastStep ? completeLabel : `${nextLabel} →`}</Text>
                   }
                 </Pressable>
               </View>
@@ -513,13 +562,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   );
 });
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
-function formatFieldKey(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()).trim();
-}
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -686,6 +729,39 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontWeight: "500",
     fontSize: 15,
+  },
+  blockingError: {
+    fontSize: 13,
+    color: "#dc2626",
+    marginTop: 4,
+  },
+  btnRetry: {
+    backgroundColor: "#dc2626",
+  },
+  btnSuspend: {
+    backgroundColor: "transparent",
+  },
+  errorPanel: {
+    backgroundColor: "#fef2f2",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    padding: 16,
+    gap: 8,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#dc2626",
+  },
+  errorMessage: {
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  errorActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
   },
 });
 

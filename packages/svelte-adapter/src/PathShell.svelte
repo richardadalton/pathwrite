@@ -1,13 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { usePath, setPathContext } from './index.svelte.js';
+  import { usePath, setPathContext, formatFieldKey, errorPhaseMessage } from './index.svelte.js';
   import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
   import type { Snippet, Component } from 'svelte';
 
-  /** Converts a camelCase or lowercase field key to a display label. */
-  function formatFieldKey(key: string): string {
-    return key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
-  }
 
   interface Props {
     path?: PathDefinition<any>;
@@ -17,6 +13,7 @@
     backLabel?: string;
     nextLabel?: string;
     completeLabel?: string;
+    loadingLabel?: string;
     cancelLabel?: string;
     hideCancel?: boolean;
     hideProgress?: boolean;
@@ -44,7 +41,7 @@
     progressLayout?: ProgressLayout;
     /**
      * Services object passed through context to all step components.
-     * Step components access it via `getPathContext<TData, TServices>()`.
+     * Step components access it via `usePathContext<TData, TServices>()`.
      */
     services?: unknown;
     // Callback props replace event dispatching in Svelte 5
@@ -66,6 +63,7 @@
     backLabel = 'Previous',
     nextLabel = 'Next',
     completeLabel = 'Complete',
+    loadingLabel = undefined,
     cancelLabel = 'Cancel',
     hideCancel = false,
     hideProgress = false,
@@ -229,8 +227,36 @@
       </ul>
     {/if}
 
+    <!-- Blocking error — guard returned { allowed: false, reason } -->
+    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && snap.blockingError}
+      <p class="pw-shell__blocking-error">{snap.blockingError}</p>
+    {/if}
+
+    <!-- Error panel: replaces footer when an async operation has failed -->
+    {#if snap.status === "error" && snap.error}
+      {@const err = snap.error}
+      {@const escalated = err.retryCount >= 2}
+      <div class="pw-shell__error">
+        <div class="pw-shell__error-title">{escalated ? "Still having trouble." : "Something went wrong."}</div>
+        <div class="pw-shell__error-message">{errorPhaseMessage(err.phase)}{err.message ? ` ${err.message}` : ""}</div>
+        <div class="pw-shell__error-actions">
+          {#if !escalated}
+            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button>
+          {/if}
+          {#if snap.hasPersistence}
+            <button
+              type="button"
+              class="pw-shell__btn {escalated ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend'}"
+              onclick={suspend}
+            >Save and come back later</button>
+          {/if}
+          {#if escalated && !snap.hasPersistence}
+            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button>
+          {/if}
+        </div>
+      </div>
     <!-- Footer: navigation buttons (overridable via footer snippet) -->
-    {#if footer}
+    {:else if footer}
       {@render footer(snap, actions)}
     {:else}
       <div class="pw-shell__footer">
@@ -240,7 +266,7 @@
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
-              disabled={snap.isNavigating}
+              disabled={snap.status !== "idle"}
               onclick={cancel}
             >
               {cancelLabel}
@@ -250,7 +276,7 @@
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--back"
-              disabled={snap.isNavigating || !snap.canMovePrevious}
+              disabled={snap.status !== "idle" || !snap.canMovePrevious}
               onclick={previous}
             >
               {backLabel}
@@ -263,7 +289,7 @@
             <button
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
-              disabled={snap.isNavigating}
+              disabled={snap.status !== "idle"}
               onclick={cancel}
             >
               {cancelLabel}
@@ -273,11 +299,11 @@
           <button
             type="button"
             class="pw-shell__btn pw-shell__btn--next"
-            class:pw-shell__btn--loading={snap.isNavigating}
-            disabled={snap.isNavigating}
+            class:pw-shell__btn--loading={snap.status !== "idle"}
+            disabled={snap.status !== "idle"}
             onclick={next}
           >
-            {snap.isLastStep ? completeLabel : nextLabel}
+            {snap.status !== 'idle' && loadingLabel ? loadingLabel : snap.isLastStep ? completeLabel : nextLabel}
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { OnboardingData } from "../onboarding.types";
 
 @Component({
@@ -92,7 +92,7 @@ import type { OnboardingData } from "../onboarding.types";
   `
 })
 export class PersonalInfoStepComponent {
-  protected readonly path = injectPath<OnboardingData>();
+  protected readonly path = usePathContext<OnboardingData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};

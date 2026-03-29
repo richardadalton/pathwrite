@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { OnboardingData } from "../onboarding.types";
 
 @Component({
@@ -102,7 +102,7 @@ import type { OnboardingData } from "../onboarding.types";
   `
 })
 export class PreferencesStepComponent {
-  protected readonly path = injectPath<OnboardingData>();
+  protected readonly path = usePathContext<OnboardingData>();
 
   protected readonly themeOptions = [
     { value: "light",  label: "Light",         desc: "Always bright" },

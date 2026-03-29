@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import { AVAILABLE_APPROVERS, type DocumentData } from "../approval.types";
 
 @Component({
@@ -43,7 +43,7 @@ import { AVAILABLE_APPROVERS, type DocumentData } from "../approval.types";
   `
 })
 export class SelectApproversStepComponent {
-  protected readonly path   = injectPath<DocumentData>();
+  protected readonly path   = usePathContext<DocumentData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};

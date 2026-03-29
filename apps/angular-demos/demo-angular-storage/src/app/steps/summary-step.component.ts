@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { WizardData, Person, MemberProfile } from "../wizard";
 
 @Component({
@@ -96,7 +96,7 @@ import type { WizardData, Person, MemberProfile } from "../wizard";
   `
 })
 export class SummaryStepComponent {
-  protected readonly path = injectPath<WizardData>();
+  protected readonly path = usePathContext<WizardData>();
 
   protected get data(): WizardData {
     return this.path.snapshot()!.data;

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import type { WizardData, Person } from "./wizard";
 
-  const ctx = getPathContext<WizardData>();
+  const ctx = usePathContext<WizardData>();
 
   let members  = $derived((ctx.snapshot?.data.members  ?? []) as Person[]);
   let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});

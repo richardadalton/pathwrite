@@ -13,9 +13,6 @@ export interface ApplicationData {
   yearsExperience: string;
   skills: string;
 
-  // Internal: eligibility check result stored by EligibilityStep for display
-  eligibilityReason: string;
-
   [key: string]: unknown;
 }
 
@@ -23,7 +20,6 @@ export const INITIAL_DATA: ApplicationData = {
   roleId:           "",
   yearsExperience:  "",
   skills:           "",
-  eligibilityReason: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -71,17 +67,17 @@ export function createApplicationPath(
         // --- Async canMoveNext -----------------------------------------------
         // This is the async guard. The engine awaits this before deciding
         // whether to advance. While it is pending:
-        //   - isNavigating is true
+        //   - status === "validating"
         //   - the Next button shows a CSS spinner (shell.css pw-shell__btn--loading)
         //   - all navigation buttons are disabled
         //
-        // If it resolves false, the user stays on this step.
-        // The EligibilityStep component detects the blocked state by watching
-        // isNavigating transition from true → false while still on this step.
+        // If it returns { allowed: false }, the user stays on this step.
+        // The shell renders result.reason as snapshot.blockingError automatically.
         canMoveNext: async ({ data }) => {
           const years = Number(data.yearsExperience);
           const result = await svc.checkEligibility(years);
-          return result.eligible;
+          if (!result.eligible) return { allowed: false, reason: result.reason };
+          return true;
         },
       },
 

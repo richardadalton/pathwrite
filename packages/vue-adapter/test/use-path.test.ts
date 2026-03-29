@@ -244,7 +244,7 @@ describe("usePath — goToStepChecked", () => {
     const { path } = createPath();
     await path.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
     });
     await path.goToStepChecked("b");
     expect(path.snapshot.value?.stepId).toBe("a");

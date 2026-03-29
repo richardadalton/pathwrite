@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import { PLAN_LABELS, type SubscriptionData } from "../subscription.types";
 
 @Component({
@@ -89,7 +89,7 @@ import { PLAN_LABELS, type SubscriptionData } from "../subscription.types";
   `
 })
 export class ReviewStepComponent {
-  protected readonly path = injectPath<SubscriptionData>();
+  protected readonly path = usePathContext<SubscriptionData>();
   protected get data(): SubscriptionData { return this.path.snapshot()!.data; }
   protected get cardLast4(): string { return (this.data.cardNumber as string).slice(-4); }
   protected get billingLabel(): string {

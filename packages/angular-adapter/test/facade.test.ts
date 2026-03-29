@@ -291,7 +291,7 @@ describe("PathFacade — goToStepChecked", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
     });
     await facade.goToStepChecked("b");
     expect(facade.snapshot()?.stepId).toBe("a");
@@ -301,7 +301,7 @@ describe("PathFacade — goToStepChecked", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "a" }, { id: "b", canMovePrevious: () => false }]
+      steps: [{ id: "a" }, { id: "b", canMovePrevious: () => ({ allowed: false }) }]
     });
     await facade.goToStep("b");
     await facade.goToStepChecked("a");

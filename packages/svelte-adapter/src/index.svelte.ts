@@ -8,7 +8,8 @@ import type {
 } from "@daltonr/pathwrite-core";
 import { PathEngine as PathEngineClass } from "@daltonr/pathwrite-core";
 
-// Re-export core types for convenience
+// Re-export core utilities and types for convenience
+export { formatFieldKey, errorPhaseMessage } from "@daltonr/pathwrite-core";
 export type {
   PathData,
   FieldErrors,
@@ -226,21 +227,24 @@ export interface PathContext<TData extends PathData = PathData, TServices = unkn
   suspend: () => Promise<void>;
   /**
    * Services object passed through context from `PathShell`.
-   * Typed as `TServices` when `getPathContext<TData, TServices>()` is used.
+   * Typed as `TServices` when `usePathContext<TData, TServices>()` is used.
    */
   services: TServices;
 }
 
 /**
- * Get the PathContext from a parent PathShell component.
+ * Access the nearest `PathShell`'s path instance and optional services object.
  * Use this inside step components to access the path engine.
+ *
+ * - `TData` narrows `ctx.snapshot?.data`
+ * - `TServices` types the `services` value — must match what was passed to `PathShell`
  *
  * @example
  * ```svelte
  * <script lang="ts">
- *   import { getPathContext } from '@daltonr/pathwrite-svelte';
+ *   import { usePathContext } from '@daltonr/pathwrite-svelte';
  *
- *   const ctx = getPathContext();
+ *   const ctx = usePathContext();
  * </script>
  *
  * <input value={ctx.snapshot?.data.name}
@@ -248,11 +252,11 @@ export interface PathContext<TData extends PathData = PathData, TServices = unkn
  * <button onclick={ctx.next}>Next</button>
  * ```
  */
-export function getPathContext<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> {
   const ctx = getContext<PathContext<TData, TServices>>(PATH_CONTEXT_KEY);
   if (!ctx) {
     throw new Error(
-      "getPathContext() must be called from a component inside a <PathShell>. " +
+      "usePathContext() must be called from a component inside a <PathShell>. " +
         "Ensure the PathShell component is a parent in the component tree."
     );
   }

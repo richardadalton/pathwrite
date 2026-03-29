@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { US_STATES, type AddressData } from "./address-path";
 
-  const ctx = getPathContext<AddressData>();
+  const ctx = usePathContext<AddressData>();
   let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 </script>
 

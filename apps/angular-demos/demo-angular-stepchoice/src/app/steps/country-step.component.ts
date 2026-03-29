@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { AddressData } from "../address.types";
 
 const COUNTRIES = [
@@ -66,7 +66,7 @@ const COUNTRIES = [
   `
 })
 export class CountryStepComponent {
-  protected readonly path = injectPath<AddressData>();
+  protected readonly path = usePathContext<AddressData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};

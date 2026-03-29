@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import type { ProfileSubData } from "./wizard";
 
-  const ctx = getPathContext<ProfileSubData>();
+  const ctx = usePathContext<ProfileSubData>();
   let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 </script>
 

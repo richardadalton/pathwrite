@@ -16,7 +16,8 @@ export default defineConfig({
       "@daltonr/pathwrite-react-native": fileURLToPath(new URL("packages/react-native-adapter/src/index.tsx", import.meta.url)),
       "@daltonr/pathwrite-vue": fileURLToPath(new URL("packages/vue-adapter/src/index.ts", import.meta.url)),
       "@daltonr/pathwrite-svelte": fileURLToPath(new URL("packages/svelte-adapter/src/index.svelte.ts", import.meta.url)),
-      "react-native": fileURLToPath(new URL("packages/react-native-adapter/test/__mocks__/react-native.ts", import.meta.url))
+      "react-native": fileURLToPath(new URL("packages/react-native-adapter/test/__mocks__/react-native.ts", import.meta.url)),
+      "@daltonr/pathwrite-services": fileURLToPath(new URL("packages/pathwrite-services/src/index.ts", import.meta.url))
     }
   }
 });

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { PLAN_LABELS, type SubscriptionData } from "./subscription";
 
-  const ctx = getPathContext<SubscriptionData>();
+  const ctx = usePathContext<SubscriptionData>();
 </script>
 
 {#if ctx.snapshot}

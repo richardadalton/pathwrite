@@ -151,15 +151,15 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
 }
 
 // ---------------------------------------------------------------------------
-// injectPath() - Signal-based path access
+// usePathContext() - Signal-based path access
 // ---------------------------------------------------------------------------
 
 /**
- * Return type of `injectPath()`. Provides signal-based reactive access to the
+ * Return type of `usePathContext()`. Provides signal-based reactive access to the
  * path state and strongly-typed navigation actions. Mirrors React's `usePathContext()`
  * return type for consistency across adapters.
  */
-export interface InjectPathReturn<TData extends PathData = PathData> {
+export interface UsePathContextReturn<TData extends PathData = PathData> {
   /** Current path snapshot as a signal. Returns `null` when no path is active. */
   snapshot: Signal<PathSnapshot<TData> | null>;
   /** Start (or restart) a path. */
@@ -192,13 +192,13 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
 }
 
 /**
- * Inject a PathFacade and return a signal-based API for use in Angular components.
+ * Access the nearest `PathFacade`'s path instance for use in Angular step components.
  * Requires `PathFacade` to be provided in the component's injector tree (either via
  * `providers: [PathFacade]` in the component or a parent component).
  *
  * **This is the recommended way to consume Pathwrite in Angular components** — it
- * provides the same ergonomic, framework-native API that React's `usePathContext()`
- * and Vue's `usePath()` offer. No template references or manual facade injection needed.
+ * provides the same ergonomic API as React's `usePathContext()` and Vue's `usePathContext()`.
+ * No template references or manual facade injection needed.
  *
  * The optional generic `TData` narrows `snapshot().data` and `setData()` to your
  * data shape. It is a **type-level assertion**, not a runtime guarantee.
@@ -217,7 +217,7 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
  *   `
  * })
  * export class ContactStepComponent {
- *   protected readonly path = injectPath<ContactData>();
+ *   protected readonly path = usePathContext<ContactData>();
  *
  *   updateName(name: string) {
  *     this.path.setData('name', name);
@@ -227,12 +227,12 @@ export interface InjectPathReturn<TData extends PathData = PathData> {
  *
  * @throws Error if PathFacade is not provided in the injector tree
  */
-export function injectPath<TData extends PathData = PathData>(): InjectPathReturn<TData> {
+export function usePathContext<TData extends PathData = PathData>(): UsePathContextReturn<TData> {
   const facade = inject(PathFacade, { optional: true }) as PathFacade<TData> | null;
-  
+
   if (!facade) {
     throw new Error(
-      "injectPath() requires PathFacade to be provided. " +
+      "usePathContext() requires PathFacade to be provided. " +
       "Add 'providers: [PathFacade]' to your component or a parent component."
     );
   }

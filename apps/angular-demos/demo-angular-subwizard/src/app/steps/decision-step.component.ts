@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { ApprovalData } from "../approval.types";
 
 @Component({
@@ -60,7 +60,7 @@ import type { ApprovalData } from "../approval.types";
   `
 })
 export class DecisionStepComponent {
-  protected readonly path   = injectPath<ApprovalData>();
+  protected readonly path   = usePathContext<ApprovalData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};

@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { ProfileSubData } from "../wizard";
 
 @Component({
@@ -98,7 +98,7 @@ import type { ProfileSubData } from "../wizard";
   `
 })
 export class BackgroundStepComponent {
-  protected readonly path = injectPath<ProfileSubData>();
+  protected readonly path = usePathContext<ProfileSubData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};

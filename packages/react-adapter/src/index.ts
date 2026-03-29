@@ -17,7 +17,9 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
-  RootProgress
+  RootProgress,
+  formatFieldKey,
+  errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -277,11 +279,6 @@ export function useField<TData extends PathData, K extends string & keyof TData>
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Converts a camelCase or lowercase field key to a display label.
- *  e.g. "firstName" → "First Name", "email" → "Email" */
-function formatFieldKey(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
-}
 
 // ---------------------------------------------------------------------------
 // Default UI — PathShell
@@ -314,6 +311,8 @@ export interface PathShellProps {
   nextLabel?: string;
   /** Label for the Complete button (shown on the last step). Defaults to `"Complete"`. */
   completeLabel?: string;
+  /** Label shown on the Next/Complete button while an async operation is in progress. Defaults to `undefined` (button shows a CSS spinner but keeps its label). */
+  loadingLabel?: string;
   /** Label for the Cancel button. Defaults to `"Cancel"`. */
   cancelLabel?: string;
   /** If true, hide the Cancel button. Defaults to `false`. */
@@ -414,6 +413,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   backLabel = "Previous",
   nextLabel = "Next",
   completeLabel = "Complete",
+  loadingLabel,
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
@@ -516,12 +516,18 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
           )
         )
       ),
-      // Footer — navigation buttons
-      renderFooter
-        ? renderFooter(snapshot, actions)
-        : defaultFooter(snapshot, actions, {
-            backLabel, nextLabel, completeLabel, cancelLabel, hideCancel, footerLayout
-          })
+      // Blocking error — guard returned { allowed: false, reason }
+      validationDisplay !== "inline" && snapshot.hasAttemptedNext && snapshot.blockingError &&
+        createElement("p", { className: "pw-shell__blocking-error" }, snapshot.blockingError),
+      // Error panel — replaces footer when an async operation has failed
+      snapshot.status === "error" && snapshot.error
+        ? defaultErrorPanel(snapshot, actions)
+        // Footer — navigation buttons
+        : renderFooter
+          ? renderFooter(snapshot, actions)
+          : defaultFooter(snapshot, actions, {
+              backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, footerLayout
+            })
     )
   );
 });
@@ -587,6 +593,47 @@ function defaultHeader(snapshot: PathSnapshot): ReactElement {
 }
 
 // ---------------------------------------------------------------------------
+// Default error panel
+// ---------------------------------------------------------------------------
+
+
+function defaultErrorPanel(
+  snapshot: PathSnapshot,
+  actions: PathShellActions
+): ReactElement {
+  const { error, hasPersistence } = snapshot;
+  if (!error) return createElement("div", null);
+  const escalated = error.retryCount >= 2;
+  const title = escalated ? "Still having trouble." : "Something went wrong.";
+  const phaseMsg = errorPhaseMessage(error.phase);
+
+  return createElement("div", { className: "pw-shell__error" },
+    createElement("div", { className: "pw-shell__error-title" }, title),
+    createElement("div", { className: "pw-shell__error-message" },
+      phaseMsg,
+      error.message && ` ${error.message}`
+    ),
+    createElement("div", { className: "pw-shell__error-actions" },
+      !escalated && createElement("button", {
+        type: "button",
+        className: "pw-shell__btn pw-shell__btn--retry",
+        onClick: actions.retry
+      }, "Try again"),
+      hasPersistence && createElement("button", {
+        type: "button",
+        className: cls("pw-shell__btn", escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"),
+        onClick: actions.suspend
+      }, "Save and come back later"),
+      escalated && !hasPersistence && createElement("button", {
+        type: "button",
+        className: "pw-shell__btn pw-shell__btn--retry",
+        onClick: actions.retry
+      }, "Try again")
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Default footer (navigation buttons)
 // ---------------------------------------------------------------------------
 
@@ -594,6 +641,7 @@ interface FooterLabels {
   backLabel: string;
   nextLabel: string;
   completeLabel: string;
+  loadingLabel?: string;
   cancelLabel: string;
   hideCancel: boolean;
   footerLayout: "wizard" | "form" | "auto";
@@ -617,14 +665,14 @@ function defaultFooter(
       isFormMode && !labels.hideCancel && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--cancel",
-        disabled: snapshot.isNavigating,
+        disabled: snapshot.status !== "idle",
         onClick: actions.cancel
       }, labels.cancelLabel),
       // Wizard mode: Back on the left
       !isFormMode && !snapshot.isFirstStep && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--back",
-        disabled: snapshot.isNavigating || !snapshot.canMovePrevious,
+        disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
         onClick: actions.previous
       }, labels.backLabel)
     ),
@@ -633,16 +681,18 @@ function defaultFooter(
       !isFormMode && !labels.hideCancel && createElement("button", {
         type: "button",
         className: "pw-shell__btn pw-shell__btn--cancel",
-        disabled: snapshot.isNavigating,
+        disabled: snapshot.status !== "idle",
         onClick: actions.cancel
       }, labels.cancelLabel),
       // Both modes: Submit on the right
       createElement("button", {
         type: "button",
-        className: cls("pw-shell__btn pw-shell__btn--next", snapshot.isNavigating && "pw-shell__btn--loading"),
-        disabled: snapshot.isNavigating,
+        className: cls("pw-shell__btn pw-shell__btn--next", snapshot.status !== "idle" && "pw-shell__btn--loading"),
+        disabled: snapshot.status !== "idle",
         onClick: actions.next
-      }, snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
+      }, snapshot.status !== "idle" && labels.loadingLabel
+          ? labels.loadingLabel
+          : snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
     )
   );
 }

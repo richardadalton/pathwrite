@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { memberProfileSubPath } from "./wizard";
   import type { WizardData, Person, MemberProfile, ProfileSubData } from "./wizard";
 
-  const ctx = getPathContext<WizardData>();
+  const ctx = usePathContext<WizardData>();
 
   let members  = $derived((ctx.snapshot?.data.members  ?? []) as Person[]);
   let profiles = $derived((ctx.snapshot?.data.profiles ?? {}) as Record<string, MemberProfile>);

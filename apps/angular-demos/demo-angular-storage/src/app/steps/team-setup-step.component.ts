@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { WizardData, Person } from "../wizard";
 
 @Component({
@@ -133,7 +133,7 @@ import type { WizardData, Person } from "../wizard";
   `
 })
 export class TeamSetupStepComponent {
-  protected readonly path = injectPath<WizardData>();
+  protected readonly path = usePathContext<WizardData>();
 
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();

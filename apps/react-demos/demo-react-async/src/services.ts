@@ -14,7 +14,7 @@ export interface EligibilityResult {
 }
 
 export interface ApplicationServices {
-  /** Fetch the list of open roles. Called from onEnter — async, may be slow. */
+  /** Fetch the list of open roles. Called from step components via usePathContext. */
   getRoles(): Promise<Role[]>;
 
   /**

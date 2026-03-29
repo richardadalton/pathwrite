@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "./onboarding";
 
-  const ctx = getPathContext<OnboardingData>();
+  const ctx = usePathContext<OnboardingData>();
 </script>
 
 {#if ctx.snapshot}

@@ -22,7 +22,9 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
-  RootProgress
+  RootProgress,
+  formatFieldKey,
+  errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -136,11 +138,6 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Converts a camelCase or lowercase field key to a display label.
- *  e.g. "firstName" → "First Name", "email" → "Email" */
-function formatFieldKey(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
-}
 
 // ---------------------------------------------------------------------------
 // Context — provide / inject
@@ -219,6 +216,7 @@ export const PathShell = defineComponent({
     backLabel: { type: String, default: "Previous" },
     nextLabel: { type: String, default: "Next" },
     completeLabel: { type: String, default: "Complete" },
+    loadingLabel: { type: String, default: undefined },
     cancelLabel: { type: String, default: "Cancel" },
     hideCancel: { type: Boolean, default: false },
     hideProgress: { type: Boolean, default: false },
@@ -352,10 +350,17 @@ export const PathShell = defineComponent({
               )
             )
           : null,
-        // Footer — navigation
-        slots.footer
-          ? slots.footer({ snapshot: snap, actions })
-          : renderVueFooter(snap, actions, props)
+        // Blocking error — guard returned { allowed: false, reason }
+        props.validationDisplay !== "inline" && snap.hasAttemptedNext && snap.blockingError
+          ? h("p", { class: "pw-shell__blocking-error" }, snap.blockingError)
+          : null,
+        // Error panel — replaces footer when an async operation has failed
+        snap.status === "error" && snap.error
+          ? renderVueErrorPanel(snap, actions)
+          // Footer — navigation
+          : slots.footer
+            ? slots.footer({ snapshot: snap, actions })
+            : renderVueFooter(snap, actions, props)
       ]);
     };
   }
@@ -422,13 +427,57 @@ function renderVueHeader(snapshot: PathSnapshot): VNode {
 }
 
 // ---------------------------------------------------------------------------
+// Error panel
+// ---------------------------------------------------------------------------
+
+
+
+function renderVueErrorPanel(snapshot: PathSnapshot, actions: PathShellActions): VNode {
+  const { error, hasPersistence } = snapshot;
+  if (!error) return h("div", null);
+  const escalated = error.retryCount >= 2;
+  const title = escalated ? "Still having trouble." : "Something went wrong.";
+  const phaseMsg = errorPhaseMessage(error.phase);
+
+  return h("div", { class: "pw-shell__error" }, [
+    h("div", { class: "pw-shell__error-title" }, title),
+    h("div", { class: "pw-shell__error-message" },
+      phaseMsg + (error.message ? ` ${error.message}` : "")
+    ),
+    h("div", { class: "pw-shell__error-actions" }, [
+      !escalated
+        ? h("button", {
+            type: "button",
+            class: "pw-shell__btn pw-shell__btn--retry",
+            onClick: actions.retry
+          }, "Try again")
+        : null,
+      hasPersistence
+        ? h("button", {
+            type: "button",
+            class: `pw-shell__btn ${escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"}`,
+            onClick: actions.suspend
+          }, "Save and come back later")
+        : null,
+      escalated && !hasPersistence
+        ? h("button", {
+            type: "button",
+            class: "pw-shell__btn pw-shell__btn--retry",
+            onClick: actions.retry
+          }, "Try again")
+        : null
+    ])
+  ]);
+}
+
+// ---------------------------------------------------------------------------
 // Default footer (navigation buttons)
 // ---------------------------------------------------------------------------
 
 function renderVueFooter(
   snapshot: PathSnapshot,
   actions: PathShellActions,
-  props: { backLabel: string; nextLabel: string; completeLabel: string; cancelLabel: string; hideCancel: boolean; footerLayout: "wizard" | "form" | "auto" }
+  props: { backLabel: string; nextLabel: string; completeLabel: string; loadingLabel?: string; cancelLabel: string; hideCancel: boolean; footerLayout: "wizard" | "form" | "auto" }
 ): VNode {
   // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
   const resolvedLayout = props.footerLayout === "auto"
@@ -444,7 +493,7 @@ function renderVueFooter(
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--cancel",
-            disabled: snapshot.isNavigating,
+            disabled: snapshot.status !== "idle",
             onClick: actions.cancel
           }, props.cancelLabel)
         : null,
@@ -453,7 +502,7 @@ function renderVueFooter(
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--back",
-            disabled: snapshot.isNavigating || !snapshot.canMovePrevious,
+            disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
             onClick: actions.previous
           }, props.backLabel)
         : null
@@ -464,17 +513,19 @@ function renderVueFooter(
         ? h("button", {
             type: "button",
             class: "pw-shell__btn pw-shell__btn--cancel",
-            disabled: snapshot.isNavigating,
+            disabled: snapshot.status !== "idle",
             onClick: actions.cancel
           }, props.cancelLabel)
         : null,
       // Both modes: Submit on the right
       h("button", {
         type: "button",
-        class: ["pw-shell__btn pw-shell__btn--next", snapshot.isNavigating && "pw-shell__btn--loading"].filter(Boolean).join(" "),
-        disabled: snapshot.isNavigating,
+        class: ["pw-shell__btn pw-shell__btn--next", snapshot.status !== "idle" && "pw-shell__btn--loading"].filter(Boolean).join(" "),
+        disabled: snapshot.status !== "idle",
         onClick: actions.next
-      }, snapshot.isLastStep ? props.completeLabel : props.nextLabel)
+      }, snapshot.status !== "idle" && props.loadingLabel
+          ? props.loadingLabel
+          : snapshot.isLastStep ? props.completeLabel : props.nextLabel)
     ])
   ]);
 }

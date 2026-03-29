@@ -14,7 +14,7 @@ const mockState: SerializedPathState = {
   data: { name: "Alice", email: "alice@example.com" },
   visitedStepIds: ["step1", "step2"],
   pathStack: [],
-  _isNavigating: false,
+  _status: "idle",
 };
 
 const simplePath: PathDefinition = {
@@ -176,15 +176,15 @@ describe("persistence", () => {
 
   type Cause = "start" | "next" | "previous" | "goToStep" | "goToStepChecked" | "setData" | "cancel" | "restart";
 
-  function stateChanged(cause: Cause, isNavigating = false) {
-    return { type: "stateChanged" as const, cause, snapshot: { isNavigating } as any };
+  function stateChanged(cause: Cause, busy = false) {
+    return { type: "stateChanged" as const, cause, snapshot: { status: busy ? "validating" : "idle" } as any };
   }
 
   const resumed = {
     type: "resumed" as const,
     resumedPathId: "parent",
     fromSubPathId: "sub",
-    snapshot: { isNavigating: false } as any,
+    snapshot: { status: "idle" } as any,
   };
 
   const completed = { type: "completed" as const, pathId: "simple", data: {} };
@@ -196,7 +196,7 @@ describe("persistence", () => {
     expect(mockFetch.mock.calls.filter((c) => c[1]?.method === "PUT")).toHaveLength(1);
   });
 
-  it("does NOT save on mid-navigation stateChanged (isNavigating:true)", async () => {
+  it("does NOT save on mid-navigation stateChanged (busy status)", async () => {
     const obs = persistence({ store, key: "w" });
     obs(stateChanged("next", true), fakeEngine());
     await vi.runAllTimersAsync();
@@ -312,7 +312,7 @@ describe("restoreOrStart", () => {
     const savedState: SerializedPathState = {
       version: 1, pathId: "simple", currentStepIndex: 1,
       data: { name: "Restored" }, visitedStepIds: ["step1", "step2"],
-      pathStack: [], _isNavigating: false,
+      pathStack: [], _status: "idle",
     };
     const store = new HttpStore({
       baseUrl: "/api",
@@ -345,7 +345,7 @@ describe("restoreOrStart", () => {
   it("defaults pathDefinitions to { [path.id]: path }", async () => {
     const savedState: SerializedPathState = {
       version: 1, pathId: "simple", currentStepIndex: 1,
-      data: {}, visitedStepIds: ["step1", "step2"], pathStack: [], _isNavigating: false,
+      data: {}, visitedStepIds: ["step1", "step2"], pathStack: [], _status: "idle",
     };
     const store = new HttpStore({
       baseUrl: "/api",

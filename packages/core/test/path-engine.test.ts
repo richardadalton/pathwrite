@@ -83,7 +83,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => false }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }]
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -93,7 +93,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }]
     });
     await engine.next();
     await engine.previous();
@@ -103,11 +103,85 @@ describe("PathEngine — navigation", () => {
   it("still emits stateChanged when a guard blocks navigation", async () => {
     const engine = new PathEngine();
     const events = collectEvents(engine);
-    await engine.start({ id: "w", steps: [{ id: "step1", canMoveNext: () => false }] });
+    await engine.start({ id: "w", steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }] });
     const before = events.filter((e) => e.type === "stateChanged").length;
     await engine.next();
     // next emits 2 events: busy at start + final
     expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
+  });
+
+  it("sets blockingError when canMoveNext returns { allowed: false, reason }", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => ({ allowed: false, reason: "Not eligible." }) },
+        { id: "step2" }
+      ]
+    });
+    expect(engine.snapshot()?.blockingError).toBeNull();
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    expect(engine.snapshot()?.blockingError).toBe("Not eligible.");
+  });
+
+  it("clears blockingError when navigating to a new step", async () => {
+    let block = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => block ? ({ allowed: false, reason: "Not yet." }) : true },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.blockingError).toBe("Not yet.");
+    block = false;
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.blockingError).toBeNull();
+  });
+
+  it("sets no blockingError when canMoveNext returns { allowed: false } without reason", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => ({ allowed: false }) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.blockingError).toBeNull();
+  });
+
+  it("sets blockingError from async canMoveNext returning { allowed: false, reason }", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: async () => ({ allowed: false, reason: "Async blocked." }) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.blockingError).toBe("Async blocked.");
+  });
+
+  it("clears blockingError on restart()", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "step1", canMoveNext: () => ({ allowed: false, reason: "Blocked." }) },
+        { id: "step2" }
+      ]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.blockingError).toBe("Blocked.");
+    await engine.restart();
+    expect(engine.snapshot()?.blockingError).toBeNull();
   });
 });
 
@@ -176,12 +250,12 @@ describe("PathEngine — snapshot", () => {
     expect(engine.snapshot()?.data).toMatchObject({ owner: "test", value: 42 });
   });
 
-  it("isNavigating is false in a stable snapshot between navigations", async () => {
+  it("status is 'idle' in a stable snapshot between navigations", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
-    expect(engine.snapshot()?.isNavigating).toBe(false);
+    expect(engine.snapshot()?.status).toBe("idle");
     await engine.next();
-    expect(engine.snapshot()?.isNavigating).toBe(false);
+    expect(engine.snapshot()?.status).toBe("idle");
   });
 });
 
@@ -201,7 +275,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => false }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }]
     });
     expect(engine.snapshot()?.canMoveNext).toBe(false);
   });
@@ -210,7 +284,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }]
     });
     await engine.next();
     expect(engine.snapshot()?.canMovePrevious).toBe(false);
@@ -220,7 +294,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => Promise.resolve(false) }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) }, { id: "step2" }]
     });
     // Async guard — snapshot defaults to true; the engine enforces on navigation
     expect(engine.snapshot()?.canMoveNext).toBe(true);
@@ -245,7 +319,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => false, onEnter }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onEnter }]
     });
     const callsAfterStart = onEnter.mock.calls.length;
     await engine.next();
@@ -257,7 +331,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => false, onEnter }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }), onEnter }]
     });
     await engine.next();
     const callsAfterEnter = onEnter.mock.calls.length;
@@ -318,8 +392,8 @@ describe("PathEngine — events", () => {
     await engine.start(twoStepPath());
     const before = events.filter((e) => e.type === "stateChanged").length;
     await engine.next();
-    // next emits 2 events: busy at start + final
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
+    // next emits multiple phase-transition events (validating, leaving, idle + any onEnter)
+    expect(events.filter((e) => e.type === "stateChanged").length).toBeGreaterThan(before);
   });
 
   it("emits stateChanged on previous", async () => {
@@ -547,7 +621,7 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => false, onLeave }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onLeave }]
     });
     await engine.next();
     expect(onLeave).not.toHaveBeenCalled();
@@ -1217,7 +1291,7 @@ describe("PathEngine — hasAttemptedNext", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "step1", canMoveNext: () => false },
+        { id: "step1", canMoveNext: () => ({ allowed: false }) },
         { id: "step2" }
       ]
     });
@@ -1456,7 +1530,7 @@ describe("PathEngine — async hooks and guards", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "step1", canMoveNext: () => Promise.resolve(false) },
+        { id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) },
         { id: "step2" }
       ]
     });
@@ -1470,7 +1544,7 @@ describe("PathEngine — async hooks and guards", () => {
       id: "w",
       steps: [
         { id: "step1" },
-        { id: "step2", canMovePrevious: () => Promise.resolve(false) }
+        { id: "step2", canMovePrevious: () => Promise.resolve({ allowed: false }) }
       ]
     });
     await engine.next();
@@ -1532,30 +1606,30 @@ describe("PathEngine — async hooks and guards", () => {
     expect(engine.snapshot()?.stepId).toBe("step3");
   });
 
-  it("isNavigating is true in intermediate stateChanged events during next", async () => {
-    let sawNavigating = false;
+  it("status is not 'idle' in intermediate stateChanged events during next", async () => {
+    const statusesSeen = new Set<string>();
     const engine = new PathEngine();
     engine.subscribe((event) => {
-      if (event.type === "stateChanged" && event.snapshot.isNavigating) {
-        sawNavigating = true;
-      }
+      if (event.type === "stateChanged") statusesSeen.add(event.snapshot.status);
     });
     await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2" }] });
-    sawNavigating = false; // reset — only care about next's busy state
+    statusesSeen.clear(); // reset — only care about next's transitions
     await engine.next();
-    expect(sawNavigating).toBe(true);
+    // Should have seen at least one non-idle status (validating, leaving, entering)
+    const busyStatuses = [...statusesSeen].filter(s => s !== "idle");
+    expect(busyStatuses.length).toBeGreaterThan(0);
   });
 
-  it("isNavigating is false in the final stateChanged event after navigation completes", async () => {
-    const navigatingValues: boolean[] = [];
+  it("status is 'idle' in the final stateChanged event after navigation completes", async () => {
+    const statuses: string[] = [];
     const engine = new PathEngine();
     engine.subscribe((event) => {
-      if (event.type === "stateChanged") navigatingValues.push(event.snapshot.isNavigating);
+      if (event.type === "stateChanged") statuses.push(event.snapshot.status);
     });
     await engine.start({ id: "w", steps: [{ id: "step1" }, { id: "step2" }] });
-    navigatingValues.length = 0; // reset after start
+    statuses.length = 0; // reset after start
     await engine.next();
-    expect(navigatingValues[navigatingValues.length - 1]).toBe(false);
+    expect(statuses[statuses.length - 1]).toBe("idle");
   });
 
   it("ignores a concurrent next call while navigation is already in progress", async () => {
@@ -1583,7 +1657,7 @@ describe("PathEngine — async hooks and guards", () => {
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("sets snapshot.error and resets isNavigating when an async guard throws", async () => {
+  it("sets snapshot.error and status 'error' when an async guard throws", async () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
@@ -1599,7 +1673,7 @@ describe("PathEngine — async hooks and guards", () => {
     await engine.next();
     const snap = engine.snapshot()!;
     expect(snap.stepId).toBe("step1");
-    expect(snap.isNavigating).toBe(false);
+    expect(snap.status).toBe("error");
     expect(snap.error).toEqual({ message: "network error", phase: "validating", retryCount: 0 });
   });
 
@@ -1667,7 +1741,7 @@ describe("PathEngine — error handling", () => {
     await engine.next();
     const snap = engine.snapshot()!;
     expect(snap.stepId).toBe("s1");
-    expect(snap.isNavigating).toBe(false);
+    expect(snap.status).toBe("error");
     expect(snap.error).toEqual({ message: "server down", phase: "validating", retryCount: 0 });
   });
 
@@ -1824,7 +1898,7 @@ describe("PathEngine — error handling", () => {
     await engine.suspend();
     expect(events).toContain("suspended");
     expect(engine.snapshot()!.error).toBeNull();
-    expect(engine.snapshot()!.isNavigating).toBe(false);
+    expect(engine.snapshot()!.status).toBe("idle");
   });
 
   it("suspend() includes the path id and current data in the suspended event", async () => {
@@ -2498,7 +2572,7 @@ describe("PathEngine — guard error resilience", () => {
 
     await engine.start({
       id: "p",
-      steps: [{ id: "s1", canMoveNext: () => false }]
+      steps: [{ id: "s1", canMoveNext: () => ({ allowed: false }) }]
     });
 
     expect(engine.snapshot()?.canMoveNext).toBe(false);
@@ -3012,7 +3086,7 @@ describe("PathEngine — exportState / fromState", () => {
       data: {},
       visitedStepIds: [],
       pathStack: [],
-      _isNavigating: false
+      _status: "idle"
     };
 
     expect(() => {
@@ -3085,7 +3159,7 @@ describe("PathEngine — exportState / fromState", () => {
     expect(snapshot2.data).toEqual({ a: 1, b: "test", c: [1, 2, 3] });
   });
 
-  it("fromState restores _isNavigating flag", async () => {
+  it("fromState restores _status field", async () => {
     const path = twoStepPath("test");
     const state: any = {
       version: 1,
@@ -3094,11 +3168,11 @@ describe("PathEngine — exportState / fromState", () => {
       data: {},
       visitedStepIds: ["step1"],
       pathStack: [],
-      _isNavigating: true
+      _status: "validating"
     };
 
     const engine = PathEngine.fromState(state, { test: path });
-    expect(engine.snapshot()?.isNavigating).toBe(true);
+    expect(engine.snapshot()?.status).toBe("validating");
   });
 
   it("can restore and complete a path normally", async () => {

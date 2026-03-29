@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import { memberProfileSubPath } from "../wizard";
 import type { WizardData, Person, MemberProfile, ProfileSubData } from "../wizard";
 
@@ -97,7 +97,7 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "../wizar
   `
 })
 export class MemberProfilesStepComponent {
-  protected readonly path = injectPath<WizardData>();
+  protected readonly path = usePathContext<WizardData>();
 
   protected readonly errors = computed(() =>
     this.path.snapshot()?.fieldErrors ?? {}

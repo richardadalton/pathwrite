@@ -228,7 +228,7 @@ export function persistence(options: PersistenceOptions): PathObserver {
           data: event.data,
           visitedStepIds: [],
           pathStack: [],
-          _isNavigating: false,
+          _status: "idle",
         };
         options.store.save(options.key, finalState)
           .then(() => options.onSaveSuccess?.())

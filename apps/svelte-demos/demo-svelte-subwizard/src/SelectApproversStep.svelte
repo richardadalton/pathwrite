@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { getPathContext } from "@daltonr/pathwrite-svelte";
+  import { usePathContext } from "@daltonr/pathwrite-svelte";
   import { AVAILABLE_APPROVERS } from "./approval";
   import type { DocumentData } from "./types";
 
-  const ctx = getPathContext<DocumentData>();
+  const ctx = usePathContext<DocumentData>();
   let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
   let selected = $derived((ctx.snapshot?.data.approvers ?? []) as string[]);
 

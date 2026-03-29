@@ -27,7 +27,7 @@ vi.mock("svelte", async () => {
 });
 
 // Import AFTER mocking so the mock is in place
-import { usePath, getPathContext, setPathContext, bindData } from "../src/index.svelte";
+import { usePath, usePathContext, setPathContext, bindData } from "../src/index.svelte";
 import type { UsePathOptions, UsePathReturn, PathContext } from "../src/index.svelte";
 
 // ---------------------------------------------------------------------------
@@ -313,7 +313,7 @@ describe("usePath — goToStepChecked", () => {
     const path = createPath();
     await path.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
     });
     await path.goToStepChecked("b");
     expect(snap(path)?.stepId).toBe("a");
@@ -460,13 +460,13 @@ describe("usePath — external engine", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Context API — getPathContext / setPathContext
+// Context API — usePathContext / setPathContext
 // ---------------------------------------------------------------------------
 
-describe("getPathContext / setPathContext", () => {
+describe("usePathContext / setPathContext", () => {
   it("throws when called outside a PathShell (no context set)", () => {
-    expect(() => getPathContext()).toThrow(
-      /getPathContext\(\) must be called from a component inside a <PathShell>/
+    expect(() => usePathContext()).toThrow(
+      /usePathContext\(\) must be called from a component inside a <PathShell>/
     );
   });
 
@@ -486,7 +486,7 @@ describe("getPathContext / setPathContext", () => {
     };
 
     setPathContext(ctx);
-    const retrieved = getPathContext();
+    const retrieved = usePathContext();
     expect(retrieved).toBe(ctx);
   });
 
@@ -505,7 +505,7 @@ describe("getPathContext / setPathContext", () => {
       restart: async () => {}
     });
 
-    const ctx = getPathContext();
+    const ctx = usePathContext();
     expect(ctx.snapshot?.stepId).toBe("step1");
 
     await ctx.next();
@@ -633,7 +633,7 @@ describe("usePath — guards and validation", () => {
     await path.start({
       id: "w",
       steps: [
-        { id: "s1", canMoveNext: () => false },
+        { id: "s1", canMoveNext: () => ({ allowed: false }) },
         { id: "s2" }
       ]
     });

@@ -286,6 +286,16 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Blocking error (guard-level message, not field-attached)           */
+/* ------------------------------------------------------------------ */
+.pw-shell__blocking-error {
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--pw-color-error);
+}
+
+/* ------------------------------------------------------------------ */
 /* Warning messages                                                    */
 /* ------------------------------------------------------------------ */
 .pw-shell__warnings {
@@ -409,6 +419,58 @@
 }
 
 .pw-shell__btn--cancel:hover:not(:disabled) {
+  background: var(--pw-color-primary-light);
+}
+
+/* ------------------------------------------------------------------ */
+/* Error panel — replaces footer when status === "error"              */
+/* ------------------------------------------------------------------ */
+.pw-shell__error {
+  background: var(--pw-color-error-bg);
+  border: 1px solid var(--pw-color-error-border);
+  border-radius: var(--pw-shell-radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pw-shell__error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pw-color-error);
+}
+
+.pw-shell__error-message {
+  font-size: 13px;
+  color: var(--pw-color-muted);
+}
+
+.pw-shell__error-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.pw-shell__btn--retry {
+  background: var(--pw-color-error);
+  border-color: var(--pw-color-error);
+  color: #fff;
+}
+
+.pw-shell__btn--retry:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.pw-shell__btn--suspend {
+  color: var(--pw-color-muted);
+  border-color: transparent;
+  background: transparent;
+  font-size: 13px;
+}
+
+.pw-shell__btn--suspend:hover:not(:disabled) {
   background: var(--pw-color-primary-light);
 }
 

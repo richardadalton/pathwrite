@@ -2,9 +2,9 @@
 import { createElement } from "react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, render, act } from "@testing-library/react";
 import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
-import { usePath, PathProvider, usePathContext } from "../src/index";
+import { usePath, PathProvider, PathShell, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
 // ---------------------------------------------------------------------------
@@ -278,7 +278,7 @@ describe("usePath — goToStepChecked", () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => false }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
     }));
     await act(() => result.current.goToStepChecked("b"));
     expect(result.current.snapshot?.stepId).toBe("a");
@@ -334,6 +334,89 @@ describe("PathProvider + usePathContext", () => {
     expect(onEvent).toHaveBeenCalledWith(
       expect.objectContaining({ type: "stateChanged" })
     );
+  });
+
+  it("exposes services passed to PathProvider via usePathContext", () => {
+    const services = { greet: () => "hello" };
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(PathProvider, { services }, children);
+    const { result } = renderHook(
+      () => usePathContext<PathData, typeof services>(),
+      { wrapper }
+    );
+    expect(result.current.services).toBe(services);
+    expect(result.current.services.greet()).toBe("hello");
+  });
+
+  it("exposes services passed to PathShell via usePathContext inside a step", async () => {
+    const services = { getValue: () => 42 };
+    let capturedServices: typeof services | null = null;
+
+    function StepComponent() {
+      const ctx = usePathContext<PathData, typeof services>();
+      capturedServices = ctx.services;
+      return null;
+    }
+
+    const { unmount } = render(
+      createElement(PathShell, {
+        path: twoStepPath(),
+        services,
+        steps: { step1: createElement(StepComponent) }
+      } as any)
+    );
+
+    await act(() => Promise.resolve());
+    expect(capturedServices).toBe(services);
+    expect(capturedServices!.getValue()).toBe(42);
+    unmount();
+  });
+
+  it("same services object reaches both guards and step components", async () => {
+    const services = { check: vi.fn(() => true) };
+    let servicesInGuard: typeof services | null = null;
+    let servicesInStep: typeof services | null = null;
+
+    function StepComponent() {
+      const ctx = usePathContext<PathData, typeof services>();
+      servicesInStep = ctx.services;
+      return null;
+    }
+
+    const path: PathDefinition<PathData> = {
+      id: "test",
+      steps: [
+        {
+          id: "step1",
+          canMoveNext: (ctx) => {
+            // Guards close over services via the factory pattern — verify same reference
+            servicesInGuard = services;
+            return services.check() ? true : { allowed: false };
+          }
+        },
+        { id: "step2" }
+      ]
+    };
+
+    const { unmount } = render(
+      createElement(PathShell, {
+        path,
+        services,
+        steps: { step1: createElement(StepComponent), step2: createElement(StepComponent) }
+      } as any)
+    );
+
+    await act(() => Promise.resolve());
+    expect(servicesInStep).toBe(services);
+
+    await act(() => {
+      const shell = document.querySelector(".pw-shell__btn--next") as HTMLButtonElement;
+      shell?.click();
+    });
+
+    expect(servicesInGuard).toBe(services);
+    expect(servicesInGuard).toBe(servicesInStep);
+    unmount();
   });
 });
 

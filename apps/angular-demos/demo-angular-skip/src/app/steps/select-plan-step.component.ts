@@ -1,5 +1,5 @@
 import { Component, computed } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { SubscriptionData } from "../subscription.types";
 
 @Component({
@@ -47,7 +47,7 @@ import type { SubscriptionData } from "../subscription.types";
   `
 })
 export class SelectPlanStepComponent {
-  protected readonly path = injectPath<SubscriptionData>();
+  protected readonly path = usePathContext<SubscriptionData>();
   protected readonly errors = computed(() => {
     const s = this.path.snapshot();
     return s?.hasAttemptedNext ? s.fieldErrors : {};
