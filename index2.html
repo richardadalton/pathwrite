@@ -276,11 +276,11 @@
     <div class="hero2__left">
       <div class="hero2__eyebrow">Framework-agnostic &middot; Zero dependencies &middot; React Native</div>
       <h1 class="hero2__title">
-        Your workflow is <em>source code.</em><br />
-        The engine is its interpreter.
+        Your flow logic,<br />
+        <em>independent of everything.</em>
       </h1>
       <p class="hero2__subtitle">
-        Define your multi-step flow once in pure TypeScript. Pathwrite's engine executes it. Every framework adapter renders it. One workflow &mdash; React, Vue, Angular, Svelte, and React Native.
+        Most wizard libraries bury your business logic inside UI components. Pathwrite separates them: your flow is a plain TypeScript object you can develop, test, version, and share &mdash; completely independently of any framework.
       </p>
       <div class="hero2__actions">
         <a href="#insight" class="btn btn--lg btn--primary">See how it works</a>
@@ -331,8 +331,8 @@
       </div>
       <div class="pillar">
         <div class="pillar__num">1</div>
-        <h3>Source of truth for your workflow logic</h3>
-        <p>Your <code>PathDefinition</code> is a plain TypeScript object. Package it as an npm module and import it into every app — the business rules live in exactly one place.</p>
+        <h3>Flow logic that belongs to no framework</h3>
+        <p>Your <code>PathDefinition</code> is a plain TypeScript object. Package it as an npm module, version it independently, and import it into every app &mdash; web and mobile.</p>
       </div>
     </div>
   </div>
@@ -342,39 +342,38 @@
 <section class="insight" id="insight">
   <div class="container">
     <div class="insight__intro">
-      <h2>The separation that makes everything else possible</h2>
+      <h2>A flow that stands on its own</h2>
       <p>
-        Most wizard libraries couple your business logic to UI components. Pathwrite doesn't.
-        It borrows a pattern from programming languages: the clean separation between
-        source code, its interpreter, and the tools that surface its state.
+        A <code>PathDefinition</code> is a plain TypeScript object &mdash; no framework imports, no component coupling, no DOM.
+        Because it has no dependencies, you get four things that are impossible when logic lives inside components.
       </p>
     </div>
 
     <div class="analogy-table">
       <div class="analogy-cell">
-        <div class="analogy-cell__pw">PathDefinition</div>
-        <div class="analogy-cell__name">Source code</div>
-        <div class="analogy-cell__analogy">Inert, declarative. A plain TypeScript object with steps, guards, and hooks. Does nothing on its own.</div>
+        <div class="analogy-cell__arrow">&#x2609;</div>
+        <div class="analogy-cell__name">Develop independently</div>
+        <div class="analogy-cell__analogy">Your guards, conditional steps, and lifecycle hooks live in their own package. UI engineers and flow engineers work without stepping on each other.</div>
       </div>
       <div class="analogy-cell">
-        <div class="analogy-cell__pw">PathEngine</div>
-        <div class="analogy-cell__name">Interpreter</div>
-        <div class="analogy-cell__analogy">Reads the definition and executes it. Manages navigation, enforces guards, fires lifecycle hooks, stacks sub-paths.</div>
+        <div class="analogy-cell__arrow">&#x2713;</div>
+        <div class="analogy-cell__name">Test without a browser</div>
+        <div class="analogy-cell__analogy">Every navigation path, guard, and validation rule is testable with <code>new PathEngine()</code>. No DOM. No component mounting. No Playwright.</div>
       </div>
       <div class="analogy-cell">
-        <div class="analogy-cell__pw">PathSnapshot</div>
-        <div class="analogy-cell__name">Program state</div>
-        <div class="analogy-cell__analogy">Immutable record of position, data, and derived flags at a point in time. Produced after every engine action.</div>
+        <div class="analogy-cell__arrow">&#x2191;</div>
+        <div class="analogy-cell__name">Version independently</div>
+        <div class="analogy-cell__analogy">Ship your flow as an npm package with its own semver. Business logic changes don't force UI releases. Consumers upgrade on their schedule.</div>
       </div>
       <div class="analogy-cell">
-        <div class="analogy-cell__pw">Adapters</div>
-        <div class="analogy-cell__name">Interface</div>
-        <div class="analogy-cell__analogy">Surface the snapshot to humans using the framework's own reactivity. React hooks, Vue composables, Angular signals, Svelte runes.</div>
+        <div class="analogy-cell__arrow">&#x2192;</div>
+        <div class="analogy-cell__name">Use in any framework</div>
+        <div class="analogy-cell__analogy">The same package imports into React, Vue, Angular, Svelte, and React Native. One source of truth for your checkout, onboarding, or application flow.</div>
       </div>
     </div>
 
     <div class="analogy-divider" style="max-width:900px;margin:2rem auto 0">
-      Because the definition is inert data, you can package it, version it, test it headlessly, and import it into any adapter &mdash; without ever touching UI code.
+      The live demo above is powered by the real engine, loaded directly from npm &mdash; no build step, no framework.
     </div>
   </div>
 </section>
@@ -382,8 +381,8 @@
 <!-- ===== WORKFLOW AS ARTIFACT ===== -->
 <section class="artifact section section--dark" id="artifact">
   <div class="container">
-    <h2 class="section__title">Your workflow is a first-class artifact</h2>
-    <p class="section__subtitle">Package your business logic as a standalone npm package. Test it with zero framework setup. Import it cleanly into any adapter.</p>
+    <h2 class="section__title">Your flow logic, packaged and shared</h2>
+    <p class="section__subtitle">The same <code>PathDefinition</code> that powers your web checkout also drives your mobile onboarding &mdash; imported as a dependency, not copy-pasted.</p>
 
     <div class="artifact-layout">
       <div class="artifact-flow">
