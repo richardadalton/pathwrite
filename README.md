@@ -103,7 +103,7 @@ npm install @daltonr/pathwrite-store-http
 ## Design principles
 
 - **Headless first** — `@daltonr/pathwrite-core` has zero runtime dependencies. It runs identically in a browser, Node.js, a test runner, or React Native.
-- **Pure-data definitions** — `PathDefinition` is a plain TypeScript object. Extract it into a versioned package and share it across a web app, mobile app, and backend service simultaneously.
+- **Workflows as artifacts** — because `PathDefinition` is a plain TypeScript object with no framework dependencies, a workflow is a first-class software artifact. Package it, version it with semver, test it without mounting anything, and share it across a web app, mobile app, and backend service simultaneously.
 - **Immutable snapshots** — every engine action produces a new `PathSnapshot`; nothing is mutated in place.
 - **Type-safe throughout** — `PathDefinition<TData>`, `PathStepContext<TData>`, and `PathSnapshot<TData>` are generic. Define your data shape once and get full inference through every guard and hook.
 - **Stack-based sub-paths** — `startSubPath()` suspends the current path and pushes a new one; completion or cancellation automatically restores the parent with merged data.
