@@ -77,7 +77,7 @@
 <section class="stats">
   <div class="container stats__inner">
     <div class="stat">
-      <span class="stat__number">637</span>
+      <span class="stat__number">731</span>
       <span class="stat__label">Tests</span>
     </div>
     <div class="stat">
@@ -121,6 +121,11 @@
         <div class="value-card__icon">🧪</div>
         <h3>Test without a browser</h3>
         <p>Every step, guard, and sub-path is testable by calling engine methods. No DOM, no component mounting.</p>
+      </div>
+      <div class="value-card value-card--highlight value-card--artifact">
+        <div class="value-card__icon">📦</div>
+        <h3>Workflow as a first-class artifact</h3>
+        <p>Package your workflow logic as a standalone npm package. Import it into React, Vue, Angular, Svelte, and React Native — one source of truth, zero duplication, fully testable in isolation.</p>
       </div>
     </div>
   </div>
@@ -224,6 +229,152 @@
 };</code></pre>
     </div>
     <p class="code-caption">Guards, validation, conditional steps — all declarative, all typed. Works with every adapter.</p>
+  </div>
+</section>
+
+<!-- ===== WORKFLOW AS ARTIFACT ===== -->
+<section class="section section--dark" id="workflow-artifact">
+  <div class="container">
+    <h2 class="section__title">Your workflow is a first-class artifact</h2>
+    <p class="section__subtitle">Package your business logic as a standalone npm package. Import it cleanly into any adapter. Test it with zero framework setup.</p>
+
+    <div class="artifact-layout">
+
+      <div class="artifact-flow">
+        <div class="artifact-flow__pkg">
+          <div class="artifact-flow__pkg-icon">📦</div>
+          <div class="artifact-flow__pkg-name">my-app-workflows</div>
+          <div class="artifact-flow__pkg-sub">Pure TypeScript &middot; No framework deps</div>
+        </div>
+        <div class="artifact-flow__arrows">
+          <div class="artifact-flow__arrow artifact-flow__arrow--react">React</div>
+          <div class="artifact-flow__arrow artifact-flow__arrow--vue">Vue</div>
+          <div class="artifact-flow__arrow artifact-flow__arrow--angular">Angular</div>
+          <div class="artifact-flow__arrow artifact-flow__arrow--svelte">Svelte</div>
+          <div class="artifact-flow__arrow artifact-flow__arrow--rn">React Native</div>
+        </div>
+      </div>
+
+      <div class="artifact-tabs" id="artifact-tabs">
+        <div class="tabs__bar">
+          <button class="tabs__tab tabs__tab--active" data-tab="wf-package" onclick="switchArtifactTab('wf-package')">Workflow Package</button>
+          <button class="tabs__tab" data-tab="wf-test" onclick="switchArtifactTab('wf-test')">Test in Isolation</button>
+          <button class="tabs__tab" data-tab="wf-use" onclick="switchArtifactTab('wf-use')">Use in Any App</button>
+        </div>
+
+        <div class="tabs__panel tabs__panel--active" id="artifact-panel-wf-package">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot code-block__dot--red"></span>
+              <span class="code-block__dot code-block__dot--yellow"></span>
+              <span class="code-block__dot code-block__dot--green"></span>
+              <span class="code-block__filename">my-workflows/src/job-application.ts</span>
+            </div>
+<pre><code><span class="cm">// Pure TypeScript — no React, no Vue, no Angular.</span>
+<span class="cm">// This file is the entire workflow. Ship it as an npm package.</span>
+<span class="kw">import type</span> { PathDefinition } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
+
+<span class="kw">export interface</span> <span class="type">ApplicationServices</span> {
+  checkEligibility(years: <span class="type">number</span>): Promise&lt;{ eligible: <span class="type">boolean</span>; reason?: <span class="type">string</span> }&gt;;
+  requiresCoverLetter(roleId: <span class="type">string</span>): Promise&lt;<span class="type">boolean</span>&gt;;
+}
+
+<span class="kw">export function</span> <span class="fn">createApplicationPath</span>(svc: <span class="type">ApplicationServices</span>) {
+  <span class="kw">return</span> {
+    id: <span class="str">"job-application"</span>,
+    steps: [
+      { id: <span class="str">"role"</span>,    title: <span class="str">"Role"</span>,    canMoveNext: ({ data }) =&gt; !!data.roleId },
+      { id: <span class="str">"experience"</span>, title: <span class="str">"Experience"</span> },
+      {
+        id: <span class="str">"eligibility"</span>, title: <span class="str">"Eligibility"</span>,
+        <span class="cm">// async guard — calls your real service</span>
+        canMoveNext: <span class="kw">async</span> ({ data }) =&gt; {
+          <span class="kw">const</span> r = <span class="kw">await</span> svc.checkEligibility(Number(data.yearsExperience));
+          <span class="kw">return</span> r.eligible ? <span class="kw">true</span> : { allowed: <span class="kw">false</span>, reason: r.reason! };
+        },
+      },
+      {
+        id: <span class="str">"coverLetter"</span>, title: <span class="str">"Cover Letter"</span>,
+        <span class="cm">// async conditional — skip if role doesn't need one</span>
+        shouldSkip: <span class="kw">async</span> ({ data }) =&gt; !(await svc.requiresCoverLetter(data.roleId)),
+      },
+      { id: <span class="str">"review"</span>, title: <span class="str">"Review"</span> },
+    ],
+  } <span class="kw">satisfies</span> PathDefinition&lt;<span class="type">ApplicationData</span>&gt;;
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="tabs__panel" id="artifact-panel-wf-test">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot code-block__dot--red"></span>
+              <span class="code-block__dot code-block__dot--yellow"></span>
+              <span class="code-block__dot code-block__dot--green"></span>
+              <span class="code-block__filename">my-workflows/test/job-application.test.ts</span>
+            </div>
+<pre><code><span class="cm">// No framework. No DOM. No component mounting.</span>
+<span class="cm">// Test routing, guards, and validation as pure logic.</span>
+<span class="kw">import</span> { PathEngine } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-core"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"../src/job-application"</span>;
+
+<span class="kw">const</span> fast = {
+  checkEligibility: <span class="kw">async</span> (y) =&gt; y &gt;= 2 ? { eligible: <span class="kw">true</span> } : { eligible: <span class="kw">false</span>, reason: <span class="str">"Min 2 years required"</span> },
+  requiresCoverLetter: <span class="kw">async</span> (id) =&gt; id === <span class="str">"eng"</span> || id === <span class="str">"data"</span>,
+};
+
+it(<span class="str">"blocks navigation when experience &lt; 2 years"</span>, <span class="kw">async</span> () =&gt; {
+  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
+  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"eng"</span>, yearsExperience: <span class="str">"1"</span> });
+  <span class="kw">await</span> engine.next(); <span class="cm">// → experience</span>
+  <span class="kw">await</span> engine.next(); <span class="cm">// → eligibility</span>
+  <span class="kw">await</span> engine.next(); <span class="cm">// guard blocks</span>
+  expect(engine.snapshot()?.stepId).toBe(<span class="str">"eligibility"</span>);
+  expect(engine.snapshot()?.blockingError).toBeTruthy();
+});
+
+it(<span class="str">"skips cover letter for non-engineering roles"</span>, <span class="kw">async</span> () =&gt; {
+  <span class="kw">const</span> engine = <span class="kw">new</span> PathEngine();
+  <span class="kw">await</span> engine.start(createApplicationPath(fast), { roleId: <span class="str">"pm"</span>, yearsExperience: <span class="str">"5"</span> });
+  <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next(); <span class="kw">await</span> engine.next();
+  expect(engine.snapshot()?.stepId).toBe(<span class="str">"review"</span>); <span class="cm">// coverLetter skipped</span>
+});</code></pre>
+          </div>
+        </div>
+
+        <div class="tabs__panel" id="artifact-panel-wf-use">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot code-block__dot--red"></span>
+              <span class="code-block__dot code-block__dot--yellow"></span>
+              <span class="code-block__dot code-block__dot--green"></span>
+              <span class="code-block__filename">my-react-app/App.tsx &nbsp;&nbsp;·&nbsp;&nbsp; my-vue-app/App.vue &nbsp;&nbsp;·&nbsp;&nbsp; my-ng-app/app.component.html</span>
+            </div>
+<pre><code><span class="cm">// React</span>
+<span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-react"</span>;
+<span class="kw">import</span> { createApplicationPath, services } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>;
+
+&lt;<span class="tag">PathShell</span> <span class="attr">path</span>={createApplicationPath(services)} <span class="attr">services</span>={services}
+  <span class="attr">steps</span>={{ role: &lt;<span class="tag">RoleStep</span> /&gt;, experience: &lt;<span class="tag">ExperienceStep</span> /&gt;, review: &lt;<span class="tag">ReviewStep</span> /&gt; }} /&gt;
+
+<span class="cm">// Vue — identical workflow import, different shell syntax</span>
+<span class="kw">import</span> { createApplicationPath, services } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>;
+
+&lt;<span class="tag">PathShell</span> <span class="attr">:path</span>="createApplicationPath(services)" <span class="attr">:services</span>="services"&gt;
+  &lt;<span class="tag">template</span> <span class="attr">#role</span>&gt;&lt;<span class="tag">RoleStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+  &lt;<span class="tag">template</span> <span class="attr">#review</span>&gt;&lt;<span class="tag">ReviewStep</span> /&gt;&lt;/<span class="tag">template</span>&gt;
+&lt;/<span class="tag">PathShell</span>&gt;
+
+<span class="cm">// Angular — same import, Angular DI wires services automatically</span>
+&lt;<span class="tag">pw-shell</span> <span class="attr">[path]</span>="applicationPath" <span class="attr">(completed)</span>="onDone($event)"&gt;
+  &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="role"&gt;&lt;<span class="tag">app-role-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
+&lt;/<span class="tag">pw-shell</span>&gt;</code></pre>
+          </div>
+          <p class="code-caption" style="margin-top:1rem">One workflow package. Five adapters. Zero duplication. The business rules live in exactly one place.</p>
+        </div>
+
+      </div>
+    </div>
   </div>
 </section>
 
@@ -494,6 +645,18 @@
             </div>
           </div>
 
+          <div class="demo-card demo-card--featured">
+            <div class="demo-card__badge">Workflow as Artifact</div>
+            <h3 class="demo-card__title">Async Guards &amp; Shared Workflow</h3>
+            <p class="demo-card__desc">One workflow package imported by all adapters. Async eligibility guard, async conditional step, services injected via context.</p>
+            <div class="demo-card__links">
+              <a href="apps/react-demos/demo-react-async/dist/" class="demo-pill demo-pill--react" target="_blank" rel="noopener">React</a>
+              <a href="apps/vue-demos/demo-vue-async/dist/" class="demo-pill demo-pill--vue" target="_blank" rel="noopener">Vue</a>
+              <a href="apps/angular-demos/demo-angular-async/dist/" class="demo-pill demo-pill--angular" target="_blank" rel="noopener">Angular</a>
+              <a href="apps/svelte-demos/demo-svelte-async/dist/" class="demo-pill demo-pill--svelte" target="_blank" rel="noopener">Svelte</a>
+            </div>
+          </div>
+
           <div class="demo-card">
             <h3 class="demo-card__title">Persistence &amp; Sessions</h3>
             <p class="demo-card__desc">LocalStorage persistence with multi-session management, auto-save, and progress restore.</p>
@@ -580,11 +743,18 @@
     document.querySelector(`#framework-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
     document.getElementById(`panel-${id}`).classList.add('tabs__panel--active');
   }
+
+  function switchArtifactTab(id) {
+    document.querySelectorAll('#artifact-tabs .tabs__tab').forEach(t => t.classList.remove('tabs__tab--active'));
+    document.querySelectorAll('#artifact-tabs .tabs__panel').forEach(p => p.classList.remove('tabs__panel--active'));
+    document.querySelector(`#artifact-tabs [data-tab="${id}"]`).classList.add('tabs__tab--active');
+    document.getElementById(`artifact-panel-${id}`).classList.add('tabs__panel--active');
+  }
 </script>
 
 <script type="module">
-  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.8.0';
-  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.8.0';
+  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.10.0';
+  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.10.0';
 
   // ── Path definitions ──────────────────────────────────────────────────────
   const DEMO_KEY = 'pw-hero-demo-v2';
