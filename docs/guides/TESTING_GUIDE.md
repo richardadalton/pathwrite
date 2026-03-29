@@ -420,13 +420,13 @@ describe("Persistence observer", () => {
       exportState: () => ({
         version: 1, pathId: "w", currentStepIndex: 1,
         data: { name: "Alice" }, visitedStepIds: ["s1", "s2"],
-        pathStack: [], _isNavigating: false,
+        pathStack: [], _status: "idle",
       })
     } as unknown as PathEngine;
 
     // Fire a settled next event
     observer(
-      { type: "stateChanged", cause: "next", snapshot: { isNavigating: false } as any },
+      { type: "stateChanged", cause: "next", snapshot: { status: "idle" } as any },
       fakeEngine
     );
 
@@ -440,7 +440,7 @@ describe("Persistence observer", () => {
     const observer = httpPersistence({ store: mockStore as any, key: "user:123" });
 
     observer(
-      { type: "stateChanged", cause: "setData", snapshot: { isNavigating: false } as any },
+      { type: "stateChanged", cause: "setData", snapshot: { status: "idle" } as any },
       {} as PathEngine
     );
 

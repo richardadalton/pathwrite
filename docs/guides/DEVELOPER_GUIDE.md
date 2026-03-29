@@ -166,20 +166,20 @@ const myPath: PathDefinition = {
 | `id` | `string` | ✅ | Unique within the path. This is the key used to link steps to UI blocks. |
 | `title` | `string` | — | Human-readable label. Exposed in the snapshot as `stepTitle` and in `steps[].title`. |
 | `meta` | `Record<string, unknown>` | — | Arbitrary metadata (e.g. icon name, group). Exposed as `stepMeta` and `steps[].meta`. |
-| `shouldSkip` | function | — | Return `true` to skip this step during navigation. |
-| `canMoveNext` | function | — | Return `false` to block forward navigation. **If omitted and `fieldErrors` is defined, auto-derived as `true` when all field messages are `undefined`.** Only add an explicit guard when the condition differs from "all fields valid". |
-| `canMovePrevious` | function | — | Return `false` to block backward navigation. |
-| `validationMessages` | function | — | Returns a `string[]` explaining why the step is not yet valid. Evaluated synchronously on every snapshot; displayed by the default shell below the step body. Async functions default to `[]`. |
+| `shouldSkip` | function | — | Return `true` to skip this step during navigation. Can be async. |
+| `canMoveNext` | function | — | Return `true` to allow or `{ allowed: false, reason? }` to block forward navigation. **If omitted and `fieldErrors` is defined, auto-derived.** |
+| `canMovePrevious` | function | — | Return `true` to allow or `{ allowed: false, reason? }` to block backward navigation. |
+| `fieldErrors` | function | — | Returns a `Record<string, string \| undefined>` of field ID → error message. Errors gate `canMoveNext` auto-derivation and are displayed by the default shell. Must be synchronous. |
+| `fieldWarnings` | function | — | Same shape as `fieldErrors` but purely informational — warnings never block navigation and are shown immediately (no `hasAttemptedNext` gate). Must be synchronous. |
 | `onEnter` | function | — | Called on arrival at a step. Can return a partial data patch. Receives `ctx.isFirstEntry` — use it to guard one-time initialisation so that navigating Back and re-entering the step does not reset data. |
 | `onLeave` | function | — | Called on departure (only when the guard allows). Can return a partial data patch. |
 | `onSubPathComplete` | function | — | Called on the parent step when a sub-path completes naturally. Receives `(subPathId, subPathData, ctx, meta?)`. Can return a partial data patch. |
 | `onSubPathCancel` | function | — | Called on the parent step when a sub-path is cancelled (explicit `cancel()` or Back on first step). Receives `(subPathId, subPathData, ctx, meta?)`. Can return a partial data patch. |
 
-> **`validationMessages` must be synchronous.** The snapshot is built synchronously, so
-> async `validationMessages` functions are called but their result is ignored — the
-> messages will always appear as an empty array. If your validation depends on async
-> data (e.g. a server response), load it beforehand, store it in `data`, and reference
-> it from a synchronous `validationMessages` function.
+> **`fieldErrors` must be synchronous.** The snapshot is built synchronously, so
+> async `fieldErrors` functions are not supported — results would be discarded. If your
+> validation depends on async data (e.g. a server response), load it beforehand, store
+> it in `data`, and reference it from a synchronous `fieldErrors` function.
 
 ---
 
@@ -211,28 +211,28 @@ interface PathStepContext<TData> {
 
 ```
 canMoveNext(current step)
-  → false: stop, emit stateChanged (isNavigating: false)
-  → true:
+  → blocked: stop, emit stateChanged (status: "idle")
+  → allowed:
       onLeave(current step)         ← patch applied to data
       advance index
       shouldSkip(new step)?         ← repeat until a non-skipped step is found
       onEnter(new step)             ← patch applied to data
-      emit stateChanged (isNavigating: false)
+      emit stateChanged (status: "idle")
 ```
 
 ### Hook execution order (moving backward)
 
 ```
 canMovePrevious(current step)
-  → false: stop, emit stateChanged (isNavigating: false)
-  → true:
+  → blocked: stop, emit stateChanged (status: "idle")
+  → allowed:
       onLeave(current step)         ← patch applied to data
       decrement index
       shouldSkip(new step)?         ← repeat until a non-skipped step is found
       if index < 0 on top-level path: no-op (stay on step 0, no event emitted)
       if index < 0 on sub-path: pop back to parent, emit stateChanged
       onEnter(new step)             ← patch applied to data
-      emit stateChanged (isNavigating: false)
+      emit stateChanged (status: "idle")
 ```
 
 > **`onEnter` fires on every entry, including Back navigation.**
@@ -252,14 +252,14 @@ canMovePrevious(current step)
 
 ### Async hooks
 
-All hooks and guards can be `async` or return a `Promise`. The engine `await`s them and sets `isNavigating: true` in the snapshot for the entire duration so you can disable navigation controls.
+All hooks and guards can be `async` or return a `Promise`. The engine `await`s them and sets `snapshot.status` to a non-`"idle"` value for the entire duration so you can disable navigation controls.
 
 ```typescript
 {
   id: "validate",
   canMoveNext: async (ctx) => {
     const result = await myApi.validate(ctx.data.email);
-    return result.ok;
+    return result.ok ? true : { allowed: false, reason: "Email is already in use." };
   }
 }
 ```
@@ -270,16 +270,36 @@ All hooks and guards can be `async` or return a `Promise`. The engine `await`s t
 
 Guards (`canMoveNext`, `canMovePrevious`) block navigation without altering data. They receive the same `PathStepContext` as hooks.
 
+Guards return a `GuardResult`:
+- `true` — allow navigation
+- `{ allowed: false }` — block navigation (no message)
+- `{ allowed: false, reason: "..." }` — block navigation with a message surfaced as `snapshot.blockingError`
+
 ```typescript
 {
   id: "details",
   canMoveNext: (ctx) => {
-    return typeof ctx.data.name === "string" && ctx.data.name.trim().length > 0;
+    if (!ctx.data.name?.trim()) {
+      return { allowed: false, reason: "Name is required." };
+    }
+    return true;
   }
 }
 ```
 
-When a guard returns `false`, the engine stays on the current step. It emits two `stateChanged` events (one with `isNavigating: true` at the start, one with `isNavigating: false` at the end) so the UI can show and clear a loading state even on a synchronous block. Importantly, `onEnter` is **not** re-run on the current step when a guard blocks — the step's state is left undisturbed.
+When a guard blocks, the engine stays on the current step and emits `stateChanged`. `onEnter` is **not** re-run — the step's state is left undisturbed.
+
+### `blockingError` — guard rejection messages
+
+When `canMoveNext` returns `{ allowed: false, reason: "..." }`, the message is surfaced on `snapshot.blockingError`. The default shell renders it automatically. In custom UI, display it after the user has attempted to proceed:
+
+```tsx
+{snapshot.hasAttemptedNext && snapshot.blockingError && (
+  <p className="error">{snapshot.blockingError}</p>
+)}
+```
+
+`blockingError` is cleared automatically when the user navigates to a new step or calls `restart()`.
 
 ### Proactive guard feedback via the snapshot
 
@@ -287,10 +307,10 @@ The snapshot includes `canMoveNext` and `canMovePrevious` booleans, which are th
 
 ```typescript
 // Disable the Next button when the guard would block
-<button disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
+<button disabled={snapshot.status !== "idle" || !snapshot.canMoveNext}>Next</button>
 ```
 
-The values update automatically whenever the snapshot is rebuilt (e.g. after `setData`), so a guard like `canMoveNext: (ctx) => ctx.data.name.length > 0` will flip from `false` to `true` as soon as the user types a name.
+The values update automatically whenever the snapshot is rebuilt (e.g. after `setData`), so a guard like `canMoveNext: (ctx) => ctx.data.name.length > 0 ? true : { allowed: false }` will flip as soon as the user types a name.
 
 > **Guards run before `onEnter` on first entry.** The engine emits a snapshot to signal
 > that navigation has started *before* calling `onEnter` on the arriving step. At that
@@ -306,7 +326,7 @@ The values update automatically whenever the snapshot is rebuilt (e.g. after `se
 > canMoveNext: (ctx) => (ctx.data.name as string ?? "").trim().length > 0
 > ```
 >
-> If a guard or `validationMessages` hook throws during snapshot evaluation, Pathwrite
+> If a guard or `fieldErrors` hook throws during snapshot evaluation, Pathwrite
 > catches the error, logs a `console.warn` with the step ID and the thrown value, and
 > returns the safe default (`true` / `[]`) so the UI remains operable. The warning
 > points to this timing as the likely cause.
@@ -315,9 +335,10 @@ The values update automatically whenever the snapshot is rebuilt (e.g. after `se
 
 > **Async guard UX pattern:** Because async `canMoveNext` guards default to `true` in
 > the snapshot, the Next button will appear enabled until the user clicks it. Once
-> clicked, `isNavigating` becomes `true` (button is disabled), the guard runs, and if
-> it returns `false` the navigation is blocked and the button re-enables. This is the
-> intended behaviour — the guard is only evaluated on navigation, not before.
+> clicked, `snapshot.status` becomes `"validating"` (button is disabled), the guard
+> runs, and if it blocks the navigation `snapshot.blockingError` is set and the button
+> re-enables. This is the intended behaviour — the guard is only evaluated on navigation,
+> not before.
 >
 > If you need to pre-disable the button based on async state (e.g. a server check),
 > load the result ahead of time, store it in `data`, and use a synchronous guard:
@@ -342,6 +363,8 @@ The values update automatically whenever the snapshot is rebuilt (e.g. after `se
 ```
 
 If all remaining steps are skipped going forward, the path **completes**. If all preceding steps are skipped going backward, the path **cancels**.
+
+**Snapshot accuracy:** `snapshot.stepCount` and `progress` exclude steps the engine has confirmed as skipped. After navigating past a skipped step, the count and progress bar reflect only the visible steps. Before the first navigation, the count is optimistic (includes all steps). Async `shouldSkip` functions are supported — a `console.warn` fires once if any are detected, since the count may be approximate until after the first navigation.
 
 ### `fieldErrors` — per-field validation and auto-derived `canMoveNext`
 
@@ -391,25 +414,29 @@ The shell renders `"_"` errors without a label.
 
 ```typescript
 interface PathSnapshot<TData> {
-  pathId:         string;               // ID of the active path
-  stepId:         string;               // ID of the current step
-  stepTitle?:     string;               // step.title, if defined
-  stepMeta?:      Record<string, unknown>; // step.meta, if defined
-  stepIndex:      number;               // 0-based index of the current step
-  stepCount:      number;               // total number of steps
-  progress:       number;               // 0.0 → 1.0 (stepIndex / (stepCount - 1))
-  steps:          StepSummary[];        // summary of every step with its status
-  isFirstStep:    boolean;
-  isLastStep:     boolean;              // false if a sub-path is active
-  nestingLevel:   number;               // 0 for top-level, +1 per nested sub-path
-  isNavigating:   boolean;              // true while an async hook/guard is running
-  canMoveNext:    boolean;              // result of the current step's canMoveNext guard
-  canMovePrevious: boolean;             // result of the current step's canMovePrevious guard
-  validationMessages: string[];         // messages from the current step's validationMessages hook
-  isDirty:        boolean;              // true if any data changed since entering this step
-  hasAttemptedNext: boolean;            // true after the user has called next() at least once on this step
-  stepEnteredAt:  number;               // Date.now() timestamp when this step was entered
-  data:           TData;                // copy of current path data
+  pathId:          string;               // ID of the active path
+  stepId:          string;               // ID of the current step
+  stepTitle?:      string;               // step.title, if defined
+  stepMeta?:       Record<string, unknown>; // step.meta, if defined
+  stepIndex:       number;               // 0-based index among visible (non-skipped) steps
+  stepCount:       number;               // number of visible steps (excludes confirmed skips)
+  progress:        number;               // 0.0 → 1.0 (stepIndex / (stepCount - 1))
+  steps:           StepSummary[];        // summary of every visible step with its status
+  isFirstStep:     boolean;
+  isLastStep:      boolean;              // false if a sub-path is active
+  nestingLevel:    number;               // 0 for top-level, +1 per nested sub-path
+  status:          PathStatus;           // "idle" | "entering" | "leaving" | "validating" | "completing" | "error"
+  canMoveNext:     boolean;              // result of the current step's canMoveNext guard
+  canMovePrevious: boolean;              // result of the current step's canMovePrevious guard
+  fieldErrors:     Record<string, string>;  // field ID → error message map
+  fieldWarnings:   Record<string, string>;  // field ID → warning message map
+  blockingError:   string | null;        // reason from canMoveNext/canMovePrevious returning { allowed: false, reason }
+  isDirty:         boolean;              // true if any data changed since entering this step
+  hasAttemptedNext: boolean;             // true after the user has called next() at least once on this step
+  stepEnteredAt:   number;               // Date.now() timestamp when this step was entered
+  hasPersistence:  boolean;              // true when a PathStore is attached
+  error:           { message: string; phase: string; retryCount: number } | null;
+  data:            TData;                // copy of current path data
 }
 ```
 
@@ -428,18 +455,29 @@ interface StepSummary {
 
 Steps before the current index are `"completed"`, the current step is `"current"`, and later steps are `"upcoming"`.
 
-### `isNavigating` — disabling controls
+### `status` — disabling controls
 
-While an async hook or guard is running, `isNavigating` is `true` in all `stateChanged` events emitted during that operation. The final event always has `isNavigating: false`. Bind your navigation button `disabled` state to this flag.
+`snapshot.status` represents what the engine is currently doing:
+
+| Value | Meaning |
+|---|---|
+| `"idle"` | Nothing in progress — navigation buttons should be enabled |
+| `"entering"` | `onEnter` hook is running on the new step |
+| `"leaving"` | `onLeave` hook is running on the current step |
+| `"validating"` | A `canMoveNext` or `canMovePrevious` guard is running |
+| `"completing"` | The `onComplete` callback is running (last step) |
+| `"error"` | An async operation threw — `snapshot.error` has details |
+
+While `status !== "idle"`, disable navigation controls to prevent concurrent calls:
+
+```typescript
+<button disabled={snapshot.status !== "idle" || !snapshot.canMoveNext}>Next</button>
+<button disabled={snapshot.status !== "idle" || !snapshot.canMovePrevious}>Back</button>
+```
 
 ### `canMoveNext` / `canMovePrevious` — proactive guard feedback
 
-The snapshot evaluates the current step's `canMoveNext` and `canMovePrevious` guards synchronously whenever it is built (on every `stateChanged`, `setData`, etc.). Use these to proactively disable buttons:
-
-```typescript
-<button disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
-<button disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
-```
+The snapshot evaluates the current step's `canMoveNext` and `canMovePrevious` guards synchronously whenever it is built (on every `stateChanged`, `setData`, etc.). Use these to proactively disable buttons.
 
 If no guard is defined, the value defaults to `true`. If the guard is async (returns a `Promise`), the snapshot defaults to `true` optimistically — the engine still enforces the real result on navigation.
 
@@ -499,7 +537,7 @@ unsubscribe();
 
 | Event | When fired | Key payload |
 |---|---|---|
-| `stateChanged` | After every navigation or `setData` call (possibly multiple times per operation — see `isNavigating`) | `cause`, `snapshot` |
+| `stateChanged` | After every navigation or `setData` call (possibly multiple times per operation — `snapshot.status` shows what phase is active) | `cause`, `snapshot` |
 | `completed` | When the path finishes naturally (past the last step) | `pathId`, `data` (final state) |
 | `cancelled` | When the top-level path is cancelled | `pathId`, `data` |
 | `resumed` | When a sub-path finishes and the parent is restored | `resumedPathId`, `fromSubPathId`, `snapshot` |
@@ -738,13 +776,13 @@ export class MyComponent {
 }
 ```
 
-### `injectPath()` — Recommended for Components (Angular 16+)
+### `usePathContext()` — Recommended for Step Components
 
-**New in v0.6.0** — `injectPath()` provides an ergonomic, signal-based API for accessing the path engine inside Angular components. This is the **recommended approach** for step components and forms.
+`usePathContext()` provides an ergonomic, signal-based API for accessing the path engine inside Angular step components. This is the **recommended approach** for step components and forms rendered inside `<pw-shell>`.
 
 ```typescript
 import { Component } from "@angular/core";
-import { PathFacade, injectPath } from "@daltonr/pathwrite-angular";
+import { PathFacade, usePathContext } from "@daltonr/pathwrite-angular";
 
 @Component({
   selector: "app-contact-step",
@@ -758,7 +796,7 @@ import { PathFacade, injectPath } from "@daltonr/pathwrite-angular";
   `
 })
 export class ContactStepComponent {
-  protected readonly path = injectPath<ContactData>();
+  protected readonly path = usePathContext<ContactData>();
 
   protected updateName(value: string): void {
     this.path.setData("name", value);  // ← No template ref needed
@@ -771,7 +809,7 @@ export class ContactStepComponent {
 - All navigation actions: `next()`, `previous()`, `setData()`, `cancel()`, etc.
 - Full TypeScript type safety when generic is specified
 
-This mirrors React's `usePathContext()` and Vue's `usePath()` for consistency across frameworks, while feeling Angular-native (uses `inject()`, returns signals, no RxJS required).
+This mirrors React's and Vue's `usePathContext()` for consistency across frameworks, while feeling Angular-native (uses `inject()`, returns signals, no RxJS required).
 
 **Compared to manual facade injection:**
 - ✅ No template references (`#shell`)
@@ -789,10 +827,10 @@ The recommended pattern for step components is a typed `data` getter that reads 
 
 ```typescript
 export class PersonalInfoStepComponent {
-  protected readonly path = injectPath<OnboardingData>();
+  protected readonly path = usePathContext<OnboardingData>();
 
   // snapshot()! is safe — PathShell guarantees a non-null snapshot while
-  // this component is rendered. The generic on injectPath<OnboardingData>()
+  // this component is rendered. The generic on usePathContext<OnboardingData>()
   // means data is already typed; no cast needed.
   protected get data(): OnboardingData {
     return this.path.snapshot()!.data;
@@ -885,7 +923,7 @@ public constructor() {
 | `stateSignal` | `Signal<PathSnapshot \| null>` — pre-wired signal, updated in sync with `state$` |
 | `events$` | `Observable<PathEvent>` — all engine events |
 | `start(def, data?)` | Start or restart a path |
-| `restart(def, data?)` | Tear down any active path (without firing hooks) and start fresh. Safe at any time. Use for "Start over" / retry flows. |
+| `restart()` | Tear down any active path (without firing hooks) and restart from step 1 with the original `initialData`. Safe at any time. Use for "Start over" / retry flows. |
 | `startSubPath(def, data?, meta?)` | Push a sub-path. The optional `meta` object is passed back to `onSubPathComplete` / `onSubPathCancel` unchanged — use it for collection correlation. |
 | `next()` | Advance one step |
 | `previous()` | Go back one step |
@@ -1002,8 +1040,8 @@ function CoursePathHost() {
         />
       )}
 
-      <button onClick={previous} disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
-      <button onClick={next}     disabled={snapshot.isNavigating || !snapshot.canMoveNext}>
+      <button onClick={previous} disabled={snapshot.status !== "idle" ||!snapshot.canMovePrevious}>Back</button>
+      <button onClick={next}     disabled={snapshot.status !== "idle" ||!snapshot.canMoveNext}>
         {snapshot.isLastStep ? "Finish" : "Next"}
       </button>
     </div>
@@ -1036,8 +1074,8 @@ function NavBar() {
   if (!snapshot) return <button onClick={() => start(myPath)}>Start</button>;
   return (
     <>
-      <button onClick={previous} disabled={snapshot.isNavigating || !snapshot.canMovePrevious}>Back</button>
-      <button onClick={next}     disabled={snapshot.isNavigating || !snapshot.canMoveNext}>Next</button>
+      <button onClick={previous} disabled={snapshot.status !== "idle" ||!snapshot.canMovePrevious}>Back</button>
+      <button onClick={next}     disabled={snapshot.status !== "idle" ||!snapshot.canMoveNext}>Next</button>
     </>
   );
 }
@@ -1131,8 +1169,8 @@ const currentStep = computed(() => snapshot.value?.stepId ?? null);
       <input :value="snapshot.data.name" @input="setData('name', ($event.target as HTMLInputElement).value)" />
     </div>
 
-    <button @click="previous" :disabled="snapshot.isNavigating || !snapshot.canMovePrevious">Back</button>
-    <button @click="next"     :disabled="snapshot.isNavigating || !snapshot.canMoveNext">
+    <button @click="previous" :disabled="snapshot.status !== "idle" ||!snapshot.canMovePrevious">Back</button>
+    <button @click="next"     :disabled="snapshot.status !== "idle" ||!snapshot.canMoveNext">
       {{ snapshot.isLastStep ? "Finish" : "Next" }}
     </button>
     <button @click="cancel">Cancel</button>
@@ -1247,11 +1285,11 @@ Call `usePath()` inside a Svelte component's `<script>` block. Each call creates
   {/if}
 
   <button onclick={path.previous}
-          disabled={path.snapshot.isNavigating || !path.snapshot.canMovePrevious}>
+          disabled={path.snapshot.status !== "idle" ||!path.snapshot.canMovePrevious}>
     Back
   </button>
   <button onclick={path.next}
-          disabled={path.snapshot.isNavigating || !path.snapshot.canMoveNext}>
+          disabled={path.snapshot.status !== "idle" ||!path.snapshot.canMoveNext}>
     {path.snapshot.isLastStep ? 'Finish' : 'Next'}
   </button>
   <button onclick={path.cancel}>Cancel</button>
@@ -1295,15 +1333,15 @@ Use `$derived` to create computed values from the snapshot:
 - **`onDestroy`** — the adapter unsubscribes from the engine when the component is destroyed. No manual cleanup needed.
 - **No stores, no RxJS** — the adapter is pure Svelte 5 runes. There are no Svelte stores (`writable`, `readable`) — the `$state` rune replaces them entirely.
 
-### `getPathContext` — accessing the engine from step components
+### `usePathContext` — accessing the engine from step components
 
-When using `<PathShell>` (see [§14](#14-default-ui-shell)), step child components can call `getPathContext()` to access the same engine instance. This is powered by Svelte's `setContext` / `getContext` with a `Symbol` key:
+When using `<PathShell>` (see [§14](#14-default-ui-shell)), step child components can call `usePathContext()` to access the same engine instance. This is powered by Svelte's `setContext` / `getContext` with a `Symbol` key:
 
 ```svelte
 <script lang="ts">
-  import { getPathContext } from '@daltonr/pathwrite-svelte';
+  import { usePathContext } from '@daltonr/pathwrite-svelte';
 
-  const ctx = getPathContext();
+  const ctx = usePathContext();
 </script>
 
 {#if ctx.snapshot}
@@ -1313,9 +1351,21 @@ When using `<PathShell>` (see [§14](#14-default-ui-shell)), step child componen
 {/if}
 ```
 
-`getPathContext()` throws if called outside a `<PathShell>`.
+`usePathContext()` throws if called outside a `<PathShell>`.
 
-> **Use `getPathContext()`, not raw `getContext()`.** The context key is a private `Symbol`, so calling Svelte's `getContext()` with a string key will silently return `undefined`. Always import and use `getPathContext()` from `@daltonr/pathwrite-svelte`.
+> **Use `usePathContext()`, not raw `getContext()`.** The context key is a private `Symbol`, so calling Svelte's `getContext()` with a string key will silently return `undefined`. Always import and use `usePathContext()` from `@daltonr/pathwrite-svelte`.
+
+Pass `TData` and `TServices` generics to type both the snapshot data and the injected services:
+
+```svelte
+<script lang="ts">
+  import { usePathContext } from '@daltonr/pathwrite-svelte';
+
+  const ctx = usePathContext<MyData, typeof myServices>();
+  // ctx.snapshot.data is MyData
+  // ctx.services is typeof myServices
+</script>
+```
 
 ### `bindData` — two-way binding helper
 
@@ -1352,7 +1402,8 @@ All shell components automatically provide their engine instance to child compon
   `ngTemplateOutletInjector`. Step components can therefore call
   `inject(PathFacade)` directly and receive the same instance the shell uses —
   no additional provider setup needed.
-- **Svelte**: `PathShell` calls `setContext()` with a private `Symbol` key. Step children can call `getPathContext()`.
+- **Svelte**: `PathShell` calls `setContext()` with a private `Symbol` key. Step children can call `usePathContext()`.
+- **React Native**: `PathShell` uses a React Context provider. Step children can call `usePathContext()`.
 
 This means step content components can read `snapshot.data`, call `setData()`, or trigger navigation without prop drilling.
 
@@ -1407,11 +1458,13 @@ function CoursePath() {
 | `onEvent` | `(event) => void` | — | Called for every engine event. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish button label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | — | Replaces Next/Complete button text while `status !== "idle"`. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | `"summary"`: shell renders error list. `"inline"`: suppress, handle in step. `"both"`: render both. |
 | `className` | `string` | — | Extra CSS class on the root element. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation footer. |
@@ -1459,13 +1512,15 @@ Step content is provided via **named slots** matching each step's `id`.
 | `path` | `PathDefinition` | *required* | The path definition. |
 | `initialData` | `PathData` | `{}` | Initial data. |
 | `autoStart` | `boolean` | `true` | Auto-start on mount. |
-| `backLabel` | `string` | `"Back"` | Back button label. |
+| `backLabel` | `string` | `"Previous"` | Back button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
-| `finishLabel` | `string` | `"Finish"` | Finish label (last step). |
+| `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
+| `loadingLabel` | `string` | — | Replaces Next/Complete button text while `status !== "idle"`. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | `"summary"`: shell renders error list. `"inline"`: suppress, handle in step. `"both"`: render both. |
 
 #### Vue events
 
@@ -1524,10 +1579,12 @@ export class MyComponent { ... }
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
+| `loadingLabel` | `string` | — | Replaces Next/Complete button text while `status !== "idle"`. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | `"summary"`: shell renders error list. `"inline"`: suppress, handle in step. `"both"`: render both. |
 
 #### Angular outputs
 
@@ -1601,11 +1658,12 @@ Step content is provided as **Svelte 5 snippets** whose names match the step `id
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete label (last step). |
+| `loadingLabel` | `string` | — | Replaces Next/Complete button text while `status !== "idle"`. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | Footer button layout. `"auto"` uses `"form"` for single-step top-level paths, `"wizard"` otherwise. |
-| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"inline"` | Controls field-error rendering. `"summary"`: shell renders error list. `"inline"`: suppress summary, handle in template. `"both"`: render both. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | `"summary"`: shell renders error list. `"inline"`: suppress, handle in template. `"both"`: render both. |
 
 #### Svelte callbacks
 
@@ -1680,6 +1738,7 @@ Step content is provided as a `steps` map (identical to the web React adapter). 
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | — | Replaces Next/Complete button text while `status !== "idle"`. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header (numbered dots, step title, and progress bar). Also hidden automatically for single-step top-level paths. |
@@ -1903,7 +1962,7 @@ restart(myPath, initialData);
 
 ```ts
 // Svelte — no-arg, already bound to the shell's current path and initialData
-const { restart } = getPathContext();
+const { restart } = usePathContext();
 restart();
 ```
 
@@ -2065,7 +2124,8 @@ The four shell components follow their framework's idiomatic conventions, so pro
 
 | Concept | Angular | React | Vue | Svelte |
 |---------|---------|-------|-----|--------|
-| Get engine in step | `injectPath<T>()` | `usePathContext<T>()` | `usePathContext<T>()` | `getPathContext<T>()` |
+| Get engine in step | `usePathContext<T>()` | `usePathContext<T>()` | `usePathContext<T>()` | `usePathContext<T>()` |
+| Typed services | `usePathContext<T, S>()` | `usePathContext<T, S>()` | `usePathContext<T, S>()` | `usePathContext<T, S>()` |
 | Snapshot | `path.snapshot()` (Signal) | `snapshot` (state) | `snapshot.value` (Ref) | `ctx.snapshot` (rune) |
 | Advance | `path.next()` | `next()` | `next()` | `ctx.next()` |
 | Update data | `path.setData(key, val)` | `setData(key, val)` | `setData(key, val)` | `ctx.setData(key, val)` |
@@ -2107,7 +2167,7 @@ await engine.start(path, { apiKey: "" });
 | Method | Returns | Description |
 |---|---|---|
 | `start(def, data?)` | `Promise<void>` | Start or restart. Throws if definition has no steps. |
-| `restart(def, data?)` | `Promise<void>` | Tear down any active path (without firing hooks) and start fresh. Safe at any time. |
+| `restart()` | `Promise<void>` | Tear down any active path (without firing hooks) and restart from step 1 with the original `initialData`. Requires `start()` to have been called at least once. |
 | `startSubPath(def, data?, meta?)` | `Promise<void>` | Push sub-path. Throws if no path is active. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel`. |
 | `next()` | `Promise<void>` | Advance. Completes path past the last step. |
 | `previous()` | `Promise<void>` | Go back. No-op when already on the first step of a top-level path. Pops a sub-path back to its parent. |
@@ -2119,7 +2179,7 @@ await engine.start(path, { apiKey: "" });
 | `snapshot()` | `PathSnapshot \| null` | Synchronous snapshot read. |
 | `subscribe(listener)` | `() => void` | Subscribe to events. Returns the unsubscribe function. |
 
-All navigation methods return a `Promise`. If `isNavigating` is `true` when a navigation method is called, it returns immediately (concurrent navigation is debounced automatically).
+All navigation methods return a `Promise`. If `status !== "idle"` when a navigation method is called, it returns immediately (concurrent navigation is debounced automatically).
 
 ---
 
@@ -2151,7 +2211,7 @@ Without the generic, `TData` defaults to `PathData` (`Record<string, unknown>`),
 
 ### Adapter-level generics
 
-The React, Vue, and Svelte adapters also accept an optional generic on `usePath`, `usePathContext`, and `getPathContext`. This narrows `snapshot.data` so you can read typed values without manual assertions:
+The React, Vue, and Svelte adapters also accept an optional generic on `usePath` and `usePathContext`. This narrows `snapshot.data` so you can read typed values without manual assertions:
 
 ```tsx
 // React
@@ -2193,11 +2253,11 @@ The generic is a **type-level assertion** — it narrows `snapshot.data` and `se
 
 Step components are only rendered while `PathShell` has a non-null snapshot. This means `snapshot` (or `snapshot()` in Angular) is **guaranteed non-null** inside any step component. Use a non-null assertion (`!`) instead of optional chaining with a fallback — it eliminates casts entirely.
 
-**Angular** — `injectPath<T>()` with `snapshot()!.data`:
+**Angular** — `usePathContext<T>()` with `snapshot()!.data`:
 
 ```typescript
 export class PersonalInfoStepComponent {
-  protected readonly path = injectPath<OnboardingData>();
+  protected readonly path = usePathContext<OnboardingData>();
 
   // snapshot()! is safe — PathShell guarantees non-null while mounted.
   // The generic narrows .data to OnboardingData; no cast needed.
@@ -2235,11 +2295,13 @@ const { snapshot, setData } = usePathContext<OnboardingData>();
 </template>
 ```
 
-**Svelte** — `getPathContext<T>()` with `{#if ctx.snapshot}`:
+**Svelte** — `usePathContext<T>()` with `{#if ctx.snapshot}`:
 
 ```svelte
 <script lang="ts">
-  const ctx = getPathContext<OnboardingData>();
+  import { usePathContext } from '@daltonr/pathwrite-svelte';
+
+  const ctx = usePathContext<OnboardingData>();
 </script>
 
 {#if ctx.snapshot}
@@ -2660,7 +2722,7 @@ All path data lives in `data`. There is no separate "form model" — `data` is t
 `ctx.data` is a read-only copy. Hooks return a `Partial<TData>` patch; the engine applies it. This prevents accidental mutations and makes hook behaviour easy to test in isolation.
 
 ### Async-first API
-All navigation methods return `Promise<void>` even when synchronous. Concurrent calls while `isNavigating` is `true` are silently dropped.
+All navigation methods return `Promise<void>` even when synchronous. Concurrent calls while `status !== "idle"` are silently dropped.
 
 ### Sub-paths are full paths
 There is no special "sub-path" type. `startSubPath` pushes the current path onto a stack and starts the provided definition as the new active path. The stack can be arbitrarily deep.
@@ -3016,7 +3078,7 @@ With the code above, single-step forms **automatically**:
 3. **Block submission while invalid** (canMoveNext derived from fieldErrors)
 4. **Hide errors initially** (shown after first submit attempt via hasAttemptedNext)
 5. **Render field errors with labels** (camelCase → Title Case: "firstName" → "First Name")
-6. **Disable submit during validation** (isNavigating flag)
+6. **Disable submit during validation** (`snapshot.status !== "idle"`)
 
 **Auto-detection rule:** When `stepCount === 1 && nestingLevel === 0`, the shell assumes form mode.
 
@@ -3167,9 +3229,9 @@ const { snapshot, setData } = usePathContext();
 **Svelte:**
 ```svelte
 <script lang="ts">
-  import { getPathContext } from '@daltonr/pathwrite-svelte';
+  import { usePathContext } from '@daltonr/pathwrite-svelte';
 
-  const ctx = getPathContext();
+  const ctx = usePathContext();
 </script>
 
 {#if ctx.snapshot}
