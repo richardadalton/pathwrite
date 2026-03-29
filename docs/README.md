@@ -18,18 +18,24 @@
 | [Svelte](getting-started/frameworks/svelte.md) | `usePath` runes, snippets, camelCase fallback |
 | [React Native](getting-started/frameworks/react-native.md) | Metro config, `AsyncStorageStore` |
 
-## Guides
+## Developer Guide
 
-| | |
+Narrative chapters covering everything from the engine's core mental model through testing and beyond. Read in order for the full picture, or jump to a chapter as reference.
+
+| Chapter | |
 |---|---|
-| [Navigation & guards](guides/navigation.md) | PathDefinition, steps, fieldErrors, canMoveNext, shouldSkip |
-| [Sub-paths](guides/sub-paths.md) | Branching, stacking, completion behaviour |
-| [Persistence](guides/persistence.md) | PathStore, HttpStore, save strategies, offline |
-| [Services](guides/services.md) | Injecting async dependencies into guards |
-| [Shared workflows](guides/shared-workflows.md) | Framework-agnostic workflow packages |
-| [Testing](guides/testing.md) | Unit tests, guards, property-based testing |
-| [TypeScript](guides/typescript.md) | Typed paths, typed context, typed setData |
-| [Beyond wizards](guides/beyond-wizards.md) | Forms, carts, document lifecycles, state machines |
+| [Developer Guide](developer-guide/README.md) | Table of contents and chapter overview |
+| [1 — How the engine works](developer-guide/01-engine.md) | Mental model: definition, engine, snapshot, adapters |
+| [2 — Defining paths](developer-guide/02-defining-paths.md) | The complete PathDefinition API |
+| [3 — Navigation and guards](developer-guide/03-navigation.md) | Step transitions, canMoveNext, canMovePrevious, blockingError |
+| [4 — Async patterns](developer-guide/04-async.md) | Async guards and hooks, loading states, error-and-retry |
+| [5 — Sub-paths](developer-guide/05-sub-paths.md) | Branching, nesting, data merge on completion |
+| [6 — Working with data](developer-guide/06-data.md) | setData, isDirty, TypeScript generics |
+| [7 — Services](developer-guide/07-services.md) | Injecting async dependencies into guards and hooks |
+| [8 — Persistence](developer-guide/08-persistence.md) | PathStore, save strategies, offline-resilient flows |
+| [9 — Workflows as packages](developer-guide/09-workflows-as-packages.md) | Framework-agnostic workflow packages |
+| [10 — Testing](developer-guide/10-testing.md) | Unit tests, guards, sub-paths, property-based testing |
+| [11 — Beyond wizards](developer-guide/11-beyond-wizards.md) | Forms, carts, document lifecycles, state machines |
 
 ## Reference
 
