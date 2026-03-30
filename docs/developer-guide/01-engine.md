@@ -125,7 +125,7 @@ A definition that lives independently can be:
 
 - **Versioned separately** from the UI that renders it, so you can ship logic changes without touching components
 - **Tested without mounting anything** — call the engine directly in Vitest and assert on snapshots
-- **Consumed by any adapter** — the same definition object runs identically under `@daltonr/pathwrite-react`, `@daltonr/pathwrite-vue`, `@daltonr/pathwrite-svelte`, `@daltonr/pathwrite-angular`, or `@daltonr/pathwrite-react-native`
+- **Consumed by any adapter** — the same definition object runs identically under `@daltonr/pathwrite-react`, `@daltonr/pathwrite-vue`, `@daltonr/pathwrite-svelte`, `@daltonr/pathwrite-angular`, `@daltonr/pathwrite-solid`, or `@daltonr/pathwrite-react-native`
 - **Shared across products** — a business rule definition can be an internal package imported by a web app, a mobile app, and a backend worker simultaneously
 
 This idea — extracting `PathDefinition` into a versioned, independently-testable package — is developed fully in Chapter 10.
