@@ -166,6 +166,27 @@
       border-radius: 12px;
       overflow: hidden;
     }
+    .aw-demo__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: linear-gradient(90deg, #065f46, var(--color-primary));
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .aw-demo__header-title { flex: 1; }
+    .aw-demo__header-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
     .aw-verdict {
       display: flex;
       align-items: center;
@@ -560,6 +581,11 @@
       </div>
 
       <div class="aw-demo__result">
+        <div class="aw-demo__header">
+          <span>&loz;</span>
+          <span class="aw-demo__header-title">Live Authwrite Engine &mdash; Not a Mockup</span>
+          <span class="aw-demo__header-tag">live</span>
+        </div>
         <div class="aw-verdict" id="demo-verdict">
           <div class="aw-verdict__icon allow" id="demo-verdict-icon">✓</div>
           <div class="aw-verdict__label allow" id="demo-verdict-label">ALLOWED</div>
