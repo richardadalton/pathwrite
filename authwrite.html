@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AuthWrite — Zero-Dependency Authorization for TypeScript</title>
+  <title>Authwrite — Zero-Dependency Authorization for TypeScript</title>
   <meta name="description" content="Define your authorization policy once in pure TypeScript. Every decision returns a reason. Pluggable observers. Framework adapters for Express, Fastify, Next.js, and Hono." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── AuthWrite colour overrides ── */
+    /* ── Authwrite colour overrides ── */
     :root {
       --color-primary:       #10b981;
       --color-primary-light: #34d399;
@@ -19,17 +19,18 @@
 
     /* ── Hero ── */
     .aw-hero {
-      padding: 6rem 0 5rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
+      padding: 5rem 0 3rem;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
     }
-    .aw-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 60% at 50% -10%, var(--color-primary-glow), transparent 70%);
-      pointer-events: none;
+    .aw-hero__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .aw-hero__inner { grid-template-columns: 1fr; }
     }
     .aw-hero__badge {
       display: inline-flex;
@@ -44,73 +45,52 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      margin-bottom: 2rem;
+      margin-bottom: 1.25rem;
     }
     .aw-hero h1 {
-      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-size: clamp(2rem, 4.5vw, 3.25rem);
       font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-      margin-bottom: 1.5rem;
-      background: linear-gradient(135deg, #fff 30%, var(--color-primary-light));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+    }
+    .aw-hero h1 em {
+      font-style: normal;
+      color: var(--color-primary);
     }
     .aw-hero__sub {
-      max-width: 620px;
-      margin: 0 auto 2.5rem;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: var(--color-text-muted);
       line-height: 1.7;
+      margin-bottom: 2rem;
     }
     .aw-hero__actions {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 1rem;
       flex-wrap: wrap;
+      margin-bottom: 1.5rem;
     }
     .aw-hero__npm {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--color-code-bg);
+      display: inline-block;
+      background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 8px;
-      padding: 0.65rem 1.25rem;
+      padding: 0.6rem 1rem;
       font-family: var(--font-mono);
       font-size: 0.9rem;
       color: var(--color-text-muted);
-      cursor: default;
       user-select: all;
     }
-    .aw-hero__npm span { color: var(--color-primary-light); }
 
-    /* ── Interactive demo ── */
-    .aw-demo-section {
-      padding: 3rem 0 5rem;
-      background: var(--color-surface);
-      border-top: 1px solid var(--color-border);
-      border-bottom: 1px solid var(--color-border);
-    }
-    .aw-demo-section .section__title {
-      text-align: center;
-      margin-bottom: 0.75rem;
-    }
-    .aw-demo-section .section__subtitle {
-      text-align: center;
-      margin-bottom: 2.5rem;
-    }
+    /* ── Demo widget (in hero right column) ── */
     .aw-demo {
-      max-width: 820px;
-      margin: 0 auto;
       display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 1.5rem;
+      grid-template-columns: 200px 1fr;
+      gap: 1rem;
       align-items: start;
     }
-    @media (max-width: 680px) {
+    @media (max-width: 600px) {
       .aw-demo { grid-template-columns: 1fr; }
     }
     .aw-demo__controls {
@@ -428,93 +408,91 @@
 <!-- ── Nav ── -->
 <nav class="nav">
   <div class="container nav__inner">
-    <a href="authwrite.html" class="nav__logo"><span class="nav__logo-icon">🔐</span> AuthWrite</a>
+    <a href="authwrite.html" class="nav__logo"><span class="nav__logo-icon">🔐</span> Authwrite</a>
     <div class="nav__links">
       <a href="/">Home</a>
-      <a href="authwrite.html" style="color:var(--color-primary-light);font-weight:600">AuthWrite</a>
+      <a href="authwrite.html" style="color:var(--color-primary-light);font-weight:600">Authwrite</a>
       <a href="https://github.com/richardadalton/authwrite" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
   </div>
 </nav>
 
 <!-- ── Hero ── -->
-<section class="aw-hero">
-  <div class="container">
-    <div class="aw-hero__badge">🔐 Authorization · Zero dependencies · TypeScript</div>
-    <h1>Every denial<br>has a reason.</h1>
-    <p class="aw-hero__sub">
-      AuthWrite is a policy engine for TypeScript that treats authorization as
-      observable data — not a silent <code>403</code>. Every decision returns
-      the rule that matched, how long it took, and whether an enforcer override was applied.
-    </p>
-    <div class="aw-hero__actions">
-      <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
-        View on GitHub
-      </a>
-      <div class="aw-hero__npm"><span>$</span> npm install @authwrite/core</div>
+<header class="aw-hero">
+  <div class="container aw-hero__inner">
+
+    <!-- Left: text -->
+    <div class="aw-hero__left">
+      <div class="aw-hero__badge">🔐 Authorization · Zero dependencies · TypeScript</div>
+      <h1>Every denial,<br><em>explained.</em></h1>
+      <p class="aw-hero__sub">
+        Authwrite is a policy engine for TypeScript that treats authorization as
+        observable data — not a silent <code>403</code>. Every decision returns
+        the rule that matched, how long it took, and whether an enforcer override was applied.
+      </p>
+      <div class="aw-hero__actions">
+        <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
+          View on GitHub
+        </a>
+        <a href="https://github.com/richardadalton/authwrite/tree/main/docs" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
+          Read the docs
+        </a>
+      </div>
+      <div class="aw-hero__npm">npm install @authwrite/core</div>
     </div>
-  </div>
-</section>
 
-<!-- ── Interactive demo ── -->
-<section class="aw-demo-section">
-  <div class="container">
-    <h2 class="section__title">Try it live</h2>
-    <p class="section__subtitle">Runs entirely in the browser — no server, no build step.</p>
-
-    <div class="aw-demo">
-      <!-- Controls -->
-      <div class="aw-demo__controls">
+    <!-- Right: live demo widget -->
+    <div class="aw-hero__right">
+      <div class="aw-demo__controls" style="margin-bottom:1rem">
         <div>
           <h3>Presets</h3>
           <div class="aw-demo__presets" id="demo-presets"></div>
         </div>
-
-        <div>
-          <h3>Subject</h3>
-          <div class="aw-demo__field">
-            <label for="demo-role">Role</label>
-            <select id="demo-role">
-              <option value="viewer">viewer</option>
-              <option value="editor" selected>editor</option>
-              <option value="admin">admin</option>
-            </select>
-          </div>
-          <div class="aw-demo__field" style="margin-top:0.5rem">
-            <div class="checkbox-row">
-              <input type="checkbox" id="demo-owns" />
-              <label for="demo-owns">Owns this document</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.25rem">
+          <div>
+            <h3>Role</h3>
+            <div class="aw-demo__field">
+              <select id="demo-role">
+                <option value="viewer">viewer</option>
+                <option value="editor" selected>editor</option>
+                <option value="admin">admin</option>
+              </select>
             </div>
           </div>
-        </div>
-
-        <div id="demo-resource-section">
-          <h3>Resource</h3>
-          <div class="aw-demo__field">
-            <label for="demo-status">Status</label>
-            <select id="demo-status">
-              <option value="draft" selected>draft</option>
-              <option value="published">published</option>
-              <option value="archived">archived</option>
-            </select>
+          <div id="demo-resource-section">
+            <h3>Status</h3>
+            <div class="aw-demo__field">
+              <select id="demo-status">
+                <option value="draft" selected>draft</option>
+                <option value="published">published</option>
+                <option value="archived">archived</option>
+              </select>
+            </div>
           </div>
-        </div>
-
-        <div>
-          <h3>Action</h3>
-          <div class="aw-demo__field">
-            <select id="demo-action">
-              <option value="read" selected>read</option>
-              <option value="write">write</option>
-              <option value="delete">delete</option>
-              <option value="create">create</option>
-              <option value="change-password">change-password</option>
-            </select>
+          <div>
+            <h3>Action</h3>
+            <div class="aw-demo__field">
+              <select id="demo-action">
+                <option value="read" selected>read</option>
+                <option value="write">write</option>
+                <option value="delete">delete</option>
+                <option value="create">create</option>
+                <option value="change-password">change-password</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <h3 style="visibility:hidden">owns</h3>
+            <div class="aw-demo__field">
+              <div class="checkbox-row" style="display:flex;align-items:center;gap:0.5rem;font-size:0.88rem;margin-top:0.35rem">
+                <input type="checkbox" id="demo-owns" style="accent-color:var(--color-primary)" />
+                <label for="demo-owns">Owns doc</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Result -->
       <div class="aw-demo__result">
         <div class="aw-verdict" id="demo-verdict">
           <div class="aw-verdict__icon allow" id="demo-verdict-icon">✓</div>
@@ -533,22 +511,26 @@
             <span class="aw-detail-row__key">defaulted</span>
             <span class="aw-detail-row__val muted" id="demo-defaulted">false</span>
           </div>
-          <div class="aw-detail-row" style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid var(--color-border)">
+          <div class="aw-detail-row" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--color-border)">
             <span class="aw-detail-row__key">policy</span>
             <span class="aw-detail-row__val muted">documents v1.0.0</span>
           </div>
         </div>
       </div>
+      <p style="font-size:0.78rem;color:var(--color-text-muted);margin-top:0.75rem;text-align:center">
+        Live Authwrite engine — runs entirely in the browser, no server.
+      </p>
     </div>
+
   </div>
-</section>
+</header>
 
 <!-- ── Value props ── -->
 <section class="aw-props">
   <div class="container">
     <h2 class="section__title" style="text-align:center">Built for observable authorization</h2>
     <p class="section__subtitle" style="text-align:center;margin-bottom:0">
-      AuthWrite isn't just about allow/deny — it's about understanding <em>why</em>.
+      Authwrite isn't just about allow/deny — it's about understanding <em>why</em>.
     </p>
     <div class="aw-props__grid">
       <div class="aw-prop-card">
@@ -750,7 +732,7 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
 <section class="aw-cta">
   <div class="container">
     <h2>Stop guessing why access was denied.</h2>
-    <p>AuthWrite makes authorization as observable as any other system metric.</p>
+    <p>Authwrite makes authorization as observable as any other system metric.</p>
     <div class="aw-hero__actions">
       <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
         Get started on GitHub
@@ -768,7 +750,7 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
     <span class="footer__copy">© 2026 Devjoy Ltd. MIT License.</span>
     <div class="footer__links">
       <a href="/">Pathwrite</a>
-      <a href="authwrite.html">AuthWrite</a>
+      <a href="authwrite.html">Authwrite</a>
       <a href="https://github.com/richardadalton/authwrite" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
   </div>
