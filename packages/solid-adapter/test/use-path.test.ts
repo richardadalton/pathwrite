@@ -60,12 +60,12 @@ describe("usePath — snapshot lifecycle", () => {
     });
   });
 
-  test("snapshot becomes null after complete", async () => {
+  test("snapshot becomes completed after complete", async () => {
     await withRoot(async dispose => {
       const path = usePath();
       await path.start(singleStepPath, {});
       await path.next();
-      expect(path.snapshot()).toBeNull();
+      expect(path.snapshot()?.status).toBe("completed");
       dispose();
     });
   });

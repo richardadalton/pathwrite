@@ -70,7 +70,7 @@ Peer dependencies: Svelte 5+.
 
 | Return value | Type | Description |
 |---|---|---|
-| `snapshot` | `PathSnapshot \| null` | Reactive getter. `null` when no path is active. |
+| `snapshot` | `PathSnapshot \| null` | Reactive getter. `null` when no path is active or when `completionBehaviour: "dismiss"` is used. With the default `"stayOnFinal"`, a non-null snapshot with `status === "completed"` is returned after the path finishes. |
 | `start(definition, data?)` | `Promise<void>` | Start or restart a path. |
 | `restart(definition, data?)` | `Promise<void>` | Tear down any active path and start fresh. |
 | `next()` | `Promise<void>` | Advance one step. Completes on the last step. |
@@ -108,6 +108,7 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `oncomplete` | `(data: PathData) => void` | — | Called when the path finishes naturally. |
 | `oncancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
 | `onevent` | `(event: PathEvent) => void` | — | Called for every engine event. |
+| `completion` | `Snippet<[PathSnapshot<any>]>` | — | Custom snippet rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 
 You can also replace the built-in header and footer with custom snippets:
 
@@ -155,4 +156,4 @@ You can also replace the built-in header and footer with custom snippets:
 
 ---
 
-MIT — © 2026 Devjoy Ltd.
+© 2026 Devjoy Ltd. MIT License.

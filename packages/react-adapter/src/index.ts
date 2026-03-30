@@ -134,7 +134,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
         if (event.type === "stateChanged" || event.type === "resumed") {
           snapshotRef.current = event.snapshot as PathSnapshot<TData>;
         } else if (event.type === "completed" || event.type === "cancelled") {
-          snapshotRef.current = null;
+          snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
         }
         onEventRef.current?.(event);
         callback();
@@ -371,6 +371,17 @@ export interface PathShellProps {
    * ```
    */
   services?: unknown;
+  /**
+   * Content to render when `snapshot.status === "completed"` (i.e. after the
+   * path finishes with `completionBehaviour: "stayOnFinal"`).
+   *
+   * When provided, the shell replaces the step body with this content. If
+   * omitted, a default "All done." panel is shown with a Restart button.
+   *
+   * Has no effect when `completionBehaviour` is `"dismiss"` or `"reset"`,
+   * since those modes never produce a `"completed"` snapshot.
+   */
+  completionContent?: ReactNode;
 }
 
 export interface PathShellHandle {
@@ -434,6 +445,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   progressLayout = "merged",
   services,
   validateWhen = false,
+  completionContent,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -485,6 +497,25 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
             className: "pw-shell__start-btn",
             onClick: () => start(pathDef, initialData)
           }, "Start")
+        )
+      )
+    );
+  }
+
+  if (snapshot.status === "completed") {
+    const showCompletionProgress = !hideProgress && snapshot.stepCount > 1;
+    return createElement(PathContext.Provider, { value: contextValue },
+      createElement("div", { className: cls("pw-shell", className) },
+        showCompletionProgress && defaultHeader(snapshot),
+        createElement("div", { className: "pw-shell__body" },
+          completionContent ?? createElement("div", { className: "pw-shell__completion" },
+            createElement("p", { className: "pw-shell__completion-message" }, "All done."),
+            createElement("button", {
+              type: "button",
+              className: "pw-shell__completion-restart",
+              onClick: () => restart(),
+            }, "Start over")
+          )
         )
       )
     );

@@ -61,6 +61,11 @@ const snapshot = engine.snapshot();
 | `fromState` | `static (state, pathDefs, options?) => PathEngine` | Reconstruct a `PathEngine` from previously exported state. |
 | `subscribe` | `(listener) => () => void` | Register a removable event listener; returns an unsubscribe function. |
 
+**`completionBehaviour`** on `PathDefinition` controls what happens after the path finishes:
+- `"stayOnFinal"` (default) — engine stays active, `snapshot().status === "completed"`. `PathShell` renders a completion panel. Call `engine.restart()` to begin again.
+- `"dismiss"` — engine clears its state, `snapshot()` returns `null`.
+- `"reset"` — engine immediately restarts from step 1 (useful for kiosk / repeating flows).
+
 For the complete options and overloads see [docs/reference/core-api.md](../../docs/reference/core-api.md).
 
 ## PathSnapshot
@@ -80,7 +85,7 @@ Returned by `engine.snapshot()`. All properties are read-only.
 | `canMovePrevious` | `boolean` | Evaluated result of the current step's `canMovePrevious` guard. |
 | `isFirstStep` | `boolean` | `true` when `stepIndex === 0`. |
 | `isLastStep` | `boolean` | `true` when on the final step of the path. |
-| `status` | `PathStatus` | Current engine state: `"idle"`, `"active"`, `"completed"`, or `"cancelled"`. |
+| `status` | `PathStatus` | Current engine state. Key values: `"idle"` (ready to navigate), `"completing"` (running `onComplete`), `"completed"` (path finished, engine still active with `stayOnFinal`), `"error"` (async operation failed). |
 | `blockingError` | `string \| undefined` | Reason string from a guard that returned `{ allowed: false, reason }`. |
 | `progress` | `number` | Completion fraction in the range `[0, 1]`. |
 | `isDirty` | `boolean` | `true` if any data field has changed since entering the current step. |

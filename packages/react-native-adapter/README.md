@@ -124,7 +124,7 @@ The API is identical to `@daltonr/pathwrite-react`. `usePath` creates an engine 
 
 | Field | Type | Description |
 |---|---|---|
-| `snapshot` | `PathSnapshot \| null` | Current state. `null` when no path is active. |
+| `snapshot` | `PathSnapshot \| null` | Current state. `null` when no path is active or when `completionBehaviour: "dismiss"` is used. With the default `"stayOnFinal"`, a non-null snapshot with `status === "completed"` is returned after the path finishes. |
 | `start(definition, data?)` | function | Start a path. |
 | `next()` | function | Advance one step. Completes on the last step. |
 | `previous()` | function | Go back one step. |
@@ -160,6 +160,7 @@ All returned callbacks are referentially stable.
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left. `"form"`: Cancel on left, no Back. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header entirely. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation buttons. |
+| `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). If omitted, a default "All done." panel is shown. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
 
 ### PathShellHandle and the restart() ref pattern

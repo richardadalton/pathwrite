@@ -76,7 +76,7 @@ Step components call `usePathContext()` inside named slots to access engine stat
 
 | Return value | Type | Description |
 |---|---|---|
-| `snapshot` | `DeepReadonly<Ref<PathSnapshot \| null>>` | Current snapshot ref. `null` when no path is active. Access the value as `snapshot.value`. |
+| `snapshot` | `DeepReadonly<Ref<PathSnapshot \| null>>` | Current snapshot ref. `null` when no path is active or when `completionBehaviour: "dismiss"` is used. With the default `"stayOnFinal"`, the ref holds a snapshot with `status === "completed"` after the path finishes. Access the value as `snapshot.value`. |
 | `start(definition, data?)` | function | Start or re-start a path. |
 | `next()` | function | Advance one step. Completes the path on the last step. |
 | `previous()` | function | Go back one step. No-op on the first step of a top-level path. |
@@ -120,6 +120,7 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | `#[stepId]` | `{ snapshot }` | Named slot rendered when the active step matches `stepId`. Name must match the step ID exactly. |
 | `#header` | `{ snapshot }` | Replaces the default progress header. |
 | `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
+| `#completion` | `{ snapshot }` | Rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 
 ---
 

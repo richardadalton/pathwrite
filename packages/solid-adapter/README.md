@@ -82,7 +82,7 @@ Step components call `usePathContext()` to access engine state. `<PathShell>` pr
 
 | Return value | Type | Description |
 |---|---|---|
-| `snapshot` | `Accessor<PathSnapshot \| null>` | Current snapshot. Call `snapshot()` to read. `null` when no path is active. Tracked reactively when read inside JSX or effects. |
+| `snapshot` | `Accessor<PathSnapshot \| null>` | Current snapshot. Call `snapshot()` to read. `null` when no path is active or when `completionBehaviour: "dismiss"` is used. With the default `"stayOnFinal"`, the accessor returns a snapshot with `status === "completed"` after the path finishes. Tracked reactively when read inside JSX or effects. |
 | `start(definition, data?)` | function | Start or re-start a path. |
 | `next()` | function | Advance one step. Completes the path on the last step. |
 | `previous()` | function | Go back one step. No-op on the first step of a top-level path. |
@@ -129,6 +129,7 @@ Step components call `usePathContext()` to access engine state. `<PathShell>` pr
 | `services` | `object \| null` | `null` | Services object passed through context to all step components. |
 | `renderHeader` | `(snapshot) => JSX.Element` | — | Replace the default progress header. |
 | `renderFooter` | `(snapshot, actions) => JSX.Element` | — | Replace the default navigation buttons. |
+| `completionContent` | `(snapshot: PathSnapshot) => JSX.Element` | — | Custom content rendered when `snapshot().status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
 | `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |

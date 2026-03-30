@@ -45,12 +45,12 @@ describe("PathFacade — state$", () => {
     expect(steps).toContain("step2");
   });
 
-  it("emits null when the path completes", async () => {
+  it("emits completed snapshot when the path completes", async () => {
     const facade = new PathFacade();
     await facade.start(twoStepPath());
     await facade.next();
     await facade.next(); // complete
-    expect(latestState(facade)).toBeNull();
+    expect(latestState(facade)?.status).toBe("completed");
   });
 
   it("emits null when the path is cancelled", async () => {
@@ -500,12 +500,12 @@ describe("PathFacade — stateSignal", () => {
     expect(facade.stateSignal()).toBe(facade.snapshot());
   });
 
-  it("returns null after the path completes", async () => {
+  it("returns completed snapshot after the path completes", async () => {
     const facade = new PathFacade();
     await facade.start(twoStepPath());
     await facade.next();
     await facade.next();
-    expect(facade.stateSignal()).toBeNull();
+    expect(facade.stateSignal()?.status).toBe("completed");
   });
 
   it("returns null after the path is cancelled", async () => {
@@ -619,12 +619,12 @@ describe("syncFormGroup", () => {
     syncFormGroup(facade, form);
 
     await facade.next();
-    await facade.next(); // complete path — facade.snapshot() is now null
+    await facade.next(); // complete path — facade.snapshot() is now in completed status
 
     form.emit({ name: "post-complete" });
     await Promise.resolve();
 
-    expect(facade.snapshot()).toBeNull();
+    expect(facade.snapshot()?.status).toBe("completed");
   });
 });
 
@@ -666,7 +666,7 @@ describe("PathFacade — adoptEngine", () => {
     expect(types).toContain("stateChanged");
   });
 
-  it("sets state to null when the adopted engine completes", async () => {
+  it("emits completed snapshot when the adopted engine completes", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
 
@@ -674,7 +674,7 @@ describe("PathFacade — adoptEngine", () => {
     facade.adoptEngine(engine);
     await engine.next();
     await engine.next(); // completes
-    expect(latestState(facade)).toBeNull();
+    expect(latestState(facade)?.status).toBe("completed");
   });
 
   it("works with fromState-restored engines", async () => {

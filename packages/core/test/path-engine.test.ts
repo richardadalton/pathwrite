@@ -40,12 +40,12 @@ describe("PathEngine — navigation", () => {
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
 
-  it("finishes and clears state after moving past the last step", async () => {
+  it("finishes and stays on final step by default (stayOnFinal)", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
     await engine.next();
     await engine.next();
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
   });
 
   it("moves to the previous step", async () => {
@@ -909,7 +909,7 @@ describe("PathEngine — shouldSkip", () => {
       steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => true }]
     });
     await engine.next();
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
     expect(events.some((e) => e.type === "completed")).toBe(true);
   });
 
@@ -920,7 +920,7 @@ describe("PathEngine — shouldSkip", () => {
       id: "w",
       steps: [{ id: "skip-only", shouldSkip: () => true }]
     });
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
     expect(events.some((e) => e.type === "completed")).toBe(true);
   });
 
@@ -2203,7 +2203,7 @@ describe("PathEngine — lifecycle patterns", () => {
     await engine.next(); // approved → published
     await engine.next(); // published → complete
 
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
     const completed = events.find((e) => e.type === "completed");
     expect(completed).toBeDefined();
     if (completed?.type === "completed") {
@@ -2325,7 +2325,7 @@ describe("PathEngine — lifecycle patterns", () => {
     await engine.next();
     await engine.next();
     await engine.next();
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
   });
 });
 
@@ -2755,12 +2755,12 @@ describe("PathEngine — restart()", () => {
     expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
-  it("restarts after a path has completed (snapshot was null)", async () => {
+  it("restarts after a path has completed (stayOnFinal)", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
     await engine.next();
     await engine.next(); // completes
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
 
     await engine.restart();
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -3311,7 +3311,7 @@ describe("PathEngine — exportState / fromState", () => {
     engine2.subscribe((e) => events.push(e));
     
     await engine2.next(); // should complete
-    expect(engine2.snapshot()).toBeNull();
+    expect(engine2.snapshot()?.status).toBe("completed");
     expect(events.some((e) => e.type === "completed")).toBe(true);
   });
 

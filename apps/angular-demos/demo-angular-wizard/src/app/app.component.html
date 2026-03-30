@@ -5,82 +5,31 @@
     <p class="subtitle">A 4-step wizard with guards, validation, and a final review.</p>
   </div>
 
-  <!-- ── Completed ──────────────────────────────────────────────────────────── -->
-  @if (isCompleted && completedData) {
-    <section class="result-panel success-panel">
-      <div class="result-icon">🎉</div>
-      <h2>Welcome aboard!</h2>
-      <p>Your profile has been set up, <strong>{{ completedData.firstName }}</strong>.</p>
-
-      <div class="summary">
-        <div class="summary-section">
-          <p class="summary-section__title">Personal Info</p>
-          <div class="summary-row">
-            <span class="summary-key">Name</span>
-            <span>{{ completedData.firstName }} {{ completedData.lastName }}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-key">Email</span>
-            <span>{{ completedData.email }}</span>
-          </div>
-        </div>
-
-        <div class="summary-section">
-          <p class="summary-section__title">About You</p>
-          <div class="summary-row">
-            <span class="summary-key">Job Title</span>
-            <span>{{ completedData.jobTitle }}</span>
-          </div>
-          @if (completedData.company) {
-            <div class="summary-row">
-              <span class="summary-key">Company</span>
-              <span>{{ completedData.company }}</span>
-            </div>
-          }
-          <div class="summary-row">
-            <span class="summary-key">Experience</span>
-            <span>{{ experienceLabel(completedData.experience) }}</span>
-          </div>
-        </div>
-
-        <div class="summary-section">
-          <p class="summary-section__title">Preferences</p>
-          <div class="summary-row">
-            <span class="summary-key">Theme</span>
-            <span>{{ themeLabel(completedData.theme) }}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-key">Notifications</span>
-            <span>{{ completedData.notifications ? 'Enabled' : 'Disabled' }}</span>
-          </div>
-        </div>
-      </div>
-
-      <button type="button" class="btn-primary" (click)="startOver()">Start Over</button>
-    </section>
-  }
-
   <!-- ── Cancelled ──────────────────────────────────────────────────────────── -->
   @if (isCancelled) {
     <section class="result-panel cancel-panel">
       <div class="result-icon">✖</div>
       <h2>Onboarding Cancelled</h2>
       <p>Your profile was not saved.</p>
-      <button type="button" class="btn-secondary" (click)="startOver()">Try Again</button>
+      <button type="button" class="btn-secondary" (click)="isCancelled = false">Try Again</button>
     </section>
   }
 
-  <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
-  @if (!isCompleted && !isCancelled) {
+  <!-- ── Wizard — stays mounted; shows completion panel via [pwShellCompletion] ─ -->
+  @if (!isCancelled) {
     <pw-shell
       [path]="onboardingPath"
       [initialData]="initialData"
       completeLabel="Complete Onboarding"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      (complete)="onComplete($event)"
       (cancel)="onCancel()"
     >
+      <!-- Custom completion panel shown when snapshot.status === "completed" -->
+      <ng-template pwShellCompletion>
+        <app-completion-panel />
+      </ng-template>
+
       <ng-template pwStep="personal-info">
         <app-personal-info-step />
       </ng-template>
@@ -100,5 +49,3 @@
   }
 
 </main>
-
-

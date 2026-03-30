@@ -293,6 +293,31 @@ If `onComplete` throws, the engine sets `snapshot.status` to `"error"` and popul
 
 ---
 
+## `completionBehaviour` — post-completion engine state
+
+By default, when a path completes the engine stays on the final step with `snapshot.status === "completed"`. This lets `PathShell` render a completion panel inside the same component tree as the rest of the path — no external state management or conditional rendering required. The three available values are:
+
+| Value | What happens |
+|---|---|
+| `"stayOnFinal"` | **(default)** Engine stays on the last step. `snapshot.status` becomes `"completed"`. All steps are marked completed, `canMoveNext` and `canMovePrevious` are `false`, `progress` is `1.0`. `PathShell` renders a `completionContent` panel (default: "All done." + "Start over"). |
+| `"dismiss"` | Engine clears its state. `snapshot()` returns `null`. The old default — useful when you need to fully unmount the shell on completion. |
+| `"reset"` | Engine immediately restarts from step 1 with the original `initialData`. Useful for kiosk flows, surveys, or any path designed to loop. |
+
+```typescript
+const surveyPath: PathDefinition<SurveyData> = {
+  id: "survey",
+  completionBehaviour: "reset",   // run again automatically after each submission
+  steps: [ /* ... */ ],
+  onComplete: async (data) => {
+    await submitSurveyResponse(data);
+  },
+};
+```
+
+`onComplete` always fires before the behaviour takes effect, so the callback receives the final data regardless of which option is chosen. The engine only transitions after `onComplete` resolves (or immediately, if `onComplete` is synchronous or not defined).
+
+---
+
 ## `hasAttemptedNext` and progressive disclosure
 
 `fieldErrors` is evaluated on every snapshot — including the very first one, before the user has typed anything. If you render error messages unconditionally, the user sees a wall of errors before they have had a chance to fill in the form. That is not good UX.

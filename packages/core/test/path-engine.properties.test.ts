@@ -80,10 +80,11 @@ describe("PathEngine (property) — navigation invariants", () => {
       const engine = new PathEngine();
       await engine.start(path);
       for (const action of actions) {
-        if (!engine.snapshot()) break;
+        const cur = engine.snapshot();
+        if (!cur || cur.status === 'completed') break;
         action === "next" ? await engine.next() : await engine.previous();
         const snap = engine.snapshot();
-        if (snap) expect(snap.isFirstStep).toBe(snap.stepIndex === 0);
+        if (snap && snap.status !== 'completed') expect(snap.isFirstStep).toBe(snap.stepIndex === 0);
       }
     }));
   });
@@ -141,10 +142,11 @@ describe("PathEngine (property) — navigation invariants", () => {
       const engine = new PathEngine();
       await engine.start(path);
       for (const action of actions) {
-        if (!engine.snapshot()) break;
+        const cur = engine.snapshot();
+        if (!cur || cur.status === 'completed') break;
         action === "next" ? await engine.next() : await engine.previous();
         const snap = engine.snapshot();
-        if (snap) {
+        if (snap && snap.status !== 'completed') {
           expect(snap.steps.filter(s => s.status === "current")).toHaveLength(1);
         }
       }
@@ -156,13 +158,14 @@ describe("PathEngine (property) — navigation invariants", () => {
       const engine = new PathEngine();
       await engine.start(path);
       for (const action of actions) {
-        if (!engine.snapshot()) break;
+        const cur = engine.snapshot();
+        if (!cur || cur.status === 'completed') break;
         action === "next" ? await engine.next() : await engine.previous();
         const snap = engine.snapshot();
-        if (snap) {
-          const cur = snap.steps.findIndex(s => s.status === "current");
-          snap.steps.slice(0, cur).forEach(s => expect(s.status).toBe("completed"));
-          snap.steps.slice(cur + 1).forEach(s => expect(s.status).toBe("upcoming"));
+        if (snap && snap.status !== 'completed') {
+          const curIdx = snap.steps.findIndex(s => s.status === "current");
+          snap.steps.slice(0, curIdx).forEach(s => expect(s.status).toBe("completed"));
+          snap.steps.slice(curIdx + 1).forEach(s => expect(s.status).toBe("upcoming"));
         }
       }
     }));
@@ -198,12 +201,12 @@ describe("PathEngine (property) — guard contracts", () => {
       await engine.start(path);
       for (const action of actions) {
         const snap = engine.snapshot();
-        if (!snap) break;
+        if (!snap || snap.status === 'completed') break;
         if (action === "previous") { await engine.previous(); continue; }
         const { stepIndex, canMoveNext } = snap;
         await engine.next();
         const after = engine.snapshot();
-        if (canMoveNext && after !== null) {
+        if (canMoveNext && after !== null && after.status !== 'completed') {
           expect(after.stepIndex).toBeGreaterThan(stepIndex);
         }
       }
@@ -221,10 +224,11 @@ describe("PathEngine (property) — shouldSkip", () => {
       const engine = new PathEngine();
       await engine.start(path);
       for (const action of actions) {
-        if (!engine.snapshot()) break;
+        const cur = engine.snapshot();
+        if (!cur || cur.status === 'completed') break;
         action === "next" ? await engine.next() : await engine.previous();
         const snap = engine.snapshot();
-        if (snap) {
+        if (snap && snap.status !== 'completed') {
           const def = path.steps.find(s => s.id === snap.stepId);
           if (def?.shouldSkip) {
             // shouldSkip returning true on the active step is a bug

@@ -128,6 +128,31 @@ export class PathShellFooterDirective {
 }
 
 // ---------------------------------------------------------------------------
+// PathShellCompletionDirective
+// ---------------------------------------------------------------------------
+
+/**
+ * Replaces the default completion panel inside `<pw-shell>` when
+ * `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`).
+ * The template receives the current `PathSnapshot` as the implicit context.
+ *
+ * ```html
+ * <pw-shell [path]="myPath">
+ *   <ng-template pwShellCompletion let-s>
+ *     <my-completion-screen [data]="s.data" />
+ *   </ng-template>
+ *   <ng-template pwStep="details"><app-details-form /></ng-template>
+ * </pw-shell>
+ * ```
+ */
+@Directive({ selector: "[pwShellCompletion]", standalone: true })
+export class PathShellCompletionDirective {
+  public constructor(
+    public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>
+  ) {}
+}
+
+// ---------------------------------------------------------------------------
 // PathShellComponent
 // ---------------------------------------------------------------------------
 
@@ -198,68 +223,84 @@ export class PathShellFooterDirective {
         </div>
       </ng-template>
 
-      <!-- Body — step content -->
-      <div class="pw-shell__body">
-        <ng-container *ngFor="let stepDir of stepDirectives">
-          <!-- Match by formId first (inner step of a StepChoice), then stepId -->
-          <ng-container *ngIf="stepDir.stepId === (s.formId ?? s.stepId)">
-            <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector"></ng-container>
-          </ng-container>
+      <!-- Completion panel — shown when path finishes with stayOnFinal -->
+      <ng-container *ngIf="s.status === 'completed'; else activeContent">
+        <ng-container *ngIf="customCompletion; else defaultCompletion">
+          <ng-container *ngTemplateOutlet="customCompletion.templateRef; context: { $implicit: s }"></ng-container>
         </ng-container>
-      </div>
+        <ng-template #defaultCompletion>
+          <div class="pw-shell__completion">
+            <p class="pw-shell__completion-message">All done.</p>
+            <button type="button" class="pw-shell__completion-restart" (click)="facade.restart()">Start over</button>
+          </div>
+        </ng-template>
+      </ng-container>
 
-      <!-- Validation messages — suppressed when validationDisplay="inline" -->
-      <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && fieldEntries(s).length > 0">
-        <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
-          <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
-        </li>
-      </ul>
-
-      <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
-      <ul class="pw-shell__warnings" *ngIf="validationDisplay !== 'inline' && warningEntries(s).length > 0">
-        <li *ngFor="let entry of warningEntries(s)" class="pw-shell__warnings-item">
-          <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
-        </li>
-      </ul>
-
-      <!-- Blocking error — guard returned { allowed: false, reason } -->
-      <p class="pw-shell__blocking-error"
-         *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && s.blockingError">
-        {{ s.blockingError }}
-      </p>
-
-      <!-- Error panel — replaces footer when an async operation has failed -->
-      <div class="pw-shell__error" *ngIf="s.status === 'error' && s.error; else footerOrCustom">
-        <div class="pw-shell__error-title">{{ s.error!.retryCount >= 2 ? 'Still having trouble.' : 'Something went wrong.' }}</div>
-        <div class="pw-shell__error-message">{{ errorPhaseMessage(s.error!.phase) }}{{ s.error!.message ? ' ' + s.error!.message : '' }}</div>
-        <div class="pw-shell__error-actions">
-          <button
-            *ngIf="s.error!.retryCount < 2"
-            type="button"
-            class="pw-shell__btn pw-shell__btn--retry"
-            (click)="facade.retry()"
-          >Try again</button>
-          <button
-            *ngIf="s.hasPersistence"
-            type="button"
-            [class]="'pw-shell__btn ' + (s.error!.retryCount >= 2 ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend')"
-            (click)="facade.suspend()"
-          >Save and come back later</button>
-          <button
-            *ngIf="s.error!.retryCount >= 2 && !s.hasPersistence"
-            type="button"
-            class="pw-shell__btn pw-shell__btn--retry"
-            (click)="facade.retry()"
-          >Try again</button>
+      <!-- Active step content -->
+      <ng-template #activeContent>
+        <!-- Body — step content -->
+        <div class="pw-shell__body">
+          <ng-container *ngFor="let stepDir of stepDirectives">
+            <!-- Match by formId first (inner step of a StepChoice), then stepId -->
+            <ng-container *ngIf="stepDir.stepId === (s.formId ?? s.stepId)">
+              <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector"></ng-container>
+            </ng-container>
+          </ng-container>
         </div>
-      </div>
-      <!-- Footer — custom or default navigation buttons -->
-      <ng-template #footerOrCustom>
-        <ng-container *ngIf="!hideFooter">
-          <ng-container *ngIf="customFooter; else defaultFooter">
-            <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+
+        <!-- Validation messages — suppressed when validationDisplay="inline" -->
+        <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && fieldEntries(s).length > 0">
+          <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
+            <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+          </li>
+        </ul>
+
+        <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
+        <ul class="pw-shell__warnings" *ngIf="validationDisplay !== 'inline' && warningEntries(s).length > 0">
+          <li *ngFor="let entry of warningEntries(s)" class="pw-shell__warnings-item">
+            <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+          </li>
+        </ul>
+
+        <!-- Blocking error — guard returned { allowed: false, reason } -->
+        <p class="pw-shell__blocking-error"
+           *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && s.blockingError">
+          {{ s.blockingError }}
+        </p>
+
+        <!-- Error panel — replaces footer when an async operation has failed -->
+        <div class="pw-shell__error" *ngIf="s.status === 'error' && s.error; else footerOrCustom">
+          <div class="pw-shell__error-title">{{ s.error!.retryCount >= 2 ? 'Still having trouble.' : 'Something went wrong.' }}</div>
+          <div class="pw-shell__error-message">{{ errorPhaseMessage(s.error!.phase) }}{{ s.error!.message ? ' ' + s.error!.message : '' }}</div>
+          <div class="pw-shell__error-actions">
+            <button
+              *ngIf="s.error!.retryCount < 2"
+              type="button"
+              class="pw-shell__btn pw-shell__btn--retry"
+              (click)="facade.retry()"
+            >Try again</button>
+            <button
+              *ngIf="s.hasPersistence"
+              type="button"
+              [class]="'pw-shell__btn ' + (s.error!.retryCount >= 2 ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend')"
+              (click)="facade.suspend()"
+            >Save and come back later</button>
+            <button
+              *ngIf="s.error!.retryCount >= 2 && !s.hasPersistence"
+              type="button"
+              class="pw-shell__btn pw-shell__btn--retry"
+              (click)="facade.retry()"
+            >Try again</button>
+          </div>
+        </div>
+        <!-- Footer — custom or default navigation buttons -->
+        <ng-template #footerOrCustom>
+          <ng-container *ngIf="!hideFooter">
+            <ng-container *ngIf="customFooter; else defaultFooter">
+              <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+            </ng-container>
           </ng-container>
-        </ng-container>
+        </ng-template>
       </ng-template>
       <ng-template #defaultFooter>
         <div class="pw-shell__footer">
@@ -374,6 +415,7 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   @ContentChildren(PathStepDirective) stepDirectives!: QueryList<PathStepDirective>;
   @ContentChild(PathShellHeaderDirective) customHeader?: PathShellHeaderDirective;
   @ContentChild(PathShellFooterDirective) customFooter?: PathShellFooterDirective;
+  @ContentChild(PathShellCompletionDirective) customCompletion?: PathShellCompletionDirective;
 
   public readonly facade = inject(PathFacade);
   /** The shell's own component-level injector. Passed to ngTemplateOutlet so that

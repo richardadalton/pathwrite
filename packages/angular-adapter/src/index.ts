@@ -72,8 +72,9 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
         this._state$.next(event.snapshot as PathSnapshot<TData>);
         this._stateSignal.set(event.snapshot as PathSnapshot<TData>);
       } else if (event.type === "completed" || event.type === "cancelled") {
-        this._state$.next(null);
-        this._stateSignal.set(null);
+        const snap = engine.snapshot() as PathSnapshot<TData> | null;
+        this._state$.next(snap);
+        this._stateSignal.set(snap);
       }
     });
   }

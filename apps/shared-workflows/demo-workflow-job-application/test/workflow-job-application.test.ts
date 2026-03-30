@@ -316,7 +316,7 @@ describe("createApplicationPath — full completion", () => {
     expect(completedData!.roleId).toBe("pm");
   });
 
-  it("path is null after completion", async () => {
+  it("snapshot is completed after completion", async () => {
     const engine = new PathEngine();
     await engine.start(createApplicationPath(fast), {
       roleId: "pm",
@@ -328,6 +328,6 @@ describe("createApplicationPath — full completion", () => {
     await engine.next();
     await engine.next();
     await engine.next();
-    expect(engine.snapshot()).toBeNull();
+    expect(engine.snapshot()?.status).toBe("completed");
   });
 });

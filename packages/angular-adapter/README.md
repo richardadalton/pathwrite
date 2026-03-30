@@ -144,6 +144,33 @@ Step content is provided via `<ng-template pwStep="stepId">` directives inside `
 | `(cancel)` | `PathData` | Emitted when the path is cancelled. |
 | `(event)` | `PathEvent` | Emitted for every engine event. |
 
+### Completion content
+
+When `completionBehaviour` is `"stayOnFinal"` (the default), `<pw-shell>` renders a completion panel once `snapshot.status === "completed"`. Use the `[pwShellCompletion]` directive to replace the default "All done." panel with a custom template. The template receives the completed snapshot as its implicit context:
+
+```typescript
+import { PathShellCompletionDirective } from "@daltonr/pathwrite-angular/shell";
+
+@Component({
+  imports: [PathShellComponent, PathStepDirective, PathShellCompletionDirective],
+  template: `
+    <pw-shell [path]="path" [initialData]="{ name: '' }">
+      <ng-template pwShellCompletion let-s>
+        <div class="done-panel">
+          <h2>Thanks, {{ s.data.name }}!</h2>
+          <button (click)="facade.restart()">Start over</button>
+        </div>
+      </ng-template>
+      <ng-template pwStep="details"><app-details-form /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyWizardComponent {
+  protected readonly path = myPath;
+  protected readonly facade = injectPath();
+}
+```
+
 ## `injectPath()`
 
 `injectPath()` is the preferred API for step components and forms rendered inside `<pw-shell>`. It resolves the `PathFacade` from the nearest injector in the tree and returns a signal-based interface typed with an optional `TData` generic — no `providers: [PathFacade]` needed in step components.
@@ -167,4 +194,4 @@ export class DetailsStepComponent {
 
 ---
 
-MIT — © 2026 Devjoy Ltd.
+© 2026 Devjoy Ltd. MIT License.

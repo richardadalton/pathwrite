@@ -98,7 +98,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     if (event.type === "stateChanged" || event.type === "resumed") {
       setSnapshot(event.snapshot as PathSnapshot<TData>);
     } else if (event.type === "completed" || event.type === "cancelled") {
-      setSnapshot(null);
+      setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
     }
     options?.onEvent?.(event);
   });
@@ -236,6 +236,12 @@ export interface PathShellProps {
   /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
   validateWhen?: boolean;
   class?: string;
+  /**
+   * Content rendered when `snapshot.status === "completed"` (i.e. after the path
+   * finishes with `completionBehaviour: "stayOnFinal"`). Defaults to a simple
+   * "All done." panel with a Restart button.
+   */
+  completionContent?: (snapshot: PathSnapshot) => JSX.Element;
 }
 
 export const PathShell: Component<PathShellProps> = (props) => {
@@ -342,7 +348,28 @@ export const PathShell: Component<PathShellProps> = (props) => {
               ? props.renderHeader(snap())
               : <SolidHeader snapshot={snap()} />}
           </Show>
-          {/* Body — step content */}
+          {/* Completion panel — shown when path finishes with stayOnFinal */}
+          <Show when={snap().status === "completed"}>
+            <div class="pw-shell__body">
+              {props.completionContent
+                ? props.completionContent(snap())
+                : (
+                  <div class="pw-shell__completion">
+                    <p class="pw-shell__completion-message">All done.</p>
+                    <button
+                      type="button"
+                      class="pw-shell__completion-restart"
+                      onClick={() => restart()}
+                    >
+                      Start over
+                    </button>
+                  </div>
+                )
+              }
+            </div>
+          </Show>
+          {/* Body — step content (hidden when completed) */}
+          <Show when={snap().status !== "completed"}>
           <div class="pw-shell__body">{stepContent()}</div>
           {/* Validation messages */}
           <Show when={showValidation()}>
@@ -402,6 +429,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
           >
             <SolidErrorPanel snapshot={snap()} actions={actions} />
           </Show>
+          </Show>{/* end status !== completed */}
         </div>
       </Show>
     </PathContext.Provider>

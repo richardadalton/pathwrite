@@ -55,6 +55,8 @@
     // Optional override snippets for header and footer
     header?: Snippet<[PathSnapshot<any>]>;
     footer?: Snippet<[PathSnapshot<any>, object]>;
+    /** Snippet rendered when `snapshot.status === "completed"`. Defaults to a simple "All done." panel with a restart button. */
+    completion?: Snippet<[PathSnapshot<any>]>;
     // All other props treated as step components keyed by step ID
     [key: string]: Component<any> | any;
   }
@@ -82,6 +84,7 @@
     onevent,
     header,
     footer,
+    completion,
     ...stepSnippets
   }: Props = $props();
 
@@ -165,6 +168,35 @@
         <button type="button" class="pw-shell__start-btn" onclick={() => start(path, initialData)}>
           Start
         </button>
+      {/if}
+    </div>
+  {:else if snap.status === 'completed'}
+    <!-- Completion panel: shown after stayOnFinal completion -->
+    {#if !hideProgress && snap.stepCount > 1}
+      <div class="pw-shell__header">
+        <div class="pw-shell__steps">
+          {#each snap.steps as step, i}
+            <div class="pw-shell__step pw-shell__step--{step.status}">
+              <span class="pw-shell__step-dot">✓</span>
+              <span class="pw-shell__step-label">{step.title ?? step.id}</span>
+            </div>
+          {/each}
+        </div>
+        <div class="pw-shell__track">
+          <div class="pw-shell__track-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    {/if}
+    <div class="pw-shell__body">
+      {#if completion}
+        {@render completion(snap)}
+      {:else}
+        <div class="pw-shell__completion">
+          <p class="pw-shell__completion-message">All done.</p>
+          <button type="button" class="pw-shell__completion-restart" onclick={() => restartFn(path, initialData)}>
+            Start over
+          </button>
+        </div>
       {/if}
     </div>
   {:else}

@@ -157,7 +157,7 @@ export function usePath<TData extends PathData = PathData>(
     if (event.type === "stateChanged" || event.type === "resumed") {
       _snapshot = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
-      _snapshot = null;
+      _snapshot = engine.snapshot() as PathSnapshot<TData> | null;
     }
     options?.onEvent?.(event);
   });

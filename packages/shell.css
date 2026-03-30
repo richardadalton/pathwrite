@@ -78,6 +78,31 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Completion panel                                                    */
+/* ------------------------------------------------------------------ */
+.pw-shell__completion {
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.pw-shell__completion-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pw-color-text);
+  margin: 0 0 20px;
+}
+
+.pw-shell__completion-restart {
+  border: 1px solid var(--pw-color-btn-border);
+  background: var(--pw-color-btn-bg);
+  color: var(--pw-color-text);
+  padding: var(--pw-btn-padding);
+  border-radius: var(--pw-btn-radius);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Root progress — persistent top-level bar visible during sub-paths   */
 /* ------------------------------------------------------------------ */
 .pw-shell__root-progress {

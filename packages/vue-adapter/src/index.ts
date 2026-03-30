@@ -103,7 +103,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     if (event.type === "stateChanged" || event.type === "resumed") {
       _snapshot.value = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
-      _snapshot.value = null;
+      _snapshot.value = engine.snapshot() as PathSnapshot<TData> | null;
     }
     options?.onEvent?.(event);
   });
@@ -311,6 +311,25 @@ export const PathShell = defineComponent({
               : null
           ])
         );
+      }
+
+      if (snap.status === "completed") {
+        const showCompletionProgress = !props.hideProgress && snap.stepCount > 1;
+        return h("div", { class: "pw-shell" }, [
+          showCompletionProgress && renderVueHeader(snap),
+          h("div", { class: "pw-shell__body" },
+            slots.completion
+              ? slots.completion({ snapshot: snap })
+              : h("div", { class: "pw-shell__completion" }, [
+                  h("p", { class: "pw-shell__completion-message" }, "All done."),
+                  h("button", {
+                    type: "button",
+                    class: "pw-shell__completion-restart",
+                    onClick: () => restart()
+                  }, "Start over")
+                ])
+          )
+        ]);
       }
 
       // Resolve step content — prefer formId (inner step id of a StepChoice) so

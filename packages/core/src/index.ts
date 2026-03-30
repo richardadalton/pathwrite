@@ -210,6 +210,20 @@ export interface PathDefinition<TData extends PathData = PathData> {
    * sub-path cancellation is handled by the parent step's `onSubPathCancel` hook.
    */
   onCancel?: (data: TData) => void | Promise<void>;
+  /**
+   * Controls what happens after the path completes (i.e. after `onComplete` resolves).
+   *
+   * - `"stayOnFinal"` *(default)* — the engine remains on the last step with
+   *   `snapshot.status === "completed"`. The shell renders the completion panel.
+   *   Call `restart()` to begin the flow again.
+   * - `"reset"` — the engine automatically restarts from step 1 with `initialData`
+   *   after completion. No null snapshot at any point. Ideal for repeating flows
+   *   such as kiosk surveys or repeated data-entry forms.
+   * - `"dismiss"` — legacy behaviour. `snapshot()` returns `null` after completion
+   *   and the shell shows its "No active path" empty state. Use when your `onComplete`
+   *   always navigates away so the component unmounts before re-rendering.
+   */
+  completionBehaviour?: "stayOnFinal" | "reset" | "dismiss";
 }
 
 export type StepStatus = "completed" | "current" | "upcoming";
@@ -232,6 +246,7 @@ export type PathStatus =
   | "validating"
   | "leaving"
   | "completing"
+  | "completed"
   | "error";
 
 /**
@@ -419,6 +434,7 @@ export type StateChangeCause =
   | "start"
   | "next"
   | "previous"
+  | "complete"
   | "goToStep"
   | "goToStepChecked"
   | "setData"
@@ -741,6 +757,7 @@ export class PathEngine {
    *                    sub-path's own data.
    */
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
+    if (this._status === "completed") return Promise.resolve();
     this.requireActivePath();
     return this._startAsync(path, initialData, meta);
   }
@@ -831,6 +848,7 @@ export class PathEngine {
   }
 
   public setData(key: string, value: unknown): Promise<void> {
+    if (this._status === "completed") return Promise.resolve();
     const active = this.requireActivePath();
     active.data[key] = value;
     this.emitStateChanged("setData");
@@ -844,6 +862,7 @@ export class PathEngine {
    * Throws if no path is active.
    */
   public resetStep(): Promise<void> {
+    if (this._status === "completed") return Promise.resolve();
     const active = this.requireActivePath();
     // Restore data from the snapshot taken when this step was entered
     active.data = { ...active.stepEntryData };
@@ -938,6 +957,8 @@ export class PathEngine {
       };
     }
 
+    const isCompleted = this._status === "completed";
+
     return {
       pathId: active.definition.id,
       stepId: item.id,
@@ -946,19 +967,17 @@ export class PathEngine {
       formId: isStepChoice(item) ? effectiveStep.id : undefined,
       stepIndex: effectiveStepIndex,
       stepCount,
-      progress: stepCount <= 1 ? 1 : effectiveStepIndex / (stepCount - 1),
+      progress: isCompleted ? 1 : (stepCount <= 1 ? 1 : effectiveStepIndex / (stepCount - 1)),
       steps: visibleSteps.map((s, i) => ({
         id: s.id,
         title: s.title,
         meta: s.meta,
-        status: i < effectiveStepIndex ? "completed" as const
+        status: (isCompleted || i < effectiveStepIndex) ? "completed" as const
           : i === effectiveStepIndex ? "current" as const
           : "upcoming" as const
       })),
-      isFirstStep: effectiveStepIndex === 0,
-      isLastStep:
-        effectiveStepIndex === stepCount - 1 &&
-        this.pathStack.length === 0,
+      isFirstStep: isCompleted ? false : effectiveStepIndex === 0,
+      isLastStep: isCompleted ? true : (effectiveStepIndex === stepCount - 1 && this.pathStack.length === 0),
       nestingLevel: this.pathStack.length,
       rootProgress,
       status: this._status,
@@ -967,11 +986,11 @@ export class PathEngine {
       hasValidated: this._hasValidated,
       hasAttemptedNext: this._hasAttemptedNext,
       blockingError: this._blockingError,
-      canMoveNext: this.evaluateCanMoveNextSync(effectiveStep, active),
-      canMovePrevious: this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
-      fieldErrors: this.evaluateFieldMessagesSync(effectiveStep.fieldErrors, active),
-      fieldWarnings: this.evaluateFieldMessagesSync(effectiveStep.fieldWarnings, active),
-      isDirty: this.computeIsDirty(active),
+      canMoveNext: isCompleted ? false : this.evaluateCanMoveNextSync(effectiveStep, active),
+      canMovePrevious: isCompleted ? false : this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
+      fieldErrors: isCompleted ? {} : this.evaluateFieldMessagesSync(effectiveStep.fieldErrors, active),
+      fieldWarnings: isCompleted ? {} : this.evaluateFieldMessagesSync(effectiveStep.fieldWarnings, active),
+      isDirty: isCompleted ? false : this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
       data: { ...active.data }
     };
@@ -1277,13 +1296,31 @@ export class PathEngine {
         snapshot: this.snapshot()!
       });
     } else {
-      // Top-level path completed — call onComplete before clearing activePath so
+      // currentStepIndex was incremented past the last step in _nextAsync to
+      // trigger completion. Back it up so snapshot() can reference the final step
+      // if any stateChanged events fire during or after the completion sequence.
+      finished.currentStepIndex = finished.definition.steps.length - 1;
+
+      // Top-level path completed — call onComplete before changing state so
       // that if it throws the engine remains on the final step and can retry.
       if (finished.definition.onComplete) {
         await finished.definition.onComplete(finishedData);
       }
-      this.activePath = null;
-      this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+
+      const behaviour = finished.definition.completionBehaviour ?? "stayOnFinal";
+
+      if (behaviour === "dismiss") {
+        this.activePath = null;
+        this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+      } else if (behaviour === "reset") {
+        this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+        await this.restart();
+      } else {
+        // "stayOnFinal" (default) — keep activePath alive, surface via completed status
+        this._status = "completed";
+        this.emitStateChanged("complete");
+        this.emit({ type: "completed", pathId: finishedPathId, data: finishedData });
+      }
     }
   }
 
@@ -1299,7 +1336,11 @@ export class PathEngine {
     this._status = "completing";
     try {
       await this.finishActivePath();
-      this._status = "idle";
+      // finishActivePath sets _status = "completed" for stayOnFinal paths.
+      // For all other cases (dismiss, reset, sub-paths) reset to idle.
+      if (this._status !== "completed") {
+        this._status = "idle";
+      }
       // No stateChanged here — finishActivePath emits "completed" or "resumed"
     } catch (err) {
       this._error = { message: PathEngine.errorMessage(err), phase: "completing", retryCount: this._retryCount };

@@ -52,12 +52,12 @@ describe("usePath — snapshot", () => {
     expect(result.current.snapshot?.stepId).toBe("step2");
   });
 
-  it("returns null when the path completes", async () => {
+  it("returns completed snapshot when the path completes", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.next());
     await act(() => result.current.next());
-    expect(result.current.snapshot).toBeNull();
+    expect(result.current.snapshot?.status).toBe("completed");
   });
 
   it("returns null when the path is cancelled", async () => {

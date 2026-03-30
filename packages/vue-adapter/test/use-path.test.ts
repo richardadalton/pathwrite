@@ -43,12 +43,12 @@ describe("usePath — snapshot", () => {
     expect(path.snapshot.value?.stepId).toBe("step2");
   });
 
-  it("returns null when the path completes", async () => {
+  it("returns completed snapshot when the path completes", async () => {
     const { path } = createPath();
     await path.start(twoStepPath());
     await path.next();
     await path.next();
-    expect(path.snapshot.value).toBeNull();
+    expect(path.snapshot.value?.status).toBe("completed");
   });
 
   it("returns null when the path is cancelled", async () => {
@@ -286,12 +286,12 @@ describe("usePath — restart()", () => {
     expect(path.snapshot.value?.stepId).toBe("step1");
   });
 
-  it("restarts after completion (snapshot was null)", async () => {
+  it("restarts after completion (stayOnFinal)", async () => {
     const { path } = createPath();
     await path.start(twoStepPath());
     await path.next();
     await path.next();
-    expect(path.snapshot.value).toBeNull();
+    expect(path.snapshot.value?.status).toBe("completed");
 
     await path.restart();
     expect(path.snapshot.value?.stepId).toBe("step1");
@@ -355,14 +355,14 @@ describe("usePath — external engine", () => {
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);
   });
 
-  it("sets snapshot to null when the external engine completes", async () => {
+  it("reflects completed snapshot when the external engine completes", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
 
     const { path } = createPath({ engine });
     await engine.next();
     await engine.next(); // completes
-    expect(path.snapshot.value).toBeNull();
+    expect(path.snapshot.value?.status).toBe("completed");
   });
 
   it("works with fromState-restored engines", async () => {

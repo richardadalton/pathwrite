@@ -51,6 +51,7 @@ interface PathSnapshot<TData = PathData> { ... }
 | `"leaving"` | The `onLeave` hook is running on the current step. |
 | `"validating"` | A `canMoveNext` or `canMovePrevious` guard is running. |
 | `"completing"` | The `onComplete` callback is running (last step). |
+| `"completed"` | The path has finished and `completionBehaviour` is `"stayOnFinal"` (the default). The engine remains active: `snapshot()` returns a non-null snapshot with all steps marked completed, `progress === 1`, and `canMoveNext === false`. `PathShell` renders the completion panel. Call `engine.restart()` to start a new run. |
 | `"error"` | An async operation threw — `snapshot.error` has details. |
 
 ### `StepSummary`
@@ -84,6 +85,30 @@ Available as `snapshot.rootProgress` when `nestingLevel > 0`. Always reflects th
 
 ---
 
+## PathDefinition
+
+`PathDefinition<TData>` describes the shape and behaviour of a path.
+
+### Top-level options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `id` | `string` | required | Unique identifier for this path. Appears in events, serialized state, and sub-path callbacks. |
+| `steps` | `PathStep<TData>[]` | required | Ordered array of step definitions. |
+| `onComplete` | `(data: TData) => void \| Promise<void>` | — | Called when the path completes (user advances past the last step). Can be async — the engine sets `status` to `"completing"` while it runs. |
+| `onCancel` | `(data: TData) => void` | — | Called when the top-level path is cancelled. |
+| `completionBehaviour` | `"stayOnFinal" \| "dismiss" \| "reset"` | `"stayOnFinal"` | Controls engine state after completion. See below. |
+
+### `completionBehaviour`
+
+| Value | Behaviour |
+|---|---|
+| `"stayOnFinal"` | **(default)** Engine stays active with `status === "completed"`. `snapshot()` returns a non-null snapshot; `PathShell` renders the completion panel. Call `restart()` to begin a new run. |
+| `"dismiss"` | Engine clears its state after `onComplete` resolves. `snapshot()` returns `null`. |
+| `"reset"` | Engine immediately restarts from step 1 with the original `initialData` after `onComplete` resolves. Useful for kiosk or repeating flows. |
+
+---
+
 ## PathEvent
 
 Subscribe with `engine.subscribe(listener)`. The listener receives a `PathEvent` on every meaningful engine state change.
@@ -102,6 +127,7 @@ type PathEvent =
 type StateChangeCause =
   | "start"
   | "next"
+  | "complete"
   | "previous"
   | "goToStep"
   | "goToStepChecked"
@@ -109,6 +135,8 @@ type StateChangeCause =
   | "cancel"
   | "restart";
 ```
+
+`"complete"` is emitted when the path transitions to `status === "completed"` (i.e. `completionBehaviour: "stayOnFinal"`). It fires before the `completed` event so observers can distinguish the "engine is now in completed state" snapshot from subsequent navigation.
 
 ### Event reference
 
@@ -293,7 +321,9 @@ Pass the result to `PathEngine.fromState()` to restore the engine later.
 engine.snapshot(): PathSnapshot | null
 ```
 
-Synchronous read of the current snapshot. Returns `null` when no path is active. The snapshot is rebuilt on every `stateChanged` event — calling this between events returns the same object.
+Synchronous read of the current snapshot. Returns `null` when no path is active (before `start()` is called, after cancellation, or after completion with `completionBehaviour: "dismiss"`).
+
+With the default `completionBehaviour: "stayOnFinal"`, `snapshot()` returns a non-null snapshot with `status === "completed"` after the path finishes — the engine remains active and `restart()` can be called to begin a new run. The snapshot is rebuilt on every `stateChanged` event — calling this between events returns the same object.
 
 ---
 

@@ -73,7 +73,7 @@ Step components call `usePathContext()` to access engine state — no prop drill
 
 | Return value | Type | Description |
 |---|---|---|
-| `snapshot` | `PathSnapshot \| null` | Current snapshot. `null` when no path is active. Triggers re-render on change. |
+| `snapshot` | `PathSnapshot \| null` | Current snapshot. `null` when no path is active or when `completionBehaviour: "dismiss"` is used. With the default `"stayOnFinal"`, a non-null snapshot with `status === "completed"` is returned after the path finishes. Triggers re-render on change. |
 | `start(definition, data?)` | function | Start or re-start a path. |
 | `next()` | function | Advance one step. Completes the path on the last step. |
 | `previous()` | function | Go back one step. No-op on the first step of a top-level path. |
@@ -108,6 +108,7 @@ All returned callbacks are referentially stable — safe to pass as props or inc
 | `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"auto"` picks `"form"` for single-step paths. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `services` | `TServices` | — | Services object injected into step lifecycle hooks via `PathStepContext`. |
+| `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (requires `completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a "Start over" button is shown. Components inside `completionContent` can call `usePathContext()` to access `restart` and `snapshot.data`. |
 
 Step components rendered inside `<PathShell>` call `usePathContext()` to read `snapshot` and invoke actions — no prop drilling required.
 

@@ -39,12 +39,12 @@ describe("usePath — snapshot", () => {
     expect(result.current.snapshot?.stepId).toBe("step2");
   });
 
-  it("returns null when the path completes", async () => {
+  it("returns completed snapshot when the path completes", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.next());
     await act(() => result.current.next());
-    expect(result.current.snapshot).toBeNull();
+    expect(result.current.snapshot?.status).toBe("completed");
   });
 
   it("returns null when the path is cancelled", async () => {
@@ -448,12 +448,12 @@ describe("usePath — restart()", () => {
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 
-  it("restarts after completion (snapshot was null)", async () => {
+  it("restarts after completion (stayOnFinal)", async () => {
     const { result } = renderHook(() => usePath());
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.next());
     await act(() => result.current.next());
-    expect(result.current.snapshot).toBeNull();
+    expect(result.current.snapshot?.status).toBe("completed");
 
     await act(() => result.current.restart());
     expect(result.current.snapshot?.stepId).toBe("step1");
@@ -502,14 +502,14 @@ describe("usePath — external engine", () => {
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);
   });
 
-  it("sets snapshot to null when the external engine completes", async () => {
+  it("reflects completed snapshot when the external engine completes", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
 
     const { result } = renderHook(() => usePath({ engine }));
     await act(() => engine.next());
     await act(() => engine.next()); // completes
-    expect(result.current.snapshot).toBeNull();
+    expect(result.current.snapshot?.status).toBe("completed");
   });
 
   it("works with fromState-restored engines", async () => {

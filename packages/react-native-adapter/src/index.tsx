@@ -122,7 +122,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
         if (event.type === "stateChanged" || event.type === "resumed") {
           snapshotRef.current = event.snapshot as PathSnapshot<TData>;
         } else if (event.type === "completed" || event.type === "cancelled") {
-          snapshotRef.current = null;
+          snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
         }
         onEventRef.current?.(event);
         callback();
@@ -292,6 +292,12 @@ export interface PathShellProps {
    * Step components access it via `usePathContext<TData, TServices>()`.
    */
   services?: unknown;
+  /**
+   * Content to render when `snapshot.status === "completed"` (i.e. after the
+   * path finishes with `completionBehaviour: "stayOnFinal"`). Defaults to a
+   * simple "All done." panel with a Restart button.
+   */
+  completionContent?: ReactNode;
 }
 
 /**
@@ -336,6 +342,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   disableBodyScroll = false,
   services,
   validateWhen = false,
+  completionContent,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -391,6 +398,23 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
               </Pressable>
             )}
           </View>
+        </View>
+      </PathContext.Provider>
+    );
+  }
+
+  if (snapshot.status === "completed") {
+    return (
+      <PathContext.Provider value={contextValue}>
+        <View style={[styles.shell, style]}>
+          {completionContent ?? (
+            <View style={styles.completionPanel}>
+              <Text style={styles.completionMessage}>All done.</Text>
+              <Pressable style={styles.btnPrimary} onPress={() => restart()}>
+                <Text style={styles.btnPrimaryText}>Start over</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       </PathContext.Provider>
     );
@@ -600,6 +624,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6b7280",
     marginBottom: 16,
+  },
+  completionPanel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  completionMessage: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 20,
   },
   header: {
     paddingHorizontal: 20,
