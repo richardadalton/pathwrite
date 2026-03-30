@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-angular",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "type": "module",
   "license": "MIT",
   "description": "Angular adapter for @daltonr/pathwrite-core — RxJS observables, signal-friendly, with optional <pw-shell> default UI.",
@@ -61,7 +61,7 @@
     "@angular/compiler-cli": "^17.3.12"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.10.1"
+    "@daltonr/pathwrite-core": "^0.11.0"
   },
   "publishConfig": {
     "access": "public"
