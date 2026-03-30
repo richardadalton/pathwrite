@@ -845,7 +845,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
       <code>@daltonr/pathwrite-angular</code>
       <code>@daltonr/pathwrite-svelte</code>
       <code>@daltonr/pathwrite-react-native</code>
-      <code>@daltonr/pathwrite-store-http</code>
+      <code>@daltonr/pathwrite-store</code>
     </div>
     <div class="cta__actions">
       <a href="https://github.com/richardadalton/pathwrite" class="btn btn--lg btn--white" target="_blank" rel="noopener">View on GitHub</a>
@@ -876,7 +876,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
 
 <script type="module">
   import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.8.0';
-  import { LocalStorageStore, httpPersistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store-http@0.8.0';
+  import { LocalStorageStore, persistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store@0.10.1';
 
   // ── Path definitions ──────────────────────────────────────────────────────
   const DEMO_KEY = 'pw-hero-demo-v2';
@@ -1172,7 +1172,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
         path: mainPath,
         pathDefinitions: { [mainPath.id]: mainPath, [subPath.id]: subPath },
         initialData: INITIAL_DATA,
-        observers: [httpPersistence({ store, key: DEMO_KEY, strategy: 'onEveryChange' })],
+        observers: [persistence({ store, key: DEMO_KEY, strategy: 'onEveryChange' })],
       });
       engine = result.engine;
 
