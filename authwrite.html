@@ -380,6 +380,89 @@
       .aw-pkg-row { grid-template-columns: 1fr; gap: 0.25rem; }
     }
 
+    /* ── Comparison matrix ── */
+    .aw-compare {
+      padding: 5rem 0;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .aw-compare .section__title  { text-align: center; margin-bottom: 0.75rem; }
+    .aw-compare .section__subtitle { text-align: center; margin-bottom: 2.5rem; }
+    .aw-matrix {
+      max-width: 960px;
+      margin: 0 auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .aw-matrix table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      min-width: 620px;
+    }
+    .aw-matrix thead th {
+      background: var(--color-code-bg);
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .aw-matrix thead th:first-child { text-align: left; }
+    .aw-matrix thead th.aw-matrix__ours {
+      color: var(--color-primary-light);
+      background: rgba(16,185,129,0.08);
+      border-left: 2px solid var(--color-primary);
+      border-right: 2px solid var(--color-primary);
+    }
+    .aw-matrix tbody tr {
+      border-bottom: 1px solid var(--color-border);
+    }
+    .aw-matrix tbody tr:last-child { border-bottom: none; }
+    .aw-matrix tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .aw-matrix tbody td {
+      padding: 0.75rem 1rem;
+      text-align: center;
+      color: var(--color-text-muted);
+      vertical-align: middle;
+    }
+    .aw-matrix tbody td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+    .aw-matrix tbody td.aw-matrix__ours {
+      background: rgba(16,185,129,0.05);
+      border-left: 2px solid var(--color-primary);
+      border-right: 2px solid var(--color-primary);
+    }
+    .aw-matrix tbody tr:last-child td.aw-matrix__ours {
+      border-bottom: 2px solid var(--color-primary);
+    }
+    .aw-matrix thead tr th.aw-matrix__ours:first-of-type {
+      border-top: 2px solid var(--color-primary);
+    }
+    .aw-matrix__yes  { color: #10b981; font-weight: 700; font-size: 1rem; }
+    .aw-matrix__no   { color: #6b7280; font-size: 1rem; }
+    .aw-matrix__part { color: #f59e0b; font-size: 0.8rem; font-weight: 600; }
+    .aw-matrix__note {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
+      margin-top: 0.15rem;
+    }
+    .aw-matrix-caption {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 1rem;
+    }
+
     /* ── CTA ── */
     .aw-cta {
       padding: 6rem 0;
@@ -725,6 +808,115 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
         <span class="aw-pkg-tag aw-pkg-tag--testing">testing</span>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── Comparison matrix ── -->
+<section class="aw-compare">
+  <div class="container">
+    <h2 class="section__title">How Authwrite compares</h2>
+    <p class="section__subtitle">There are good authorization libraries out there. Here is where they differ.</p>
+
+    <div class="aw-matrix">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="aw-matrix__ours">Authwrite</th>
+            <th>CASL</th>
+            <th>Casbin</th>
+            <th>OPA</th>
+            <th>Custom<br>middleware</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Named decision reason</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">rule ID on every response</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">manual in Rego</span></td>
+            <td><span class="aw-matrix__part">manual</span></td>
+          </tr>
+          <tr>
+            <td>Rules in pure TypeScript</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">plain functions, full IDE support</span></td>
+            <td><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">builder DSL</span></td>
+            <td><span class="aw-matrix__no">✗</span><span class="aw-matrix__note">PERM model / policy file</span></td>
+            <td><span class="aw-matrix__no">✗</span><span class="aw-matrix__note">Rego DSL</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Enforcer modes (audit / lockdown)</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">enforce · audit · lockdown</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__part">manual</span></td>
+          </tr>
+          <tr>
+            <td>Pluggable observer pattern</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">OTel, Postgres, Redis, custom</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">decision logs via plugin</span></td>
+            <td><span class="aw-matrix__part">manual</span></td>
+          </tr>
+          <tr>
+            <td>Rule priority &amp; conflict resolution</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">numeric priority per rule</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">inverted / first-match</span></td>
+            <td><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">effect policy</span></td>
+            <td><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">explicit in Rego</span></td>
+            <td><span class="aw-matrix__part">manual</span></td>
+          </tr>
+          <tr>
+            <td>Zero runtime dependencies</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span><span class="aw-matrix__note">Go binary / Wasm</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Runs in the browser</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">Wasm build only</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Framework adapters included</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">Express · Fastify · Next.js · Hono</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">community packages</span></td>
+            <td><span class="aw-matrix__part">partial</span><span class="aw-matrix__note">community packages</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">you write them</span></td>
+          </tr>
+          <tr>
+            <td>Hot-reload policy from file</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">loader-yaml with fs.watch</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__yes">✓</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Decision duration tracked</td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">durationMs on every decision</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__no">✗</span></td>
+            <td><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">via metrics API</span></td>
+            <td><span class="aw-matrix__part">manual</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="aw-matrix-caption">
+      ✓ supported &nbsp;·&nbsp; ✗ not supported &nbsp;·&nbsp; <span style="color:#f59e0b;font-weight:600">partial</span> = possible but requires extra work.
+      Comparison reflects typical usage; individual projects may vary.
+    </p>
   </div>
 </section>
 
