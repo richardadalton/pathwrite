@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AuthWrite — Zero-Dependency Authorization for TypeScript</title>
+  <meta name="description" content="Define your authorization policy once in pure TypeScript. Every decision returns a reason. Pluggable observers. Framework adapters for Express, Fastify, Next.js, and Hono." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── AuthWrite colour overrides ── */
+    :root {
+      --color-primary:       #10b981;
+      --color-primary-light: #34d399;
+      --color-primary-glow:  rgba(16, 185, 129, 0.25);
+    }
+
+    /* ── Hero ── */
+    .aw-hero {
+      padding: 6rem 0 5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .aw-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, var(--color-primary-glow), transparent 70%);
+      pointer-events: none;
+    }
+    .aw-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--color-primary-light);
+      border-radius: 100px;
+      padding: 0.35rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .aw-hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #fff 30%, var(--color-primary-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .aw-hero__sub {
+      max-width: 620px;
+      margin: 0 auto 2.5rem;
+      font-size: 1.2rem;
+      color: var(--color-text-muted);
+      line-height: 1.7;
+    }
+    .aw-hero__actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .aw-hero__npm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      cursor: default;
+      user-select: all;
+    }
+    .aw-hero__npm span { color: var(--color-primary-light); }
+
+    /* ── Interactive demo ── */
+    .aw-demo-section {
+      padding: 3rem 0 5rem;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .aw-demo-section .section__title {
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+    .aw-demo-section .section__subtitle {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .aw-demo {
+      max-width: 820px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 680px) {
+      .aw-demo { grid-template-columns: 1fr; }
+    }
+    .aw-demo__controls {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .aw-demo__controls h3 {
+      margin: 0 0 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+    .aw-demo__field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .aw-demo__field label {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+    .aw-demo__field select,
+    .aw-demo__field input[type=checkbox] {
+      accent-color: var(--color-primary);
+    }
+    .aw-demo__field select {
+      width: 100%;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.45rem 0.75rem;
+      color: var(--color-text);
+      font-size: 0.9rem;
+    }
+    .aw-demo__field .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .aw-demo__presets {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .aw-demo__presets button {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .aw-demo__presets button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-text);
+    }
+
+    .aw-demo__result {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .aw-verdict {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .aw-verdict__icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .aw-verdict__icon.allow { background: rgba(16,185,129,0.15); color: #10b981; }
+    .aw-verdict__icon.deny  { background: rgba(239,68,68,0.15);  color: #ef4444; }
+    .aw-verdict__label {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .aw-verdict__label.allow { color: #10b981; }
+    .aw-verdict__label.deny  { color: #ef4444; }
+    .aw-details {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .aw-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 0.875rem;
+    }
+    .aw-detail-row__key {
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .aw-detail-row__val {
+      color: var(--color-text);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-align: right;
+    }
+    .aw-detail-row__val.highlight { color: var(--color-primary-light); font-weight: 600; }
+    .aw-detail-row__val.muted     { color: var(--color-text-muted); }
+
+    /* ── Value props ── */
+    .aw-props {
+      padding: 5rem 0;
+      background: var(--color-bg);
+    }
+    .aw-props__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .aw-prop-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      transition: border-color 0.2s;
+    }
+    .aw-prop-card:hover { border-color: var(--color-primary); }
+    .aw-prop-card__icon {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+    .aw-prop-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .aw-prop-card p {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ── Code tabs ── */
+    .aw-code-section {
+      padding: 5rem 0;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .aw-code-section .section__title { text-align: center; margin-bottom: 0.75rem; }
+    .aw-code-section .section__subtitle { text-align: center; margin-bottom: 2.5rem; }
+    .aw-tabs {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .aw-tab-btns {
+      display: flex;
+      gap: 0;
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      overflow: hidden;
+    }
+    .aw-tab-btns button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--color-border);
+      padding: 0.75rem 1rem;
+      color: var(--color-text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .aw-tab-btns button:last-child { border-right: none; }
+    .aw-tab-btns button.active {
+      background: var(--color-bg-card);
+      color: var(--color-primary-light);
+      font-weight: 600;
+    }
+    .aw-tab-panel {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 0 0 10px 10px;
+      padding: 1.5rem;
+      display: none;
+    }
+    .aw-tab-panel.active { display: block; }
+    .aw-tab-panel pre {
+      margin: 0;
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+    .kw  { color: #c678dd; }
+    .fn  { color: #61afef; }
+    .str { color: #98c379; }
+    .cm  { color: #5c6370; font-style: italic; }
+    .num { color: #d19a66; }
+
+    /* ── Packages table ── */
+    .aw-packages {
+      padding: 5rem 0;
+      background: var(--color-bg);
+    }
+    .aw-packages .section__title { text-align: center; margin-bottom: 0.75rem; }
+    .aw-packages .section__subtitle { text-align: center; margin-bottom: 2.5rem; }
+    .aw-pkg-table {
+      max-width: 820px;
+      margin: 0 auto;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .aw-pkg-row {
+      display: grid;
+      grid-template-columns: 220px 1fr auto;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      align-items: center;
+    }
+    .aw-pkg-row:last-child { border-bottom: none; }
+    .aw-pkg-row--head {
+      background: var(--color-code-bg);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+    .aw-pkg-row:not(.aw-pkg-row--head) { background: var(--color-bg-card); }
+    .aw-pkg-row:not(.aw-pkg-row--head):hover { background: var(--color-surface); }
+    .aw-pkg-name {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--color-primary-light);
+    }
+    .aw-pkg-desc {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .aw-pkg-tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .aw-pkg-tag--core     { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .aw-pkg-tag--adapter  { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
+    .aw-pkg-tag--observer { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+    .aw-pkg-tag--loader   { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+    .aw-pkg-tag--testing  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    @media (max-width: 600px) {
+      .aw-pkg-row { grid-template-columns: 1fr; gap: 0.25rem; }
+    }
+
+    /* ── CTA ── */
+    .aw-cta {
+      padding: 6rem 0;
+      text-align: center;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-cta h2 {
+      font-size: clamp(1.75rem, 4vw, 3rem);
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 30%, var(--color-primary-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .aw-cta p {
+      font-size: 1.1rem;
+      color: var(--color-text-muted);
+      margin-bottom: 2.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="/" class="nav__logo"><span class="nav__logo-icon">⟡</span> Pathwrite</a>
+    <div class="nav__links">
+      <a href="/">Home</a>
+      <a href="authwrite.html" style="color:var(--color-primary-light);font-weight:600">AuthWrite</a>
+      <a href="https://github.com/richardadalton/authwrite" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="aw-hero">
+  <div class="container">
+    <div class="aw-hero__badge">🔐 Authorization · Zero dependencies · TypeScript</div>
+    <h1>Every denial<br>has a reason.</h1>
+    <p class="aw-hero__sub">
+      AuthWrite is a policy engine for TypeScript that treats authorization as
+      observable data — not a silent <code>403</code>. Every decision returns
+      the rule that matched, how long it took, and whether an enforcer override was applied.
+    </p>
+    <div class="aw-hero__actions">
+      <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
+        View on GitHub
+      </a>
+      <div class="aw-hero__npm"><span>$</span> npm install @authwrite/core</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Interactive demo ── -->
+<section class="aw-demo-section">
+  <div class="container">
+    <h2 class="section__title">Try it live</h2>
+    <p class="section__subtitle">Runs entirely in the browser — no server, no build step.</p>
+
+    <div class="aw-demo">
+      <!-- Controls -->
+      <div class="aw-demo__controls">
+        <div>
+          <h3>Presets</h3>
+          <div class="aw-demo__presets" id="demo-presets"></div>
+        </div>
+
+        <div>
+          <h3>Subject</h3>
+          <div class="aw-demo__field">
+            <label for="demo-role">Role</label>
+            <select id="demo-role">
+              <option value="viewer">viewer</option>
+              <option value="editor" selected>editor</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div class="aw-demo__field" style="margin-top:0.5rem">
+            <div class="checkbox-row">
+              <input type="checkbox" id="demo-owns" />
+              <label for="demo-owns">Owns this document</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="demo-resource-section">
+          <h3>Resource</h3>
+          <div class="aw-demo__field">
+            <label for="demo-status">Status</label>
+            <select id="demo-status">
+              <option value="draft" selected>draft</option>
+              <option value="published">published</option>
+              <option value="archived">archived</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <h3>Action</h3>
+          <div class="aw-demo__field">
+            <select id="demo-action">
+              <option value="read" selected>read</option>
+              <option value="write">write</option>
+              <option value="delete">delete</option>
+              <option value="create">create</option>
+              <option value="change-password">change-password</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="aw-demo__result">
+        <div class="aw-verdict" id="demo-verdict">
+          <div class="aw-verdict__icon allow" id="demo-verdict-icon">✓</div>
+          <div class="aw-verdict__label allow" id="demo-verdict-label">ALLOWED</div>
+        </div>
+        <div class="aw-details">
+          <div class="aw-detail-row">
+            <span class="aw-detail-row__key">reason</span>
+            <span class="aw-detail-row__val highlight" id="demo-reason">—</span>
+          </div>
+          <div class="aw-detail-row">
+            <span class="aw-detail-row__key">effect</span>
+            <span class="aw-detail-row__val" id="demo-effect">—</span>
+          </div>
+          <div class="aw-detail-row">
+            <span class="aw-detail-row__key">defaulted</span>
+            <span class="aw-detail-row__val muted" id="demo-defaulted">false</span>
+          </div>
+          <div class="aw-detail-row" style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid var(--color-border)">
+            <span class="aw-detail-row__key">policy</span>
+            <span class="aw-detail-row__val muted">documents v1.0.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Value props ── -->
+<section class="aw-props">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">Built for observable authorization</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      AuthWrite isn't just about allow/deny — it's about understanding <em>why</em>.
+    </p>
+    <div class="aw-props__grid">
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">🔍</div>
+        <h3>Every decision has a reason</h3>
+        <p>The <code>reason</code> field on every decision carries the ID of the rule that matched — or <code>"default"</code> when none did. No more silent denials.</p>
+      </div>
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">📝</div>
+        <h3>Pure TypeScript rules</h3>
+        <p>Rules are plain functions — no DSL to learn, no schema to memorise. Your <code>match</code> function receives the full context and returns a boolean.</p>
+      </div>
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">🔌</div>
+        <h3>Pluggable observers</h3>
+        <p>Wire up OpenTelemetry, Postgres audit logs, Redis rate-limiting, or a custom webhook — all through the same <code>AuthObserver</code> interface.</p>
+      </div>
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">🚦</div>
+        <h3>Enforcer modes</h3>
+        <p>Switch between <code>enforce</code>, <code>audit</code> (permissive + logged), and <code>lockdown</code> (all denied) without changing a single rule.</p>
+      </div>
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">🧩</div>
+        <h3>Framework adapters</h3>
+        <p>Drop-in middleware for Express, Fastify, Next.js, and Hono. The core runs in any environment — Node.js, edge runtimes, or the browser.</p>
+      </div>
+      <div class="aw-prop-card">
+        <div class="aw-prop-card__icon">0️⃣</div>
+        <h3>Zero dependencies</h3>
+        <p><code>@authwrite/core</code> ships with no runtime dependencies. Framework adapters only depend on their peer framework.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Code examples ── -->
+<section class="aw-code-section">
+  <div class="container">
+    <h2 class="section__title">The full picture in three files</h2>
+    <p class="section__subtitle">Define once, evaluate everywhere.</p>
+
+    <div class="aw-tabs">
+      <div class="aw-tab-btns">
+        <button class="active" data-tab="policy">Define a policy</button>
+        <button data-tab="evaluate">Evaluate</button>
+        <button data-tab="express">Express middleware</button>
+      </div>
+
+      <div class="aw-tab-panel active" id="tab-policy">
+        <pre><code><span class="cm">// policy.ts</span>
+<span class="kw">import</span> { <span class="fn">createAuthEngine</span> } <span class="kw">from</span> <span class="str">'@authwrite/core'</span>
+
+<span class="kw">const</span> engine = <span class="fn">createAuthEngine</span>({
+  policy: {
+    id:            <span class="str">'documents'</span>,
+    version:       <span class="str">'1.0.0'</span>,
+    defaultEffect: <span class="str">'deny'</span>,
+    rules: [
+      {
+        id:       <span class="str">'archived-blocks-mutation'</span>,
+        priority: <span class="num">20</span>,
+        match:    ({ resource }) =&gt; resource?.status === <span class="str">'archived'</span>,
+        deny:     [<span class="str">'write'</span>, <span class="str">'delete'</span>],
+      },
+      {
+        id:       <span class="str">'admin-full-access'</span>,
+        priority: <span class="num">10</span>,
+        match:    ({ subject }) =&gt; subject.roles.<span class="fn">includes</span>(<span class="str">'admin'</span>),
+        allow:    [<span class="str">'*'</span>],
+      },
+      {
+        id:       <span class="str">'owner-full-access'</span>,
+        priority: <span class="num">5</span>,
+        match:    ({ subject, resource }) =&gt;
+                    !!resource &amp;&amp; resource.ownerId === subject.id,
+        allow:    [<span class="str">'*'</span>],
+      },
+    ],
+  },
+})</code></pre>
+      </div>
+
+      <div class="aw-tab-panel" id="tab-evaluate">
+        <pre><code><span class="cm">// check.ts</span>
+<span class="kw">const</span> decision = <span class="kw">await</span> engine.<span class="fn">evaluate</span>({
+  subject:  { id: <span class="str">'user-1'</span>, roles: [<span class="str">'editor'</span>] },
+  resource: { type: <span class="str">'document'</span>, id: <span class="str">'doc-42'</span>,
+               ownerId: <span class="str">'other-user'</span>, status: <span class="str">'archived'</span> },
+  action:   <span class="str">'write'</span>,
+})
+
+<span class="cm">// decision →</span>
+<span class="cm">// {</span>
+<span class="cm">//   allowed:    false,</span>
+<span class="cm">//   reason:     'archived-blocks-mutation',</span>
+<span class="cm">//   effect:     'deny',</span>
+<span class="cm">//   defaulted:  false,</span>
+<span class="cm">//   policy:     'documents',</span>
+<span class="cm">//   durationMs: 0.12</span>
+<span class="cm">// }</span>
+
+<span class="kw">if</span> (!decision.allowed) {
+  logger.<span class="fn">warn</span>(<span class="str">'access denied'</span>, { reason: decision.reason })
+}</code></pre>
+      </div>
+
+      <div class="aw-tab-panel" id="tab-express">
+        <pre><code><span class="cm">// middleware.ts</span>
+<span class="kw">import</span> { <span class="fn">createAuthMiddleware</span> } <span class="kw">from</span> <span class="str">'@authwrite/express'</span>
+
+app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
+  <span class="fn">createAuthMiddleware</span>({
+    engine,
+    subject:  (req) =&gt; ({ id: req.user.id, roles: req.user.roles }),
+    resource: <span class="kw">async</span> (req) =&gt; db.documents.<span class="fn">get</span>(req.params.id),
+    action:   <span class="str">'write'</span>,
+    onDeny:   (req, res, decision) =&gt; {
+      res.<span class="fn">status</span>(<span class="num">403</span>).<span class="fn">json</span>({
+        error:  <span class="str">'forbidden'</span>,
+        reason: decision.reason,   <span class="cm">// 'archived-blocks-mutation'</span>
+      })
+    },
+  }),
+  updateDocumentHandler
+)</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Packages ── -->
+<section class="aw-packages">
+  <div class="container">
+    <h2 class="section__title">Packages</h2>
+    <p class="section__subtitle">Install only what you need.</p>
+
+    <div class="aw-pkg-table">
+      <div class="aw-pkg-row aw-pkg-row--head">
+        <span>Package</span>
+        <span>Description</span>
+        <span>Type</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/core</span>
+        <span class="aw-pkg-desc">Engine, enforcer, types — zero dependencies</span>
+        <span class="aw-pkg-tag aw-pkg-tag--core">core</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/express</span>
+        <span class="aw-pkg-desc">Express request handler middleware</span>
+        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/fastify</span>
+        <span class="aw-pkg-desc">Fastify plugin with preHandler hook</span>
+        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/nextjs</span>
+        <span class="aw-pkg-desc">Next.js App Router / Route Handlers helper</span>
+        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/hono</span>
+        <span class="aw-pkg-desc">Hono middleware — works on edge runtimes</span>
+        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/observer-otel</span>
+        <span class="aw-pkg-desc">OpenTelemetry spans + metrics observer</span>
+        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/observer-pg</span>
+        <span class="aw-pkg-desc">Postgres audit-log observer</span>
+        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/observer-redis</span>
+        <span class="aw-pkg-desc">Redis denial-rate observer</span>
+        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/loader-yaml</span>
+        <span class="aw-pkg-desc">File-based policy loader with hot reload</span>
+        <span class="aw-pkg-tag aw-pkg-tag--loader">loader</span>
+      </div>
+      <div class="aw-pkg-row">
+        <span class="aw-pkg-name">@authwrite/testing</span>
+        <span class="aw-pkg-desc">Test helpers: mock engines, decision builders</span>
+        <span class="aw-pkg-tag aw-pkg-tag--testing">testing</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="aw-cta">
+  <div class="container">
+    <h2>Stop guessing why access was denied.</h2>
+    <p>AuthWrite makes authorization as observable as any other system metric.</p>
+    <div class="aw-hero__actions">
+      <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
+        Get started on GitHub
+      </a>
+      <a href="https://github.com/richardadalton/authwrite/tree/main/docs" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
+        Read the docs
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <span class="footer__copy">© 2026 Devjoy Ltd. MIT License.</span>
+    <div class="footer__links">
+      <a href="/">Pathwrite</a>
+      <a href="authwrite.html">AuthWrite</a>
+      <a href="https://github.com/richardadalton/authwrite" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ── Inline demo engine ── -->
+<script>
+  // ── Minimal policy engine (mirrors @authwrite/core logic) ──────────────────
+
+  const policy = {
+    id: 'documents',
+    version: '1.0.0',
+    defaultEffect: 'deny',
+    rules: [
+      {
+        id:       'archived-blocks-mutation',
+        priority: 20,
+        match:    ({ resource }) => resource?.status === 'archived',
+        deny:     ['write', 'delete'],
+      },
+      {
+        id:       'admin-full-access',
+        priority: 10,
+        match:    ({ subject }) => subject.roles.includes('admin'),
+        allow:    ['*'],
+      },
+      {
+        id:       'owner-full-access',
+        priority: 5,
+        match:    ({ subject, resource }) =>
+                    !!resource && resource.ownerId === subject.id,
+        allow:    ['*'],
+      },
+      {
+        id:       'viewer-read-only',
+        priority: 1,
+        match:    ({ subject }) => subject.roles.includes('viewer'),
+        allow:    ['read'],
+      },
+      {
+        id:       'self-service-password',
+        priority: 1,
+        match:    () => true,
+        allow:    ['change-password'],
+      },
+    ],
+  }
+
+  function evaluate({ subject, resource, action }) {
+    const ctx = { subject, resource, action }
+    const sorted = [...policy.rules].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+    for (const rule of sorted) {
+      if (!rule.match(ctx)) continue
+      const denied = rule.deny && (rule.deny.includes('*') || rule.deny.includes(action))
+      if (denied) return { allowed: false, reason: rule.id, effect: 'deny', defaulted: false }
+      const allowed = rule.allow && (rule.allow.includes('*') || rule.allow.includes(action))
+      if (allowed) return { allowed: true, reason: rule.id, effect: 'allow', defaulted: false }
+    }
+    const defaultAllow = policy.defaultEffect === 'allow'
+    return { allowed: defaultAllow, reason: 'default', effect: policy.defaultEffect, defaulted: true }
+  }
+
+  // ── Presets ────────────────────────────────────────────────────────────────
+
+  const PRESETS = [
+    { label: 'Owner reads their doc',   role: 'editor', owns: true,  status: 'published', action: 'read'            },
+    { label: 'Admin vs archived doc',   role: 'admin',  owns: false, status: 'archived',  action: 'write'           },
+    { label: 'Viewer tries to delete',  role: 'viewer', owns: false, status: 'published', action: 'delete'          },
+    { label: 'Default deny (no rule)',  role: 'editor', owns: false, status: 'published', action: 'write'           },
+    { label: 'Subject action (no res)', role: 'editor', owns: false, status: 'draft',     action: 'change-password' },
+  ]
+
+  // ── Render presets ─────────────────────────────────────────────────────────
+
+  const presetsEl = document.getElementById('demo-presets')
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button')
+    btn.textContent = p.label
+    btn.addEventListener('click', () => applyPreset(p))
+    presetsEl.appendChild(btn)
+  })
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+
+  const roleEl     = document.getElementById('demo-role')
+  const ownsEl     = document.getElementById('demo-owns')
+  const statusEl   = document.getElementById('demo-status')
+  const actionEl   = document.getElementById('demo-action')
+  const resourceSec = document.getElementById('demo-resource-section')
+
+  const verdictIcon  = document.getElementById('demo-verdict-icon')
+  const verdictLabel = document.getElementById('demo-verdict-label')
+  const reasonEl     = document.getElementById('demo-reason')
+  const effectEl     = document.getElementById('demo-effect')
+  const defaultedEl  = document.getElementById('demo-defaulted')
+
+  // ── Evaluate & render ──────────────────────────────────────────────────────
+
+  function render() {
+    const role   = roleEl.value
+    const owns   = ownsEl.checked
+    const status = statusEl.value
+    const action = actionEl.value
+    const isSubjectAction = action === 'change-password'
+
+    resourceSec.style.display = isSubjectAction ? 'none' : ''
+
+    const subject  = { id: 'current-user', roles: [role] }
+    const resource = isSubjectAction ? undefined : {
+      type:    'document',
+      id:      action !== 'create' ? 'doc-1' : undefined,
+      ownerId: owns ? 'current-user' : 'other-user',
+      status,
+    }
+
+    const d = evaluate({ subject, resource, action })
+
+    const cls = d.allowed ? 'allow' : 'deny'
+    verdictIcon.className  = `aw-verdict__icon ${cls}`
+    verdictIcon.textContent = d.allowed ? '✓' : '✗'
+    verdictLabel.className  = `aw-verdict__label ${cls}`
+    verdictLabel.textContent = d.allowed ? 'ALLOWED' : 'DENIED'
+
+    reasonEl.textContent    = d.reason
+    reasonEl.className      = `aw-detail-row__val ${d.defaulted ? 'muted' : 'highlight'}`
+    effectEl.textContent    = d.effect
+    defaultedEl.textContent = String(d.defaulted)
+  }
+
+  function applyPreset(p) {
+    roleEl.value    = p.role
+    ownsEl.checked  = p.owns
+    statusEl.value  = p.status
+    actionEl.value  = p.action
+    render()
+  }
+
+  [roleEl, ownsEl, statusEl, actionEl].forEach(el => el.addEventListener('change', render))
+  render()
+
+  // ── Code tabs ──────────────────────────────────────────────────────────────
+
+  document.querySelectorAll('.aw-tab-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab
+      document.querySelectorAll('.aw-tab-btns button').forEach(b => b.classList.remove('active'))
+      document.querySelectorAll('.aw-tab-panel').forEach(p => p.classList.remove('active'))
+      btn.classList.add('active')
+      document.getElementById(`tab-${tab}`).classList.add('active')
+    })
+  })
+</script>
+
+</body>
+</html>
