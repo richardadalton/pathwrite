@@ -322,65 +322,7 @@
     .cm  { color: #5c6370; font-style: italic; }
     .num { color: #d19a66; }
 
-    /* ── Packages table ── */
-    .aw-packages {
-      padding: 5rem 0;
-      background: var(--color-bg);
-    }
-    .aw-packages .section__title { text-align: center; margin-bottom: 0.75rem; }
-    .aw-packages .section__subtitle { text-align: center; margin-bottom: 2.5rem; }
-    .aw-pkg-table {
-      max-width: 820px;
-      margin: 0 auto;
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .aw-pkg-row {
-      display: grid;
-      grid-template-columns: 220px 1fr auto;
-      gap: 1rem;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--color-border);
-      align-items: center;
-    }
-    .aw-pkg-row:last-child { border-bottom: none; }
-    .aw-pkg-row--head {
-      background: var(--color-code-bg);
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--color-text-muted);
-    }
-    .aw-pkg-row:not(.aw-pkg-row--head) { background: var(--color-bg-card); }
-    .aw-pkg-row:not(.aw-pkg-row--head):hover { background: var(--color-surface); }
-    .aw-pkg-name {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--color-primary-light);
-    }
-    .aw-pkg-desc {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-    }
-    .aw-pkg-tag {
-      font-size: 0.75rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 100px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .aw-pkg-tag--core     { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
-    .aw-pkg-tag--adapter  { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
-    .aw-pkg-tag--observer { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
-    .aw-pkg-tag--loader   { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
-    .aw-pkg-tag--testing  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
-    @media (max-width: 600px) {
-      .aw-pkg-row { grid-template-columns: 1fr; gap: 0.25rem; }
-    }
-
-    /* ── Comparison matrix ── */
+    /* ── Comparison matrix ── */x ── */
     .aw-compare {
       padding: 5rem 0;
       background: var(--color-surface);
@@ -446,6 +388,37 @@
     .aw-matrix thead tr th.aw-matrix__ours:first-of-type {
       border-top: 2px solid var(--color-primary);
     }
+    /* ── Enforcer mode toggle ── */
+    .aw-mode-toggle {
+      display: flex;
+      gap: 0.3rem;
+      margin-top: 0.25rem;
+    }
+    .aw-mode-btn {
+      flex: 1;
+      padding: 0.3rem 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 5px;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .aw-mode-btn.active-enforce  { background: rgba(16,185,129,0.15); color: #10b981; border-color: #10b981; }
+    .aw-mode-btn.active-audit    { background: rgba(245,158,11,0.15);  color: #f59e0b; border-color: #f59e0b; }
+    .aw-mode-btn.active-lockdown { background: rgba(239,68,68,0.15);   color: #ef4444; border-color: #ef4444; }
+    .aw-mode-banner {
+      font-size: 0.78rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    .aw-mode-banner.audit    { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); display: block; }
+    .aw-mode-banner.lockdown { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  display: block; }
+
     .aw-matrix__yes  { color: #10b981; font-weight: 700; font-size: 1rem; }
     .aw-matrix__no   { color: #6b7280; font-size: 1rem; }
     .aw-matrix__part { color: #f59e0b; font-size: 0.8rem; font-weight: 600; }
@@ -491,7 +464,7 @@
 <!-- ── Nav ── -->
 <nav class="nav">
   <div class="container nav__inner">
-    <a href="authwrite.html" class="nav__logo"><span class="nav__logo-icon">🔐</span> Authwrite</a>
+    <a href="authwrite.html" class="nav__logo"><span class="nav__logo-icon">&loz;</span> Authwrite</a>
     <div class="nav__links">
       <a href="/">Home</a>
       <a href="authwrite.html" style="color:var(--color-primary-light);font-weight:600">Authwrite</a>
@@ -575,6 +548,15 @@
             </div>
           </div>
         </div>
+        <div style="margin-top:0.75rem">
+          <h3>Enforcer mode</h3>
+          <div class="aw-mode-toggle">
+            <button class="aw-mode-btn active-enforce" data-mode="enforce">enforce</button>
+            <button class="aw-mode-btn" data-mode="audit">audit</button>
+            <button class="aw-mode-btn" data-mode="lockdown">lockdown</button>
+          </div>
+          <div class="aw-mode-banner" id="demo-mode-banner"></div>
+        </div>
       </div>
 
       <div class="aw-demo__result">
@@ -594,6 +576,10 @@
           <div class="aw-detail-row">
             <span class="aw-detail-row__key">defaulted</span>
             <span class="aw-detail-row__val muted" id="demo-defaulted">false</span>
+          </div>
+          <div class="aw-detail-row" id="demo-override-row" style="display:none">
+            <span class="aw-detail-row__key">override</span>
+            <span class="aw-detail-row__val" id="demo-override"></span>
           </div>
           <div class="aw-detail-row" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--color-border)">
             <span class="aw-detail-row__key">policy</span>
@@ -741,72 +727,6 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
   }),
   updateDocumentHandler
 )</code></pre>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Packages ── -->
-<section class="aw-packages">
-  <div class="container">
-    <h2 class="section__title">Packages</h2>
-    <p class="section__subtitle">Install only what you need.</p>
-
-    <div class="aw-pkg-table">
-      <div class="aw-pkg-row aw-pkg-row--head">
-        <span>Package</span>
-        <span>Description</span>
-        <span>Type</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/core</span>
-        <span class="aw-pkg-desc">Engine, enforcer, types — zero dependencies</span>
-        <span class="aw-pkg-tag aw-pkg-tag--core">core</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/express</span>
-        <span class="aw-pkg-desc">Express request handler middleware</span>
-        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/fastify</span>
-        <span class="aw-pkg-desc">Fastify plugin with preHandler hook</span>
-        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/nextjs</span>
-        <span class="aw-pkg-desc">Next.js App Router / Route Handlers helper</span>
-        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/hono</span>
-        <span class="aw-pkg-desc">Hono middleware — works on edge runtimes</span>
-        <span class="aw-pkg-tag aw-pkg-tag--adapter">adapter</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/observer-otel</span>
-        <span class="aw-pkg-desc">OpenTelemetry spans + metrics observer</span>
-        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/observer-pg</span>
-        <span class="aw-pkg-desc">Postgres audit-log observer</span>
-        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/observer-redis</span>
-        <span class="aw-pkg-desc">Redis denial-rate observer</span>
-        <span class="aw-pkg-tag aw-pkg-tag--observer">observer</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/loader-yaml</span>
-        <span class="aw-pkg-desc">File-based policy loader with hot reload</span>
-        <span class="aw-pkg-tag aw-pkg-tag--loader">loader</span>
-      </div>
-      <div class="aw-pkg-row">
-        <span class="aw-pkg-name">@authwrite/testing</span>
-        <span class="aw-pkg-desc">Test helpers: mock engines, decision builders</span>
-        <span class="aw-pkg-tag aw-pkg-tag--testing">testing</span>
       </div>
     </div>
   </div>
@@ -1028,10 +948,10 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
 
   // ── DOM refs ───────────────────────────────────────────────────────────────
 
-  const roleEl     = document.getElementById('demo-role')
-  const ownsEl     = document.getElementById('demo-owns')
-  const statusEl   = document.getElementById('demo-status')
-  const actionEl   = document.getElementById('demo-action')
+  const roleEl      = document.getElementById('demo-role')
+  const ownsEl      = document.getElementById('demo-owns')
+  const statusEl    = document.getElementById('demo-status')
+  const actionEl    = document.getElementById('demo-action')
   const resourceSec = document.getElementById('demo-resource-section')
 
   const verdictIcon  = document.getElementById('demo-verdict-icon')
@@ -1039,6 +959,33 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
   const reasonEl     = document.getElementById('demo-reason')
   const effectEl     = document.getElementById('demo-effect')
   const defaultedEl  = document.getElementById('demo-defaulted')
+  const overrideRow  = document.getElementById('demo-override-row')
+  const overrideEl   = document.getElementById('demo-override')
+  const modeBanner   = document.getElementById('demo-mode-banner')
+
+  let currentMode = 'enforce'
+
+  // ── Enforcer mode buttons ─────────────────────────────────────────────────
+
+  document.querySelectorAll('.aw-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMode = btn.dataset.mode
+      document.querySelectorAll('.aw-mode-btn').forEach(b => {
+        b.className = `aw-mode-btn${b.dataset.mode === currentMode ? ` active-${currentMode}` : ''}`
+      })
+      if (currentMode === 'audit') {
+        modeBanner.className = 'aw-mode-banner audit'
+        modeBanner.textContent = 'Audit mode — denials are overridden to allow. Callers see allowed: true.'
+      } else if (currentMode === 'lockdown') {
+        modeBanner.className = 'aw-mode-banner lockdown'
+        modeBanner.textContent = 'Lockdown mode — all access denied regardless of policy.'
+      } else {
+        modeBanner.className = 'aw-mode-banner'
+        modeBanner.textContent = ''
+      }
+      render()
+    })
+  })
 
   // ── Evaluate & render ──────────────────────────────────────────────────────
 
@@ -1059,18 +1006,34 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
       status,
     }
 
-    const d = evaluate({ subject, resource, action })
+    const raw = evaluate({ subject, resource, action })
+
+    // Apply enforcer mode override
+    let d = { ...raw, override: null }
+    if (currentMode === 'lockdown') {
+      d = { ...d, allowed: false, override: 'lockdown' }
+    } else if (currentMode === 'audit' && !raw.allowed) {
+      d = { ...d, allowed: true, override: 'permissive' }
+    }
 
     const cls = d.allowed ? 'allow' : 'deny'
-    verdictIcon.className  = `aw-verdict__icon ${cls}`
+    verdictIcon.className   = `aw-verdict__icon ${cls}`
     verdictIcon.textContent = d.allowed ? '✓' : '✗'
     verdictLabel.className  = `aw-verdict__label ${cls}`
     verdictLabel.textContent = d.allowed ? 'ALLOWED' : 'DENIED'
 
-    reasonEl.textContent    = d.reason
-    reasonEl.className      = `aw-detail-row__val ${d.defaulted ? 'muted' : 'highlight'}`
+    reasonEl.textContent = d.reason
+    reasonEl.className   = `aw-detail-row__val ${d.defaulted ? 'muted' : 'highlight'}`
     effectEl.textContent    = d.effect
     defaultedEl.textContent = String(d.defaulted)
+
+    if (d.override) {
+      overrideRow.style.display = ''
+      overrideEl.textContent = d.override
+      overrideEl.style.color = currentMode === 'lockdown' ? '#ef4444' : '#f59e0b'
+    } else {
+      overrideRow.style.display = 'none'
+    }
   }
 
   function applyPreset(p) {
