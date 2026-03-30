@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pathwrite — The Multi-Step Engine for Every Framework</title>
-  <meta name="description" content="Define your multi-step flow once in pure TypeScript. Pathwrite's engine interprets it, every framework adapter renders it. React, Vue, Angular, Svelte, React Native." />
+  <meta name="description" content="Define your multi-step flow once in pure TypeScript. Pathwrite's engine interprets it, every framework adapter renders it. React, Vue, Angular, Svelte, SolidJS, React Native." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -333,14 +333,14 @@
   <div class="container">
     <div class="pillars__grid">
       <div class="pillar">
-        <div class="pillar__num">736</div>
+        <div class="pillar__num">795</div>
         <h3>Tests — and zero framework dependencies</h3>
         <p>Every guard, hook, and navigation path is tested in pure Node. The engine runs identically in a browser, a test runner, and React Native.</p>
       </div>
       <div class="pillar">
-        <div class="pillar__num">5</div>
+        <div class="pillar__num">6</div>
         <h3>First-class framework adapters</h3>
-        <p>React, Vue, Angular, Svelte, and React Native. Each adapter provides an idiomatic hook, composable, or injectable — plus an optional <code>PathShell</code> UI.</p>
+        <p>React, Vue, Angular, Svelte, SolidJS, and React Native. Each adapter provides an idiomatic hook, composable, or injectable — plus an optional <code>PathShell</code> UI.</p>
       </div>
       <div class="pillar">
         <div class="pillar__num">1</div>
@@ -381,7 +381,7 @@
       <div class="analogy-cell">
         <div class="analogy-cell__arrow">&#x2192;</div>
         <div class="analogy-cell__name">Use in any framework</div>
-        <div class="analogy-cell__analogy">The same package imports into React, Vue, Angular, Svelte, and React Native. One source of truth for your checkout, onboarding, or application flow.</div>
+        <div class="analogy-cell__analogy">The same package imports into React, Vue, Angular, Svelte, SolidJS, and React Native. One source of truth for your checkout, onboarding, or application flow.</div>
       </div>
     </div>
   </div>
@@ -406,7 +406,7 @@
         </thead>
         <tbody>
           <tr><td>Framework-agnostic core</td><td class="y">&check;</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
-          <tr><td>React + Vue + Angular + Svelte</td><td class="y">&check;</td><td class="n">2 of 4</td><td class="n">React only</td><td class="n">React only</td></tr>
+          <tr><td>React + Vue + Angular + Svelte + Solid</td><td class="y">&check;</td><td class="n">2 of 5</td><td class="n">React only</td><td class="n">React only</td></tr>
           <tr><td>React Native (iOS &amp; Android)</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>Built-in persistence</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
           <tr><td>Navigation guards</td><td class="y">&check;</td><td class="y">&check;</td><td class="n">&cross;</td><td class="n">&cross;</td></tr>
@@ -460,7 +460,7 @@
 <section class="section section--dark" id="artifact">
   <div class="container">
     <h2 class="section__title">Define once. Test without a browser. Ship to every framework.</h2>
-    <p class="section__subtitle">The same job-application flow &mdash; from pure TypeScript to headless tests to React, Vue, Angular, Svelte, and React Native.</p>
+    <p class="section__subtitle">The same job-application flow &mdash; from pure TypeScript to headless tests to React, Vue, Angular, Svelte, SolidJS, and React Native.</p>
 
     <div class="tabs" id="combo-tabs">
       <div class="tabs__bar">
@@ -470,6 +470,7 @@
         <button class="tabs__tab" data-tab="vue" onclick="switchComboTab('vue')">Vue</button>
         <button class="tabs__tab" data-tab="angular" onclick="switchComboTab('angular')">Angular</button>
         <button class="tabs__tab" data-tab="svelte" onclick="switchComboTab('svelte')">Svelte</button>
+        <button class="tabs__tab" data-tab="solid" onclick="switchComboTab('solid')">Solid</button>
         <button class="tabs__tab" data-tab="rn" onclick="switchComboTab('rn')">React Native</button>
       </div>
 
@@ -677,6 +678,39 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
         <p class="code-caption">Svelte 5 snippets replace JSX. The workflow import is identical to every other framework.</p>
       </div>
 
+      <!-- Solid -->
+      <div class="tabs__panel" id="combo-panel-solid">
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">my-solid-app/JobApplication.tsx</span>
+          </div>
+<pre><code><span class="kw">import</span> { PathShell } <span class="kw">from</span> <span class="str">"@daltonr/pathwrite-solid"</span>;
+<span class="kw">import</span> { createApplicationPath } <span class="kw">from</span> <span class="str">"my-app-workflows"</span>; <span class="cm">// &#x2190; shared package</span>
+<span class="kw">import</span> { apiServices } <span class="kw">from</span> <span class="str">"./services"</span>;
+
+<span class="kw">export default function</span> <span class="fn">JobApplication</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">PathShell</span>
+      <span class="attr">path</span>={createApplicationPath(apiServices)}
+      <span class="attr">initialData</span>={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
+      <span class="attr">onComplete</span>={handleSubmit}
+      <span class="attr">steps</span>={{
+        role:           () =&gt; &lt;<span class="tag">RoleStep</span> /&gt;,
+        experience:     () =&gt; &lt;<span class="tag">ExperienceStep</span> /&gt;,
+        eligibility:    () =&gt; &lt;<span class="tag">EligibilityStep</span> /&gt;,
+        "cover-letter": () =&gt; &lt;<span class="tag">CoverLetterStep</span> /&gt;,
+        review:         () =&gt; &lt;<span class="tag">ReviewStep</span> /&gt;,
+      }}
+    /&gt;
+  );
+}</code></pre>
+        </div>
+        <p class="code-caption">Same workflow package import. Steps take render functions &mdash; Solid's fine-grained reactivity handles updates without re-rendering the whole component.</p>
+      </div>
+
       <!-- React Native -->
       <div class="tabs__panel" id="combo-panel-rn">
         <div class="code-block">
@@ -844,6 +878,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
       <code>@daltonr/pathwrite-vue</code>
       <code>@daltonr/pathwrite-angular</code>
       <code>@daltonr/pathwrite-svelte</code>
+      <code>@daltonr/pathwrite-solid</code>
       <code>@daltonr/pathwrite-react-native</code>
       <code>@daltonr/pathwrite-store</code>
     </div>
