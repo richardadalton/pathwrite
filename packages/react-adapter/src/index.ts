@@ -80,6 +80,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    * listens for to dismiss the wizard UI. All state and data are preserved.
    */
   suspend: () => void;
+  /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
+  validate: () => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
@@ -184,7 +186,9 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const suspend = useCallback(() => engine.suspend(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
+  const validate = useCallback(() => engine.validate(), [engine]);
+
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
 }
 
 // ---------------------------------------------------------------------------
@@ -319,6 +323,10 @@ export interface PathShellProps {
   hideCancel?: boolean;
   /** If true, hide the progress indicator. Also hidden automatically when the path has only one step. Defaults to `false`. */
   hideProgress?: boolean;
+  /** If true, hide the footer (navigation buttons). Defaults to `false`. The error panel is still shown on async failure regardless of this prop. */
+  hideFooter?: boolean;
+  /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
+  validateWhen?: boolean;
   /**
    * Footer layout mode:
    * - `"auto"` (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
@@ -417,6 +425,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
+  hideFooter = false,
   footerLayout = "auto",
   className,
   renderHeader,
@@ -424,6 +433,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   validationDisplay = "summary",
   progressLayout = "merged",
   services,
+  validateWhen = false,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -434,7 +444,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     }
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+
+  useEffect(() => {
+    if (validateWhen) validate();
+  }, [validateWhen, validate]);
 
   useImperativeHandle(ref, () => ({
     restart: () => restart(),
@@ -499,7 +513,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       // Body — step content
       createElement("div", { className: "pw-shell__body" }, stepContent),
       // Validation messages — suppressed when validationDisplay="inline"
-      validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+      validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(snapshot.fieldErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
         ...Object.entries(snapshot.fieldErrors).map(([key, msg]) =>
           createElement("li", { key, className: "pw-shell__validation-item" },
             key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
@@ -517,17 +531,19 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         )
       ),
       // Blocking error — guard returned { allowed: false, reason }
-      validationDisplay !== "inline" && snapshot.hasAttemptedNext && snapshot.blockingError &&
+      validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError &&
         createElement("p", { className: "pw-shell__blocking-error" }, snapshot.blockingError),
       // Error panel — replaces footer when an async operation has failed
       snapshot.status === "error" && snapshot.error
         ? defaultErrorPanel(snapshot, actions)
         // Footer — navigation buttons
-        : renderFooter
-          ? renderFooter(snapshot, actions)
-          : defaultFooter(snapshot, actions, {
-              backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, footerLayout
-            })
+        : !hideFooter
+          ? renderFooter
+            ? renderFooter(snapshot, actions)
+            : defaultFooter(snapshot, actions, {
+                backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, footerLayout
+              })
+          : null
     )
   );
 });

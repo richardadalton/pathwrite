@@ -7,6 +7,7 @@ import {
   defineComponent,
   h,
   onMounted,
+  watch,
   provide,
   inject,
   type Ref,
@@ -78,6 +79,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   retry: () => Promise<void>;
   /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
   suspend: () => Promise<void>;
+  /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
+  validate: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,8 +133,9 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const restart = (): Promise<void> => engine.restart();
   const retry = (): Promise<void> => engine.retry();
   const suspend = (): Promise<void> => engine.suspend();
+  const validate = (): void => engine.validate();
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +224,8 @@ export const PathShell = defineComponent({
     cancelLabel: { type: String, default: "Cancel" },
     hideCancel: { type: Boolean, default: false },
     hideProgress: { type: Boolean, default: false },
+    /** If true, hide the footer (navigation buttons). The error panel is still shown on async failure regardless of this prop. */
+    hideFooter: { type: Boolean, default: false },
     /**
      * Footer layout mode:
      * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
@@ -246,7 +252,9 @@ export const PathShell = defineComponent({
      * Services object passed through context to all step components.
      * Step components access it via `usePathContext<TData, TServices>()`.
      */
-    services: { type: Object as PropType<object | null>, default: null }
+    services: { type: Object as PropType<object | null>, default: null },
+    /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
+    validateWhen: { type: Boolean, default: false },
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
@@ -259,7 +267,7 @@ export const PathShell = defineComponent({
       }
     });
 
-    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
+    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
 
     // Provide context so child components can use usePathContext()
     provide(PathInjectionKey, { path: pathReturn, services: props.services ?? null });
@@ -273,6 +281,8 @@ export const PathShell = defineComponent({
         start(props.path, props.initialData);
       }
     });
+
+    watch(() => props.validateWhen, (val) => { if (val) validate(); });
 
     const actions: PathShellActions = {
       next, previous, cancel, goToStep, goToStepChecked, setData,
@@ -329,7 +339,7 @@ export const PathShell = defineComponent({
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
         // Validation messages — suppressed when validationDisplay="inline"
-        props.validationDisplay !== "inline" && snap.hasAttemptedNext && Object.keys(snap.fieldErrors).length > 0
+        props.validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && Object.keys(snap.fieldErrors).length > 0
           ? h("ul", { class: "pw-shell__validation" },
               Object.entries(snap.fieldErrors).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__validation-item" }, [
@@ -351,16 +361,18 @@ export const PathShell = defineComponent({
             )
           : null,
         // Blocking error — guard returned { allowed: false, reason }
-        props.validationDisplay !== "inline" && snap.hasAttemptedNext && snap.blockingError
+        props.validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && snap.blockingError
           ? h("p", { class: "pw-shell__blocking-error" }, snap.blockingError)
           : null,
         // Error panel — replaces footer when an async operation has failed
         snap.status === "error" && snap.error
           ? renderVueErrorPanel(snap, actions)
           // Footer — navigation
-          : slots.footer
-            ? slots.footer({ snapshot: snap, actions })
-            : renderVueFooter(snap, actions, props)
+          : !props.hideFooter
+            ? slots.footer
+              ? slots.footer({ snapshot: snap, actions })
+              : renderVueFooter(snap, actions, props)
+            : null
       ]);
     };
   }

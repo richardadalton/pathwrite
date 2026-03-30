@@ -54,6 +54,7 @@
     "demo:svelte:skip": "npm run -w @daltonr/pathwrite-demo-svelte-skip start",
     "demo:svelte:stepchoice": "npm run -w @daltonr/pathwrite-demo-svelte-stepchoice start",
     "demo:svelte:storage": "npm run -w @daltonr/pathwrite-demo-svelte-storage start",
+    "demo:svelte:nested": "npm run -w @daltonr/pathwrite-demo-svelte-nested start",
     "demo:rn": "npm run -w @daltonr/pathwrite-demo-rn-showcase start"
   },
   "devDependencies": {

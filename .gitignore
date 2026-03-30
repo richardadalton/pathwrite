@@ -44,6 +44,7 @@ coverage/
 .expo/
 
 # Local feedback / scratch documents
+feedback/
 feedback.md
 *-feedback.md
 feedback-*.md

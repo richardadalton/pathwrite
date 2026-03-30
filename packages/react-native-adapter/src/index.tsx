@@ -78,6 +78,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   retry: () => void;
   /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
   suspend: () => void;
+  /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
+  validate: () => void;
 }
 
 export type PathProviderProps = PropsWithChildren<{
@@ -154,8 +156,9 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const restart = useCallback(() => engine.restart(), [engine]);
   const retry = useCallback(() => engine.retry(), [engine]);
   const suspend = useCallback(() => engine.suspend(), [engine]);
+  const validate = useCallback(() => engine.validate(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend };
+  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
 }
 
 // ---------------------------------------------------------------------------
@@ -247,6 +250,10 @@ export interface PathShellProps {
   hideCancel?: boolean;
   /** If true, hide the progress dots. Also hidden automatically when the path has only one step. */
   hideProgress?: boolean;
+  /** If true, hide the footer (navigation buttons). Defaults to `false`. The error panel is still shown on async failure regardless of this prop. */
+  hideFooter?: boolean;
+  /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
+  validateWhen?: boolean;
   /**
    * Footer layout mode:
    * - `"auto"` (default): "form" for single-step top-level paths, "wizard" otherwise.
@@ -319,6 +326,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
+  hideFooter = false,
   footerLayout = "auto",
   validationDisplay = "summary",
   renderHeader,
@@ -327,6 +335,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   keyboardVerticalOffset = 0,
   disableBodyScroll = false,
   services,
+  validateWhen = false,
 }: PathShellProps, ref): ReactElement {
   const pathReturn = usePath({
     engine: externalEngine,
@@ -337,7 +346,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     },
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend } = pathReturn;
+  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+
+  useEffect(() => {
+    if (validateWhen) validate();
+  }, [validateWhen, validate]);
 
   useImperativeHandle(ref, () => ({
     restart: () => restart(),
@@ -441,7 +454,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         }
 
         {/* Validation messages */}
-        {validationDisplay !== "inline" && snapshot.hasAttemptedNext && Object.keys(snapshot.fieldErrors).length > 0 && (
+        {validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(snapshot.fieldErrors).length > 0 && (
           <View style={styles.validation}>
             {Object.entries(snapshot.fieldErrors).map(([key, msg]) => (
               <Text key={key} style={styles.validationItem}>
@@ -465,7 +478,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         )}
 
         {/* Blocking error — guard returned { allowed: false, reason } */}
-        {validationDisplay !== "inline" && snapshot.hasAttemptedNext && snapshot.blockingError && (
+        {validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError && (
           <Text style={styles.blockingError}>{snapshot.blockingError}</Text>
         )}
 
@@ -507,9 +520,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                 </View>
               );
             })()
-          : renderFooter
-          ? renderFooter(snapshot, actions)
-          : (
+          : !hideFooter
+          ? renderFooter
+            ? renderFooter(snapshot, actions)
+            : (
             <View style={styles.footer}>
               <View style={styles.footerLeft}>
                 {isFormMode && !hideCancel && (
@@ -556,6 +570,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
               </View>
             </View>
           )
+          : null
         }
       </KeyboardAvoidingView>
     </PathContext.Provider>

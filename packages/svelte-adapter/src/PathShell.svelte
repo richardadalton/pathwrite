@@ -17,6 +17,10 @@
     cancelLabel?: string;
     hideCancel?: boolean;
     hideProgress?: boolean;
+    /** If true, hide the footer (navigation buttons). The error panel is still shown on async failure regardless of this prop. */
+    hideFooter?: boolean;
+    /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
+    validateWhen?: boolean;
     /**
      * Footer layout mode:
      * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
@@ -67,6 +71,8 @@
     cancelLabel = 'Cancel',
     hideCancel = false,
     hideProgress = false,
+    hideFooter = false,
+    validateWhen = false,
     footerLayout = 'auto',
     validationDisplay = 'summary',
     progressLayout = 'merged',
@@ -113,6 +119,10 @@
       started = true;
       start(path, initialData);
     }
+  });
+
+  $effect(() => {
+    if (validateWhen) pathReturn.validate();
   });
 
   function warnMissingStep(stepId: string): void {
@@ -223,7 +233,7 @@
     </div>
 
     <!-- Validation messages — suppressed when validationDisplay="inline" -->
-    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && Object.keys(snap.fieldErrors).length > 0}
+    {#if validationDisplay !== 'inline' && (snap.hasAttemptedNext || snap.hasValidated) && Object.keys(snap.fieldErrors).length > 0}
       <ul class="pw-shell__validation">
         {#each Object.entries(snap.fieldErrors) as [key, msg]}
           <li class="pw-shell__validation-item">
@@ -245,7 +255,7 @@
     {/if}
 
     <!-- Blocking error — guard returned { allowed: false, reason } -->
-    {#if validationDisplay !== 'inline' && snap.hasAttemptedNext && snap.blockingError}
+    {#if validationDisplay !== 'inline' && (snap.hasAttemptedNext || snap.hasValidated) && snap.blockingError}
       <p class="pw-shell__blocking-error">{snap.blockingError}</p>
     {/if}
 
@@ -273,9 +283,9 @@
         </div>
       </div>
     <!-- Footer: navigation buttons (overridable via footer snippet) -->
-    {:else if footer}
+    {:else if !hideFooter && footer}
       {@render footer(snap, actions)}
-    {:else}
+    {:else if !hideFooter}
       <div class="pw-shell__footer">
         <div class="pw-shell__footer-left">
           {#if resolvedFooterLayout === 'form' && !hideCancel}

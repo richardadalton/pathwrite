@@ -329,6 +329,17 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   /** Whether the current step's `canMovePrevious` guard allows going back. Async guards default to `true`. */
   canMovePrevious: boolean;
   /**
+   * True after `validate()` has been called on this engine (typically via a `PathRemote`
+   * from an outer shell). Unlike `hasAttemptedNext`, this flag is global — it does not
+   * reset when navigating between steps. Use this alongside `hasAttemptedNext` to gate
+   * inline error display in nested/tabbed shells where all steps must show errors at once:
+   *
+   * ```ts
+   * if (snapshot.hasAttemptedNext || snapshot.hasValidated) { // show errors }
+   * ```
+   */
+  hasValidated: boolean;
+  /**
    * True after the user has clicked Next / Submit on this step at least once,
    * regardless of whether navigation succeeded. Resets to `false` when entering
    * a new step.
@@ -415,7 +426,8 @@ export type StateChangeCause =
   | "cancel"
   | "restart"
   | "retry"
-  | "suspend";
+  | "suspend"
+  | "validate";
 
 export type PathEvent =
   | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot }
@@ -495,6 +507,7 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
   }
 }
 
+
 /**
  * Options accepted by the `PathEngine` constructor and `PathEngine.fromState()`.
  */
@@ -565,6 +578,8 @@ export class PathEngine {
   private _status: PathStatus = "idle";
   /** True after the user has called next() on the current step at least once. Resets on step entry. */
   private _hasAttemptedNext = false;
+  /** True after validate() has been called. Global — does not reset on step navigation. Resets on start/restart. */
+  private _hasValidated = false;
   /** Blocking message from canMoveNext returning { allowed: false, reason }. Cleared on step entry. */
   private _blockingError: string | null = null;
   /** The path and initial data from the most recent top-level start() call. Used by restart(). */
@@ -686,6 +701,7 @@ export class PathEngine {
     this.assertPathHasSteps(path);
     this._rootPath = path;
     this._rootInitialData = initialData;
+    this._hasValidated = false;
     return this._startAsync(path, initialData);
   }
 
@@ -706,6 +722,7 @@ export class PathEngine {
     }
     this._status = "idle";
     this._blockingError = null;
+    this._hasValidated = false;
     this.activePath = null;
     this.pathStack.length = 0;
     return this._startAsync(this._rootPath, { ...this._rootInitialData });
@@ -864,6 +881,21 @@ export class PathEngine {
     return this._goToStepCheckedAsync(active, targetIndex);
   }
 
+  /**
+   * Marks the engine as validation-attempted without navigating. Sets the
+   * `hasValidated` flag on the snapshot so all step components can show their
+   * inline errors simultaneously.
+   *
+   * Intended for use with `PathRemote` — an outer shell calls this on an
+   * inner tabbed shell when the outer Next is clicked, so every inner tab
+   * reveals its errors at once rather than requiring the user to visit each one.
+   */
+  public validate(): void {
+    if (this._status !== "idle" || !this.activePath) return;
+    this._hasValidated = true;
+    this.emitStateChanged("validate");
+  }
+
   public snapshot(): PathSnapshot | null {
     if (this.activePath === null) {
       return null;
@@ -932,6 +964,7 @@ export class PathEngine {
       status: this._status,
       error: this._error,
       hasPersistence: this._hasPersistence,
+      hasValidated: this._hasValidated,
       hasAttemptedNext: this._hasAttemptedNext,
       blockingError: this._blockingError,
       canMoveNext: this.evaluateCanMoveNextSync(effectiveStep, active),

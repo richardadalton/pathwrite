@@ -1,0 +1,144 @@
+.page {
+  max-width: 740px;
+  margin: 40px auto;
+  padding: 0 20px 60px;
+}
+
+.page-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.page-header h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.subtitle code {
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* ── Result panels ── */
+.result-panel {
+  border-radius: 12px;
+  padding: 36px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.cancel-panel {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.result-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.result-panel h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.result-panel p {
+  margin: 0;
+  font-size: 15px;
+  color: #374151;
+}
+
+/* ── Summary grid ── */
+.summary {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+  margin: 8px 0;
+}
+
+.summary-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.summary-section__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  padding: 8px 14px;
+  margin: 0;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.summary-row:last-child { border-bottom: none; }
+
+.summary-key {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ── Buttons ── */
+.btn-primary, .btn-secondary {
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover { background: #f9fafb; }

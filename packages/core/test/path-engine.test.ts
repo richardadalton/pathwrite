@@ -1149,6 +1149,66 @@ describe("PathEngine — fieldErrors", () => {
 });
 
 // ---------------------------------------------------------------------------
+// validate() / hasValidated
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — validate()", () => {
+  it("hasValidated is false initially", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.hasValidated).toBe(false);
+  });
+
+  it("sets hasValidated to true when validate() is called", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    engine.validate();
+    expect(engine.snapshot()?.hasValidated).toBe(true);
+  });
+
+  it("hasValidated persists across step navigation", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    engine.validate();
+    await engine.goToStep("step2");
+    expect(engine.snapshot()?.hasValidated).toBe(true);
+  });
+
+  it("hasValidated resets on restart()", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    engine.validate();
+    expect(engine.snapshot()?.hasValidated).toBe(true);
+    await engine.restart();
+    expect(engine.snapshot()?.hasValidated).toBe(false);
+  });
+
+  it("validate() emits stateChanged with cause 'validate'", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    const events: PathEvent[] = [];
+    engine.subscribe(e => events.push(e));
+    engine.validate();
+    expect(events[0]).toMatchObject({ type: "stateChanged", cause: "validate" });
+  });
+
+  it("validate() is a no-op when engine has not been started", () => {
+    const engine = new PathEngine();
+    expect(() => engine.validate()).not.toThrow();
+    expect(engine.snapshot()).toBeNull();
+  });
+
+  it("hasValidated resets on start()", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath());
+    engine.validate();
+    await engine.next(); await engine.next(); // complete the path
+    await engine.start(twoStepPath());
+    expect(engine.snapshot()?.hasValidated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // fieldWarnings
 // ---------------------------------------------------------------------------
 

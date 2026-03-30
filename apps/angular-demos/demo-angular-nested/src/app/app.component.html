@@ -1,0 +1,116 @@
+<main class="page">
+
+  <div class="page-header">
+    <h1>Employee Onboarding</h1>
+    <p class="subtitle">
+      Nested PathShell demo — an independent Employee Details path runs inside Step 2.
+      Data syncs to the outer path via <code>(event)</code>;
+      the outer <code>fieldErrors</code> guard validates the inner data.
+    </p>
+  </div>
+
+  <!-- ── Completed ──────────────────────────────────────────────────────────── -->
+  @if (isCompleted && completedData) {
+    <section class="result-panel success-panel">
+      <div class="result-icon">&#127881;</div>
+      <h2>Onboarding Complete!</h2>
+      <p>
+        <strong>{{ completedData.employeeName }}</strong> has been successfully onboarded.
+      </p>
+
+      <div class="summary">
+        <div class="summary-section">
+          <p class="summary-section__title">Personal</p>
+          <div class="summary-row">
+            <span class="summary-key">Name</span>
+            <span>{{ details().firstName }} {{ details().lastName }}</span>
+          </div>
+          @if (details().phone) {
+            <div class="summary-row">
+              <span class="summary-key">Phone</span>
+              <span>{{ details().phone }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-section">
+          <p class="summary-section__title">Department</p>
+          <div class="summary-row">
+            <span class="summary-key">Department</span>
+            <span>{{ details().department || '—' }}</span>
+          </div>
+          @if (details().manager) {
+            <div class="summary-row">
+              <span class="summary-key">Manager</span>
+              <span>{{ details().manager }}</span>
+            </div>
+          }
+          @if (details().office) {
+            <div class="summary-row">
+              <span class="summary-key">Office</span>
+              <span>{{ details().office }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-section">
+          <p class="summary-section__title">Equipment &amp; Roles</p>
+          <div class="summary-row">
+            <span class="summary-key">Laptop</span>
+            <span>{{ laptopLabel(details().laptopType) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Phone</span>
+            <span>{{ yesNo(details().needsPhone) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Job Title</span>
+            <span>{{ details().jobTitle || '—' }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Permissions</span>
+            <span>{{ activePerms(details()).length > 0 ? activePerms(details()).join(', ') : 'None' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" (click)="startOver()">Onboard Another</button>
+    </section>
+  }
+
+  <!-- ── Cancelled ──────────────────────────────────────────────────────────── -->
+  @if (isCancelled) {
+    <section class="result-panel cancel-panel">
+      <div class="result-icon">&#10006;</div>
+      <h2>Onboarding Cancelled</h2>
+      <p>No record was created.</p>
+      <button type="button" class="btn-secondary" (click)="startOver()">Try Again</button>
+    </section>
+  }
+
+  <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
+  @if (!isCompleted && !isCancelled) {
+    <pw-shell
+      [path]="employeeOnboardingPath"
+      [initialData]="initialData"
+      completeLabel="Complete Onboarding"
+      cancelLabel="Cancel"
+      validationDisplay="inline"
+      (complete)="onComplete($event)"
+      (cancel)="onCancel()"
+    >
+      <ng-template pwStep="enter-name">
+        <app-enter-name-step />
+      </ng-template>
+
+      <ng-template pwStep="employee-details">
+        <app-details-step />
+      </ng-template>
+
+      <ng-template pwStep="confirm">
+        <app-confirm-step />
+      </ng-template>
+    </pw-shell>
+  }
+
+</main>

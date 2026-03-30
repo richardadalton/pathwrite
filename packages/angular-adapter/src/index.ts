@@ -145,6 +145,10 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.goToStepChecked(stepId);
   }
 
+  public validate(): void {
+    this._engine.validate();
+  }
+
   public snapshot(): PathSnapshot<TData> | null {
     return this._state$.getValue();
   }

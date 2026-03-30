@@ -119,6 +119,81 @@ const checkout: PathDefinition<CheckoutData> = {
 
 ---
 
+## Tabbed forms
+
+A linear path does not have to feel linear. Replace the default navigation with a custom tab bar and the same engine becomes a tabbed form — one step per tab, free switching between them, no Back or Next buttons in sight.
+
+```typescript
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  department: string;
+  phone: string;
+  linkedinUrl: string;
+  bio: string;
+}
+
+const profileForm: PathDefinition<ProfileData> = {
+  id: "profile-form",
+  steps: [
+    { id: "personal",  title: "Personal" },
+    { id: "work",      title: "Work" },
+    { id: "contact",   title: "Contact" },
+  ],
+  onComplete: async ({ data }) => {
+    await saveProfile(data);
+  },
+};
+```
+
+The `PathShell` configuration suppresses the built-in chrome and delegates navigation entirely to a `TabBar` component:
+
+```tsx
+<PathShell
+  definition={profileForm}
+  hideProgress
+  renderFooter={() => null}
+>
+  {(step) => (
+    <>
+      <TabBar />
+      {step.id === "personal" && <PersonalTab />}
+      {step.id === "work"     && <WorkTab />}
+      {step.id === "contact"  && <ContactTab />}
+    </>
+  )}
+</PathShell>
+```
+
+`TabBar` reads `snapshot.steps` for tab labels and status, and calls `goToStep` to switch tabs freely:
+
+```tsx
+function TabBar() {
+  const { snapshot, goToStep } = usePathContext();
+  return (
+    <nav>
+      {snapshot.steps.map((step) => (
+        <button
+          key={step.id}
+          onClick={() => goToStep(step.id)}
+          data-active={step.status === "current"}
+          data-visited={step.status === "completed"}
+        >
+          {step.title}
+        </button>
+      ))}
+    </nav>
+  );
+}
+```
+
+`step.status` gives `"current"` for the active tab, `"completed"` for tabs the user has already visited, and `"upcoming"` for those not yet reached — enough to drive active and visited styling with no extra state. The save button calls `next()` on the final tab, which triggers `onComplete`. The engine handles the `"completing"` / `"error"` cycle the same way it does for a wizard.
+
+One thing to be aware of: `goToStep` bypasses guards and `shouldSkip`, which is exactly what you want for free tab switching. The trade-off is that `hasAttemptedNext` is never set by tab navigation, so field-level errors gated on that flag will not surface until the user explicitly clicks through to the next tab. If you need inline validation on tab switch, trigger it externally before calling `goToStep`.
+
+---
+
 ## Document and approval lifecycles
 
 Not all processes have a human clicking Next. Consider a document that moves through states: draft, review, approved, published. Each state is a step. An author advances from draft to review by submitting; a reviewer advances to approved or sends back to draft by making a decision. Finance may skip the review stage for certain document types.

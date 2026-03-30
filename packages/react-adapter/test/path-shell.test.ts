@@ -621,3 +621,52 @@ describe("PathShell — footerLayout", () => {
     expect(leftButtons[0].textContent).toBe("Cancel");
   });
 });
+
+describe("PathShell — validateWhen", () => {
+  it("does not show validation errors when validateWhen is false", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        validateWhen: false,
+        validationDisplay: "summary",
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
+  });
+
+  it("shows validation errors on all steps when validateWhen becomes true", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    const { rerender } = await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        validateWhen: false,
+        validationDisplay: "summary",
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(document.querySelector(".pw-shell__validation")).toBeNull();
+    await act(async () =>
+      rerender(createElement(PathShell, {
+        path,
+        validateWhen: true,
+        validationDisplay: "summary",
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(screen.getByText("Required")).toBeTruthy();
+  });
+});

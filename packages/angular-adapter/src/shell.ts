@@ -209,7 +209,7 @@ export class PathShellFooterDirective {
       </div>
 
       <!-- Validation messages — suppressed when validationDisplay="inline" -->
-      <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && s.hasAttemptedNext && fieldEntries(s).length > 0">
+      <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && fieldEntries(s).length > 0">
         <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
           <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
         </li>
@@ -224,7 +224,7 @@ export class PathShellFooterDirective {
 
       <!-- Blocking error — guard returned { allowed: false, reason } -->
       <p class="pw-shell__blocking-error"
-         *ngIf="validationDisplay !== 'inline' && s.hasAttemptedNext && s.blockingError">
+         *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && s.blockingError">
         {{ s.blockingError }}
       </p>
 
@@ -255,8 +255,10 @@ export class PathShellFooterDirective {
       </div>
       <!-- Footer — custom or default navigation buttons -->
       <ng-template #footerOrCustom>
-        <ng-container *ngIf="customFooter; else defaultFooter">
-          <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+        <ng-container *ngIf="!hideFooter">
+          <ng-container *ngIf="customFooter; else defaultFooter">
+            <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+          </ng-container>
         </ng-container>
       </ng-template>
       <ng-template #defaultFooter>
@@ -338,6 +340,10 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   @Input() hideCancel = false;
   /** Hide the step progress indicator in the header. Also hidden automatically when the path has only one step. */
   @Input() hideProgress = false;
+  /** Hide the footer (navigation buttons). The error panel is still shown on async failure regardless of this input. */
+  @Input() hideFooter = false;
+  /** When true, calls `validate()` on the facade so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
+  @Input() validateWhen = false;
   /**
    * Footer layout mode:
    * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
@@ -393,6 +399,9 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   public ngOnChanges(changes: SimpleChanges): void {
     if (changes['engine'] && this.engine) {
       this.facade.adoptEngine(this.engine);
+    }
+    if (changes['validateWhen'] && this.validateWhen) {
+      this.facade.validate();
     }
   }
 

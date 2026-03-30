@@ -80,6 +80,8 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   retry: () => Promise<void>;
   /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
   suspend: () => Promise<void>;
+  /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
+  validate: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +190,8 @@ export function usePath<TData extends PathData = PathData>(
   const retry = (): Promise<void> => engine.retry();
   const suspend = (): Promise<void> => engine.suspend();
 
+  const validate = (): void => engine.validate();
+
   return {
     get snapshot() { return _snapshot; },
     start,
@@ -201,7 +205,8 @@ export function usePath<TData extends PathData = PathData>(
     resetStep,
     restart,
     retry,
-    suspend
+    suspend,
+    validate
   };
 }
 
