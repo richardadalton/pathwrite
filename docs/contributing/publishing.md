@@ -21,7 +21,7 @@ If `whoami` fails, or if you receive a 403 during publish, your account does not
 
 ## What gets published
 
-Seven packages are published under the `@daltonr` scope. They are always versioned together (fixed group).
+Eight packages are published under the `@daltonr` scope. They are always versioned together (fixed group).
 
 | Package name | Workspace path |
 |---|---|
@@ -31,7 +31,8 @@ Seven packages are published under the `@daltonr` scope. They are always version
 | `@daltonr/pathwrite-vue` | `packages/vue-adapter` |
 | `@daltonr/pathwrite-angular` | `packages/angular-adapter` |
 | `@daltonr/pathwrite-svelte` | `packages/svelte-adapter` |
-| `@daltonr/pathwrite-store-http` | `packages/store` |
+| `@daltonr/pathwrite-solid` | `packages/solid-adapter` |
+| `@daltonr/pathwrite-store` | `packages/store` |
 
 Demo apps and shared workflow packages are in the Changesets `ignore` list and are never published.
 
@@ -123,7 +124,8 @@ git push --follow-tags
 - https://www.npmjs.com/package/@daltonr/pathwrite-vue
 - https://www.npmjs.com/package/@daltonr/pathwrite-angular
 - https://www.npmjs.com/package/@daltonr/pathwrite-svelte
-- https://www.npmjs.com/package/@daltonr/pathwrite-store-http
+- https://www.npmjs.com/package/@daltonr/pathwrite-solid
+- https://www.npmjs.com/package/@daltonr/pathwrite-store
 
 Confirm the new version number appears and the `dist/` files are present in the file explorer.
 

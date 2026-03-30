@@ -360,7 +360,7 @@ interface PathStore {
 | `load(key)` | Retrieve a previously saved state. Returns `null` if no state exists for the key. |
 | `delete(key)` | Remove the stored state for the given key (e.g. after path completion). |
 
-`@daltonr/pathwrite-store-http` provides two implementations:
+`@daltonr/pathwrite-store` provides two implementations:
 - **`HttpStore`** — saves state to a REST API (`POST /baseUrl/:key`, `GET /baseUrl/:key`, `DELETE /baseUrl/:key`).
 - **`LocalStorageStore`** — saves state to `window.localStorage` (browser only).
 

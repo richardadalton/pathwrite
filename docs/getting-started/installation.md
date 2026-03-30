@@ -17,6 +17,12 @@ npm install @daltonr/pathwrite-core @daltonr/pathwrite-angular
 # Svelte 5
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-svelte
 
+# SolidJS
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-solid
+
+# React Native
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-react-native
+
 # Framework-agnostic / Node (no UI)
 npm install @daltonr/pathwrite-core
 ```
@@ -24,7 +30,7 @@ npm install @daltonr/pathwrite-core
 If you want to persist wizard state to `localStorage` or a REST API, also install:
 
 ```bash
-npm install @daltonr/pathwrite-store-http
+npm install @daltonr/pathwrite-store
 ```
 
 ## Peer dependencies
@@ -37,6 +43,8 @@ Each adapter has peer dependencies that must already be present in your project.
 | `@daltonr/pathwrite-vue` | `vue >= 3.3.0` |
 | `@daltonr/pathwrite-angular` | `@angular/core >= 17.0.0`, `@angular/common >= 17.0.0`, `rxjs ^7.0.0` |
 | `@daltonr/pathwrite-svelte` | `svelte >= 5.0.0` |
+| `@daltonr/pathwrite-solid` | `solid-js >= 1.8.0` |
+| `@daltonr/pathwrite-react-native` | `react >= 18.0.0`, `react-native >= 0.72.0` |
 
 `@angular/forms` is an optional peer dependency of the Angular adapter (required only if you use `syncFormGroup`).
 
