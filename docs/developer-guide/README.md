@@ -1,6 +1,6 @@
 # Pathwrite Developer Guide
 
-Pathwrite is a headless, framework-agnostic state machine for sequential, data-collecting processes. This guide covers everything from the engine's core mental model through persistence, sub-paths, testing, and the full range of things the engine can drive beyond the typical wizard. It is written for developers building production applications with Pathwrite — in React, Vue, Angular, Svelte, or Node.js. It assumes you have a working installation; if you do not, start with [getting-started/](../getting-started/).
+Pathwrite is a headless, framework-agnostic state machine for sequential, data-collecting processes. This guide covers everything from the engine's core mental model through persistence, sub-paths, testing, and the full range of things the engine can drive beyond the typical wizard. It is written for developers building production applications with Pathwrite — in React, Vue, Angular, Svelte, SolidJS, or Node.js. It assumes you have a working installation; if you do not, start with [getting-started/](../getting-started/).
 
 ## How to read this guide
 
@@ -26,7 +26,7 @@ The chapters are written to be read in order. Each one builds on the previous: t
 ## Other docs
 
 **[getting-started/](../getting-started/)**
-Installation instructions and framework-specific quick starts for React, Vue, Angular, Svelte, and React Native.
+Installation instructions and framework-specific quick starts for React, Vue, Angular, Svelte, SolidJS, and React Native.
 
 **[reference/core-api.md](../reference/core-api.md)**
 Exhaustive API reference for `@daltonr/pathwrite-core`: every type, interface, method, and option with full signatures. Use this when you need the precise contract for something the guide covers at a higher level.

@@ -6,7 +6,7 @@ Every visual value in the default `PathShell` UI is a CSS custom property. Overr
 
 ```js
 // React / Vue / Svelte
-import "@daltonr/pathwrite-react/styles.css";     // or -vue / -svelte
+import "@daltonr/pathwrite-react/styles.css";     // or -vue / -svelte / -solid
 ```
 
 ```json

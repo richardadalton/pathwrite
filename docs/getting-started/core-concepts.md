@@ -15,7 +15,7 @@ The problem it solves is the one that appears whenever you need to guide a user 
 - what data the user has entered so far
 - when the flow has completed
 
-Your UI reads that information from a **snapshot** and renders whatever it likes. The engine does not care whether your navigation buttons are `<button>` elements, icon links, swipe gestures, or keyboard shortcuts. It does not care whether you show a progress bar, a sidebar, or nothing at all. It does not care whether you use React, Vue, Angular, Svelte, or plain JavaScript.
+Your UI reads that information from a **snapshot** and renders whatever it likes. The engine does not care whether your navigation buttons are `<button>` elements, icon links, swipe gestures, or keyboard shortcuts. It does not care whether you show a progress bar, a sidebar, or nothing at all. It does not care whether you use React, Vue, Angular, Svelte, SolidJS, or plain JavaScript.
 
 This is a deliberate trade-off. It makes Pathwrite more work to integrate than a "batteries-included" wizard component — you have to write the markup yourself — but it means the engine works in any context and the UI is entirely under your control.
 

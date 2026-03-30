@@ -38,7 +38,7 @@ Source code does nothing on its own. An interpreter reads it and executes it. At
 
 ## What "headless" means in practice
 
-"Headless" is often used loosely to mean "unstyled." In Pathwrite it means something more specific: the engine has no dependency on HTML, the DOM, or any UI framework. It imports nothing from React, Vue, Angular, or Svelte. It does not call `document.querySelector`, set CSS classes, or interact with a browser in any way.
+"Headless" is often used loosely to mean "unstyled." In Pathwrite it means something more specific: the engine has no dependency on HTML, the DOM, or any UI framework. It imports nothing from React, Vue, Angular, Svelte, or SolidJS. It does not call `document.querySelector`, set CSS classes, or interact with a browser in any way.
 
 This is not a marketing claim — it is an architectural constraint enforced by the package boundaries. `@daltonr/pathwrite-core` has zero runtime dependencies. It runs identically in a browser, a Vitest test suite, a Node.js server, or a React Native environment. You can import `PathEngine` and call `engine.start()`, `engine.next()`, and `engine.subscribe()` in plain TypeScript with no DOM present.
 
@@ -142,6 +142,7 @@ Each framework adapter does exactly one thing: subscribe to a `PathEngine` and e
 | `@daltonr/pathwrite-vue` | `shallowRef` |
 | `@daltonr/pathwrite-angular` | `BehaviorSubject` + Signal |
 | `@daltonr/pathwrite-svelte` | `$state` rune |
+| `@daltonr/pathwrite-solid` | `createSignal` accessor |
 
 That is the entire implementation. No additional logic, no transformation of the data, no framework-specific concepts introduced into the engine. The adapter subscribes, receives snapshots, and writes them into whatever reactive slot the framework provides. When a snapshot arrives, the framework's own change-detection does the rest.
 
