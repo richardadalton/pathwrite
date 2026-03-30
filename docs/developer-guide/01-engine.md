@@ -128,7 +128,7 @@ A definition that lives independently can be:
 - **Consumed by any adapter** — the same definition object runs identically under `@daltonr/pathwrite-react`, `@daltonr/pathwrite-vue`, `@daltonr/pathwrite-svelte`, `@daltonr/pathwrite-angular`, or `@daltonr/pathwrite-react-native`
 - **Shared across products** — a business rule definition can be an internal package imported by a web app, a mobile app, and a backend worker simultaneously
 
-This idea — extracting `PathDefinition` into a versioned, independently-testable package — is developed fully in Chapter 9.
+This idea — extracting `PathDefinition` into a versioned, independently-testable package — is developed fully in Chapter 10.
 
 ---
 
@@ -170,6 +170,6 @@ Put it all together and the data flow is a closed loop:
 
 The engine never reaches up into the UI. The UI never reaches into the engine's internals. The adapter is the only coupling point, and it is provided for you.
 
-Chapter 2 covers the `PathDefinition` in detail — the full set of step properties, validation hooks, lifecycle callbacks, and the `StepChoice` pattern for conditional form variants.
+Chapter 2 covers how adapters work and how to use `PathShell` and `usePath` in your framework. Chapter 3 covers the `PathDefinition` in detail — the full set of step properties, validation hooks, lifecycle callbacks, and the `StepChoice` pattern for conditional form variants.
 
 © 2026 Devjoy Ltd. MIT License.

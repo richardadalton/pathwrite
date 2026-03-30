@@ -1,4 +1,4 @@
-# Chapter 11: Beyond Wizards
+# Chapter 12: Beyond Wizards
 
 Pathwrite is not a wizard library. That is worth saying plainly, because the wizard is the most common application of the abstraction and it is easy to let the common case define your mental model. What Pathwrite actually is: a state machine for sequential, data-collecting processes with optional branching. The engine manages transitions, enforces business rules through guards, fires lifecycle hooks, and emits a consistent snapshot at every point. It does not know whether the current step is being rendered as a form page, a chat message, a background processing stage, or nothing at all. That separation is not incidental — it is the design. This final chapter explores what that separation makes possible.
 

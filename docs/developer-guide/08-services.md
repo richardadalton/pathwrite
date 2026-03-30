@@ -1,4 +1,4 @@
-# Chapter 7: Services
+# Chapter 8: Services
 
 Guards and hooks make your path smart. But smart behaviour usually means calling an API: checking eligibility before the user advances, loading a list of approvers to populate a dropdown, submitting a form when the path completes. The naive approach — putting a `fetch()` call directly inside a guard — works for a prototype, but it creates three problems simultaneously: the PathDefinition now imports from your API layer, testing requires intercepting real HTTP, and the same definition cannot be reused across environments with different transports. The service interface pattern eliminates all three problems by separating *what* your path needs from *how* those needs are satisfied.
 

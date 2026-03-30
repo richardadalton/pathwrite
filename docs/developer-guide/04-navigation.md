@@ -1,4 +1,4 @@
-# Chapter 3: Navigation and Guards
+# Chapter 4: Navigation and Guards
 
 Navigation is the core of what Pathwrite does. Understanding how the engine moves between steps — and what happens at each boundary — makes the difference between debugging by guesswork and knowing exactly why your UI behaves as it does. This chapter walks through every navigation method, the precise sequence of events when a step transition occurs, and the guard system that controls whether transitions are allowed at all.
 
@@ -53,7 +53,7 @@ When `next()` is called, the engine follows a precise sequence. Understanding th
 
 If the guard returns `{ allowed: false, reason }`, the engine updates the snapshot with the reason surfaced as `blockingError`, sets `hasAttemptedNext` to `true`, and stops. No hooks fire. The user stays on the current step.
 
-If the guard is async, the engine enters `"validating"` status while it waits. Navigation controls should be disabled during this time. The full async flow is covered in Chapter 4.
+If the guard is async, the engine enters `"validating"` status while it waits. Navigation controls should be disabled during this time. The full async flow is covered in Chapter 5.
 
 **2. `onLeave` fires on the departing step.**
 
@@ -105,7 +105,7 @@ For most navigation UI, the practical rule is: disable controls whenever `status
 </button>
 ```
 
-The `"validating"` status is the async guard state. During it, the engine is waiting for a `canMoveNext` promise to resolve. Chapter 4 covers how to handle this in the UI.
+The `"validating"` status is the async guard state. During it, the engine is waiting for a `canMoveNext` promise to resolve. Chapter 5 covers how to handle this in the UI.
 
 ---
 
@@ -240,6 +240,6 @@ function AddressStep() {
 
 ---
 
-All the navigation so far has been synchronous. Chapter 4 covers async guards — the most powerful feature in the engine.
+All the navigation so far has been synchronous. Chapter 5 covers async guards — the most powerful feature in the engine.
 
 © 2026 Devjoy Ltd. MIT License.

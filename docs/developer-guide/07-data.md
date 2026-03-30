@@ -1,4 +1,4 @@
-# Chapter 6: Working with Data
+# Chapter 7: Working with Data
 
 Every step in a path reads from and writes to a single data object that lives for the duration of the flow. This chapter covers how that object works at runtime — how to update it, how to track whether the current step has modified it, and how to roll back changes within a step. It then covers the TypeScript side: how to attach a type to the data object so the compiler catches field-name typos, type mismatches in `setData` calls, and missing keys in your initial data.
 
@@ -216,7 +216,7 @@ function CourseReviewStep() {
 }
 ```
 
-Services are covered in detail in Chapter 7. The pattern is introduced here because the type belongs alongside the data type in your path module.
+Services are covered in detail in Chapter 8. The pattern is introduced here because the type belongs alongside the data type in your path module.
 
 ---
 
@@ -284,6 +284,6 @@ All adapters accept `PathDefinition<any>` at their public boundary, so a `PathDe
 
 ---
 
-The factory pattern sets up cleanly for Chapter 7, where services — the external dependencies your guards need — are injected through exactly this mechanism.
+The factory pattern sets up cleanly for Chapter 8, where services — the external dependencies your guards need — are injected through exactly this mechanism.
 
 © 2026 Devjoy Ltd. MIT License.

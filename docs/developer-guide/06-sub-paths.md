@@ -1,4 +1,4 @@
-# Chapter 5: Sub-paths
+# Chapter 6: Sub-paths
 
 Multi-step wizards rarely follow a single straight line. Users need to add an item to a collection mid-flow, configure a setting through its own sequence of screens, or take a branch whose steps depend on their answers so far. A flat step array can handle some of this, but it quickly becomes an unmaintainable tangle of `shouldSkip` flags. Sub-paths give you a cleaner mechanism: push a complete, self-contained flow on top of the current one, let it run to completion, then resume exactly where you left off.
 
@@ -285,6 +285,6 @@ if (snapshot.pathId === "course" && snapshot.stepId === "review") {
 
 ---
 
-Sub-paths, like the main path, carry typed data. Chapter 6 covers how to type that data — and the rest of your path — with TypeScript.
+Sub-paths, like the main path, carry typed data. Chapter 7 covers how to type that data — and the rest of your path — with TypeScript.
 
 © 2026 Devjoy Ltd. MIT License.

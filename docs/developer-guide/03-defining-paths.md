@@ -1,4 +1,4 @@
-# Chapter 2: Defining Paths
+# Chapter 3: Defining Paths
 
 The `PathDefinition` is where you spend most of your time as a Pathwrite developer. It is the place where business logic lives: what steps exist, what data each step requires, when the user is allowed to advance, and what should happen when the flow ends. Getting comfortable with the full set of definition options gives you the vocabulary to express almost any flow without reaching for custom state management. This chapter covers every part of the definition in depth.
 
@@ -109,7 +109,7 @@ The default shell renders `"_"` errors without a field label, in the same positi
 
 #### `fieldErrors` must be synchronous
 
-`fieldErrors` is called during snapshot construction, which is synchronous. If you provide an async function, it will be called but its result will be discarded — the snapshot will show `{}`. If validation depends on asynchronous state (for example, checking email availability), resolve that state separately, store the result in `data` with `setData`, and reference it from a synchronous `fieldErrors`. Async guards are covered in Chapter 4.
+`fieldErrors` is called during snapshot construction, which is synchronous. If you provide an async function, it will be called but its result will be discarded — the snapshot will show `{}`. If validation depends on asynchronous state (for example, checking email availability), resolve that state separately, store the result in `data` with `setData`, and reference it from a synchronous `fieldErrors`. Async guards are covered in Chapter 5.
 
 ### `fieldWarnings` — non-blocking hints
 
@@ -166,7 +166,7 @@ The `reason` string is surfaced on `snapshot.blockingError`, which the default s
 )}
 ```
 
-`canMoveNext` can be async — the engine awaits it and sets `snapshot.status` to `"validating"` while it runs. Async guards and their UX implications are covered in Chapter 4.
+`canMoveNext` can be async — the engine awaits it and sets `snapshot.status` to `"validating"` while it runs. Async guards and their UX implications are covered in Chapter 5.
 
 ### `shouldSkip` — dynamic step exclusion
 
@@ -185,7 +185,7 @@ steps: [
 
 A few things to keep in mind. Skipped steps are not counted in `snapshot.stepCount` and do not appear in `snapshot.steps`, so the progress bar reflects only visible steps. If all remaining steps would be skipped going forward, the engine completes the path. If all preceding steps would be skipped going backward, the engine cancels the path (or, for a sub-path, pops back to the parent).
 
-Like `canMoveNext`, `shouldSkip` can be async — covered in Chapter 4.
+Like `canMoveNext`, `shouldSkip` can be async — covered in Chapter 5.
 
 ### `onEnter` and `onLeave` — lifecycle hooks
 
@@ -330,6 +330,6 @@ Note that `fieldWarnings` are never gated by `hasAttemptedNext`. Because warning
 
 ---
 
-You now know how to describe a path. Chapter 3 covers what happens when a user moves through it.
+You now know how to describe a path. Chapter 4 covers what happens when a user moves through it.
 
 © 2026 Devjoy Ltd. MIT License.

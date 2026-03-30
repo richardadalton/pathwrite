@@ -1,4 +1,4 @@
-# Chapter 8: Persistence
+# Chapter 9: Persistence
 
 Most multi-step flows are not completed in a single sitting. A loan application interrupted by a phone call, an onboarding wizard closed on a laptop and resumed on a phone, a configuration flow where the user needs to fetch information before answering step four — all of these require the engine to remember where the user was and what they had entered. Pathwrite handles this through a persistence layer that is deliberately decoupled from the engine itself. The engine knows how to run a path; persistence is a separate concern, wired in by the application.
 
@@ -265,7 +265,7 @@ When a path completes, the `persistence` observer automatically calls `store.del
 
 Two separate offline concerns often get conflated, and conflating them leads to the wrong solution for each. They are handled by different parts of the architecture.
 
-### Reference data — service layer caching (Chapter 7)
+### Reference data — service layer caching (Chapter 8)
 
 Reference data is information the workflow needs to display its UI: role lists, country selectors, product catalogues. This data is not entered by the user — it comes from the server. The offline strategy for reference data is to pre-fetch it while the device is online and serve from cache when it is not. Because this is handled entirely within the service interface (via `defineServices` with `cache: "auto"` and an explicit `prefetch()` call), the path definition and the step components never observe the difference between a live API call and a cache read.
 
@@ -376,6 +376,6 @@ const engine = new PathEngine({
 
 ---
 
-Persistence is the last piece of the single-app story. Chapter 9 takes the next step: treating the workflow itself as a publishable, versioned package that multiple apps and frameworks can share.
+Persistence is the last piece of the single-app story. Chapter 10 takes the next step: treating the workflow itself as a publishable, versioned package that multiple apps and frameworks can share.
 
 © 2026 Devjoy Ltd. MIT License.

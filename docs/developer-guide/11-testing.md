@@ -1,4 +1,4 @@
-# Chapter 10: Testing
+# Chapter 11: Testing
 
 Testing is where Pathwrite's headless architecture pays the highest dividend. Because `PathEngine` is a plain TypeScript class with no DOM, no component lifecycle, and no async framework machinery, the tests for your business rules are just function calls. This chapter shows the complete range of what you can test and how.
 
@@ -106,7 +106,7 @@ it("clears errors once fields are populated", async () => {
 });
 ```
 
-When using the factory pattern from Chapter 9, you can also test `fieldErrors` in complete isolation — without starting an engine at all. Since `fieldErrors` is just a function on the step definition, you can call it directly:
+When using the factory pattern from Chapter 10, you can also test `fieldErrors` in complete isolation — without starting an engine at all. Since `fieldErrors` is just a function on the step definition, you can call it directly:
 
 ```ts
 const path = createOnboardingPath(fast);

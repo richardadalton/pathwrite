@@ -1,4 +1,4 @@
-# Chapter 9: Workflows as Packages
+# Chapter 10: Workflows as Packages
 
 Most developers think of a wizard as a UI component. Pathwrite inverts that assumption: the wizard is a business process described in TypeScript, and the UI is a rendering detail. Once you separate the two, the process becomes a first-class software artifact — something you can publish, version, test, and share like any other package. This chapter shows what that looks like in practice.
 
@@ -406,10 +406,10 @@ it("paid plan users see billing", async () => {
 });
 ```
 
-Chapter 10 covers the full testing approach — `fieldErrors`, guards, sub-paths, and property-based tests.
+Chapter 11 covers the full testing approach — `fieldErrors`, guards, sub-paths, and property-based tests.
 
 ---
 
-You can now build, package, and share workflows. Chapter 10 shows you how to test them thoroughly.
+You can now build, package, and share workflows. Chapter 11 shows you how to test them thoroughly.
 
 © 2026 Devjoy Ltd. MIT License.

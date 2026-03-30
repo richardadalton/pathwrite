@@ -1,4 +1,4 @@
-# Chapter 4: Async Patterns
+# Chapter 5: Async Patterns
 
 Async guards change the developer's mental model in a meaningful way. A synchronous guard gives you an immediate answer — the step either passes or it does not. An async guard introduces a third state: pending. During that pending window, the engine is actively working, the snapshot communicates that fact, and the UI needs to reflect it. Getting this right means your users see a responsive, honest interface; getting it wrong means confusing flickers, double submissions, or silent failures. This chapter covers every dimension of async in Pathwrite.
 
@@ -248,7 +248,7 @@ The simplest caching strategy is to store the result in `data` after the first s
 }
 ```
 
-Because `canMoveNext` cannot return a data patch (only `onEnter` and `onLeave` can), the caching pattern is typically handled by a service layer that the guard calls. The service caches the result keyed by the input value and returns it on subsequent calls without a network round-trip. This pattern is developed fully in Chapter 7.
+Because `canMoveNext` cannot return a data patch (only `onEnter` and `onLeave` can), the caching pattern is typically handled by a service layer that the guard calls. The service caches the result keyed by the input value and returns it on subsequent calls without a network round-trip. This pattern is developed fully in Chapter 8.
 
 ---
 
