@@ -80,6 +80,7 @@ Each adapter is a thin translation layer from the engine's `subscribe()` + `snap
 | `@daltonr/pathwrite-vue` | `shallowRef` + `onScopeDispose` from Vue's Composition API |
 | `@daltonr/pathwrite-angular` | RxJS `BehaviorSubject` wrapped in Angular signals |
 | `@daltonr/pathwrite-svelte` | Svelte 5 `$state` rune + `onDestroy` |
+| `@daltonr/pathwrite-solid` | `createSignal` accessor + `onCleanup` |
 | `@daltonr/pathwrite-react-native` | Same `useSyncExternalStore` as the React adapter |
 
 The engine does not import from any framework. Each adapter's `usePath()` (or `PathFacade` for Angular) creates an engine instance, calls `subscribe()` with a callback that updates the framework-native reactive value, and exposes the snapshot through that value.
@@ -130,7 +131,7 @@ The combination that does not exist elsewhere:
 
 - Multi-step orchestration with lifecycle hooks and guard-based navigation blocking
 - Built-in persistence with configurable strategies (`onEveryChange`, `onNext`, `onComplete`, etc.)
-- Framework adapters for React, Vue, Angular, Svelte, and React Native with a unified `PathDefinition` API
+- Framework adapters for React, Vue, Angular, Svelte, SolidJS, and React Native with a unified `PathDefinition` API
 - Headless core with optional shell components
 - Sub-path stacking for nested workflows
 - Zero-dependency core that runs in browser, Node, workers, React Native, and Electron

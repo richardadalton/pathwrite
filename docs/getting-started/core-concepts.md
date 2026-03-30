@@ -60,6 +60,8 @@ An adapter is a thin wrapper around the engine that translates its event-subscri
 | `@daltonr/pathwrite-vue` | `shallowRef` — Vue 3 reactive ref |
 | `@daltonr/pathwrite-angular` | `BehaviorSubject` (Observable) + pre-wired Signal |
 | `@daltonr/pathwrite-svelte` | `$state` rune |
+| `@daltonr/pathwrite-solid` | `createSignal` accessor |
+| `@daltonr/pathwrite-react-native` | `useSyncExternalStore` (same as React adapter) |
 
 Adapters do not add any logic of their own. They subscribe to the engine and surface the current snapshot in the idiomatic way for the framework. The `PathEngine` API is the same regardless of which adapter you use.
 

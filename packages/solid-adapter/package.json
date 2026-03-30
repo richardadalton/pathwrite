@@ -1,0 +1,58 @@
+{
+  "name": "@daltonr/pathwrite-solid",
+  "version": "0.10.1",
+  "type": "module",
+  "license": "MIT",
+  "description": "SolidJS adapter for @daltonr/pathwrite-core — reactive usePath() composable and optional PathShell component.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richardadalton/pathwrite.git",
+    "directory": "packages/solid-adapter"
+  },
+  "keywords": [
+    "wizard",
+    "stepper",
+    "path",
+    "solid",
+    "solidjs",
+    "signals",
+    "multi-step",
+    "workflow"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/index.css",
+    "./dist/index.css": "./dist/index.css"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
+  },
+  "peerDependencies": {
+    "solid-js": ">=1.8.0"
+  },
+  "dependencies": {
+    "@daltonr/pathwrite-core": "^0.10.1"
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

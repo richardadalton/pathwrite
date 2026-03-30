@@ -1,6 +1,6 @@
 # Pathwrite
 
-A headless, framework-agnostic path engine for multi-step flows. Define your steps, guards, and validation as pure TypeScript — then render them in React, Vue, Angular, Svelte, or React Native.
+A headless, framework-agnostic path engine for multi-step flows. Define your steps, guards, and validation as pure TypeScript — then render them in React, Vue, Angular, Svelte, SolidJS, or React Native.
 
 ```bash
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-react
@@ -68,6 +68,9 @@ npm install @daltonr/pathwrite-core @daltonr/pathwrite-svelte
 # React Native
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-react-native
 
+# SolidJS
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-solid
+
 # Framework-agnostic / Node
 npm install @daltonr/pathwrite-core
 ```
@@ -75,7 +78,7 @@ npm install @daltonr/pathwrite-core
 To persist flow state to localStorage or a REST API:
 
 ```bash
-npm install @daltonr/pathwrite-store-http
+npm install @daltonr/pathwrite-store
 ```
 
 ## Packages
@@ -88,7 +91,8 @@ npm install @daltonr/pathwrite-store-http
 | [`@daltonr/pathwrite-angular`](packages/angular-adapter) | `PathFacade` injectable and `<pw-shell>` component. State as `Observable` and Signal. |
 | [`@daltonr/pathwrite-svelte`](packages/svelte-adapter) | `usePath()` with Svelte 5 runes and `PathShell` snippets. |
 | [`@daltonr/pathwrite-react-native`](packages/react-native-adapter) | `usePath()` hook and `PathShell` for Expo and bare React Native. |
-| [`@daltonr/pathwrite-store-http`](packages/store) | `HttpStore` and `LocalStorageStore` with `httpPersistence` observer and `restoreOrStart`. |
+| [`@daltonr/pathwrite-solid`](packages/solid-adapter) | `usePath()` composable and `PathShell` component. State as a `createSignal` accessor with `onCleanup` disposal. |
+| [`@daltonr/pathwrite-store`](packages/store) | `HttpStore`, `LocalStorageStore`, and `AsyncStorageStore` with `persistence` observer and `restoreOrStart`. |
 
 ## Documentation
 

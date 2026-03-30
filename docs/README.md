@@ -17,6 +17,7 @@
 | [Angular](getting-started/frameworks/angular.md) | `PathFacade`, `injectPath`, `<pw-shell>` |
 | [Svelte](getting-started/frameworks/svelte.md) | `usePath` runes, snippets, camelCase fallback |
 | [React Native](getting-started/frameworks/react-native.md) | Metro config, `AsyncStorageStore` |
+| [SolidJS](getting-started/frameworks/solidjs.md) | `usePath` signal accessor, `steps` map |
 
 ## Developer Guide
 
