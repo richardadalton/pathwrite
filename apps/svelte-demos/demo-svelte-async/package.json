@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@daltonr/pathwrite-demo-workflow-job-application": "*",
-    "@daltonr/pathwrite-svelte": "^0.9.0"
+    "@daltonr/pathwrite-svelte": "*"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

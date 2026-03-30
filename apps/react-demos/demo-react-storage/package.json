@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daltonr/pathwrite-react": "^0.9.0",
-    "@daltonr/pathwrite-store": "^0.9.0",
+    "@daltonr/pathwrite-react": "*",
+    "@daltonr/pathwrite-store": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
