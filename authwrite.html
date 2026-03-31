@@ -1358,10 +1358,24 @@ app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,   
         <h3>Getting Started</h3>
         <p>Installation, core concepts, and your first policy — step by step.</p>
       </a>
-      <a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/README.md" class="docs-card" target="_blank" rel="noopener noreferrer">
-        <h3>Developer Guide</h3>
-        <p>13-chapter narrative guide from the engine model through observers, loaders, testing, policy composition, and authorization anti-patterns.</p>
-      </a>
+      <div class="docs-card docs-card--chapters">
+        <h3><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/README.md" target="_blank" rel="noopener noreferrer">Developer Guide</a></h3>
+        <ol class="docs-card__chapters">
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/01-engine-and-decisions.md" target="_blank" rel="noopener noreferrer">How the Engine Works</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/02-policies-and-rules.md" target="_blank" rel="noopener noreferrer">Policies and Rules</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/03-actions-and-resources.md" target="_blank" rel="noopener noreferrer">Actions, Subjects, and Resources</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/04-priority-and-conflicts.md" target="_blank" rel="noopener noreferrer">Priority and Conflict Resolution</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/05-field-filtering.md" target="_blank" rel="noopener noreferrer">Field-Level Filtering</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/06-enforcer.md" target="_blank" rel="noopener noreferrer">Enforcement Modes</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/07-observers.md" target="_blank" rel="noopener noreferrer">Observers</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/08-loaders.md" target="_blank" rel="noopener noreferrer">Policy Loaders</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/09-testing.md" target="_blank" rel="noopener noreferrer">Testing</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/10-framework-adapters.md" target="_blank" rel="noopener noreferrer">Framework Adapters</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/11-hateoas.md" target="_blank" rel="noopener noreferrer">HATEOAS</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/12-policy-resolver.md" target="_blank" rel="noopener noreferrer">Policy Resolvers</a></li>
+          <li><a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/13-anti-patterns.md" target="_blank" rel="noopener noreferrer">Authorization Anti-Patterns</a></li>
+        </ol>
+      </div>
       <a href="https://github.com/richardadalton/authwrite/blob/main/docs/reference/core-api.md" class="docs-card" target="_blank" rel="noopener noreferrer">
         <h3>Core API Reference</h3>
         <p>Full reference for <code>createAuthEngine</code>, <code>evaluatePolicy</code>, <code>fromLoader</code>, <code>intersect</code>, <code>union</code>, <code>firstMatch</code>, and all core types.</p>
