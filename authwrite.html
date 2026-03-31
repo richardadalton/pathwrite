@@ -326,65 +326,66 @@
     }
     .aw-who__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
-      margin-top: 2.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 3rem 2.5rem;
+      margin-top: 3rem;
     }
     .aw-who__card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.5rem;
+      background: transparent;
+      border: none;
+      padding: 0;
     }
-    .aw-who__card-icon {
-      font-size: 1.5rem;
+    .aw-who__card-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--color-primary);
+      opacity: 0.35;
       margin-bottom: 0.75rem;
+      font-family: var(--font-mono);
     }
     .aw-who__card h3 {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
     }
     .aw-who__card p {
       font-size: 0.875rem;
       color: var(--color-text-muted);
-      line-height: 1.6;
+      line-height: 1.65;
       margin: 0;
     }
 
     /* ── Value props ── */
     .aw-props {
       padding: 5rem 0;
-      background: var(--color-bg);
+      background: var(--color-surface);
       border-top: 1px solid var(--color-border);
     }
     .aw-props__grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
+      gap: 2.5rem 2rem;
       margin-top: 3rem;
     }
     .aw-prop-card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.75rem;
-      transition: border-color 0.2s;
+      background: transparent;
+      border: none;
+      padding: 0;
     }
-    .aw-prop-card:hover { border-color: var(--color-primary); }
     .aw-prop-card__icon {
-      font-size: 1.75rem;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
     }
     .aw-prop-card h3 {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
     }
     .aw-prop-card p {
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       color: var(--color-text-muted);
-      line-height: 1.6;
+      line-height: 1.65;
       margin: 0;
     }
 
@@ -461,35 +462,41 @@
       border-top: 1px solid var(--color-border);
     }
     .aw-examples__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
       margin-top: 3rem;
     }
     .aw-example-card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.75rem;
-      transition: border-color 0.2s;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 2rem;
+      align-items: start;
+      padding: 1.75rem 0;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      border-radius: 0;
     }
-    .aw-example-card:hover { border-color: var(--color-primary); }
+    .aw-example-card:first-child { border-top: 1px solid var(--color-border); }
+    .aw-example-card__left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
     .aw-example-card__icon {
-      font-size: 1.75rem;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
     }
     .aw-example-card h3 {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 700;
-      margin-bottom: 0.4rem;
+      margin: 0;
     }
     .aw-example-card__industry {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
       color: var(--color-primary);
-      margin-bottom: 0.75rem;
     }
     .aw-example-card p {
       font-size: 0.875rem;
@@ -502,62 +509,71 @@
       padding: 0;
       margin: 0;
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      flex-wrap: wrap;
+      gap: 0.4rem;
     }
     .aw-example-card__rules li {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-family: var(--font-mono);
       color: var(--color-text-muted);
-      padding: 0.2rem 0.5rem;
+      padding: 0.2rem 0.6rem;
       background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
       border-radius: 4px;
     }
-    .aw-example-card__rules li::before {
-      content: '→ ';
-      color: var(--color-primary);
-      font-weight: 700;
+    @media (max-width: 640px) {
+      .aw-example-card { grid-template-columns: 1fr; gap: 0.75rem; }
     }
 
     /* ── Why Not narrative ── */
     .aw-why-not {
       padding: 5rem 0;
-      background: var(--color-surface);
+      background: var(--color-bg);
       border-top: 1px solid var(--color-border);
     }
     .aw-why-not__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
       margin-top: 3rem;
     }
     .aw-why-not__card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.75rem;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      border-radius: 0;
     }
+    .aw-why-not__card:first-child { border-top: 1px solid var(--color-border); }
+    .aw-why-not__card-label { }
     .aw-why-not__card h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--color-text-muted);
+      margin: 0 0 0.35rem;
+      letter-spacing: -0.02em;
     }
     .aw-why-not__card-verdict {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--color-text-muted);
-      margin-bottom: 1rem;
+      letter-spacing: 0.07em;
+      color: var(--color-primary);
     }
     .aw-why-not__card p {
       font-size: 0.875rem;
       color: var(--color-text-muted);
       line-height: 1.7;
-      margin: 0 0 0.75rem;
+      margin: 0 0 0.6rem;
     }
     .aw-why-not__card p:last-child { margin-bottom: 0; }
     .aw-why-not__card strong { color: var(--color-text); }
+    @media (max-width: 640px) {
+      .aw-why-not__card { grid-template-columns: 1fr; gap: 0.5rem; }
+    }
 
     /* ── Comparison matrix ── */
     .aw-compare {
@@ -939,22 +955,22 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
     <h2 class="section__title" style="text-align:center">Who is Authwrite for?</h2>
     <div class="aw-who__grid">
       <div class="aw-who__card">
-        <div class="aw-who__card-icon">🏗️</div>
+        <div class="aw-who__card-num">01</div>
         <h3>SaaS teams with growing complexity</h3>
         <p>Your permissions used to be "is the user logged in?". Now you have roles, plans, org membership, and resource ownership. Authwrite keeps that complexity in one place.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-icon">🔄</div>
+        <div class="aw-who__card-num">02</div>
         <h3>Teams migrating from scattered if-statements</h3>
         <p>Your auth logic is spread across 20 route handlers. Authwrite can be introduced without breaking anything — start in audit mode, migrate rules one route at a time, then harden enforcement once you're confident.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-icon">📋</div>
+        <div class="aw-who__card-num">03</div>
         <h3>Compliance-conscious engineering teams</h3>
         <p>SOC 2, HIPAA, ISO 27001 — auditors want evidence that access decisions are logged and traceable. Authwrite's observer pattern gives you that out of the box.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-icon">⚡</div>
+        <div class="aw-who__card-num">04</div>
         <h3>Engineers frustrated with OPA or Casbin</h3>
         <p>Rego has a steep learning curve and needs a sidecar. Casbin's PERM model adds a new DSL. If you want authorization in TypeScript without learning a new language, this is it.</p>
       </div>
@@ -1017,59 +1033,79 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
     <h2 class="section__title" style="text-align:center">Real-world scenarios</h2>
     <div class="aw-examples__grid">
       <div class="aw-example-card">
-        <div class="aw-example-card__icon">🏢</div>
-        <h3>Multi-tenant SaaS</h3>
-        <div class="aw-example-card__industry">SaaS · B2B</div>
-        <p>Isolate tenant data behind org-scoped rules. Combine role and membership checks without repeating logic across every endpoint.</p>
-        <ul class="aw-example-card__rules">
-          <li>org-member-only</li>
-          <li>admin-full-access</li>
-          <li>viewer-read-only</li>
-        </ul>
+        <div class="aw-example-card__left">
+          <div class="aw-example-card__icon">🏢</div>
+          <h3>Multi-tenant SaaS</h3>
+          <div class="aw-example-card__industry">SaaS · B2B</div>
+        </div>
+        <div>
+          <p>Isolate tenant data behind org-scoped rules. Combine role and membership checks without repeating logic across every endpoint.</p>
+          <ul class="aw-example-card__rules">
+            <li>org-member-only</li>
+            <li>admin-full-access</li>
+            <li>viewer-read-only</li>
+          </ul>
+        </div>
       </div>
       <div class="aw-example-card">
-        <div class="aw-example-card__icon">📄</div>
-        <h3>Document collaboration</h3>
-        <div class="aw-example-card__industry">Productivity · Content</div>
-        <p>Owners can do everything. Editors can read and write but not delete. Archived documents block all mutations, even for admins.</p>
-        <ul class="aw-example-card__rules">
-          <li>archived-blocks-mutation</li>
-          <li>owner-full-access</li>
-          <li>editor-read-write</li>
-        </ul>
+        <div class="aw-example-card__left">
+          <div class="aw-example-card__icon">📄</div>
+          <h3>Document collaboration</h3>
+          <div class="aw-example-card__industry">Productivity · Content</div>
+        </div>
+        <div>
+          <p>Owners can do everything. Editors can read and write but not delete. Archived documents block all mutations, even for admins.</p>
+          <ul class="aw-example-card__rules">
+            <li>archived-blocks-mutation</li>
+            <li>owner-full-access</li>
+            <li>editor-read-write</li>
+          </ul>
+        </div>
       </div>
       <div class="aw-example-card">
-        <div class="aw-example-card__icon">🏥</div>
-        <h3>Healthcare field redaction</h3>
-        <div class="aw-example-card__industry">Healthcare · PHI / HIPAA</div>
-        <p>Use field-level rules to redact PHI fields from API responses when the requesting user lacks clinical clearance — same policy, different visibility.</p>
-        <ul class="aw-example-card__rules">
-          <li>clinical-staff-full-view</li>
-          <li>admin-redact-phi</li>
-          <li>patient-own-records</li>
-        </ul>
+        <div class="aw-example-card__left">
+          <div class="aw-example-card__icon">🏥</div>
+          <h3>Healthcare field redaction</h3>
+          <div class="aw-example-card__industry">Healthcare · PHI / HIPAA</div>
+        </div>
+        <div>
+          <p>Use field-level rules to redact PHI fields from API responses when the requesting user lacks clinical clearance — same policy, different visibility.</p>
+          <ul class="aw-example-card__rules">
+            <li>clinical-staff-full-view</li>
+            <li>admin-redact-phi</li>
+            <li>patient-own-records</li>
+          </ul>
+        </div>
       </div>
       <div class="aw-example-card">
-        <div class="aw-example-card__icon">🛒</div>
-        <h3>E-commerce back-office</h3>
-        <div class="aw-example-card__industry">Retail · Operations</div>
-        <p>Warehouse staff can update fulfillment. Finance can view and export. Only ops leads can issue refunds or cancel orders.</p>
-        <ul class="aw-example-card__rules">
-          <li>finance-view-export</li>
-          <li>warehouse-fulfillment</li>
-          <li>ops-lead-full-control</li>
-        </ul>
+        <div class="aw-example-card__left">
+          <div class="aw-example-card__icon">🛒</div>
+          <h3>E-commerce back-office</h3>
+          <div class="aw-example-card__industry">Retail · Operations</div>
+        </div>
+        <div>
+          <p>Warehouse staff can update fulfillment. Finance can view and export. Only ops leads can issue refunds or cancel orders.</p>
+          <ul class="aw-example-card__rules">
+            <li>finance-view-export</li>
+            <li>warehouse-fulfillment</li>
+            <li>ops-lead-full-control</li>
+          </ul>
+        </div>
       </div>
       <div class="aw-example-card">
-        <div class="aw-example-card__icon">🏦</div>
-        <h3>Audit-mode rollout</h3>
-        <div class="aw-example-card__industry">Finance · Risk · Compliance</div>
-        <p>New policy ready but not yet enforced? Enable audit mode. Every decision is logged as if enforced — with no real-world impact — until you're confident.</p>
-        <ul class="aw-example-card__rules">
-          <li>engine.setMode('audit')</li>
-          <li>observer → audit log</li>
-          <li>engine.setMode('enforce')</li>
-        </ul>
+        <div class="aw-example-card__left">
+          <div class="aw-example-card__icon">🏦</div>
+          <h3>Audit-mode rollout</h3>
+          <div class="aw-example-card__industry">Finance · Risk · Compliance</div>
+        </div>
+        <div>
+          <p>New policy ready but not yet enforced? Enable audit mode. Every decision is logged as if enforced — with no real-world impact — until you're confident.</p>
+          <ul class="aw-example-card__rules">
+            <li>engine.setMode('audit')</li>
+            <li>observer → audit log</li>
+            <li>engine.setMode('enforce')</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
