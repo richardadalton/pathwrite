@@ -455,13 +455,6 @@ a:hover { color: #c4b5fd; }
 .docs-card:hover { border-color: var(--color-primary); background: var(--color-bg-card-hover); color: var(--color-text); }
 .docs-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
 .docs-card p { font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.55; }
-.docs-card--chapters { grid-column: 1 / -1; }
-.docs-card--chapters h3 a { color: var(--color-text); text-decoration: none; }
-.docs-card--chapters h3 a:hover { color: var(--color-primary); }
-.docs-card__chapters { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.25rem 1.5rem; margin: 0.75rem 0 0; padding-left: 1.25rem; }
-.docs-card__chapters li { font-size: 0.85rem; line-height: 1.9; }
-.docs-card__chapters a { color: var(--color-text-muted); text-decoration: none; transition: color 0.15s; }
-.docs-card__chapters a:hover { color: var(--color-primary); }
 
 /* ===== CTA ===== */
 .section--cta {
