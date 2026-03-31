@@ -540,8 +540,8 @@
       display: grid;
       grid-template-columns: 160px 1fr;
       gap: 2.5rem;
-      align-items: start;
-      padding: 2rem 0;
+      align-items: baseline;
+      padding: 1.1rem 0;
       border-bottom: 1px solid var(--color-border);
       background: transparent;
       border-radius: 0;
@@ -1211,28 +1211,20 @@ app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,   
     <h2 class="section__title" style="text-align:center">Why not OPA, Casbin, or CASL?</h2>
     <div class="aw-why-not__grid">
       <div class="aw-why-not__card">
-        <h3>OPA</h3>
-        <div class="aw-why-not__card-verdict">Great for policy-as-code at scale</div>
-        <p>OPA is powerful and battle-tested. If you're managing policies across a platform with dozens of services, it's the right tool. But it requires learning <strong>Rego</strong>, deploying a sidecar or a Wasm bundle, and building decision-reason reporting manually.</p>
-        <p>For a TypeScript backend where you want authorization next to your application code — not as a separate process — the operational overhead often isn't worth it.</p>
+        <div class="aw-why-not__card-label"><h3>OPA</h3><div class="aw-why-not__card-verdict">Policy-as-code at scale</div></div>
+        <p>Powerful, but requires learning Rego, deploying a sidecar or Wasm bundle, and wiring up decision-reason reporting yourself. Too much overhead for a TypeScript backend.</p>
       </div>
       <div class="aw-why-not__card">
-        <h3>Casbin</h3>
-        <div class="aw-why-not__card-verdict">Mature RBAC/ABAC engine</div>
-        <p>Casbin is extremely capable and has a large ecosystem. The cost is the <strong>PERM model</strong> — a DSL for defining policy structure that you need to learn before writing your first rule, and that doesn't always map cleanly to TypeScript-idiomatic code.</p>
-        <p>If your access patterns fit RBAC or ABAC cleanly, Casbin is worth evaluating. If you want to stay in TypeScript and get readable rule logic, Authwrite is simpler to onboard.</p>
+        <div class="aw-why-not__card-label"><h3>Casbin</h3><div class="aw-why-not__card-verdict">Mature RBAC/ABAC engine</div></div>
+        <p>Battle-tested with a large ecosystem, but the PERM model is a DSL you have to learn before writing your first rule. Doesn't feel native in TypeScript.</p>
       </div>
       <div class="aw-why-not__card">
-        <h3>CASL</h3>
-        <div class="aw-why-not__card-verdict">Excellent ability-based access control</div>
-        <p>CASL's subject-ability model is elegant and widely used. It's a strong choice if your rules are primarily about what types of objects a subject can act on. Where it stops short: <strong>no named decision reasons</strong>, no enforcer modes, no built-in observer pattern.</p>
-        <p>CASL answers "can you?" Authwrite answers "can you, and <em>why</em>?"</p>
+        <div class="aw-why-not__card-label"><h3>CASL</h3><div class="aw-why-not__card-verdict">Ability-based access control</div></div>
+        <p>Elegant subject-ability model, but no named decision reasons, no enforcer modes, no observer pattern. CASL answers "can you?" — Authwrite answers "can you, and <em>why</em>?"</p>
       </div>
       <div class="aw-why-not__card">
-        <h3>Custom middleware</h3>
-        <div class="aw-why-not__card-verdict">Works — until it doesn't</div>
-        <p>You write it, you ship it, it works. Then six months pass. Rules accumulate. One developer knows the edge cases. The logic is spread across route handlers and service methods, with no test coverage and no audit trail.</p>
-        <p>Authwrite is what custom middleware grows into when the team decides <strong>the complexity needs a structure</strong>. Consider it an extraction target, not a replacement.</p>
+        <div class="aw-why-not__card-label"><h3>Custom</h3><div class="aw-why-not__card-verdict">Works — until it doesn't</div></div>
+        <p>Starts simple, grows into 600 lines of if-statements with no test coverage and no audit trail. Authwrite is what custom middleware grows into when the complexity needs a structure.</p>
       </div>
     </div>
   </div>
