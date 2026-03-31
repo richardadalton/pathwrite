@@ -738,7 +738,7 @@
       <a href="#compare">Compare</a>
       <a href="#docs">Docs</a>
       <a href="https://github.com/richardadalton/authwrite" class="btn btn--sm btn--outline" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <a href="https://www.npmjs.com/package/@authwrite/core" class="btn btn--sm btn--primary" target="_blank" rel="noopener noreferrer">npm</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-core" class="btn btn--sm btn--primary" target="_blank" rel="noopener noreferrer">npm</a>
     </div>
   </div>
 </nav>
@@ -778,7 +778,7 @@
           <li>Toggle enforcer modes to see how audit and lockdown change the outcome.</li>
         </ol>
       </div>
-      <div class="aw-hero__npm">npm install @authwrite/core</div>
+      <div class="aw-hero__npm">npm install @daltonr/authwrite-core</div>
     </div>
 
     <!-- Right: live demo widget -->
@@ -1008,7 +1008,7 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🔗</div>
         <h3>HATEOAS link building</h3>
-        <p><code>@authwrite/hateoas</code> builds permission-aware hypermedia links. Only actions the subject is permitted to take appear in the response — no client-side filtering needed.</p>
+        <p><code>@daltonr/authwrite-hateoas</code> builds permission-aware hypermedia links. Only actions the subject is permitted to take appear in the response — no client-side filtering needed.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">📦</div>
@@ -1122,7 +1122,7 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
 
       <div class="aw-tab-panel active" id="tab-policy">
         <pre><code><span class="cm">// policy.ts</span>
-<span class="kw">import</span> { <span class="fn">createAuthEngine</span> } <span class="kw">from</span> <span class="str">'@authwrite/core'</span>
+<span class="kw">import</span> { <span class="fn">createAuthEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/authwrite-core'</span>
 
 <span class="kw">const</span> engine = <span class="fn">createAuthEngine</span>({
   policy: {
@@ -1180,7 +1180,7 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
 
       <div class="aw-tab-panel" id="tab-express">
         <pre><code><span class="cm">// middleware.ts — bind engine once, use per route</span>
-<span class="kw">import</span> { <span class="fn">createExpressAuth</span> } <span class="kw">from</span> <span class="str">'@authwrite/express'</span>
+<span class="kw">import</span> { <span class="fn">createExpressAuth</span> } <span class="kw">from</span> <span class="str">'@daltonr/authwrite-express'</span>
 
 <span class="kw">const</span> auth = <span class="fn">createExpressAuth</span>({
   engine,
@@ -1386,7 +1386,7 @@ app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,   
 
 <!-- ── Inline demo engine ── -->
 <script>
-  // ── Minimal policy engine (mirrors @authwrite/core logic) ──────────────────
+  // ── Minimal policy engine (mirrors @daltonr/authwrite-core logic) ──────────────────
 
   const policy = {
     id: 'documents',
