@@ -335,14 +335,11 @@
       border: none;
       padding: 0;
     }
-    .aw-who__card-num {
-      font-size: 2.5rem;
-      font-weight: 800;
+    .aw-who__card-img {
+      font-size: 3.5rem;
       line-height: 1;
-      color: var(--color-primary);
-      opacity: 0.35;
-      margin-bottom: 0.75rem;
-      font-family: var(--font-mono);
+      margin-bottom: 1.25rem;
+      display: block;
     }
     .aw-who__card h3 {
       font-size: 1rem;
@@ -955,22 +952,22 @@ if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
     <h2 class="section__title" style="text-align:center">Who is Authwrite for?</h2>
     <div class="aw-who__grid">
       <div class="aw-who__card">
-        <div class="aw-who__card-num">01</div>
+        <span class="aw-who__card-img">🏗️</span>
         <h3>SaaS teams with growing complexity</h3>
         <p>Your permissions used to be "is the user logged in?". Now you have roles, plans, org membership, and resource ownership. Authwrite keeps that complexity in one place.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-num">02</div>
+        <span class="aw-who__card-img">🔀</span>
         <h3>Teams migrating from scattered if-statements</h3>
         <p>Your auth logic is spread across 20 route handlers. Authwrite can be introduced without breaking anything — start in audit mode, migrate rules one route at a time, then harden enforcement once you're confident.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-num">03</div>
+        <span class="aw-who__card-img">🔏</span>
         <h3>Compliance-conscious engineering teams</h3>
         <p>SOC 2, HIPAA, ISO 27001 — auditors want evidence that access decisions are logged and traceable. Authwrite's observer pattern gives you that out of the box.</p>
       </div>
       <div class="aw-who__card">
-        <div class="aw-who__card-num">04</div>
+        <span class="aw-who__card-img">😤</span>
         <h3>Engineers frustrated with OPA or Casbin</h3>
         <p>Rego has a steep learning curve and needs a sidecar. Casbin's PERM model adds a new DSL. If you want authorization in TypeScript without learning a new language, this is it.</p>
       </div>
