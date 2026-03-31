@@ -427,9 +427,10 @@
       cursor: pointer;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-    .aw-mode-btn.active-enforce  { background: rgba(16,185,129,0.15); color: #10b981; border-color: #10b981; }
-    .aw-mode-btn.active-audit    { background: rgba(245,158,11,0.15);  color: #f59e0b; border-color: #f59e0b; }
-    .aw-mode-btn.active-lockdown { background: rgba(239,68,68,0.15);   color: #ef4444; border-color: #ef4444; }
+    .aw-mode-btn.active-enforce   { background: rgba(16,185,129,0.15);  color: #10b981; border-color: #10b981; }
+    .aw-mode-btn.active-audit     { background: rgba(245,158,11,0.15);  color: #f59e0b; border-color: #f59e0b; }
+    .aw-mode-btn.active-suspended { background: rgba(139,92,246,0.15);  color: #8b5cf6; border-color: #8b5cf6; }
+    .aw-mode-btn.active-lockdown  { background: rgba(239,68,68,0.15);   color: #ef4444; border-color: #ef4444; }
     .aw-mode-banner {
       font-size: 0.78rem;
       padding: 0.45rem 0.75rem;
@@ -437,8 +438,9 @@
       margin-top: 0.5rem;
       display: none;
     }
-    .aw-mode-banner.audit    { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); display: block; }
-    .aw-mode-banner.lockdown { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  display: block; }
+    .aw-mode-banner.audit      { background: rgba(245,158,11,0.12);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);  display: block; }
+    .aw-mode-banner.suspended  { background: rgba(139,92,246,0.12);  color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3);  display: block; }
+    .aw-mode-banner.lockdown   { background: rgba(239,68,68,0.12);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3);   display: block; }
 
     .aw-matrix__yes  { color: #10b981; font-weight: 700; font-size: 1rem; }
     .aw-matrix__no   { color: #6b7280; font-size: 1rem; }
@@ -581,6 +583,7 @@
           <div class="aw-mode-toggle">
             <button class="aw-mode-btn active-enforce" data-mode="enforce">enforce</button>
             <button class="aw-mode-btn" data-mode="audit">audit</button>
+            <button class="aw-mode-btn" data-mode="suspended">suspended</button>
             <button class="aw-mode-btn" data-mode="lockdown">lockdown</button>
           </div>
           <div class="aw-mode-banner" id="demo-mode-banner"></div>
@@ -669,7 +672,7 @@
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🚦</div>
         <h3>Enforcer modes</h3>
-        <p>Switch between <code>enforce</code>, <code>audit</code> (permissive + logged), and <code>lockdown</code> (all denied) without changing a single rule.</p>
+        <p>Switch between <code>enforce</code>, <code>audit</code> (permissive + logged), <code>suspended</code> (denied + logged), and <code>lockdown</code> (immediate deny, engine bypassed) without changing a single rule.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🧩</div>
@@ -827,7 +830,7 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
           </tr>
           <tr>
             <td>Enforcer modes (audit / lockdown)</td>
-            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">enforce · audit · lockdown</span></td>
+            <td class="aw-matrix__ours"><span class="aw-matrix__yes">✓</span><span class="aw-matrix__note">enforce · audit · suspended · lockdown</span></td>
             <td><span class="aw-matrix__no">✗</span></td>
             <td><span class="aw-matrix__no">✗</span></td>
             <td><span class="aw-matrix__no">✗</span></td>
@@ -1061,10 +1064,13 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
       })
       if (currentMode === 'audit') {
         modeBanner.className = 'aw-mode-banner audit'
-        modeBanner.textContent = 'Audit mode — denials are overridden to allow. Callers see allowed: true.'
+        modeBanner.textContent = 'Audit mode — policy denials are overridden to allow. Callers see allowed: true. Observers see the honest decision.'
+      } else if (currentMode === 'suspended') {
+        modeBanner.className = 'aw-mode-banner suspended'
+        modeBanner.textContent = 'Suspended mode — policy evaluates and observers fire, but all access is denied. Audit trail intact.'
       } else if (currentMode === 'lockdown') {
         modeBanner.className = 'aw-mode-banner lockdown'
-        modeBanner.textContent = 'Lockdown mode — all access denied regardless of policy.'
+        modeBanner.textContent = 'Lockdown mode — engine bypassed entirely. Immediate deny, no policy evaluation, no observer events.'
       } else {
         modeBanner.className = 'aw-mode-banner'
         modeBanner.textContent = ''
@@ -1097,7 +1103,9 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
     // Apply enforcer mode override
     let d = { ...raw, override: null }
     if (currentMode === 'lockdown') {
-      d = { ...d, allowed: false, override: 'lockdown' }
+      d = { ...d, allowed: false, reason: 'lockdown', override: 'lockdown' }
+    } else if (currentMode === 'suspended' && raw.allowed) {
+      d = { ...d, allowed: false, override: 'suspended' }
     } else if (currentMode === 'audit' && !raw.allowed) {
       d = { ...d, allowed: true, override: 'permissive' }
     }
@@ -1116,7 +1124,7 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
     if (d.override) {
       overrideRow.style.display = ''
       overrideEl.textContent = d.override
-      overrideEl.style.color = currentMode === 'lockdown' ? '#ef4444' : '#f59e0b'
+      overrideEl.style.color = currentMode === 'lockdown' ? '#ef4444' : currentMode === 'suspended' ? '#8b5cf6' : '#f59e0b'
     } else {
       overrideRow.style.display = 'none'
     }
