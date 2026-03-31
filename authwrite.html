@@ -71,6 +71,34 @@
       flex-wrap: wrap;
       margin-bottom: 1.5rem;
     }
+    .aw-hero__features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+    }
+    .aw-hero__feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .aw-hero__feature-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .aw-hero__feature strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 0.15rem;
+    }
+    .aw-hero__feature span {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
     .aw-hero__npm {
       display: inline-block;
       background: var(--color-surface);
@@ -727,6 +755,22 @@
         Most authorization libraries tell you <em>what</em> they decided. Authwrite tells you <em>why</em>.
         Every decision carries the rule that matched, the time it took, and whether an enforcer mode override was applied.
       </p>
+      <div class="aw-hero__features">
+        <div class="aw-hero__feature">
+          <span class="aw-hero__feature-icon">🔍</span>
+          <div>
+            <strong>A named reason on every decision</strong>
+            <span>Every allow and deny carries the ID of the rule that fired — or <code>"default"</code> when none matched. No more debugging a silent 403.</span>
+          </div>
+        </div>
+        <div class="aw-hero__feature">
+          <span class="aw-hero__feature-icon">🚦</span>
+          <div>
+            <strong>Enforcer modes for safe rollouts</strong>
+            <span>Switch to audit mode to observe how a new policy behaves before it enforces. Lockdown denies everything without touching a single rule.</span>
+          </div>
+        </div>
+      </div>
       <div class="aw-demo__guide">
         <strong>Try it live — runs entirely in the browser.</strong>
         <ol>
