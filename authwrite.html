@@ -723,6 +723,20 @@
       transition: color 0.15s;
     }
     .aw-cta__links a:hover { color: var(--color-primary-light); }
+    .aw-cta__install {
+      display: inline-block; background: var(--color-code-bg); border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); padding: 0.7rem 1.5rem; margin-bottom: 1.25rem;
+    }
+    .aw-cta__install code { font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-primary-light); }
+    .aw-cta__packages { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+    .aw-cta__packages a {
+      font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);
+      background: var(--color-code-bg); border: 1px solid var(--color-border);
+      padding: 0.35rem 0.75rem; border-radius: var(--radius-sm);
+      text-decoration: none; transition: color 0.15s, border-color 0.15s;
+    }
+    .aw-cta__packages a:hover { color: var(--color-primary-light); border-color: var(--color-primary-light); }
+    .aw-cta__actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -1369,6 +1383,28 @@ app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,   
   <div class="container">
     <h2>Ready to stop guessing<br>why access was denied?</h2>
     <p>Every denial deserves an explanation. Authwrite makes that the default.</p>
+    <div class="aw-cta__install">
+      <code>npm install @daltonr/authwrite-core</code>
+    </div>
+    <div class="aw-cta__packages">
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-core" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-core</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-express" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-express</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-fastify" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-fastify</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-nextjs" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-nextjs</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-hono" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-hono</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-hateoas" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-hateoas</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-testing" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-testing</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-loader-yaml" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-loader-yaml</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-loader-db" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-loader-db</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-observer-otel" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-observer-otel</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-observer-pg" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-observer-pg</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-observer-redis" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-observer-redis</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-devtools" target="_blank" rel="noopener noreferrer">@daltonr/authwrite-devtools</a>
+    </div>
+    <div class="aw-cta__actions">
+      <a href="https://github.com/richardadalton/authwrite" class="btn btn--lg btn--outline" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+      <a href="https://www.npmjs.com/package/@daltonr/authwrite-core" class="btn btn--lg btn--primary" target="_blank" rel="noopener noreferrer">View on npm</a>
+    </div>
   </div>
 </section>
 
