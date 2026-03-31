@@ -32,22 +32,7 @@
     @media (max-width: 900px) {
       .aw-hero__inner { grid-template-columns: 1fr; }
     }
-    .aw-hero__badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16,185,129,0.12);
-      border: 1px solid rgba(16,185,129,0.3);
-      color: var(--color-primary-light);
-      border-radius: 100px;
-      padding: 0.35rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 1.25rem;
-    }
-    .aw-hero h1 {
+.aw-hero h1 {
       font-size: clamp(2rem, 4.5vw, 3.25rem);
       font-weight: 800;
       line-height: 1.15;
@@ -749,8 +734,7 @@
 
     <!-- Left: text -->
     <div class="aw-hero__left">
-      <div class="aw-hero__badge">🔐 TypeScript · Zero dependencies · MIT License</div>
-      <h1>Authorization that<br><em>explains itself.</em></h1>
+<h1>Authorization that<br><em>explains itself.</em></h1>
       <p class="aw-hero__sub">
         Most authorization libraries tell you <em>what</em> they decided. Authwrite tells you <em>why</em>.
         Every decision carries the rule that matched, the time it took, and whether an enforcer mode override was applied.
