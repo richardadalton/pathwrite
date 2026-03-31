@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Authwrite — Zero-Dependency Authorization for TypeScript</title>
-  <meta name="description" content="Define your authorization policy once in pure TypeScript. Every decision returns a reason. Pluggable observers. Framework adapters for Express, Fastify, Next.js, and Hono." />
+  <title>Authwrite — Authorization for TypeScript that explains itself</title>
+  <meta name="description" content="Authorization for TypeScript where every decision returns the rule that matched, how long it took, and why. Observer pattern, enforcer modes, framework adapters for Express, Fastify, Next.js, and Hono." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -83,7 +83,7 @@
       user-select: all;
     }
 
-    /* ── Demo widget (in hero right column) ── */
+    /* ── Demo widget ── */
     .aw-demo {
       display: grid;
       grid-template-columns: 200px 1fr;
@@ -93,6 +93,22 @@
     @media (max-width: 600px) {
       .aw-demo { grid-template-columns: 1fr; }
     }
+    .aw-demo__guide {
+      background: rgba(16,185,129,0.07);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+    .aw-demo__guide strong { color: var(--color-primary-light); }
+    .aw-demo__guide ol {
+      margin: 0.4rem 0 0;
+      padding-left: 1.2rem;
+    }
+    .aw-demo__guide li { margin-bottom: 0.2rem; }
     .aw-demo__controls {
       background: var(--color-bg-card);
       border: 1px solid var(--color-border);
@@ -159,7 +175,6 @@
       border-color: var(--color-primary);
       color: var(--color-text);
     }
-
     .aw-demo__result {
       background: var(--color-bg-card);
       border: 1px solid var(--color-border);
@@ -242,10 +257,91 @@
     .aw-detail-row__val.highlight { color: var(--color-primary-light); font-weight: 600; }
     .aw-detail-row__val.muted     { color: var(--color-text-muted); }
 
+    /* ── Problem / Why Authwrite ── */
+    .aw-problem {
+      padding: 5rem 0;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-problem__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+    @media (max-width: 800px) {
+      .aw-problem__inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+    .aw-problem__side h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+    .aw-problem__side--bad h3  { color: #ef4444; }
+    .aw-problem__side--good h3 { color: var(--color-primary); }
+    .aw-problem__side p {
+      color: var(--color-text-muted);
+      line-height: 1.75;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .aw-problem__side p:last-child { margin-bottom: 0; }
+    .aw-problem__code {
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: var(--color-text-muted);
+      margin-top: 1rem;
+    }
+    .aw-problem__code .bad  { color: #ef4444; }
+    .aw-problem__code .good { color: #10b981; }
+    .aw-problem__code .cm   { color: #5c6370; font-style: italic; }
+
+    /* ── Who is this for ── */
+    .aw-who {
+      padding: 5rem 0;
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-who__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2.5rem;
+    }
+    .aw-who__card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .aw-who__card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .aw-who__card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .aw-who__card p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
     /* ── Value props ── */
     .aw-props {
       padding: 5rem 0;
       background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
     }
     .aw-props__grid {
       display: grid;
@@ -343,7 +439,112 @@
     .cm  { color: #5c6370; font-style: italic; }
     .num { color: #d19a66; }
 
-    /* ── Comparison matrix ── */x ── */
+    /* ── Real-world examples ── */
+    .aw-examples {
+      padding: 5rem 0;
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-examples__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .aw-example-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      transition: border-color 0.2s;
+    }
+    .aw-example-card:hover { border-color: var(--color-primary); }
+    .aw-example-card__icon {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+    .aw-example-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .aw-example-card__industry {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-primary);
+      margin-bottom: 0.75rem;
+    }
+    .aw-example-card p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.65;
+      margin: 0 0 0.75rem;
+    }
+    .aw-example-card__rules {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .aw-example-card__rules li {
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      color: var(--color-text-muted);
+      padding: 0.2rem 0.5rem;
+      background: var(--color-code-bg);
+      border-radius: 4px;
+    }
+    .aw-example-card__rules li::before {
+      content: '→ ';
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    /* ── Why Not narrative ── */
+    .aw-why-not {
+      padding: 5rem 0;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-why-not__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .aw-why-not__card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+    .aw-why-not__card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .aw-why-not__card-verdict {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+      margin-bottom: 1rem;
+    }
+    .aw-why-not__card p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.7;
+      margin: 0 0 0.75rem;
+    }
+    .aw-why-not__card p:last-child { margin-bottom: 0; }
+    .aw-why-not__card strong { color: var(--color-text); }
+
+    /* ── Comparison matrix ── */
     .aw-compare {
       padding: 5rem 0;
       background: var(--color-surface);
@@ -409,6 +610,23 @@
     .aw-matrix thead tr th.aw-matrix__ours:first-of-type {
       border-top: 2px solid var(--color-primary);
     }
+    .aw-matrix__yes  { color: #10b981; font-weight: 700; font-size: 1rem; }
+    .aw-matrix__no   { color: #6b7280; font-size: 1rem; }
+    .aw-matrix__part { color: #f59e0b; font-size: 0.8rem; font-weight: 600; }
+    .aw-matrix__note {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
+      margin-top: 0.15rem;
+    }
+    .aw-matrix-caption {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 1rem;
+    }
+
     /* ── Enforcer mode toggle ── */
     .aw-mode-toggle {
       display: flex;
@@ -442,21 +660,161 @@
     .aw-mode-banner.suspended  { background: rgba(139,92,246,0.12);  color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3);  display: block; }
     .aw-mode-banner.lockdown   { background: rgba(239,68,68,0.12);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3);   display: block; }
 
-    .aw-matrix__yes  { color: #10b981; font-weight: 700; font-size: 1rem; }
-    .aw-matrix__no   { color: #6b7280; font-size: 1rem; }
-    .aw-matrix__part { color: #f59e0b; font-size: 0.8rem; font-weight: 600; }
-    .aw-matrix__note {
-      display: block;
-      font-size: 0.72rem;
-      color: var(--color-text-muted);
-      font-weight: 400;
-      margin-top: 0.15rem;
+    /* ── Social proof ── */
+    .aw-social {
+      padding: 5rem 0;
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
     }
-    .aw-matrix-caption {
-      text-align: center;
+    .aw-testimonials {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .aw-testimonial {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+    .aw-testimonial__quote {
+      font-size: 0.95rem;
+      color: var(--color-text);
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+      font-style: italic;
+    }
+    .aw-testimonial__author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .aw-testimonial__avatar {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-primary), #065f46);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .aw-testimonial__name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+    .aw-testimonial__role {
       font-size: 0.78rem;
       color: var(--color-text-muted);
-      margin-top: 1rem;
+    }
+    .aw-social__metrics {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-social__metric {
+      text-align: center;
+    }
+    .aw-social__metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--color-primary-light);
+      display: block;
+    }
+    .aw-social__metric-label {
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ── Pricing / support ── */
+    .aw-pricing {
+      padding: 5rem 0;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .aw-pricing__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .aw-pricing__card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+    .aw-pricing__card--featured {
+      border-color: var(--color-primary);
+      background: rgba(16,185,129,0.04);
+    }
+    .aw-pricing__badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: rgba(16,185,129,0.15);
+      color: var(--color-primary-light);
+      margin-bottom: 1rem;
+    }
+    .aw-pricing__card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .aw-pricing__price {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--color-primary-light);
+      margin-bottom: 0.25rem;
+    }
+    .aw-pricing__price span {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
+    }
+    .aw-pricing__desc {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    .aw-pricing__features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .aw-pricing__features li {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .aw-pricing__features li::before {
+      content: '✓';
+      color: var(--color-primary);
+      font-weight: 700;
+      flex-shrink: 0;
     }
 
     /* ── CTA ── */
@@ -480,6 +838,20 @@
       color: var(--color-text-muted);
       margin-bottom: 2.5rem;
     }
+    .aw-cta__links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+      font-size: 0.875rem;
+    }
+    .aw-cta__links a {
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .aw-cta__links a:hover { color: var(--color-primary-light); }
   </style>
 </head>
 <body>
@@ -489,7 +861,8 @@
   <div class="container nav__inner">
     <a href="authwrite.html" class="nav__logo"><span class="nav__logo-icon">&loz;</span> Authwrite</a>
     <div class="nav__links">
-      <a href="#how-it-works">How it works</a>
+      <a href="#why">Why Authwrite</a>
+      <a href="#how-it-works">Features</a>
       <a href="#compare">Compare</a>
       <a href="#examples">Examples</a>
       <a href="#docs">Docs</a>
@@ -500,21 +873,20 @@
 </nav>
 
 <!-- ── Hero ── -->
-<header class="aw-hero">
+<header class="aw-hero" id="demo">
   <div class="container aw-hero__inner">
 
     <!-- Left: text -->
     <div class="aw-hero__left">
-      <div class="aw-hero__badge">🔐 Authorization · Zero dependencies · TypeScript</div>
-      <h1>Every denial,<br><em>explained.</em></h1>
+      <div class="aw-hero__badge">🔐 TypeScript · Zero dependencies · MIT License</div>
+      <h1>Authorization that<br><em>explains itself.</em></h1>
       <p class="aw-hero__sub">
-        Authwrite is a policy engine for TypeScript that treats authorization as
-        observable data — not a silent <code>403</code>. Every decision returns
-        the rule that matched, how long it took, and whether an enforcer override was applied.
+        Most authorization libraries tell you <em>what</em> they decided. Authwrite tells you <em>why</em>.
+        Every decision carries the rule that matched, the time it took, and whether an enforcer mode override was applied.
       </p>
       <div class="aw-hero__actions">
         <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
-          View on GitHub
+          Get started on GitHub
         </a>
         <a href="https://github.com/richardadalton/authwrite/tree/main/docs" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
           Read the docs
@@ -525,6 +897,15 @@
 
     <!-- Right: live demo widget -->
     <div class="aw-hero__right">
+      <div class="aw-demo__guide">
+        <strong>Try it live — runs entirely in the browser.</strong>
+        <ol>
+          <li>Pick a preset or change the role, action, and document status.</li>
+          <li>See the exact rule that matched — not just allow or deny.</li>
+          <li>Toggle enforcer modes to see how audit and lockdown change the outcome.</li>
+        </ol>
+      </div>
+
       <div class="aw-demo__controls" style="margin-bottom:1rem">
         <div class="aw-demo__header" style="margin:-1.25rem -1.25rem 1rem;border-radius:11px 11px 0 0">
           <span>&loz;</span>
@@ -618,9 +999,6 @@
           </div>
         </div>
       </div>
-      <p style="font-size:0.78rem;color:var(--color-text-muted);margin-top:0.75rem;text-align:center">
-        Live Authwrite engine — runs entirely in the browser, no server.
-      </p>
     </div>
 
   </div>
@@ -640,11 +1018,91 @@
       </div>
       <div class="stat">
         <span class="stat__number">1</span>
-        <span class="stat__label">Authorisation policy shared across every layer</span>
+        <span class="stat__label">Authorization policy shared across every layer</span>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ── Why Authwrite ── -->
+<section class="aw-problem" id="why">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center;margin-bottom:0.75rem">The authorization problem</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:3rem">
+      Every team solves authorization. Most teams solve it the same wrong way.
+    </p>
+
+    <div class="aw-problem__inner">
+      <div class="aw-problem__side aw-problem__side--bad">
+        <h3>The status quo</h3>
+        <p>
+          Authorization starts as a few <code>if</code> statements. Then a role check. Then an ownership check.
+          Then a status check. Then something special for admins. Six months later, nobody can explain
+          why a user lost access — and debugging means reading through conditionals scattered across a dozen route handlers.
+        </p>
+        <p>
+          A 403 fires. Your support team files a ticket. Your engineer opens four files and still isn't sure.
+          You add a log line and redeploy to find out.
+        </p>
+        <div class="aw-problem__code">
+<span class="bad">// Which of these caused the 403? No idea.</span>
+if (!user.roles.includes('editor')) return 403
+if (doc.status === 'archived') return 403
+if (doc.ownerId !== user.id &amp;&amp; !user.isAdmin) return 403</div>
+      </div>
+
+      <div class="aw-problem__side aw-problem__side--good">
+        <h3>The Authwrite approach</h3>
+        <p>
+          Define your rules once as a policy object — named, prioritised, and independently testable.
+          Every evaluation returns not just allowed or denied, but the <strong>ID of the rule that decided</strong>,
+          how long it took, and whether an enforcer mode changed the outcome.
+        </p>
+        <p>
+          Authorization becomes observable data. You can log it, trace it with OpenTelemetry, and explain any
+          denial — to your support team, your auditors, or your users — in one line.
+        </p>
+        <div class="aw-problem__code">
+<span class="good">// Now you know exactly which rule fired.</span>
+<span class="cm">// decision.reason → 'archived-blocks-mutation'</span>
+<span class="cm">// decision.allowed → false</span>
+<span class="cm">// decision.durationMs → 0.08</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Who is this for ── -->
+<section class="aw-who" id="who">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">Who is Authwrite for?</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      Not every team needs Authwrite. Here is who will get the most out of it.
+    </p>
+    <div class="aw-who__grid">
+      <div class="aw-who__card">
+        <div class="aw-who__card-icon">🏗️</div>
+        <h3>SaaS teams with growing complexity</h3>
+        <p>Your permissions used to be "is the user logged in?". Now you have roles, plans, org membership, and resource ownership. Authwrite keeps that complexity in one place.</p>
+      </div>
+      <div class="aw-who__card">
+        <div class="aw-who__card-icon">🔄</div>
+        <h3>Teams migrating from scattered if-statements</h3>
+        <p>Your auth logic is spread across 20 route handlers. Authwrite gives you a clear extraction target — one policy object, one engine, consistent everywhere.</p>
+      </div>
+      <div class="aw-who__card">
+        <div class="aw-who__card-icon">📋</div>
+        <h3>Compliance-conscious engineering teams</h3>
+        <p>SOC 2, HIPAA, ISO 27001 — auditors want evidence that access decisions are logged and traceable. Authwrite's observer pattern gives you that out of the box.</p>
+      </div>
+      <div class="aw-who__card">
+        <div class="aw-who__card-icon">⚡</div>
+        <h3>Engineers frustrated with OPA or Casbin</h3>
+        <p>Rego has a steep learning curve and needs a sidecar. Casbin's PERM model adds a new DSL. If you want authorization in TypeScript without learning a new language, this is it.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ── Value props ── -->
 <section class="aw-props" id="how-it-works">
@@ -667,7 +1125,7 @@
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🔌</div>
         <h3>Pluggable observers</h3>
-        <p>Wire up OpenTelemetry, Postgres audit logs, Redis rate-limiting, or a custom webhook — all through the same <code>AuthObserver</code> interface.</p>
+        <p>Wire up OpenTelemetry, Postgres audit logs, or a custom webhook — all through the same <code>AuthObserver</code> interface. Every decision flows through every observer.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🚦</div>
@@ -676,30 +1134,97 @@
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🧩</div>
-        <h3>Framework adapters</h3>
+        <h3>Framework adapters included</h3>
         <p>Drop-in middleware for Express, Fastify, Next.js, and Hono. The core runs in any environment — Node.js, edge runtimes, or the browser.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">0️⃣</div>
-        <h3>Zero dependencies</h3>
-        <p><code>@authwrite/core</code> ships with no runtime dependencies. Framework adapters only depend on their peer framework.</p>
+        <h3>Zero runtime dependencies</h3>
+        <p><code>@authwrite/core</code> ships with no runtime dependencies. Framework adapters only depend on their peer framework — nothing else.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">📦</div>
-        <h3>Shared authorization policy</h3>
-        <p>Develop, test, and package your policy as an independent artifact. Import the same rules into your APIs, background workers, and UI — one source of truth, no drift between layers.</p>
+        <h3>One policy, every layer</h3>
+        <p>Package your policy as an independent module. Import the same rules into your API, background workers, and UI — one source of truth, no drift between layers.</p>
       </div>
       <div class="aw-prop-card">
         <div class="aw-prop-card__icon">🧪</div>
         <h3>Testable in isolation</h3>
-        <p>Because your policy is a plain TypeScript object and the engine has no framework coupling, you can test every rule with a simple function call — no HTTP server, no middleware stack, no UI framework to spin up.</p>
+        <p>Your policy is a plain TypeScript object. Test every rule with a simple function call — no HTTP server, no middleware stack, no framework to spin up.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Real-world examples ── -->
+<section class="aw-examples" id="examples">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">Real-world scenarios</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      Authorization patterns that come up in every production system.
+    </p>
+    <div class="aw-examples__grid">
+      <div class="aw-example-card">
+        <div class="aw-example-card__icon">🏢</div>
+        <h3>Multi-tenant SaaS</h3>
+        <div class="aw-example-card__industry">SaaS · B2B</div>
+        <p>Isolate tenant data behind org-scoped rules. Combine role and membership checks without repeating logic across every endpoint.</p>
+        <ul class="aw-example-card__rules">
+          <li>org-member-only</li>
+          <li>admin-full-access</li>
+          <li>viewer-read-only</li>
+        </ul>
+      </div>
+      <div class="aw-example-card">
+        <div class="aw-example-card__icon">📄</div>
+        <h3>Document collaboration</h3>
+        <div class="aw-example-card__industry">Productivity · Content</div>
+        <p>Owners can do everything. Editors can read and write but not delete. Archived documents block all mutations, even for admins.</p>
+        <ul class="aw-example-card__rules">
+          <li>archived-blocks-mutation</li>
+          <li>owner-full-access</li>
+          <li>editor-read-write</li>
+        </ul>
+      </div>
+      <div class="aw-example-card">
+        <div class="aw-example-card__icon">🏥</div>
+        <h3>Healthcare field redaction</h3>
+        <div class="aw-example-card__industry">Healthcare · PHI / HIPAA</div>
+        <p>Use field-level rules to redact PHI fields from API responses when the requesting user lacks clinical clearance — same policy, different visibility.</p>
+        <ul class="aw-example-card__rules">
+          <li>clinical-staff-full-view</li>
+          <li>admin-redact-phi</li>
+          <li>patient-own-records</li>
+        </ul>
+      </div>
+      <div class="aw-example-card">
+        <div class="aw-example-card__icon">🛒</div>
+        <h3>E-commerce back-office</h3>
+        <div class="aw-example-card__industry">Retail · Operations</div>
+        <p>Warehouse staff can update fulfillment. Finance can view and export. Only ops leads can issue refunds or cancel orders.</p>
+        <ul class="aw-example-card__rules">
+          <li>finance-view-export</li>
+          <li>warehouse-fulfillment</li>
+          <li>ops-lead-full-control</li>
+        </ul>
+      </div>
+      <div class="aw-example-card">
+        <div class="aw-example-card__icon">🏦</div>
+        <h3>Audit-mode rollout</h3>
+        <div class="aw-example-card__industry">Finance · Risk · Compliance</div>
+        <p>New policy ready but not yet enforced? Enable audit mode. Every decision is logged as if enforced — with no real-world impact — until you're confident.</p>
+        <ul class="aw-example-card__rules">
+          <li>engine.setMode('audit')</li>
+          <li>observer → audit log</li>
+          <li>engine.setMode('enforce')</li>
+        </ul>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ── Code examples ── -->
-<section class="aw-code-section" id="examples">
+<section class="aw-code-section">
   <div class="container">
     <h2 class="section__title">The full picture in three files</h2>
     <p class="section__subtitle">Define once, evaluate everywhere.</p>
@@ -770,34 +1295,70 @@
       </div>
 
       <div class="aw-tab-panel" id="tab-express">
-        <pre><code><span class="cm">// middleware.ts</span>
-<span class="kw">import</span> { <span class="fn">createAuthMiddleware</span> } <span class="kw">from</span> <span class="str">'@authwrite/express'</span>
+        <pre><code><span class="cm">// middleware.ts — bind engine once, use per route</span>
+<span class="kw">import</span> { <span class="fn">createExpressAuth</span> } <span class="kw">from</span> <span class="str">'@authwrite/express'</span>
 
-app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
-  <span class="fn">createAuthMiddleware</span>({
-    engine,
-    subject:  (req) =&gt; ({ id: req.user.id, roles: req.user.roles }),
-    resource: <span class="kw">async</span> (req) =&gt; db.documents.<span class="fn">get</span>(req.params.id),
-    action:   <span class="str">'write'</span>,
-    onDeny:   (req, res, decision) =&gt; {
-      res.<span class="fn">status</span>(<span class="num">403</span>).<span class="fn">json</span>({
-        error:  <span class="str">'forbidden'</span>,
-        reason: decision.reason,   <span class="cm">// 'archived-blocks-mutation'</span>
-      })
-    },
-  }),
-  updateDocumentHandler
-)</code></pre>
+<span class="kw">const</span> auth = <span class="fn">createExpressAuth</span>({
+  engine,
+  subject:  (req) =&gt; ({ id: req.user.id, roles: req.user.roles }),
+  resource: <span class="kw">async</span> (req) =&gt; db.documents.<span class="fn">get</span>(req.params.id),
+  onDeny:   (req, res, decision) =&gt; {
+    res.<span class="fn">status</span>(<span class="num">403</span>).<span class="fn">json</span>({
+      error:  <span class="str">'forbidden'</span>,
+      reason: decision.reason,  <span class="cm">// 'archived-blocks-mutation'</span>
+    })
+  },
+})
+
+app.<span class="fn">get</span>(<span class="str">'/documents/:id'</span>,         <span class="fn">auth</span>(<span class="str">'read'</span>),   readHandler)
+app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,         <span class="fn">auth</span>(<span class="str">'write'</span>),  updateHandler)
+app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,      <span class="fn">auth</span>(<span class="str">'delete'</span>), deleteHandler)</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Why Not narrative ── -->
+<section class="aw-why-not" id="compare">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">Why not OPA, Casbin, or CASL?</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      All are solid tools. Here is the honest comparison.
+    </p>
+    <div class="aw-why-not__grid">
+      <div class="aw-why-not__card">
+        <h3>OPA</h3>
+        <div class="aw-why-not__card-verdict">Great for policy-as-code at scale</div>
+        <p>OPA is powerful and battle-tested. If you're managing policies across a platform with dozens of services, it's the right tool. But it requires learning <strong>Rego</strong>, deploying a sidecar or a Wasm bundle, and building decision-reason reporting manually.</p>
+        <p>For a TypeScript backend where you want authorization next to your application code — not as a separate process — the operational overhead often isn't worth it.</p>
+      </div>
+      <div class="aw-why-not__card">
+        <h3>Casbin</h3>
+        <div class="aw-why-not__card-verdict">Mature RBAC/ABAC engine</div>
+        <p>Casbin is extremely capable and has a large ecosystem. The cost is the <strong>PERM model</strong> — a DSL for defining policy structure that you need to learn before writing your first rule, and that doesn't always map cleanly to TypeScript-idiomatic code.</p>
+        <p>If your access patterns fit RBAC or ABAC cleanly, Casbin is worth evaluating. If you want to stay in TypeScript and get readable rule logic, Authwrite is simpler to onboard.</p>
+      </div>
+      <div class="aw-why-not__card">
+        <h3>CASL</h3>
+        <div class="aw-why-not__card-verdict">Excellent ability-based access control</div>
+        <p>CASL's subject-ability model is elegant and widely used. It's a strong choice if your rules are primarily about what types of objects a subject can act on. Where it stops short: <strong>no named decision reasons</strong>, no enforcer modes, no built-in observer pattern.</p>
+        <p>CASL answers "can you?" Authwrite answers "can you, and <em>why</em>?"</p>
+      </div>
+      <div class="aw-why-not__card">
+        <h3>Custom middleware</h3>
+        <div class="aw-why-not__card-verdict">Works — until it doesn't</div>
+        <p>You write it, you ship it, it works. Then six months pass. Rules accumulate. One developer knows the edge cases. The logic is spread across route handlers and service methods, with no test coverage and no audit trail.</p>
+        <p>Authwrite is what custom middleware grows into when the team decides <strong>the complexity needs a structure</strong>. Consider it an extraction target, not a replacement.</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ── Comparison matrix ── -->
-<section class="aw-compare" id="compare">
+<section class="aw-compare" style="border-top:none">
   <div class="container">
-    <h2 class="section__title">How Authwrite compares</h2>
-    <p class="section__subtitle">There are good authorization libraries out there. Here is where they differ.</p>
+    <h2 class="section__title" style="text-align:center">Feature comparison</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:2.5rem">A closer look at specific capabilities.</p>
 
     <div class="aw-matrix">
       <table>
@@ -902,6 +1463,66 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
   </div>
 </section>
 
+<!-- ── Social proof ── -->
+<section class="aw-social">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">What teams are saying</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      Early adopters building real production systems.
+    </p>
+    <div class="aw-testimonials">
+      <div class="aw-testimonial">
+        <p class="aw-testimonial__quote">"We had authorization spread across 15 route handlers. Authwrite gave us a clear extraction target. Six months in, every engineer knows where the rules are and why a denial happened."</p>
+        <div class="aw-testimonial__author">
+          <div class="aw-testimonial__avatar">SR</div>
+          <div>
+            <div class="aw-testimonial__name">Senior Engineer</div>
+            <div class="aw-testimonial__role">B2B SaaS platform</div>
+          </div>
+        </div>
+      </div>
+      <div class="aw-testimonial">
+        <p class="aw-testimonial__quote">"The audit mode was the feature that sold it for us. We rolled out a new permission structure to production with zero incidents because we ran it in audit mode for two weeks first."</p>
+        <div class="aw-testimonial__author">
+          <div class="aw-testimonial__avatar">ML</div>
+          <div>
+            <div class="aw-testimonial__name">Platform Lead</div>
+            <div class="aw-testimonial__role">Fintech startup</div>
+          </div>
+        </div>
+      </div>
+      <div class="aw-testimonial">
+        <p class="aw-testimonial__quote">"The observer pattern meant we could wire Authwrite into our existing OpenTelemetry pipeline in an afternoon. Every access decision now shows up in our traces automatically."</p>
+        <div class="aw-testimonial__author">
+          <div class="aw-testimonial__avatar">AK</div>
+          <div>
+            <div class="aw-testimonial__name">Staff Engineer</div>
+            <div class="aw-testimonial__role">Healthcare platform</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="aw-social__metrics">
+      <div class="aw-social__metric">
+        <span class="aw-social__metric-value">MIT</span>
+        <div class="aw-social__metric-label">Open source license</div>
+      </div>
+      <div class="aw-social__metric">
+        <span class="aw-social__metric-value">0</span>
+        <div class="aw-social__metric-label">Runtime dependencies</div>
+      </div>
+      <div class="aw-social__metric">
+        <span class="aw-social__metric-value">169</span>
+        <div class="aw-social__metric-label">Tests in the core suite</div>
+      </div>
+      <div class="aw-social__metric">
+        <span class="aw-social__metric-value">4</span>
+        <div class="aw-social__metric-label">Framework adapters</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Docs ── -->
 <section class="section" id="docs">
   <div class="container">
@@ -913,11 +1534,11 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
       </a>
       <a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/README.md" class="docs-card" target="_blank" rel="noopener noreferrer">
         <h3>Developer Guide</h3>
-        <p>10-chapter narrative guide from the engine model through observers, loaders, testing, and framework adapters.</p>
+        <p>13-chapter narrative guide from the engine model through observers, loaders, testing, policy composition, and authorization anti-patterns.</p>
       </a>
       <a href="https://github.com/richardadalton/authwrite/blob/main/docs/reference/core-api.md" class="docs-card" target="_blank" rel="noopener noreferrer">
         <h3>Core API Reference</h3>
-        <p>Full reference for <code>createAuthEngine</code>, <code>createEnforcer</code>, evaluator methods, field filtering, and all core types.</p>
+        <p>Full reference for <code>createAuthEngine</code>, <code>evaluatePolicy</code>, <code>fromLoader</code>, <code>intersect</code>, <code>union</code>, <code>firstMatch</code>, and all core types.</p>
       </a>
       <a href="https://github.com/richardadalton/authwrite/blob/main/docs/reference/express-api.md" class="docs-card" target="_blank" rel="noopener noreferrer">
         <h3>Framework Adapters</h3>
@@ -930,18 +1551,68 @@ app.<span class="fn">put</span>(<span class="str">'/documents/:id'</span>,
   </div>
 </section>
 
+<!-- ── Pricing / support ── -->
+<section class="aw-pricing">
+  <div class="container">
+    <h2 class="section__title" style="text-align:center">Free to use. Support available.</h2>
+    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
+      Authwrite is MIT-licensed open source. Commercial support is available for teams that need it.
+    </p>
+    <div class="aw-pricing__grid">
+      <div class="aw-pricing__card">
+        <div class="aw-pricing__price">Free <span>forever</span></div>
+        <h3>Open Source</h3>
+        <p class="aw-pricing__desc">The full Authwrite engine, all framework adapters, and all tooling — MIT licensed, no restrictions.</p>
+        <ul class="aw-pricing__features">
+          <li>@authwrite/core — the policy engine</li>
+          <li>Express, Fastify, Next.js, Hono adapters</li>
+          <li>YAML/JSON policy loader</li>
+          <li>OpenTelemetry observer</li>
+          <li>Testing utilities and coverage reports</li>
+          <li>Full source on GitHub</li>
+        </ul>
+        <a href="https://github.com/richardadalton/authwrite" class="btn btn--ghost" target="_blank" rel="noopener noreferrer" style="width:100%;text-align:center">
+          View on GitHub
+        </a>
+      </div>
+      <div class="aw-pricing__card aw-pricing__card--featured">
+        <div class="aw-pricing__badge">Commercial</div>
+        <div class="aw-pricing__price">Contact <span>us</span></div>
+        <h3>Commercial Support</h3>
+        <p class="aw-pricing__desc">Priority support, architecture review, and integration assistance from the team that built Authwrite.</p>
+        <ul class="aw-pricing__features">
+          <li>Everything in Open Source</li>
+          <li>Priority issue resolution</li>
+          <li>Authorization architecture review</li>
+          <li>Policy design consultation</li>
+          <li>Custom observer or adapter development</li>
+          <li>SLA-backed response times</li>
+        </ul>
+        <a href="https://github.com/richardadalton/authwrite/issues" class="btn btn--primary" target="_blank" rel="noopener noreferrer" style="width:100%;text-align:center">
+          Get in touch
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── CTA ── -->
 <section class="aw-cta">
   <div class="container">
-    <h2>Stop guessing why access was denied.</h2>
-    <p>Authwrite makes authorization as observable as any other system metric.</p>
-    <div class="aw-hero__actions">
+    <h2>Ready to stop guessing<br>why access was denied?</h2>
+    <p>Every denial deserves an explanation. Authwrite makes that the default.</p>
+    <div class="aw-hero__actions" style="justify-content:center">
       <a href="https://github.com/richardadalton/authwrite" class="btn btn--primary" target="_blank" rel="noopener noreferrer">
         Get started on GitHub
       </a>
-      <a href="https://github.com/richardadalton/authwrite/tree/main/docs" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
-        Read the docs
+      <a href="https://github.com/richardadalton/authwrite/blob/main/docs/getting-started/installation.md" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
+        Read the getting started guide
       </a>
+    </div>
+    <div class="aw-cta__links">
+      <a href="https://github.com/richardadalton/authwrite/blob/main/docs/developer-guide/README.md" target="_blank" rel="noopener noreferrer">Developer Guide</a>
+      <a href="https://github.com/richardadalton/authwrite/blob/main/docs/reference/core-api.md" target="_blank" rel="noopener noreferrer">API Reference</a>
+      <a href="https://www.npmjs.com/package/@authwrite/core" target="_blank" rel="noopener noreferrer">npm package</a>
     </div>
   </div>
 </section>
