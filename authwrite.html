@@ -736,87 +736,6 @@
       margin-top: 0.2rem;
     }
 
-    /* ── Pricing / support ── */
-    .aw-pricing {
-      padding: 5rem 0;
-      background: var(--color-surface);
-      border-top: 1px solid var(--color-border);
-    }
-    .aw-pricing__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-top: 3rem;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .aw-pricing__card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 2rem;
-    }
-    .aw-pricing__card--featured {
-      border-color: var(--color-primary);
-      background: rgba(16,185,129,0.04);
-    }
-    .aw-pricing__badge {
-      display: inline-block;
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      padding: 0.2rem 0.6rem;
-      border-radius: 4px;
-      background: rgba(16,185,129,0.15);
-      color: var(--color-primary-light);
-      margin-bottom: 1rem;
-    }
-    .aw-pricing__card h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-    .aw-pricing__price {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--color-primary-light);
-      margin-bottom: 0.25rem;
-    }
-    .aw-pricing__price span {
-      font-size: 0.9rem;
-      color: var(--color-text-muted);
-      font-weight: 400;
-    }
-    .aw-pricing__desc {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-      margin-bottom: 1.5rem;
-      line-height: 1.6;
-    }
-    .aw-pricing__features {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 1.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-    .aw-pricing__features li {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-    .aw-pricing__features li::before {
-      content: '✓';
-      color: var(--color-primary);
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
     /* ── CTA ── */
     .aw-cta {
       padding: 6rem 0;
@@ -1551,50 +1470,6 @@ app.<span class="fn">delete</span>(<span class="str">'/documents/:id'</span>,   
   </div>
 </section>
 
-<!-- ── Pricing / support ── -->
-<section class="aw-pricing">
-  <div class="container">
-    <h2 class="section__title" style="text-align:center">Free to use. Support available.</h2>
-    <p class="section__subtitle" style="text-align:center;margin-bottom:0">
-      Authwrite is MIT-licensed open source. Commercial support is available for teams that need it.
-    </p>
-    <div class="aw-pricing__grid">
-      <div class="aw-pricing__card">
-        <div class="aw-pricing__price">Free <span>forever</span></div>
-        <h3>Open Source</h3>
-        <p class="aw-pricing__desc">The full Authwrite engine, all framework adapters, and all tooling — MIT licensed, no restrictions.</p>
-        <ul class="aw-pricing__features">
-          <li>@authwrite/core — the policy engine</li>
-          <li>Express, Fastify, Next.js, Hono adapters</li>
-          <li>YAML/JSON policy loader</li>
-          <li>OpenTelemetry observer</li>
-          <li>Testing utilities and coverage reports</li>
-          <li>Full source on GitHub</li>
-        </ul>
-        <a href="https://github.com/richardadalton/authwrite" class="btn btn--ghost" target="_blank" rel="noopener noreferrer" style="width:100%;text-align:center">
-          View on GitHub
-        </a>
-      </div>
-      <div class="aw-pricing__card aw-pricing__card--featured">
-        <div class="aw-pricing__badge">Commercial</div>
-        <div class="aw-pricing__price">Contact <span>us</span></div>
-        <h3>Commercial Support</h3>
-        <p class="aw-pricing__desc">Priority support, architecture review, and integration assistance from the team that built Authwrite.</p>
-        <ul class="aw-pricing__features">
-          <li>Everything in Open Source</li>
-          <li>Priority issue resolution</li>
-          <li>Authorization architecture review</li>
-          <li>Policy design consultation</li>
-          <li>Custom observer or adapter development</li>
-          <li>SLA-backed response times</li>
-        </ul>
-        <a href="https://github.com/richardadalton/authwrite/issues" class="btn btn--primary" target="_blank" rel="noopener noreferrer" style="width:100%;text-align:center">
-          Get in touch
-        </a>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ── CTA ── -->
 <section class="aw-cta">
