@@ -534,10 +534,10 @@ describe("PathShell — fieldErrors", () => {
 });
 
 // ---------------------------------------------------------------------------
-// footerLayout
+// layout
 // ---------------------------------------------------------------------------
 
-describe("PathShell — footerLayout", () => {
+describe("PathShell — layout", () => {
   it("auto mode uses wizard layout for multi-step paths", async () => {
     await act(async () => renderShell({ path: threeStepPath() }));
     // Next button on right, Back button hidden on first step
@@ -577,7 +577,7 @@ describe("PathShell — footerLayout", () => {
       render(createElement(PathShell, {
         path: singleStepPath,
         steps: { contact: createElement("div", null, "Form Content") },
-        footerLayout: "wizard"
+        layout: "wizard"
       }))
     );
     const footer = document.querySelector(".pw-shell__footer")!;
@@ -612,13 +612,19 @@ describe("PathShell — footerLayout", () => {
   });
 
   it("explicit form mode overrides auto-detection", async () => {
-    await act(async () => renderShell({ path: threeStepPath(), footerLayout: "form" }));
+    await act(async () => renderShell({ path: threeStepPath(), layout: "form" }));
     const footer = document.querySelector(".pw-shell__footer")!;
     const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
     const rightButtons = footer.querySelector(".pw-shell__footer-right")!.querySelectorAll("button");
     expect(leftButtons.length).toBe(1); // Cancel on left in form mode
     expect(rightButtons.length).toBe(1); // Only Next on right
     expect(leftButtons[0].textContent).toBe("Cancel");
+  });
+
+  it("layout=tabs hides both the progress header and footer", async () => {
+    await act(async () => renderShell({ path: threeStepPath(), layout: "tabs" }));
+    expect(document.querySelector(".pw-shell__header")).toBeNull();
+    expect(document.querySelector(".pw-shell__footer")).toBeNull();
   });
 });
 

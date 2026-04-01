@@ -67,7 +67,7 @@ export function FormDemo({ onBack }: Props) {
             completeLabel="Send Message"
             validationDisplay="inline"
             cancelLabel="Discard"
-            footerLayout="form"
+            layout="form"
             onComplete={handleComplete}
             onCancel={handleCancel}
             steps={{

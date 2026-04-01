@@ -345,12 +345,13 @@ export interface PathShellProps {
   /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
   validateWhen?: boolean;
   /**
-   * Footer layout mode:
+   * Shell layout mode:
    * - `"auto"` (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
-   * - `"wizard"`: Back button on left, Cancel and Submit together on right.
-   * - `"form"`: Cancel on left, Submit alone on right. Back button never shown.
+   * - `"wizard"`: Progress header + Back button on left, Cancel and Submit together on right.
+   * - `"form"`: Progress header + Cancel on left, Submit alone on right. Back button never shown.
+   * - `"tabs"`: No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
    */
-  footerLayout?: "wizard" | "form" | "auto";
+  layout?: "wizard" | "form" | "auto" | "tabs";
   /** Optional extra CSS class on the root element. */
   className?: string;
   /** Render prop to replace the entire header (progress area). Receives the snapshot. */
@@ -455,7 +456,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   hideCancel = false,
   hideProgress = false,
   hideFooter = false,
-  footerLayout = "auto",
+  layout = "auto",
   className,
   renderHeader,
   renderFooter,
@@ -527,6 +528,9 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 
   const contextValue: PathContextValue = { path: pathReturn, services: services ?? null };
 
+  const effectiveHideProgress = hideProgress || layout === "tabs";
+  const effectiveHideFooter = hideFooter || layout === "tabs";
+
   if (!snapshot) {
     return createElement(PathContext.Provider, { value: contextValue },
       createElement("div", { className: cls("pw-shell", className) },
@@ -543,7 +547,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   }
 
   if (snapshot.status === "completed") {
-    const showCompletionProgress = !hideProgress && snapshot.stepCount > 1;
+    const showCompletionProgress = !effectiveHideProgress && snapshot.stepCount > 1;
     return createElement(PathContext.Provider, { value: contextValue },
       createElement("div", { className: cls("pw-shell", className) },
         showCompletionProgress && defaultHeader(snapshot),
@@ -568,8 +572,8 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     suspend: () => suspend(),
   };
 
-  const showRoot = !hideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
-  const showActive = !hideProgress && (renderHeader
+  const showRoot = !effectiveHideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
+  const showActive = !effectiveHideProgress && (renderHeader
     ? true
     : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
@@ -608,11 +612,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       snapshot.status === "error" && snapshot.error
         ? defaultErrorPanel(snapshot, actions)
         // Footer — navigation buttons
-        : !hideFooter
+        : !effectiveHideFooter
           ? renderFooter
             ? renderFooter(snapshot, actions)
             : defaultFooter(snapshot, actions, {
-                backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, footerLayout
+                backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, layout
               })
           : null
     )
@@ -731,7 +735,7 @@ interface FooterLabels {
   loadingLabel?: string;
   cancelLabel: string;
   hideCancel: boolean;
-  footerLayout: "wizard" | "form" | "auto";
+  layout: "wizard" | "form" | "auto" | "tabs";
 }
 
 function defaultFooter(
@@ -740,9 +744,9 @@ function defaultFooter(
   labels: FooterLabels
 ): ReactElement {
   // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
-  const resolvedLayout = labels.footerLayout === "auto"
+  const resolvedLayout = labels.layout === "auto" || labels.layout === "tabs"
     ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
-    : labels.footerLayout;
+    : labels.layout;
   
   const isFormMode = resolvedLayout === "form";
   

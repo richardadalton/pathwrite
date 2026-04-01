@@ -120,7 +120,7 @@ function DetailsForm() {
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"auto"` picks `"form"` for single-step paths. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where the shell renders `fieldErrors`. `"inline"` suppresses the shell's list so step components can render errors themselves. |
 | `className` | `string` | — | Extra CSS class on the root element. |
 | `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Render prop to replace the default progress header. |

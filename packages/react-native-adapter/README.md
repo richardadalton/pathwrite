@@ -157,7 +157,7 @@ All returned callbacks are referentially stable.
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header. Also hidden automatically for single-step paths. |
 | `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body with a plain `View`. Use when a step contains a `FlatList` or other virtualized list. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left. `"form"`: Cancel on left, no Back. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `renderHeader` | `(snapshot) => ReactNode` | — | Replace the default progress header entirely. |
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation buttons. |
 | `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). If omitted, a default "All done." panel is shown. |

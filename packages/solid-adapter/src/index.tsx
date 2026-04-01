@@ -213,12 +213,13 @@ export interface PathShellProps {
   /** If true, hide the footer (navigation buttons). The error panel is still shown on async failure regardless of this prop. */
   hideFooter?: boolean;
   /**
-   * Footer layout mode:
+   * Shell layout mode:
    * - `"auto"` (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
-   * - `"wizard"`: Back button on left, Cancel and Submit together on right.
-   * - `"form"`: Cancel on left, Submit alone on right. Back button never shown.
+   * - `"wizard"`: Progress header + Back button on left, Cancel and Submit together on right.
+   * - `"form"`: Progress header + Cancel on left, Submit alone on right. Back button never shown.
+   * - `"tabs"`: No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
    */
-  footerLayout?: "wizard" | "form" | "auto";
+  layout?: "wizard" | "form" | "auto" | "tabs";
   /**
    * Controls whether the shell renders its auto-generated field-error summary box.
    * - `"summary"` (default): Shell renders the labeled error list below the step body.
@@ -312,8 +313,10 @@ export const PathShell: Component<PathShellProps> = (props) => {
     return props.class ? `${base}${mod} ${props.class}` : `${base}${mod}`;
   };
 
-  const showRoot = () => !props.hideProgress && !!snap().rootProgress && props.progressLayout !== "activeOnly";
-  const showActive = () => !props.hideProgress && (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly";
+  const effectiveHideProgress = () => props.hideProgress || props.layout === "tabs";
+  const effectiveHideFooter = () => props.hideFooter || props.layout === "tabs";
+  const showRoot = () => !effectiveHideProgress() && !!snap().rootProgress && props.progressLayout !== "activeOnly";
+  const showActive = () => !effectiveHideProgress() && (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly";
 
   const stepContent = () => {
     const s = snap();
@@ -337,8 +340,8 @@ export const PathShell: Component<PathShellProps> = (props) => {
     !!snap().blockingError;
 
   const resolvedFooterLayout = () => {
-    const fl = props.footerLayout ?? "auto";
-    if (fl !== "auto") return fl;
+    const fl = props.layout ?? "auto";
+    if (fl !== "auto" && fl !== "tabs") return fl;
     return snap().stepCount === 1 && snap().nestingLevel === 0 ? "form" : "wizard";
   };
 
@@ -435,7 +438,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
           <Show
             when={snap().status === "error" && snap().error}
             fallback={
-              <Show when={!props.hideFooter}>
+              <Show when={!effectiveHideFooter()}>
                 {props.renderFooter
                   ? props.renderFooter(snap(), actions)
                   : <SolidFooter
@@ -447,7 +450,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
                       loadingLabel={props.loadingLabel}
                       cancelLabel={props.cancelLabel ?? "Cancel"}
                       hideCancel={props.hideCancel ?? false}
-                      footerLayout={resolvedFooterLayout()}
+                      layout={resolvedFooterLayout()}
                     />
                 }
               </Show>
@@ -568,9 +571,9 @@ function SolidFooter(props: {
   loadingLabel?: string;
   cancelLabel: string;
   hideCancel: boolean;
-  footerLayout: "wizard" | "form";
+  layout: "wizard" | "form";
 }) {
-  const isFormMode = () => props.footerLayout === "form";
+  const isFormMode = () => props.layout === "form";
   const isLoading = () => props.snapshot.status !== "idle";
   const submitLabel = () =>
     isLoading() && props.loadingLabel

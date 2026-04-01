@@ -261,12 +261,13 @@ export interface PathShellProps {
   /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
   validateWhen?: boolean;
   /**
-   * Footer layout mode:
+   * Shell layout mode:
    * - `"auto"` (default): "form" for single-step top-level paths, "wizard" otherwise.
-   * - `"wizard"`: Back on left, Cancel and Next on right.
-   * - `"form"`: Cancel on left, Next alone on right.
+   * - `"wizard"`: Progress header + Back on left, Cancel and Next on right.
+   * - `"form"`: Progress header + Cancel on left, Next alone on right.
+   * - `"tabs"`: No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
    */
-  footerLayout?: "wizard" | "form" | "auto";
+  layout?: "wizard" | "form" | "auto" | "tabs";
   /**
    * Controls whether the shell renders its auto-generated field-error summary box.
    * - `"summary"` (default): Shell renders the labeled error list below the step body.
@@ -340,7 +341,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   hideCancel = false,
   hideProgress = false,
   hideFooter = false,
-  footerLayout = "auto",
+  layout = "auto",
   validationDisplay = "summary",
   renderHeader,
   renderFooter,
@@ -446,15 +447,17 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     );
   }
 
+  const effectiveHideProgress = hideProgress || layout === "tabs";
+  const effectiveHideFooter = hideFooter || layout === "tabs";
   const resolvedLayout =
-    footerLayout === "auto"
+    layout === "auto" || layout === "tabs"
       ? snapshot.stepCount === 1 && snapshot.nestingLevel === 0
         ? "form"
         : "wizard"
-      : footerLayout;
+      : layout;
   const isFormMode = resolvedLayout === "form";
   const showProgress =
-    !hideProgress && (snapshot.stepCount > 1 || snapshot.nestingLevel > 0);
+    !effectiveHideProgress && (snapshot.stepCount > 1 || snapshot.nestingLevel > 0);
 
   return (
     <PathContext.Provider value={contextValue}>
@@ -570,7 +573,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                 </View>
               );
             })()
-          : !hideFooter
+          : !effectiveHideFooter
           ? renderFooter
             ? renderFooter(snapshot, actions)
             : (

@@ -364,12 +364,12 @@ describe("PathShell (Solid) — footer layout", () => {
     expect(footer.querySelector(".pw-shell__footer-right .pw-shell__btn--cancel")).not.toBeNull();
   });
 
-  it("explicit footerLayout=wizard overrides auto", async () => {
+  it("explicit layout=wizard overrides auto", async () => {
     dispose = render(
       () => (
         <PathShell
           path={singleStepPath}
-          footerLayout="wizard"
+          layout="wizard"
           steps={{ only: () => <div /> }}
         />
       ),
@@ -378,6 +378,13 @@ describe("PathShell (Solid) — footer layout", () => {
     await tick();
     const footer = container.querySelector(".pw-shell__footer")!;
     expect(footer.querySelector(".pw-shell__footer-right .pw-shell__btn--cancel")).not.toBeNull();
+  });
+
+  it("layout=tabs hides both the progress header and footer", async () => {
+    mountShell({ layout: "tabs" });
+    await tick();
+    expect(container.querySelector(".pw-shell__header")).toBeNull();
+    expect(container.querySelector(".pw-shell__footer")).toBeNull();
   });
 });
 

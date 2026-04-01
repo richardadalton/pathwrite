@@ -105,7 +105,7 @@ All returned callbacks are referentially stable — safe to pass as props or inc
 | `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so step components render their own errors. |
 | `loadingLabel` | `string` | `"Loading…"` | Label shown during async step suspension. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"auto"` picks `"form"` for single-step paths. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `services` | `TServices` | — | Services object injected into step lifecycle hooks via `PathStepContext`. |
 | `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (requires `completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a "Start over" button is shown. Components inside `completionContent` can call `usePathContext()` to access `restart` and `snapshot.data`. |

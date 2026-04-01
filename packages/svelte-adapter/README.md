@@ -98,7 +98,7 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). Mutually exclusive with `path`. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
 | `autoStart` | `boolean` | `true` | Start on mount. Ignored when `engine` is provided. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"auto"` picks `"form"` for single-step paths. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step paths. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |

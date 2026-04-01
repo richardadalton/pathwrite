@@ -171,7 +171,7 @@ The navigation buttons have sensible defaults. Override them all individually:
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button entirely. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header. Also hidden automatically for single-step paths. |
 | `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The async error panel is still shown regardless. |
-| `footerLayout` | `"auto" \| "wizard" \| "form"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back button. `"auto"`: uses form for single-step paths, wizard otherwise. |
+| `layout` | `"auto" \| "wizard" \| "form" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back button. `"tabs"`: No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body. `"auto"`: uses form for single-step paths, wizard otherwise. |
 | `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | Controls how root and sub-path progress bars are arranged when a sub-path is active. See Chapter 6 (Sub-paths). |
 
 ### Validation props

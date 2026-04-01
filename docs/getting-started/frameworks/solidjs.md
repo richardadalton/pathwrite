@@ -103,7 +103,7 @@ function DetailsStep() {
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `hideFooter` | `boolean` | `false` | Hide the footer entirely. The error panel is still shown on async failure. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"auto"` picks `"form"` for single-step paths. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to an outer shell's `snapshot().hasAttemptedNext` to trigger simultaneous error display in nested shells. |
 | `services` | `object \| null` | `null` | Services object passed through context to all step components. |
 

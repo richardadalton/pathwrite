@@ -185,7 +185,7 @@ export class PathShellCompletionDirective {
     <!-- Active path -->
     <div class="pw-shell" [ngClass]="progressLayout !== 'merged' ? 'pw-shell--progress-' + progressLayout : ''" *ngIf="facade.state$ | async as s">
       <!-- Root progress — persistent top-level bar visible during sub-paths -->
-      <div class="pw-shell__root-progress" *ngIf="!hideProgress && s.rootProgress && progressLayout !== 'activeOnly'">
+      <div class="pw-shell__root-progress" *ngIf="!effectiveHideProgress && s.rootProgress && progressLayout !== 'activeOnly'">
         <div class="pw-shell__steps">
           <div
             *ngFor="let step of s.rootProgress!.steps; let i = index"
@@ -206,7 +206,7 @@ export class PathShellCompletionDirective {
         <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
       </ng-container>
       <ng-template #defaultHeader>
-        <div class="pw-shell__header" *ngIf="!hideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'">
+        <div class="pw-shell__header" *ngIf="!effectiveHideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'">
           <div class="pw-shell__steps">
             <div
               *ngFor="let step of s.steps; let i = index"
@@ -295,7 +295,7 @@ export class PathShellCompletionDirective {
         </div>
         <!-- Footer — custom or default navigation buttons -->
         <ng-template #footerOrCustom>
-          <ng-container *ngIf="!hideFooter">
+          <ng-container *ngIf="!effectiveHideFooter">
             <ng-container *ngIf="customFooter; else defaultFooter">
               <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
             </ng-container>
@@ -307,7 +307,7 @@ export class PathShellCompletionDirective {
           <div class="pw-shell__footer-left">
             <!-- Form mode: Cancel on the left -->
             <button
-              *ngIf="getResolvedFooterLayout(s) === 'form' && !hideCancel"
+              *ngIf="getResolvedLayout(s) === 'form' && !hideCancel"
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
               [disabled]="s.status !== 'idle'"
@@ -315,7 +315,7 @@ export class PathShellCompletionDirective {
             >{{ cancelLabel }}</button>
             <!-- Wizard mode: Back on the left -->
             <button
-              *ngIf="getResolvedFooterLayout(s) === 'wizard' && !s.isFirstStep"
+              *ngIf="getResolvedLayout(s) === 'wizard' && !s.isFirstStep"
               type="button"
               class="pw-shell__btn pw-shell__btn--back"
               [disabled]="s.status !== 'idle' || !s.canMovePrevious"
@@ -325,7 +325,7 @@ export class PathShellCompletionDirective {
           <div class="pw-shell__footer-right">
             <!-- Wizard mode: Cancel on the right -->
             <button
-              *ngIf="getResolvedFooterLayout(s) === 'wizard' && !hideCancel"
+              *ngIf="getResolvedLayout(s) === 'wizard' && !hideCancel"
               type="button"
               class="pw-shell__btn pw-shell__btn--cancel"
               [disabled]="s.status !== 'idle'"
@@ -392,12 +392,13 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   /** When true, calls `validate()` on the facade so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
   @Input() validateWhen = false;
   /**
-   * Footer layout mode:
+   * Shell layout mode:
    * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
-   * - "wizard": Back button on left, Cancel and Submit together on right.
-   * - "form": Cancel on left, Submit alone on right. Back button never shown.
+   * - "wizard": Progress header + Back button on left, Cancel and Submit together on right.
+   * - "form": Progress header + Cancel on left, Submit alone on right. Back button never shown.
+   * - "tabs": No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
    */
-  @Input() footerLayout: "wizard" | "form" | "auto" = "auto";
+  @Input() layout: "wizard" | "form" | "auto" | "tabs" = "auto";
   /**
    * Controls whether the shell renders its auto-generated field-error summary box.
    * - `"summary"` (default): Shell renders the labeled error list below the step body.
@@ -515,11 +516,14 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     return Object.entries(s.fieldWarnings) as [string, string][];
   }
 
-  /** Resolves "auto" footerLayout based on snapshot. Single-step top-level → "form", otherwise → "wizard". */
-  protected getResolvedFooterLayout(s: PathSnapshot): "wizard" | "form" {
-    return this.footerLayout === "auto"
+  get effectiveHideProgress(): boolean { return this.hideProgress || this.layout === "tabs"; }
+  get effectiveHideFooter(): boolean { return this.hideFooter || this.layout === "tabs"; }
+
+  /** Resolves "auto"/"tabs" layout to "wizard" or "form" for footer button arrangement. */
+  protected getResolvedLayout(s: PathSnapshot): "wizard" | "form" {
+    return this.layout === "auto" || this.layout === "tabs"
       ? (s.stepCount === 1 && s.nestingLevel === 0 ? "form" : "wizard")
-      : this.footerLayout;
+      : this.layout;
   }
 
   protected errorPhaseMessage = errorPhaseMessage;

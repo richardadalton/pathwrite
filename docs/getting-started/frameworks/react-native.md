@@ -207,7 +207,7 @@ export function DetailsStep() {
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header (dots, title, progress bar). Also hidden automatically for single-step top-level paths. |
 | `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body wrapper with a plain `View`. Use when the step content contains a `FlatList` or other virtualized list to avoid the "VirtualizedList inside ScrollView" warning. The step is then responsible for its own scrolling. |
-| `footerLayout` | `"wizard" \| "form" \| "auto"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Replace the default progress header entirely. |
 | `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Replace the default navigation buttons. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |

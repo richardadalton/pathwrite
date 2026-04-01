@@ -233,12 +233,13 @@ export const PathShell = defineComponent({
     /** If true, hide the footer (navigation buttons). The error panel is still shown on async failure regardless of this prop. */
     hideFooter: { type: Boolean, default: false },
     /**
-     * Footer layout mode:
+     * Shell layout mode:
      * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
-     * - "wizard": Back button on left, Cancel and Submit together on right.
-     * - "form": Cancel on left, Submit alone on right. Back button never shown.
+     * - "wizard": Progress header + Back button on left, Cancel and Submit together on right.
+     * - "form": Progress header + Cancel on left, Submit alone on right. Back button never shown.
+     * - "tabs": No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
      */
-    footerLayout: { type: String as PropType<"wizard" | "form" | "auto">, default: "auto" },
+    layout: { type: String as PropType<"wizard" | "form" | "auto" | "tabs">, default: "auto" },
     /**
      * Controls whether the shell renders its auto-generated field-error summary box.
      * - `"summary"` (default): Shell renders the labeled error list below the step body.
@@ -339,8 +340,11 @@ export const PathShell = defineComponent({
         );
       }
 
+      const effectiveHideProgress = props.hideProgress || props.layout === "tabs";
+      const effectiveHideFooter = props.hideFooter || props.layout === "tabs";
+
       if (snap.status === "completed") {
-        const showCompletionProgress = !props.hideProgress && snap.stepCount > 1;
+        const showCompletionProgress = !effectiveHideProgress && snap.stepCount > 1;
         return h("div", { class: "pw-shell" }, [
           showCompletionProgress && renderVueHeader(snap),
           h("div", { class: "pw-shell__body" },
@@ -363,8 +367,8 @@ export const PathShell = defineComponent({
       const stepSlot = (snap.formId ? slots[snap.formId] : undefined) ?? slots[snap.stepId];
       const stepContent = stepSlot ? stepSlot({ snapshot: snap }) : null;
 
-      const showRoot = !props.hideProgress && !!snap.rootProgress && props.progressLayout !== "activeOnly";
-      const showActive = !props.hideProgress && (
+      const showRoot = !effectiveHideProgress && !!snap.rootProgress && props.progressLayout !== "activeOnly";
+      const showActive = !effectiveHideProgress && (
         slots.header
           ? true
           : (snap.stepCount > 1 || snap.nestingLevel > 0) && props.progressLayout !== "rootOnly");
@@ -413,7 +417,7 @@ export const PathShell = defineComponent({
         snap.status === "error" && snap.error
           ? renderVueErrorPanel(snap, actions)
           // Footer — navigation
-          : !props.hideFooter
+          : !effectiveHideFooter
             ? slots.footer
               ? slots.footer({ snapshot: snap, actions })
               : renderVueFooter(snap, actions, props)
@@ -534,12 +538,12 @@ function renderVueErrorPanel(snapshot: PathSnapshot, actions: PathShellActions):
 function renderVueFooter(
   snapshot: PathSnapshot,
   actions: PathShellActions,
-  props: { backLabel: string; nextLabel: string; completeLabel: string; loadingLabel?: string; cancelLabel: string; hideCancel: boolean; footerLayout: "wizard" | "form" | "auto" }
+  props: { backLabel: string; nextLabel: string; completeLabel: string; loadingLabel?: string; cancelLabel: string; hideCancel: boolean; layout: "wizard" | "form" | "auto" | "tabs" }
 ): VNode {
   // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
-  const resolvedLayout = props.footerLayout === "auto"
+  const resolvedLayout = props.layout === "auto" || props.layout === "tabs"
     ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
-    : props.footerLayout;
+    : props.layout;
   
   const isFormMode = resolvedLayout === "form";
   

@@ -28,12 +28,13 @@
     /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
     validateWhen?: boolean;
     /**
-     * Footer layout mode:
+     * Shell layout mode:
      * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
-     * - "wizard": Back button on left, Cancel and Submit together on right.
-     * - "form": Cancel on left, Submit alone on right. Back button never shown.
+     * - "wizard": Progress header + Back button on left, Cancel and Submit together on right.
+     * - "form": Progress header + Cancel on left, Submit alone on right. Back button never shown.
+     * - "tabs": No progress header, no footer. Use for tabbed interfaces with a custom tab bar inside the step body.
      */
-    footerLayout?: "wizard" | "form" | "auto";
+    layout?: "wizard" | "form" | "auto" | "tabs";
     /**
      * Controls whether the shell renders its auto-generated field-error summary box.
      * - `"summary"` (default): Shell renders the labeled error list below the step body.
@@ -82,7 +83,7 @@
     hideProgress = false,
     hideFooter = false,
     validateWhen = false,
-    footerLayout = 'auto',
+    layout = 'auto',
     validationDisplay = 'summary',
     progressLayout = 'merged',
     services = null,
@@ -167,11 +168,14 @@
   let snap = $derived(pathReturn.snapshot);
   let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData), retry, suspend });
 
+  let effectiveHideProgress = $derived(hideProgress || layout === 'tabs');
+  let effectiveHideFooter = $derived(hideFooter || layout === 'tabs');
+
   // Auto-detect footer layout: single-step top-level paths use "form", everything else uses "wizard"
   let resolvedFooterLayout = $derived(
-    footerLayout === 'auto' && snap
+    (layout === 'auto' || layout === 'tabs') && snap
       ? (snap.stepCount === 1 && snap.nestingLevel === 0 ? 'form' : 'wizard')
-      : (footerLayout === 'auto' ? 'wizard' : footerLayout)
+      : (layout === 'auto' || layout === 'tabs' ? 'wizard' : layout)
   );
 
   /**
@@ -200,7 +204,7 @@
     </div>
   {:else if snap.status === 'completed'}
     <!-- Completion panel: shown after stayOnFinal completion -->
-    {#if !hideProgress && snap.stepCount > 1}
+    {#if !effectiveHideProgress && snap.stepCount > 1}
       <div class="pw-shell__header">
         <div class="pw-shell__steps">
           {#each snap.steps as step, i}
@@ -229,7 +233,7 @@
     </div>
   {:else}
     <!-- Root progress: persistent top-level bar visible during sub-paths -->
-    {#if !hideProgress && snap.rootProgress && progressLayout !== 'activeOnly'}
+    {#if !effectiveHideProgress && snap.rootProgress && progressLayout !== 'activeOnly'}
       <div class="pw-shell__root-progress">
         <div class="pw-shell__steps">
           {#each snap.rootProgress.steps as step, i}
@@ -248,7 +252,7 @@
     {/if}
 
     <!-- Header: progress indicator (overridable via header snippet) -->
-    {#if !hideProgress && progressLayout !== 'rootOnly'}
+    {#if !effectiveHideProgress && progressLayout !== 'rootOnly'}
       {#if header}
         {@render header(snap)}
       {:else if snap.stepCount > 1 || snap.nestingLevel > 0}
@@ -343,9 +347,9 @@
         </div>
       </div>
     <!-- Footer: navigation buttons (overridable via footer snippet) -->
-    {:else if !hideFooter && footer}
+    {:else if !effectiveHideFooter && footer}
       {@render footer(snap, actions)}
-    {:else if !hideFooter}
+    {:else if !effectiveHideFooter}
       <div class="pw-shell__footer">
         <div class="pw-shell__footer-left">
           {#if resolvedFooterLayout === 'form' && !hideCancel}
