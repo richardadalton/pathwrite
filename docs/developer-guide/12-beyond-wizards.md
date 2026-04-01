@@ -151,9 +151,8 @@ The `PathShell` configuration suppresses the built-in chrome and delegates navig
 
 ```tsx
 <PathShell
-  definition={profileForm}
-  hideProgress
-  renderFooter={() => null}
+  path={profileForm}
+  layout="tabs"
 >
   {(step) => (
     <>
@@ -212,9 +211,7 @@ export function DetailsStep() {
       path={employeeDetailsPath}
       initialData={DETAILS_INITIAL}
       restoreKey="details"
-      hideProgress
-      hideCancel
-      hideFooter
+      layout="tabs"
       validateWhen={snapshot.hasAttemptedNext}
       validationDisplay="inline"
       steps={{

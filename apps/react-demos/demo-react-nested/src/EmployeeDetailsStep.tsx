@@ -22,9 +22,7 @@ export function EmployeeDetailsStep() {
         path={employeeDetailsPath}
         initialData={DETAILS_INITIAL}
         restoreKey="details"
-        hideProgress={true}
-        hideCancel={true}
-        hideFooter={true}
+        layout="tabs"
         validateWhen={outerSnap.hasAttemptedNext}
         validationDisplay="inline"
         steps={{

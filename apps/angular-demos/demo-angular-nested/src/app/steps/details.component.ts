@@ -43,9 +43,7 @@ import { RolesTabComponent }       from "../tabs/roles-tab.component";
           [path]="employeeDetailsPath"
           [initialData]="DETAILS_INITIAL"
           restoreKey="details"
-          [hideProgress]="true"
-          [hideCancel]="true"
-          [hideFooter]="true"
+          layout="tabs"
           [validateWhen]="outerSnapshot()?.hasAttemptedNext"
           validationDisplay="inline"
         >

@@ -22,9 +22,7 @@ const { snapshot: outerSnapshot } = usePathContext<OnboardingData>();
       :path="employeeDetailsPath"
       :initial-data="DETAILS_INITIAL"
       restore-key="details"
-      :hide-progress="true"
-      :hide-cancel="true"
-      :hide-footer="true"
+      layout="tabs"
       :validate-when="outerSnapshot.hasAttemptedNext"
       validation-display="inline"
     >

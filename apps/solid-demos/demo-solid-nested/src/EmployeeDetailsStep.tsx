@@ -21,9 +21,7 @@ export default function EmployeeDetailsStep() {
         path={employeeDetailsPath}
         initialData={DETAILS_INITIAL}
         restoreKey="details"
-        hideProgress={true}
-        hideCancel={true}
-        hideFooter={true}
+        layout="tabs"
         validateWhen={ctx.snapshot()?.hasAttemptedNext ?? false}
         validationDisplay="inline"
         steps={{

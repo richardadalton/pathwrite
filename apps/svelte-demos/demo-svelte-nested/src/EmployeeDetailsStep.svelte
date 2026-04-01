@@ -21,9 +21,7 @@
     path={employeeDetailsPath}
     initialData={DETAILS_INITIAL}
     restoreKey="details"
-    hideProgress={true}
-    hideCancel={true}
-    hideFooter={true}
+    layout="tabs"
     validateWhen={ctx.snapshot?.hasAttemptedNext}
     validationDisplay="inline"
     personal={PersonalTab}
