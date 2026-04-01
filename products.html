@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Products — Devjoy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .products {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /*
+      Each .diamond-wrap is W×W. The inner .diamond is a square of side W/√2,
+      rotated 45°. Its corners (the diamond's leftmost/rightmost points) sit
+      exactly at the edges of the wrapper, so adjacent wrappers touch precisely.
+    */
+    .diamond-wrap {
+      --w: 280px;
+      --inner: calc(var(--w) * 0.7071);
+      width: var(--w);
+      height: var(--w);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .diamond {
+      width: var(--inner);
+      height: var(--inner);
+      transform: rotate(45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.25s ease, filter 0.25s ease;
+    }
+
+    .diamond-label {
+      transform: rotate(-45deg);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.92);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Per-product colours */
+    .diamond--pathwrite {
+      background: #8b5cf6;
+    }
+    .diamond--authwrite {
+      background: #10b981;
+    }
+    .diamond--rulewrite {
+      background: #f59e0b;
+    }
+
+    /* Hover: brighten + colour-matched glow */
+    .diamond-wrap:hover .diamond--pathwrite {
+      filter: brightness(1.12);
+      box-shadow: 0 0 48px rgba(139, 92, 246, 0.55);
+    }
+    .diamond-wrap:hover .diamond--authwrite {
+      filter: brightness(1.12);
+      box-shadow: 0 0 48px rgba(16, 185, 129, 0.55);
+    }
+    .diamond-wrap:hover .diamond--rulewrite {
+      filter: brightness(1.12);
+      box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
+    }
+
+    /* Responsive: scale down on small screens */
+    @media (max-width: 680px) {
+      .diamond-wrap {
+        --w: 160px;
+      }
+      .diamond-label {
+        font-size: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="products">
+
+    <a href="index.html" class="diamond-wrap" aria-label="pathwrite">
+      <div class="diamond diamond--pathwrite">
+        <span class="diamond-label">pathwrite</span>
+      </div>
+    </a>
+
+    <a href="authwrite.html" class="diamond-wrap" aria-label="authwrite">
+      <div class="diamond diamond--authwrite">
+        <span class="diamond-label">authwrite</span>
+      </div>
+    </a>
+
+    <a href="rulewrite.html" class="diamond-wrap" aria-label="rulewrite">
+      <div class="diamond diamond--rulewrite">
+        <span class="diamond-label">rulewrite</span>
+      </div>
+    </a>
+
+  </div>
+</body>
+</html>
