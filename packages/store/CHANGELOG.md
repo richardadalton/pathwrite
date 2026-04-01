@@ -1,5 +1,16 @@
 # @daltonr/pathwrite-store
 
+## 0.12.0
+
+### Minor Changes
+
+- Updated for `@daltonr/pathwrite-core@0.12.0` — `completionBehaviour`, per-step `hasAttemptedNext`, and `validateOnLeave`. No store-specific API changes.
+
+### Patch Changes
+
+- Updated dependencies [431a268]
+  - @daltonr/pathwrite-core@0.12.0
+
 ## 0.11.0
 
 ### Patch Changes
