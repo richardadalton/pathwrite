@@ -14,7 +14,7 @@
     return val === "yes" ? "Yes" : "No";
   }
 
-  let d = $derived((ctx.snapshot.data.details ?? {}) as EmployeeDetails);
+  let d = $derived((ctx.snapshot.data.details?.data ?? {}) as EmployeeDetails);
 
   let activePerms = $derived([
     d.permAdmin   === "yes" && "Admin",

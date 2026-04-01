@@ -226,8 +226,14 @@ export interface PathShellProps {
   engine?: PathEngine;
   /** Map of step ID → React Native content. The shell renders `steps[snapshot.stepId]` for the current step. */
   steps: Record<string, ReactNode>;
-  /** Initial data passed to engine.start(). */
+  /** Initial data passed to `engine.start()`. Used on first visit. Overridden by a stored snapshot when `restoreKey` is set. */
   initialData?: PathData;
+  /**
+   * When set, this shell automatically saves its state into the nearest outer `PathShell`'s
+   * data under this key on every change, and restores from that stored state on remount.
+   * No-op when used on a top-level shell with no outer `PathShell` ancestor.
+   */
+  restoreKey?: string;
   /** If true, the path is started automatically on mount. Defaults to true. */
   autoStart?: boolean;
   /** Called when the path completes. */
@@ -321,6 +327,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   engine: externalEngine,
   steps,
   initialData = {},
+  restoreKey,
   autoStart = true,
   onComplete,
   onCancel,
@@ -344,12 +351,19 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   validateWhen = false,
   completionContent,
 }: PathShellProps, ref): ReactElement {
+  const outerCtx = useContext(PathContext);
+
   const pathReturn = usePath({
     engine: externalEngine,
     onEvent(event) {
       onEvent?.(event);
       if (event.type === "completed") onComplete?.(event.data);
       if (event.type === "cancelled") onCancel?.(event.data);
+      if (restoreKey && outerCtx && event.type === "stateChanged") {
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
+          restoreKey, event.snapshot
+        );
+      }
     },
   });
 
@@ -367,7 +381,19 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   useEffect(() => {
     if (autoStart && !startedRef.current && !externalEngine) {
       startedRef.current = true;
-      start(pathDef, initialData);
+      let startData: PathData = initialData;
+      let restoreStepId: string | undefined;
+      if (restoreKey && outerCtx) {
+        const stored = outerCtx.path.snapshot?.data[restoreKey] as PathSnapshot | undefined;
+        if (stored != null && typeof stored === "object" && "stepId" in stored) {
+          startData = stored.data as PathData;
+          if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+        }
+      }
+      const p = start(pathDef, startData);
+      if (restoreStepId) {
+        Promise.resolve(p).then(() => goToStep(restoreStepId!));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

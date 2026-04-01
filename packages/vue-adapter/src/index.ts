@@ -216,6 +216,12 @@ export const PathShell = defineComponent({
      */
     engine: { type: Object as PropType<PathEngine>, default: undefined },
     initialData: { type: Object as PropType<PathData>, default: () => ({}) },
+    /**
+     * When set, this shell automatically saves its state into the nearest outer `PathShell`'s
+     * data under this key on every change, and restores from that stored state on remount.
+     * No-op when used on a top-level shell with no outer `PathShell` ancestor.
+     */
+    restoreKey: { type: String, default: undefined },
     autoStart: { type: Boolean, default: true },
     backLabel: { type: String, default: "Previous" },
     nextLabel: { type: String, default: "Next" },
@@ -258,12 +264,20 @@ export const PathShell = defineComponent({
   },
   emits: ["complete", "cancel", "event"],
   setup(props, { slots, emit, expose }) {
+    // Read the outer PathShell's context BEFORE providing our own.
+    const outerCtx = inject(PathInjectionKey, null);
+
     const pathReturn = usePath({
       engine: props.engine,
       onEvent(event) {
         emit("event", event);
         if (event.type === "completed") emit("complete", event.data);
         if (event.type === "cancelled") emit("cancel", event.data);
+        if (props.restoreKey && outerCtx && event.type === "stateChanged") {
+          (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
+            props.restoreKey, event.snapshot
+          );
+        }
       }
     });
 
@@ -278,7 +292,19 @@ export const PathShell = defineComponent({
       // is responsible for starting it (e.g. via createPersistedEngine).
       if (props.autoStart && !started.value && !props.engine) {
         started.value = true;
-        start(props.path, props.initialData);
+        let startData: PathData = props.initialData;
+        let restoreStepId: string | undefined;
+        if (props.restoreKey && outerCtx) {
+          const stored = outerCtx.path.snapshot.value?.data[props.restoreKey] as PathSnapshot | undefined;
+          if (stored != null && typeof stored === "object" && "stepId" in stored) {
+            startData = stored.data as PathData;
+            if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+          }
+        }
+        const p = start(props.path, startData);
+        if (restoreStepId) {
+          p.then(() => goToStep(restoreStepId!));
+        }
       }
     });
 

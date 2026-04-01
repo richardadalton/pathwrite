@@ -1,13 +1,13 @@
-import type { PathDefinition } from "@daltonr/pathwrite-core";
+import type { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
 import type { EmployeeDetails } from "./employee-details";
 
 export interface OnboardingData {
   employeeName: string;
-  details: Partial<EmployeeDetails>;
+  details?: PathSnapshot<EmployeeDetails>;
   [key: string]: unknown;
 }
 
-export const ONBOARDING_INITIAL: OnboardingData = { employeeName: "", details: {} };
+export const ONBOARDING_INITIAL: OnboardingData = { employeeName: "" };
 
 export const employeeOnboardingPath: PathDefinition<OnboardingData> = {
   id: "employee-onboarding",
@@ -15,8 +15,11 @@ export const employeeOnboardingPath: PathDefinition<OnboardingData> = {
     { id: "enter-name", title: "Employee Name",
       fieldErrors: ({ data }) => ({ employeeName: !data.employeeName?.trim() ? "Employee name is required." : undefined }) },
     { id: "employee-details", title: "Employee Details",
+      // fieldErrors drives canMoveNext (auto-derived when canMoveNext is absent).
+      // The inner PathShell syncs its snapshot to outer data.details via restoreKey,
+      // so these checks always reflect the latest values typed into the inner tabs.
       fieldErrors: ({ data }) => {
-        const d = data.details as EmployeeDetails | undefined;
+        const d = data.details?.data;
         const missing: string[] = [];
         if (!d?.firstName?.trim()) missing.push("First name (Personal tab)");
         if (!d?.lastName?.trim()) missing.push("Last name (Personal tab)");

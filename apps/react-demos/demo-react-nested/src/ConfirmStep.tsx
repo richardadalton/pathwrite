@@ -14,7 +14,7 @@ function yesNo(val: string | undefined) {
 export function ConfirmStep() {
   const { snapshot } = usePathContext<OnboardingData>();
   const data = snapshot!.data;
-  const d = (data.details ?? {}) as EmployeeDetails;
+  const d = (data.details?.data ?? {}) as EmployeeDetails;
 
   const activePerms = [
     d.permAdmin   === "yes" && "Admin",

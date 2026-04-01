@@ -276,6 +276,16 @@ export function setPathContext<TData extends PathData = PathData, TServices = un
   setContext(PATH_CONTEXT_KEY, ctx);
 }
 
+/**
+ * Internal: Get the PathContext from the nearest ancestor PathShell, or
+ * `undefined` if no PathShell is present. Used by PathShell itself to access
+ * the outer shell's context for `restoreKey` auto-wiring — must be called
+ * before `setPathContext()` so it reads the parent rather than self.
+ */
+export function getPathContextOrNull<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> | undefined {
+  return getContext<PathContext<TData, TServices>>(PATH_CONTEXT_KEY);
+}
+
 // ---------------------------------------------------------------------------
 // Helper for binding form inputs
 // ---------------------------------------------------------------------------

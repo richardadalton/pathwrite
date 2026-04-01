@@ -175,7 +175,7 @@ export class ConfirmStepComponent {
   protected readonly path = usePathContext<OnboardingData>();
 
   protected details(): EmployeeDetails {
-    const d = this.path.snapshot()?.data.details as EmployeeDetails | undefined;
+    const d = this.path.snapshot()?.data.details?.data;
     return d ?? {} as EmployeeDetails;
   }
 

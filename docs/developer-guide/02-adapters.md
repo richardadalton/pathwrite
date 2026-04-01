@@ -137,7 +137,8 @@ In Vue, each step value is a component reference. In Svelte, the shell uses a `{
 |---|---|---|---|
 | `path` | `PathDefinition` | required | The path definition to drive. |
 | `steps` | `Record<string, ...>` | required | Step content keyed by step ID. |
-| `initialData` | `PathData` | `{}` | Initial data object passed to `engine.start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Used on first visit. Overridden by a stored snapshot when `restoreKey` is set. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full snapshot into the nearest outer `PathShell`'s data under this key on every state change, and restores from that stored snapshot on remount. Use this for nested shells (e.g. a tabbed inner shell inside a wizard step) so that navigating away and back to the step preserves both the inner data and the active tab. No-op when used on a top-level shell with no outer `PathShell` ancestor. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Set to `false` to show the empty state and let the user trigger start explicitly. |
 | `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()` call. Use with persistence. |
 

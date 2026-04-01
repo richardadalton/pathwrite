@@ -670,3 +670,110 @@ describe("PathShell — validateWhen", () => {
     expect(screen.getByText("Required")).toBeTruthy();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — nested shell state sync and restoration
+// ---------------------------------------------------------------------------
+
+describe("PathShell — restoreKey", () => {
+  function innerTwoStepPath(): PathDefinition {
+    return {
+      id: "inner",
+      steps: [
+        { id: "inner-a", title: "Tab A" },
+        { id: "inner-b", title: "Tab B" },
+      ]
+    };
+  }
+
+  function outerSingleStepPath(): PathDefinition {
+    return {
+      id: "outer",
+      steps: [{ id: "outer-step", title: "Outer Step" }]
+    };
+  }
+
+  it("syncs the inner snapshot to outer data under restoreKey on each state change", async () => {
+    let capturedOuterCtx: ReturnType<typeof usePathContext> | undefined;
+
+    function OuterStep() {
+      capturedOuterCtx = usePathContext();
+      return createElement(PathShell, {
+        path: innerTwoStepPath(),
+        restoreKey: "inner",
+        hideFooter: false,
+        steps: {
+          "inner-a": createElement("div", null, "Inner Content A"),
+          "inner-b": createElement("div", null, "Inner Content B"),
+        }
+      } as any);
+    }
+
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: outerSingleStepPath(),
+        hideFooter: true,
+        steps: { "outer-step": createElement(OuterStep) }
+      } as any))
+    );
+
+    // Navigate inner shell to step-b
+    await act(async () => screen.getByText("Next").click());
+
+    expect(screen.getByText("Inner Content B")).toBeTruthy();
+    const stored = capturedOuterCtx?.snapshot.data.inner as PathSnapshot | undefined;
+    expect(stored?.stepId).toBe("inner-b");
+  });
+
+  it("restores inner shell to the stored step on mount when restoreKey data is present", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+
+    // Build a pre-existing inner snapshot at step inner-b
+    const innerEngine = new PathEngine();
+    await innerEngine.start(innerTwoStepPath(), {});
+    await innerEngine.next();
+    const storedSnapshot = innerEngine.snapshot();
+
+    function OuterStep() {
+      return createElement(PathShell, {
+        path: innerTwoStepPath(),
+        restoreKey: "inner",
+        hideFooter: false,
+        steps: {
+          "inner-a": createElement("div", null, "Inner Content A"),
+          "inner-b": createElement("div", null, "Inner Content B"),
+        }
+      } as any);
+    }
+
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: outerSingleStepPath(),
+        hideFooter: true,
+        initialData: { inner: storedSnapshot },
+        steps: { "outer-step": createElement(OuterStep) }
+      } as any))
+    );
+
+    // Inner shell should have restored to inner-b, not started at inner-a
+    expect(screen.getByText("Inner Content B")).toBeTruthy();
+    expect(screen.queryByText("Inner Content A")).toBeNull();
+  });
+
+  it("restoreKey is a no-op when there is no outer PathShell ancestor", async () => {
+    // Top-level shell with restoreKey — should start normally at step 0
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: innerTwoStepPath(),
+        restoreKey: "orphan",
+        steps: {
+          "inner-a": createElement("div", null, "Inner Content A"),
+          "inner-b": createElement("div", null, "Inner Content B"),
+        }
+      } as any))
+    );
+
+    expect(screen.getByText("Inner Content A")).toBeTruthy();
+    expect(screen.queryByText("Inner Content B")).toBeNull();
+  });
+});

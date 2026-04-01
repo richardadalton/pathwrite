@@ -1338,7 +1338,9 @@ export class PathEngine {
       await this.finishActivePath();
       // finishActivePath sets _status = "completed" for stayOnFinal paths.
       // For all other cases (dismiss, reset, sub-paths) reset to idle.
-      if (this._status !== "completed") {
+      // Cast needed: TS narrows _status to "completing" after the assignment above
+      // and doesn't widen it after the async call, even though finishActivePath may change it.
+      if ((this._status as PathStatus) !== "completed") {
         this._status = "idle";
       }
       // No stateChanged here — finishActivePath emits "completed" or "resumed"

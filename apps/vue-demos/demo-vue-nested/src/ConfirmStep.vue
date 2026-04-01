@@ -7,7 +7,7 @@ import { LAPTOP_TYPES } from "./employee-details";
 
 const { snapshot } = usePathContext<OnboardingData>();
 
-const d = computed(() => (snapshot.value.data.details ?? {}) as EmployeeDetails);
+const d = computed(() => (snapshot.value.data.details?.data ?? {}) as EmployeeDetails);
 
 function laptopLabel(val: string) {
   return LAPTOP_TYPES.find(l => l.value === val)?.label ?? val;

@@ -299,8 +299,25 @@ export interface PathShellProps {
   engine?: PathEngine;
   /** Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the current step. */
   steps: Record<string, ReactNode>;
-  /** Initial data passed to `engine.start()`. */
+  /** Initial data passed to `engine.start()`. Used on first visit. Overridden by a stored snapshot when `restoreKey` is set. */
   initialData?: PathData;
+  /**
+   * When set, this shell automatically saves its state into the nearest outer `PathShell`'s
+   * data under this key on every change, and restores from that stored state on remount.
+   *
+   * Use this for nested shells (e.g. a tabbed inner shell inside a wizard step) so that
+   * navigating away and back preserves both the inner data and the active tab:
+   *
+   * ```tsx
+   * <PathShell path={detailsPath} restoreKey="details" initialData={DETAILS_INITIAL} ... />
+   * ```
+   *
+   * The outer path stores a full `PathSnapshot` under `data[restoreKey]`. Later steps in
+   * the outer path can read inner field values via `data.details?.data.fieldName`.
+   *
+   * No-op when used on a top-level shell with no outer `PathShell` ancestor.
+   */
+  restoreKey?: string;
   /** If true, the path is started automatically on mount. Defaults to `true`. */
   autoStart?: boolean;
   /** Called when the path completes. Receives the final data. */
@@ -425,6 +442,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   engine: externalEngine,
   steps,
   initialData = {},
+  restoreKey,
   autoStart = true,
   onComplete,
   onCancel,
@@ -447,12 +465,22 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   validateWhen = false,
   completionContent,
 }: PathShellProps, ref): ReactElement {
+  // Read the outer PathShell's context BEFORE providing our own. Used for
+  // restoreKey: the outer context is null when this is a top-level shell.
+  const outerCtx = useContext(PathContext);
+
   const pathReturn = usePath({
     engine: externalEngine,
     onEvent(event) {
       onEvent?.(event);
       if (event.type === "completed") onComplete?.(event.data);
       if (event.type === "cancelled") onCancel?.(event.data);
+      // Auto-sync inner snapshot to the parent shell's data under restoreKey.
+      if (restoreKey && outerCtx && event.type === "stateChanged") {
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
+          restoreKey, event.snapshot
+        );
+      }
     }
   });
 
@@ -472,7 +500,19 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   useEffect(() => {
     if (autoStart && !startedRef.current && !externalEngine) {
       startedRef.current = true;
-      start(pathDef, initialData);
+      let startData: PathData = initialData;
+      let restoreStepId: string | undefined;
+      if (restoreKey && outerCtx) {
+        const stored = outerCtx.path.snapshot?.data[restoreKey] as PathSnapshot | undefined;
+        if (stored != null && typeof stored === "object" && "stepId" in stored) {
+          startData = stored.data as PathData;
+          if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+        }
+      }
+      const p = start(pathDef, startData);
+      if (restoreStepId) {
+        Promise.resolve(p).then(() => goToStep(restoreStepId!));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

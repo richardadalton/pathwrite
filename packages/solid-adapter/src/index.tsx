@@ -184,6 +184,12 @@ export interface PathShellProps {
    */
   engine?: PathEngine;
   initialData?: PathData;
+  /**
+   * When set, this shell automatically saves its state into the nearest outer `PathShell`'s
+   * data under this key on every change, and restores from that stored state on remount.
+   * No-op when used on a top-level shell with no outer `PathShell` ancestor.
+   */
+  restoreKey?: string;
   autoStart?: boolean;
   /**
    * Step render functions keyed by step ID (or `formId` for StepChoice steps).
@@ -245,12 +251,20 @@ export interface PathShellProps {
 }
 
 export const PathShell: Component<PathShellProps> = (props) => {
+  // Read outer PathShell context BEFORE providing our own.
+  const outerCtx = useContext(PathContext);
+
   const pathReturn = usePath({
     engine: props.engine,
     onEvent(event) {
       props.onEvent?.(event);
       if (event.type === "completed") props.onComplete?.(event.data as PathData);
       if (event.type === "cancelled") props.onCancel?.(event.data as PathData);
+      if (props.restoreKey && outerCtx && event.type === "stateChanged") {
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
+          props.restoreKey, event.snapshot
+        );
+      }
     },
   });
 
@@ -258,7 +272,19 @@ export const PathShell: Component<PathShellProps> = (props) => {
 
   onMount(() => {
     if (props.autoStart !== false && !props.engine) {
-      start(props.path, props.initialData ?? {});
+      let startData: PathData = props.initialData ?? {};
+      let restoreStepId: string | undefined;
+      if (props.restoreKey && outerCtx) {
+        const stored = outerCtx.path.snapshot()?.data[props.restoreKey] as PathSnapshot | undefined;
+        if (stored != null && typeof stored === "object" && "stepId" in stored) {
+          startData = stored.data as PathData;
+          if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+        }
+      }
+      const p = start(props.path, startData);
+      if (restoreStepId) {
+        p.then(() => goToStep(restoreStepId!));
+      }
     }
   });
 

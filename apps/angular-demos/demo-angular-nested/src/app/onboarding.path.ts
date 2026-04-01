@@ -1,6 +1,5 @@
 import type { PathDefinition } from "@daltonr/pathwrite-core";
 import type { OnboardingData } from "./onboarding.types";
-import type { EmployeeDetails } from "./employee-details.types";
 
 export const employeeOnboardingPath: PathDefinition<OnboardingData> = {
   id: "employee-onboarding",
@@ -15,10 +14,11 @@ export const employeeOnboardingPath: PathDefinition<OnboardingData> = {
     {
       id: "employee-details",
       title: "Employee Details",
-      // The inner PathShell syncs its data to outer data.details via (event),
+      // fieldErrors drives canMoveNext (auto-derived when canMoveNext is absent).
+      // The inner PathShell syncs its snapshot to outer data.details via restoreKey,
       // so these checks always reflect the latest values typed into the inner tabs.
       fieldErrors: ({ data }) => {
-        const d = data.details as EmployeeDetails | undefined;
+        const d = data.details?.data;
         const missing: string[] = [];
         if (!d?.firstName?.trim())  missing.push("First name (Personal tab)");
         if (!d?.lastName?.trim())   missing.push("Last name (Personal tab)");

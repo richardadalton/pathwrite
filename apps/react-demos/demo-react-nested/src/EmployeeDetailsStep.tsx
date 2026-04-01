@@ -1,7 +1,5 @@
 import { PathShell, usePathContext } from "@daltonr/pathwrite-react";
-import type { PathEvent, PathSnapshot } from "@daltonr/pathwrite-react";
 import { employeeDetailsPath, DETAILS_INITIAL } from "./employee-details";
-import type { EmployeeDetails } from "./employee-details";
 import type { OnboardingData } from "./onboarding";
 import { PersonalTab }    from "./tabs/PersonalTab";
 import { DepartmentTab }  from "./tabs/DepartmentTab";
@@ -9,19 +7,8 @@ import { EquipmentTab }   from "./tabs/EquipmentTab";
 import { RolesTab }       from "./tabs/RolesTab";
 
 export function EmployeeDetailsStep() {
-  const { snapshot, setData } = usePathContext<OnboardingData>();
+  const { snapshot } = usePathContext<OnboardingData>();
   const outerSnap = snapshot!;
-
-  const initialDetails: EmployeeDetails = {
-    ...DETAILS_INITIAL,
-    ...(outerSnap.data.details as Partial<EmployeeDetails> ?? {}),
-  };
-
-  function handleInnerEvent(event: PathEvent) {
-    if (event.type === "stateChanged") {
-      setData("details", (event.snapshot as PathSnapshot<EmployeeDetails>).data);
-    }
-  }
 
   return (
     <div className="nested-shell-wrapper">
@@ -33,11 +20,11 @@ export function EmployeeDetailsStep() {
 
       <PathShell
         path={employeeDetailsPath}
-        initialData={initialDetails}
+        initialData={DETAILS_INITIAL}
+        restoreKey="details"
         hideProgress={true}
         hideCancel={true}
         hideFooter={true}
-        onEvent={handleInnerEvent}
         validateWhen={outerSnap.hasAttemptedNext}
         validationDisplay="inline"
         steps={{

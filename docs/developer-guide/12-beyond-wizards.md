@@ -194,6 +194,69 @@ One thing to be aware of: `goToStep` bypasses guards and `shouldSkip`, which is 
 
 ---
 
+## Nesting a tabbed shell inside a wizard step
+
+The two patterns above — wizard and tabbed form — compose naturally. A wizard step can itself host a tabbed `PathShell`. The outer wizard drives the top-level flow; the inner tabbed shell collects a sub-section of data.
+
+The challenge is state preservation. When the user navigates away from the wizard step that contains the tabbed shell and then returns, React (and every other framework) remounts the inner shell, losing both the tab the user was on and any data they had entered.
+
+`restoreKey` solves this with no wiring code. Pass it to the inner `PathShell` with a key that names the slot in the outer path's data where the inner snapshot should be stored:
+
+```tsx
+// Inside a step component rendered by the outer wizard
+export function DetailsStep() {
+  const { snapshot } = usePathContext<OnboardingData>();
+
+  return (
+    <PathShell
+      path={employeeDetailsPath}
+      initialData={DETAILS_INITIAL}
+      restoreKey="details"
+      hideProgress
+      hideCancel
+      hideFooter
+      validateWhen={snapshot.hasAttemptedNext}
+      validationDisplay="inline"
+      steps={{
+        personal:   <PersonalTab />,
+        department: <DepartmentTab />,
+        equipment:  <EquipmentTab />,
+        roles:      <RolesTab />,
+      }}
+    />
+  );
+}
+```
+
+On every state change, the inner shell writes its full `PathSnapshot` — including the active tab ID and all field data — into the outer path's data under `"details"`. When the outer path navigates away and back, the inner shell remounts and reads `data.details` from the outer context before starting. If a stored snapshot is found, it restores both the data and the active tab; if not, it starts fresh from `initialData`.
+
+Later steps in the outer wizard can read inner field values directly through the snapshot:
+
+```typescript
+// In the outer path definition:
+fieldErrors: ({ data }) => {
+  const d = data.details?.data;  // the inner PathSnapshot's data
+  return {
+    _: !d?.firstName ? "First name is required (Personal tab)." : undefined,
+  };
+},
+```
+
+The outer data type declares `details` as an optional `PathSnapshot`:
+
+```typescript
+import type { PathSnapshot } from "@daltonr/pathwrite-core";
+
+interface OnboardingData {
+  employeeName: string;
+  details?: PathSnapshot<EmployeeDetails>;
+}
+```
+
+`restoreKey` is a no-op when the shell has no outer `PathShell` ancestor, so the same inner `PathShell` component can safely be used at the top level in tests or standalone.
+
+---
+
 ## Document and approval lifecycles
 
 Not all processes have a human clicking Next. Consider a document that moves through states: draft, review, approved, published. Each state is a step. An author advances from draft to review by submitting; a reviewer advances to approved or sends back to draft by making a decision. Finance may skip the review stage for certain document types.

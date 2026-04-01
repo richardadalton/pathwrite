@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { usePath, setPathContext, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
+  import { usePath, setPathContext, getPathContextOrNull, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
   import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
   import type { Snippet, Component } from 'svelte';
 
@@ -9,6 +9,12 @@
     path?: PathDefinition<any>;
     engine?: PathEngine;
     initialData?: PathData;
+    /**
+     * When set, this shell automatically saves its state into the nearest outer `PathShell`'s
+     * data under this key on every change, and restores from that stored state on remount.
+     * No-op when used on a top-level shell with no outer `PathShell` ancestor.
+     */
+    restoreKey?: string;
     autoStart?: boolean;
     backLabel?: string;
     nextLabel?: string;
@@ -65,6 +71,7 @@
     path,
     engine: engineProp,
     initialData = {},
+    restoreKey = undefined,
     autoStart = true,
     backLabel = 'Previous',
     nextLabel = 'Next',
@@ -88,6 +95,10 @@
     ...stepSnippets
   }: Props = $props();
 
+  // Read outer PathShell context BEFORE setting our own — gives access to
+  // parent shell's snapshot and setData for restoreKey auto-wiring.
+  const outerCtx = getPathContextOrNull();
+
   // Initialize path engine
   const pathReturn = usePath({
     get engine() { return engineProp; },
@@ -95,6 +106,11 @@
       onevent?.(event);
       if (event.type === 'completed') oncomplete?.(event.data);
       if (event.type === 'cancelled') oncancel?.(event.data);
+      if (restoreKey && outerCtx && event.type === 'stateChanged') {
+        (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(
+          restoreKey, event.snapshot
+        );
+      }
     }
   });
 
@@ -120,7 +136,19 @@
   onMount(() => {
     if (autoStart && !started && !engineProp) {
       started = true;
-      start(path, initialData);
+      let startData: PathData = initialData ?? {};
+      let restoreStepId: string | undefined;
+      if (restoreKey && outerCtx) {
+        const stored = outerCtx.snapshot?.data[restoreKey] as PathSnapshot<any> | undefined;
+        if (stored != null && typeof stored === 'object' && 'stepId' in stored) {
+          startData = stored.data as PathData;
+          if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+        }
+      }
+      const p = start(path, startData);
+      if (restoreStepId) {
+        p.then(() => goToStep(restoreStepId!));
+      }
     }
   });
 

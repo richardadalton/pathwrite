@@ -363,8 +363,14 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
    * ```
    */
   @Input() engine?: PathEngine;
-  /** Initial data merged into the path engine on start. */
+  /** Initial data merged into the path engine on start. Used on first visit; overridden by stored snapshot when `restoreKey` is set. */
   @Input() initialData: PathData = {};
+  /**
+   * When set, this shell automatically saves its state into the nearest outer `pw-shell`'s
+   * data under this key on every change, and restores from that stored state on remount.
+   * No-op when used on a top-level shell with no outer `pw-shell` ancestor.
+   */
+  @Input() restoreKey?: string;
   /** Start the path automatically on ngOnInit. Set to false to call doStart() manually. */
   @Input() autoStart = true;
   /** Label for the Back navigation button. */
@@ -421,6 +427,8 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   /** The shell's own component-level injector. Passed to ngTemplateOutlet so that
    *  step components can resolve PathFacade (provided by this shell) via inject(). */
   protected readonly shellInjector = inject(Injector);
+  /** Outer shell's PathFacade — present when this shell is nested inside another pw-shell. */
+  private readonly outerFacade = inject(PathFacade, { skipSelf: true, optional: true });
   public started = false;
 
   /** Navigation actions passed to custom `pwShellFooter` templates. */
@@ -452,6 +460,9 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
       this.event.emit(event);
       if (event.type === "completed") this.complete.emit(event.data);
       if (event.type === "cancelled") this.cancel.emit(event.data);
+      if (this.restoreKey && this.outerFacade && event.type === "stateChanged") {
+        this.outerFacade.setData(this.restoreKey as any, (event as any).snapshot as any);
+      }
     });
 
     if (this.autoStart && !this.engine) {
@@ -467,7 +478,18 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   public doStart(): void {
     if (!this.path) throw new Error('[pw-shell] [path] is required when no [engine] is provided');
     this.started = true;
-    this.facade.start(this.path, this.initialData);
+    let startData: PathData = this.initialData;
+    let restoreStepId: string | undefined;
+    if (this.restoreKey && this.outerFacade) {
+      const stored = this.outerFacade.snapshot()?.data[this.restoreKey] as PathSnapshot | undefined;
+      if (stored != null && typeof stored === "object" && "stepId" in stored) {
+        startData = stored.data as PathData;
+        if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
+      }
+    }
+    this.facade.start(this.path, startData).then(() => {
+      if (restoreStepId) this.facade.goToStep(restoreStepId!);
+    });
   }
 
   /**

@@ -1,10 +1,8 @@
-import { Component, computed } from "@angular/core";
+import { Component } from "@angular/core";
 import { usePathContext } from "@daltonr/pathwrite-angular";
 import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angular/shell";
-import type { PathEvent } from "@daltonr/pathwrite-angular";
-import type { PathSnapshot } from "@daltonr/pathwrite-core";
 import { employeeDetailsPath } from "../employee-details.path";
-import { DETAILS_INITIAL, type EmployeeDetails } from "../employee-details.types";
+import { DETAILS_INITIAL } from "../employee-details.types";
 import type { OnboardingData } from "../onboarding.types";
 import { PersonalTabComponent }    from "../tabs/personal-tab.component";
 import { DepartmentTabComponent }  from "../tabs/department-tab.component";
@@ -43,13 +41,13 @@ import { RolesTabComponent }       from "../tabs/roles-tab.component";
 
         <pw-shell
           [path]="employeeDetailsPath"
-          [initialData]="initialDetails()"
+          [initialData]="DETAILS_INITIAL"
+          restoreKey="details"
           [hideProgress]="true"
           [hideCancel]="true"
           [hideFooter]="true"
           [validateWhen]="outerSnapshot()?.hasAttemptedNext"
           validationDisplay="inline"
-          (event)="handleInnerEvent($event)"
         >
           <ng-template pwStep="personal">
             <app-personal-tab />
@@ -74,18 +72,6 @@ import { RolesTabComponent }       from "../tabs/roles-tab.component";
 export class DetailsStepComponent {
   protected readonly outerPath = usePathContext<OnboardingData>();
   protected readonly employeeDetailsPath = employeeDetailsPath;
-
-  protected readonly initialDetails = computed((): EmployeeDetails => ({
-    ...DETAILS_INITIAL,
-    ...(this.outerPath.snapshot()?.data.details as Partial<EmployeeDetails> ?? {}),
-  }));
-
+  protected readonly DETAILS_INITIAL = DETAILS_INITIAL;
   protected readonly outerSnapshot = this.outerPath.snapshot;
-
-  protected handleInnerEvent(event: PathEvent): void {
-    if (event.type === "stateChanged") {
-      const innerData = (event.snapshot as PathSnapshot<EmployeeDetails>).data;
-      this.outerPath.setData("details", innerData as OnboardingData["details"]);
-    }
-  }
 }

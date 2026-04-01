@@ -16,7 +16,7 @@ export default function ConfirmStep() {
   const ctx = usePathContext<OnboardingData>();
 
   const data = () => ctx.snapshot()!.data;
-  const d = () => (data().details ?? {}) as EmployeeDetails;
+  const d = () => (data().details?.data ?? {}) as EmployeeDetails;
 
   const activePerms = () => [
     d().permAdmin   === "yes" && "Admin",
