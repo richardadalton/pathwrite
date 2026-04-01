@@ -41,7 +41,7 @@
       --w: 280px;
       position: relative;
       width: calc(2 * var(--w));
-      height: calc(1.5 * var(--w));
+      height: calc(2 * var(--w));
     }
 
     .diamond-wrap {
@@ -68,6 +68,11 @@
     .diamond-wrap--rulewrite {
       left: calc(0.5 * var(--w));
       top: 0;
+    }
+
+    .diamond-wrap--jobwrite {
+      left: calc(0.5 * var(--w));
+      top: var(--w);
     }
 
     .diamond {
@@ -104,6 +109,11 @@
       background: linear-gradient(135deg, #78350f 0%, #fbbf24 100%);
     }
 
+    .diamond--jobwrite {
+      background: linear-gradient(135deg, #111118 0%, #2a2a3a 100%);
+      border: 1px solid #2a2a3a;
+    }
+
     /* Hover: brighten + colour-matched glow */
     .diamond-wrap:hover .diamond--pathwrite {
       filter: brightness(1.1);
@@ -120,6 +130,25 @@
       box-shadow: 0 0 52px rgba(245, 158, 11, 0.6);
     }
 
+    .diamond-label--muted {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .diamond-label--muted span {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    .diamond-label--muted small {
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
     /* Responsive */
     @media (max-width: 680px) {
       .products {
@@ -128,6 +157,10 @@
 
       .diamond-label {
         font-size: 0.65rem;
+      }
+
+      .diamond-label--muted small {
+        font-size: 0.5rem;
       }
     }
   </style>
@@ -152,6 +185,15 @@
         <span class="diamond-label">authwrite</span>
       </div>
     </a>
+
+    <div class="diamond-wrap diamond-wrap--jobwrite" aria-label="jobwrite — coming soon">
+      <div class="diamond diamond--jobwrite">
+        <div class="diamond-label diamond-label--muted" style="transform: rotate(-45deg);">
+          <span>jobwrite</span>
+          <small>coming soon</small>
+        </div>
+      </div>
+    </div>
 
   </div>
 </body>
