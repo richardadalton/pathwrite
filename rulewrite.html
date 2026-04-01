@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rulewrite — Composable Business Rules for TypeScript</title>
+  <meta name="description" content="Turn complex conditional logic into named, typed predicates. Compose them freely. Evaluate and explain them anywhere. rulewrite brings the Specification Pattern to TypeScript." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --color-primary:       #f59e0b;
+      --color-primary-light: #fbbf24;
+      --color-primary-glow:  rgba(245, 158, 11, 0.2);
+    }
+
+    /* ── Hero ── */
+    .rw-hero {
+      padding: 5rem 0 3rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .rw-hero__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    @media (max-width: 900px) {
+      .rw-hero__inner { grid-template-columns: 1fr; }
+    }
+    .rw-hero__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      background: var(--color-primary-glow);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 100px;
+      padding: 0.3rem 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .rw-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3.25rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+    .rw-hero h1 em {
+      font-style: normal;
+      color: var(--color-primary);
+    }
+    .rw-hero__sub {
+      font-size: 1.05rem;
+      color: var(--color-text-muted);
+      line-height: 1.75;
+      margin-bottom: 2rem;
+    }
+    .rw-hero__features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+    }
+    .rw-hero__feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .rw-hero__feature-icon {
+      font-size: 1rem;
+      margin-top: 0.05rem;
+      flex-shrink: 0;
+    }
+    .rw-hero__feature strong {
+      display: block;
+      color: var(--color-text);
+      margin-bottom: 0.15rem;
+    }
+    .rw-hero__feature span {
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+    .rw-hero__npm {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 1rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+      display: inline-block;
+    }
+    .rw-hero__npm span {
+      color: var(--color-primary);
+      user-select: all;
+    }
+    .rw-hero__actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Stats ── */
+    .rw-stats {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .rw-stat {
+      flex: 1;
+      max-width: 220px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border-right: 1px solid var(--color-border);
+    }
+    .rw-stat:last-child { border-right: none; }
+    .rw-stat__num {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--color-primary);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .rw-stat__label {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+    @media (max-width: 600px) {
+      .rw-stats { flex-wrap: wrap; }
+      .rw-stat { max-width: 50%; border-bottom: 1px solid var(--color-border); }
+    }
+
+    /* ── Demo widget ── */
+    .rw-demo {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .rw-demo__header {
+      background: linear-gradient(135deg, #92400e 0%, var(--color-primary) 100%);
+      padding: 0.9rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .rw-demo__header-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .rw-demo__header-badge {
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.85);
+      border-radius: 100px;
+      padding: 0.2rem 0.6rem;
+      font-family: var(--font-mono);
+    }
+    .rw-demo__body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 600px) {
+      .rw-demo__body { grid-template-columns: 1fr; }
+    }
+    .rw-demo__controls {
+      padding: 1.25rem;
+      border-right: 1px solid var(--color-border);
+    }
+    @media (max-width: 600px) {
+      .rw-demo__controls { border-right: none; border-bottom: 1px solid var(--color-border); }
+    }
+    .rw-demo__section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .rw-demo__toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .rw-demo__toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    .rw-demo__toggle-label {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--color-text);
+    }
+    .rw-toggle-switch {
+      position: relative;
+      width: 34px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .rw-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .rw-toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--color-border);
+      border-radius: 100px;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .rw-toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .rw-toggle-switch input:checked + .rw-toggle-track {
+      background: var(--color-primary);
+    }
+    .rw-toggle-switch input:checked + .rw-toggle-track::after {
+      transform: translateX(16px);
+    }
+    .rw-demo__policies {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .rw-demo__policy-btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .rw-demo__policy-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-text);
+    }
+    .rw-demo__policy-btn.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-glow);
+      color: var(--color-primary);
+    }
+    .rw-demo__result {
+      padding: 1.25rem;
+    }
+    .rw-demo__verdict {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+    .rw-demo__verdict--satisfied {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+    }
+    .rw-demo__verdict--failed {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+    .rw-demo__tree {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      line-height: 1.7;
+    }
+    .rw-tree-node {
+      display: flex;
+      flex-direction: column;
+    }
+    .rw-tree-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .rw-tree-indent {
+      padding-left: 1.1rem;
+    }
+    .rw-tree-sat { color: #22c55e; }
+    .rw-tree-fail { color: #ef4444; }
+    .rw-tree-label-op {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+    .rw-tree-label-rule {
+      color: var(--color-text-muted);
+    }
+
+    /* ── Problem section ── */
+    .rw-problem {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .rw-problem__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    @media (max-width: 800px) {
+      .rw-problem__inner { grid-template-columns: 1fr; }
+    }
+    .rw-problem__side-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .rw-problem__side-label--bad { color: #ef4444; }
+    .rw-problem__side-label--good { color: #22c55e; }
+    .rw-problem__desc {
+      font-size: 0.88rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-top: 1rem;
+    }
+
+    /* ── How it works ── */
+    .rw-how {
+      padding: 5rem 0;
+    }
+    .rw-how__steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+    @media (max-width: 720px) {
+      .rw-how__steps { grid-template-columns: 1fr; }
+    }
+    .rw-how__step {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .rw-how__step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: 0.75rem;
+    }
+    .rw-how__step h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .rw-how__step p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .rw-how__step .code-block {
+      margin: 0;
+    }
+    .rw-how__step .code-block pre {
+      padding: 0.85rem;
+    }
+
+    /* ── Value props ── */
+    .rw-props {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .rw-props__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .rw-prop {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .rw-prop:hover {
+      border-color: var(--color-primary);
+      background: var(--color-bg-card-hover);
+    }
+    .rw-prop__icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .rw-prop h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .rw-prop p {
+      font-size: 0.83rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Code section ── */
+    .rw-code-section {
+      padding: 5rem 0;
+    }
+    .rw-tab-btns {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .rw-tab-btns button {
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .rw-tab-btns button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-text);
+    }
+    .rw-tab-btns button.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-glow);
+      color: var(--color-primary);
+    }
+    .rw-tab-panel { display: none; }
+    .rw-tab-panel.active { display: block; }
+
+    /* ── Examples ── */
+    .rw-examples {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .rw-examples__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .rw-example {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .rw-example:hover { border-color: var(--color-primary); }
+    .rw-example__tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: 0.6rem;
+    }
+    .rw-example h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .rw-example p {
+      font-size: 0.83rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .rw-example__rules {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .rw-example__rule {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+    }
+    .rw-example__rule span { color: var(--color-primary); }
+
+    /* ── Compare ── */
+    .rw-compare {
+      padding: 5rem 0;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 3rem;
+      font-size: 0.875rem;
+    }
+    .compare-table th, .compare-table td {
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--color-border);
+      text-align: center;
+    }
+    .compare-table th {
+      background: var(--color-bg-card);
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    .compare-table th:first-child,
+    .compare-table td:first-child {
+      text-align: left;
+      color: var(--color-text-muted);
+      font-size: 0.82rem;
+    }
+    .compare-table th.col-rulewrite {
+      color: var(--color-primary);
+      background: var(--color-primary-glow);
+    }
+    .compare-table tr:nth-child(even) td {
+      background: var(--color-bg-section-alt);
+    }
+    .compare-table .y { color: #22c55e; font-weight: 700; }
+    .compare-table .n { color: #4b5563; }
+    .compare-table .p { color: var(--color-text-muted); font-size: 0.78rem; }
+
+    /* ── Docs links ── */
+    .rw-docs {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .rw-docs__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .rw-doc-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .rw-doc-card:hover {
+      border-color: var(--color-primary);
+      background: var(--color-bg-card-hover);
+    }
+    .rw-doc-card__icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .rw-doc-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .rw-doc-card p {
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="rulewrite.html" class="nav__logo"><span class="nav__logo-icon">&loz;</span> rulewrite</a>
+    <div class="nav__links">
+      <a href="#why">Why rulewrite</a>
+      <a href="#how">How it works</a>
+      <a href="#examples">Examples</a>
+      <a href="#compare">Compare</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/richardadalton/rulewrite" class="btn btn--sm btn--outline" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/@daltonr/rulewrite" class="btn btn--sm btn--primary" target="_blank">npm</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="rw-hero">
+  <div class="container rw-hero__inner">
+    <div class="rw-hero__copy">
+      <div class="rw-hero__eyebrow">Business Rules Library &middot; TypeScript</div>
+      <h1>Business rules that<br><em>explain themselves.</em></h1>
+      <p class="rw-hero__sub">
+        Complex conditional logic is hard to read, impossible to explain, and painful to test.
+        rulewrite turns each business condition into a named, typed predicate — composable with
+        logical operators and evaluable as a complete diagnostic tree.
+      </p>
+      <div class="rw-hero__features">
+        <div class="rw-hero__feature">
+          <span class="rw-hero__feature-icon">🏷️</span>
+          <div>
+            <strong>Named predicates</strong>
+            <span>Every rule carries a label that appears in evaluation output, audit logs, and user-facing error messages.</span>
+          </div>
+        </div>
+        <div class="rw-hero__feature">
+          <span class="rw-hero__feature-icon">🔗</span>
+          <div>
+            <strong>Free composition</strong>
+            <span>AND, OR, NOT, IMPLIES, PREVENTS — compose any rules into any policy. Every result is itself a rule.</span>
+          </div>
+        </div>
+        <div class="rw-hero__feature">
+          <span class="rw-hero__feature-icon">🌳</span>
+          <div>
+            <strong>Complete evaluation trees</strong>
+            <span>Ask a rule to explain itself. Get a full tree showing exactly which conditions passed and which failed.</span>
+          </div>
+        </div>
+      </div>
+      <div class="rw-hero__npm">$ npm install <span>@daltonr/rulewrite</span></div>
+      <div class="rw-hero__actions">
+        <a href="#how" class="btn btn--lg btn--primary">See how it works</a>
+        <a href="https://github.com/richardadalton/rulewrite" class="btn btn--lg btn--ghost" target="_blank">View on GitHub</a>
+      </div>
+    </div>
+    <div>
+      <!-- Live demo widget -->
+      <div class="rw-demo" id="rw-demo">
+        <div class="rw-demo__header">
+          <span class="rw-demo__header-title">Live rule evaluation</span>
+          <span class="rw-demo__header-badge">runs in-browser</span>
+        </div>
+        <div class="rw-demo__body">
+          <div class="rw-demo__controls">
+            <div class="rw-demo__section-label">Conditions</div>
+            <div class="rw-demo__toggles">
+              <label class="rw-demo__toggle">
+                <span class="rw-demo__toggle-label">IsAdult</span>
+                <span class="rw-toggle-switch">
+                  <input type="checkbox" id="t-adult" checked />
+                  <span class="rw-toggle-track"></span>
+                </span>
+              </label>
+              <label class="rw-demo__toggle">
+                <span class="rw-demo__toggle-label">IsEmailVerified</span>
+                <span class="rw-toggle-switch">
+                  <input type="checkbox" id="t-verified" checked />
+                  <span class="rw-toggle-track"></span>
+                </span>
+              </label>
+              <label class="rw-demo__toggle">
+                <span class="rw-demo__toggle-label">IsAccountActive</span>
+                <span class="rw-toggle-switch">
+                  <input type="checkbox" id="t-active" checked />
+                  <span class="rw-toggle-track"></span>
+                </span>
+              </label>
+              <label class="rw-demo__toggle">
+                <span class="rw-demo__toggle-label">IsAdmin</span>
+                <span class="rw-toggle-switch">
+                  <input type="checkbox" id="t-admin" />
+                  <span class="rw-toggle-track"></span>
+                </span>
+              </label>
+              <label class="rw-demo__toggle">
+                <span class="rw-demo__toggle-label">IsInStock</span>
+                <span class="rw-toggle-switch">
+                  <input type="checkbox" id="t-stock" checked />
+                  <span class="rw-toggle-track"></span>
+                </span>
+              </label>
+            </div>
+            <div class="rw-demo__section-label">Policy</div>
+            <div class="rw-demo__policies">
+              <button class="rw-demo__policy-btn active" data-policy="register">canRegister</button>
+              <button class="rw-demo__policy-btn" data-policy="access">canAccess</button>
+              <button class="rw-demo__policy-btn" data-policy="checkout">canCheckout</button>
+            </div>
+          </div>
+          <div class="rw-demo__result">
+            <div class="rw-demo__section-label">Result</div>
+            <div class="rw-demo__verdict rw-demo__verdict--satisfied" id="rw-verdict">
+              <span id="rw-verdict-icon">✓</span>
+              <span id="rw-verdict-text">SATISFIED</span>
+            </div>
+            <div class="rw-demo__section-label">Evaluation tree</div>
+            <div class="rw-demo__tree" id="rw-tree"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ── -->
+<div class="rw-stats">
+  <div class="rw-stat"><div class="rw-stat__num">5</div><div class="rw-stat__label">Logical operators</div></div>
+  <div class="rw-stat"><div class="rw-stat__num">0</div><div class="rw-stat__label">Dependencies</div></div>
+  <div class="rw-stat"><div class="rw-stat__num">2</div><div class="rw-stat__label">Evaluation modes</div></div>
+  <div class="rw-stat"><div class="rw-stat__num">100%</div><div class="rw-stat__label">Type safe</div></div>
+</div>
+
+<!-- ── Problem ── -->
+<section class="rw-problem" id="why">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:640px; margin:0 auto 3.5rem;">
+      <h2 class="section__title">The cost of scattered conditionals</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        Business logic accumulates. What starts as a simple check becomes an unreadable wall of booleans — untestable, unexplainable, and impossible to reuse.
+      </p>
+    </div>
+    <div class="rw-problem__inner">
+      <div>
+        <div class="rw-problem__side-label rw-problem__side-label--bad">✗ &nbsp; The status quo</div>
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">checkout.ts</span>
+          </div>
+          <pre><code><span class="kw">if</span> (
+  user.status === <span class="str">'active'</span> &&
+  user.age >= <span class="str">18</span> &&
+  user.emailVerified &&
+  !product.archived &&
+  product.stockLevel > <span class="str">0</span> &&
+  product.countries.includes(user.country) &&
+  (
+    product.price <= user.creditLimit ||
+    user.roles.includes(<span class="str">'admin'</span>)
+  )
+) {
+  <span class="cm">// can this user even check out?</span>
+  <span class="cm">// which condition blocked them?</span>
+  <span class="cm">// can we test this independently?</span>
+  <span class="fn">allowCheckout</span>();
+}</code></pre>
+        </div>
+        <p class="rw-problem__desc">Not testable in isolation. Not reusable across the codebase. Silent on failure — when it returns false, you don't know why.</p>
+      </div>
+      <div>
+        <div class="rw-problem__side-label rw-problem__side-label--good">✓ &nbsp; With rulewrite</div>
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">checkout/policy.ts</span>
+          </div>
+          <pre><code><span class="kw">const</span> canCheckout = <span class="fn">all</span>(
+  customerIsAdult,
+  customerIsVerified,
+  customerIsActive,
+  productIsInStock,
+  isAvailableInCountry,
+  isWithinCreditLimit,
+);
+
+<span class="kw">const</span> result = canCheckout.<span class="fn">evaluate</span>(ctx);
+<span class="cm">// {</span>
+<span class="cm">//   satisfied: false,</span>
+<span class="cm">//   label: 'ALL',</span>
+<span class="cm">//   children: [</span>
+<span class="cm">//     { satisfied: true,  label: 'IsAdult' },</span>
+<span class="cm">//     { satisfied: false, label: 'IsEmailVerified' },</span>
+<span class="cm">//     ...</span>
+<span class="cm">// }</span></code></pre>
+        </div>
+        <p class="rw-problem__desc">Each condition is named and independently testable. Evaluation tells you exactly which rule failed. The same rules are reusable across every policy in your codebase.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ── -->
+<section class="rw-how" id="how">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:600px; margin:0 auto;">
+      <h2 class="section__title">Three steps. Unlimited power.</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        Define atomic rules over your domain types. Compose them into policies using logical operators. Evaluate to get a boolean or a complete diagnostic tree.
+      </p>
+    </div>
+    <div class="rw-how__steps">
+      <div class="rw-how__step">
+        <div class="rw-how__step-num">Step 1 &mdash; Define</div>
+        <h3>Named predicates</h3>
+        <p>Each business condition becomes a named, typed rule. One condition, one rule, one name that appears everywhere it is used.</p>
+        <div class="code-block">
+          <pre><code><span class="kw">import</span> { <span class="fn">rule</span> } <span class="kw">from</span> <span class="str">'@daltonr/rulewrite'</span>;
+
+<span class="kw">const</span> isAdult = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.age >= <span class="str">18</span>,
+  <span class="str">'IsAdult'</span>
+);
+
+<span class="kw">const</span> isVerified = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.emailVerified,
+  <span class="str">'IsEmailVerified'</span>
+);</code></pre>
+        </div>
+      </div>
+      <div class="rw-how__step">
+        <div class="rw-how__step-num">Step 2 &mdash; Compose</div>
+        <h3>Logical operators</h3>
+        <p>Combine rules with AND, OR, NOT, IMPLIES, and PREVENTS. Every result is a rule — compose without limit.</p>
+        <div class="code-block">
+          <pre><code><span class="cm">// Simple composition</span>
+<span class="kw">const</span> canRegister =
+  isAdult.<span class="fn">and</span>(isVerified);
+
+<span class="cm">// Conditional requirement</span>
+<span class="kw">const</span> agePolicy =
+  isAgeRestricted.<span class="fn">implies</span>(isVerified);
+
+<span class="cm">// Flat list with all()</span>
+<span class="kw">const</span> canCheckout = <span class="fn">all</span>(
+  customerIsAdult,
+  productIsInStock,
+  isWithinCreditLimit,
+);</code></pre>
+        </div>
+      </div>
+      <div class="rw-how__step">
+        <div class="rw-how__step-num">Step 3 &mdash; Evaluate</div>
+        <h3>Boolean or full tree</h3>
+        <p><code>isSatisfiedBy()</code> for fast checks. <code>evaluate()</code> for the complete diagnostic tree — every sub-rule, every outcome.</p>
+        <div class="code-block">
+          <pre><code><span class="cm">// Fast boolean check</span>
+canRegister.<span class="fn">isSatisfiedBy</span>(user);
+<span class="cm">// → false</span>
+
+<span class="cm">// Full diagnostic tree</span>
+canRegister.<span class="fn">evaluate</span>(user);
+<span class="cm">// {</span>
+<span class="cm">//   satisfied: false,</span>
+<span class="cm">//   label: 'AND',</span>
+<span class="cm">//   children: [</span>
+<span class="cm">//     { satisfied: true,  label: 'IsAdult' },</span>
+<span class="cm">//     { satisfied: false, label: 'IsEmailVerified' }</span>
+<span class="cm">//   ]</span>
+<span class="cm">// }</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Value props ── -->
+<section class="rw-props">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:580px; margin:0 auto;">
+      <h2 class="section__title">Everything a rules library should do</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        From a single atomic predicate to a production-grade access control policy — rulewrite scales with you.
+      </p>
+    </div>
+    <div class="rw-props__grid">
+      <div class="rw-prop">
+        <span class="rw-prop__icon">🏷️</span>
+        <h3>Named predicates</h3>
+        <p>Every rule carries a label. Labels appear in evaluation trees, audit logs, and user-facing messages — no more silent failures.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">⚙️</span>
+        <h3>Five logical operators</h3>
+        <p>AND, OR, NOT, IMPLIES, and PREVENTS. IMPLIES handles conditional requirements precisely — things AND gets wrong.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">🎯</span>
+        <h3>Context projection</h3>
+        <p>Define rules over their natural type. Use <code>.on()</code> to lift them into any wider context without coupling or duplication.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">📦</span>
+        <h3>Collection combinators</h3>
+        <p><code>someOf</code>, <code>allOf</code>, <code>noneOf</code> — apply any rule across a collection. Works with implications for powerful group policies.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">🌳</span>
+        <h3>Complete evaluation trees</h3>
+        <p>Every <code>evaluate()</code> call returns a recursive tree. Walk it to generate error messages, build audit logs, or render diagnostics.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">🔷</span>
+        <h3>Full type safety</h3>
+        <p>Rules carry their subject type. The compiler prevents composing rules over incompatible types before you run a single test.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">📭</span>
+        <h3>Zero dependencies</h3>
+        <p>No runtime dependencies. Nothing to audit, nothing to update, nothing that breaks. Just TypeScript.</p>
+      </div>
+      <div class="rw-prop">
+        <span class="rw-prop__icon">🧪</span>
+        <h3>Designed for testing</h3>
+        <p>Pure functions of their inputs. Test each atomic rule in isolation. No mocking, no setup, no framework required.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Code tabs ── -->
+<section class="rw-code-section" id="examples">
+  <div class="container">
+    <div class="section__intro" style="max-width:640px; margin:0 auto 2.5rem; text-align:center;">
+      <h2 class="section__title">See it in action</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        From a single rule to a complete access control policy in minutes.
+      </p>
+    </div>
+    <div class="rw-tab-btns">
+      <button class="active" data-rwtab="define">Define a rule</button>
+      <button data-rwtab="compose">Compose</button>
+      <button data-rwtab="evaluate">Evaluate</button>
+      <button data-rwtab="access">Access control</button>
+    </div>
+    <div class="rw-tab-panel active" data-rwtab="define">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">users/rules.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="fn">rule</span> } <span class="kw">from</span> <span class="str">'@daltonr/rulewrite'</span>;
+
+<span class="kw">interface</span> <span class="type">User</span> {
+  age: <span class="type">number</span>;
+  emailVerified: <span class="type">boolean</span>;
+  status: <span class="str">'active'</span> | <span class="str">'suspended'</span>;
+  roles: <span class="type">string</span>[];
+}
+
+<span class="cm">// Each rule is a named predicate over a single type.</span>
+<span class="cm">// The label is used in evaluation output and audit logs.</span>
+<span class="kw">export const</span> isAdult = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.age >= <span class="str">18</span>,
+  <span class="str">'IsAdult'</span>
+);
+
+<span class="kw">export const</span> isEmailVerified = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.emailVerified,
+  <span class="str">'IsEmailVerified'</span>
+);
+
+<span class="kw">export const</span> isActive = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.status === <span class="str">'active'</span>,
+  <span class="str">'IsAccountActive'</span>
+);
+
+<span class="kw">export const</span> isAdmin = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(
+  u => u.roles.<span class="fn">includes</span>(<span class="str">'admin'</span>),
+  <span class="str">'IsAdmin'</span>
+);</code></pre>
+      </div>
+    </div>
+    <div class="rw-tab-panel" data-rwtab="compose">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">checkout/policy.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="fn">all</span>, <span class="fn">rule</span> } <span class="kw">from</span> <span class="str">'@daltonr/rulewrite'</span>;
+<span class="kw">import</span> { isAdult, isEmailVerified, isActive } <span class="kw">from</span> <span class="str">'../users/rules'</span>;
+<span class="kw">import</span> { isInStock, requiresPrescription } <span class="kw">from</span> <span class="str">'../products/rules'</span>;
+
+<span class="kw">type</span> <span class="type">CheckoutContext</span> = { customer: <span class="type">User</span>; product: <span class="type">Product</span> };
+
+<span class="cm">// Project user rules into the checkout context</span>
+<span class="kw">const</span> customerIsAdult    = isAdult.<span class="fn">on</span>((ctx: <span class="type">CheckoutContext</span>) => ctx.customer);
+<span class="kw">const</span> customerIsVerified = isEmailVerified.<span class="fn">on</span>((ctx: <span class="type">CheckoutContext</span>) => ctx.customer);
+<span class="kw">const</span> customerIsActive   = isActive.<span class="fn">on</span>((ctx: <span class="type">CheckoutContext</span>) => ctx.customer);
+<span class="kw">const</span> productIsInStock   = isInStock.<span class="fn">on</span>((ctx: <span class="type">CheckoutContext</span>) => ctx.product);
+
+<span class="cm">// IMPLIES: prescription only required for prescription products</span>
+<span class="kw">const</span> prescriptionPolicy = requiresPrescription
+  .<span class="fn">on</span>(ctx => ctx.product)
+  .<span class="fn">implies</span>(hasPrescription.<span class="fn">on</span>(ctx => ctx.customer));
+
+<span class="cm">// all() produces a flat evaluation tree — easier to read than chaining</span>
+<span class="kw">export const</span> canCheckout = <span class="fn">all</span>(
+  customerIsAdult,
+  customerIsVerified,
+  customerIsActive,
+  productIsInStock,
+  prescriptionPolicy,
+);</code></pre>
+      </div>
+    </div>
+    <div class="rw-tab-panel" data-rwtab="evaluate">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">checkout/handler.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">EvaluationResult</span> } <span class="kw">from</span> <span class="str">'@daltonr/rulewrite'</span>;
+
+<span class="cm">// Walk the tree to collect every failed leaf node</span>
+<span class="kw">function</span> <span class="fn">failures</span>(result: <span class="type">EvaluationResult</span>): <span class="type">string</span>[] {
+  <span class="kw">if</span> (!result.satisfied && !result.children?.length) <span class="kw">return</span> [result.label];
+  <span class="kw">return</span> (result.children ?? []).<span class="fn">flatMap</span>(failures);
+}
+
+<span class="cm">// Message catalogue: labels map to user-facing text</span>
+<span class="kw">const</span> messages: <span class="type">Record</span>&lt;<span class="type">string</span>, <span class="type">string</span>&gt; = {
+  IsAdult:         <span class="str">'You must be 18 or older to purchase this item.'</span>,
+  IsEmailVerified: <span class="str">'Please verify your email address before checking out.'</span>,
+  IsAccountActive: <span class="str">'Your account has been suspended.'</span>,
+  IsInStock:       <span class="str">'This item is currently out of stock.'</span>,
+};
+
+<span class="kw">async function</span> <span class="fn">processCheckout</span>(ctx: <span class="type">CheckoutContext</span>) {
+  <span class="kw">const</span> result = canCheckout.<span class="fn">evaluate</span>(ctx);
+
+  <span class="cm">// Log the full tree for audit — permanently records why the decision was made</span>
+  <span class="kw">await</span> auditLog.<span class="fn">record</span>({ action: <span class="str">'checkout_attempt'</span>, policy: result });
+
+  <span class="kw">if</span> (!result.satisfied) {
+    <span class="kw">throw new</span> <span class="fn">ValidationError</span>(
+      <span class="fn">failures</span>(result).<span class="fn">map</span>(label => messages[label])
+    );
+  }
+
+  <span class="kw">await</span> <span class="fn">completeCheckout</span>(ctx);
+}</code></pre>
+      </div>
+    </div>
+    <div class="rw-tab-panel" data-rwtab="access">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">authorization/policy.ts</span>
+        </div>
+        <pre><code><span class="kw">type</span> <span class="type">AuthContext</span> = { user: <span class="type">User</span>; document: <span class="type">Document</span> };
+
+<span class="cm">// Atomic rules over each type</span>
+<span class="kw">const</span> isActive    = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(u => u.status === <span class="str">'active'</span>, <span class="str">'IsActive'</span>);
+<span class="kw">const</span> isAdmin     = <span class="fn">rule</span>&lt;<span class="type">User</span>&gt;(u => u.roles.<span class="fn">includes</span>(<span class="str">'admin'</span>), <span class="str">'IsAdmin'</span>);
+<span class="kw">const</span> isArchived  = <span class="fn">rule</span>&lt;<span class="type">Document</span>&gt;(d => d.archived, <span class="str">'IsArchived'</span>);
+
+<span class="cm">// Cross-type rules written directly against the context</span>
+<span class="kw">const</span> isOwner = <span class="fn">rule</span>&lt;<span class="type">AuthContext</span>&gt;(
+  ctx => ctx.document.ownerId === ctx.user.id, <span class="str">'IsOwner'</span>
+);
+
+<span class="cm">// Project rules into the shared context</span>
+<span class="kw">const</span> userIsActive   = isActive.<span class="fn">on</span>((ctx: <span class="type">AuthContext</span>) => ctx.user);
+<span class="kw">const</span> userIsAdmin    = isAdmin.<span class="fn">on</span>((ctx: <span class="type">AuthContext</span>) => ctx.user);
+<span class="kw">const</span> docIsArchived  = isArchived.<span class="fn">on</span>((ctx: <span class="type">AuthContext</span>) => ctx.document);
+
+<span class="cm">// Readable, testable, self-documenting policies</span>
+<span class="kw">export const</span> canRead    = userIsActive.<span class="fn">and</span>(isOwner.<span class="fn">or</span>(userIsAdmin));
+<span class="kw">export const</span> canEdit    = userIsActive.<span class="fn">and</span>(isOwner.<span class="fn">or</span>(userIsAdmin)).<span class="fn">and</span>(docIsArchived.<span class="fn">not</span>());
+<span class="kw">export const</span> canDelete  = userIsActive.<span class="fn">and</span>(isOwner.<span class="fn">or</span>(userIsAdmin));
+<span class="kw">export const</span> canPublish = userIsActive.<span class="fn">and</span>(isOwner.<span class="fn">or</span>(userIsAdmin)).<span class="fn">and</span>(docIsArchived.<span class="fn">not</span>());</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Examples ── -->
+<section class="rw-examples">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:580px; margin:0 auto;">
+      <h2 class="section__title">Real-world applications</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        rulewrite fits anywhere complex decisions are made and explained.
+      </p>
+    </div>
+    <div class="rw-examples__grid">
+      <div class="rw-example">
+        <div class="rw-example__tag">Access Control &middot; RBAC</div>
+        <h3>Document permissions</h3>
+        <p>Define read, edit, delete, and publish policies as named rules. Every denied request tells you exactly which condition was not met.</p>
+        <div class="rw-example__rules">
+          <div class="rw-example__rule"><span>canEdit</span> = isActive.and(isOwner.or(isAdmin)).and(not(isArchived))</div>
+          <div class="rw-example__rule"><span>canPublish</span> = isActive.and(isOwner.or(isModerator)).and(not(isPublished))</div>
+        </div>
+      </div>
+      <div class="rw-example">
+        <div class="rw-example__tag">E-commerce &middot; Checkout</div>
+        <h3>Purchase eligibility</h3>
+        <p>Combine customer rules, product rules, and cross-type conditions into a single policy. Use IMPLIES for conditional requirements like prescription checks.</p>
+        <div class="rw-example__rules">
+          <div class="rw-example__rule"><span>canCheckout</span> = all(isAdult, isVerified, isInStock, withinCreditLimit)</div>
+          <div class="rw-example__rule"><span>prescriptionPolicy</span> = requiresPrescription.implies(hasPrescription)</div>
+        </div>
+      </div>
+      <div class="rw-example">
+        <div class="rw-example__tag">Compliance &middot; Validation</div>
+        <h3>Venue attendance rules</h3>
+        <p>Collection combinators and IMPLIES combine naturally. "If any attendee is a minor, an adult must also be present" — one readable expression.</p>
+        <div class="rw-example__rules">
+          <div class="rw-example__rule"><span>policy</span> = anyChildAttending.implies(anyAdultAttending)</div>
+          <div class="rw-example__rule"><span>anyChildAttending</span> = isChild.someOf(ctx => ctx.attendees)</div>
+        </div>
+      </div>
+      <div class="rw-example">
+        <div class="rw-example__tag">Finance &middot; Eligibility</div>
+        <h3>Loan application checks</h3>
+        <p>Express complex eligibility criteria as named, auditable rules. The evaluation tree becomes the permanent record of why an application was approved or declined.</p>
+        <div class="rw-example__rules">
+          <div class="rw-example__rule"><span>canApply</span> = all(isAdult, isResident, meetsIncomeThreshold, noDefaultHistory)</div>
+          <div class="rw-example__rule"><span>audit log</span> = canApply.evaluate(applicant)</div>
+        </div>
+      </div>
+      <div class="rw-example">
+        <div class="rw-example__tag">API &middot; Middleware</div>
+        <h3>Express / Fastify guards</h3>
+        <p>Pass any policy to a middleware factory. Failed requests return structured error bodies listing every violated condition by name — useful for API consumers.</p>
+        <div class="rw-example__rules">
+          <div class="rw-example__rule"><span>router.put</span>('/docs/:id', requiresPermission(canEdit), handler)</div>
+          <div class="rw-example__rule"><span>403 body</span>: { reasons: ['IsAccountActive', 'IsOwner'] }</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Compare ── -->
+<section class="rw-compare" id="compare">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:600px; margin:0 auto;">
+      <h2 class="section__title">How rulewrite compares</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        No other approach combines composability, type safety, and self-describing evaluation in a zero-dependency TypeScript package.
+      </p>
+    </div>
+    <div style="overflow-x:auto; margin-top:0;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="col-rulewrite">rulewrite</th>
+            <th>Raw booleans</th>
+            <th>Zod / Yup</th>
+            <th>Hand-rolled Spec</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Named, reusable rules</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="p">Schemas only</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Free composition (AND, OR, NOT)</td>
+            <td class="y">✓</td>
+            <td class="p">&amp;&amp; / || / !</td>
+            <td class="p">Limited</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>IMPLIES operator</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>PREVENTS (NAND) operator</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Context projection (.on())</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Collection combinators</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="p">Array schemas</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Evaluation tree (explains why)</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="p">Error messages</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Full TypeScript type safety</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="p">Varies</td>
+          </tr>
+          <tr>
+            <td>Zero dependencies</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="y">✓</td>
+          </tr>
+          <tr>
+            <td>Test rules in isolation</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="p">Schema tests</td>
+            <td class="p">Varies</td>
+          </tr>
+          <tr>
+            <td>Audit log ready</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">If you build it</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Docs ── -->
+<section class="rw-docs" id="docs">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:560px; margin:0 auto;">
+      <h2 class="section__title">Documentation</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        From first rule to production rule set — everything is documented.
+      </p>
+    </div>
+    <div class="rw-docs__grid">
+      <a class="rw-doc-card" href="https://github.com/richardadalton/rulewrite/blob/main/docs/quickstart.md" target="_blank">
+        <span class="rw-doc-card__icon">⚡</span>
+        <h3>Quickstart</h3>
+        <p>Install, define your first rule, compose, and evaluate. Up and running in five minutes.</p>
+      </a>
+      <a class="rw-doc-card" href="https://github.com/richardadalton/rulewrite/blob/main/docs/developer-guide/README.md" target="_blank">
+        <span class="rw-doc-card__icon">📖</span>
+        <h3>Developer Guide</h3>
+        <p>Ten chapters covering every concept — operators, projection, collections, the evaluation model, and production patterns.</p>
+      </a>
+      <a class="rw-doc-card" href="https://github.com/richardadalton/rulewrite/blob/main/docs/api-reference.md" target="_blank">
+        <span class="rw-doc-card__icon">📐</span>
+        <h3>API Reference</h3>
+        <p>Complete method signatures, parameter tables, truth tables, and tree-shape reference for every operator.</p>
+      </a>
+      <a class="rw-doc-card" href="https://github.com/richardadalton/rulewrite/tree/main/examples" target="_blank">
+        <span class="rw-doc-card__icon">🗂️</span>
+        <h3>Examples</h3>
+        <p>Runnable examples: e-commerce checkout, document access control, and venue attendance rules.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="section section--cta" style="background: linear-gradient(135deg, #451a03 0%, #78350f 40%, #0a0a0f 100%); padding: 5rem 0; text-align: center;">
+  <div class="container">
+    <h2 style="font-size: clamp(1.75rem, 3.5vw, 2.75rem); font-weight: 800; margin-bottom: 1rem;">
+      Start writing rules that explain themselves.
+    </h2>
+    <p style="color: var(--color-text-muted); font-size: 1.05rem; max-width: 520px; margin: 0 auto 2rem; line-height: 1.7;">
+      Replace scattered conditionals with named, composable, auditable business rules. Zero dependencies. Pure TypeScript.
+    </p>
+    <div style="font-family: var(--font-mono); font-size: 0.9rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--radius-sm); padding: 0.7rem 1.25rem; display: inline-block; color: var(--color-text-muted); margin-bottom: 2rem;">
+      npm install <span style="color: var(--color-primary);">@daltonr/rulewrite</span>
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="https://github.com/richardadalton/rulewrite/blob/main/docs/quickstart.md" class="btn btn--lg btn--primary" target="_blank">Read the quickstart</a>
+      <a href="https://github.com/richardadalton/rulewrite" class="btn btn--lg btn--outline" target="_blank">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <span>&copy; 2026 Devjoy Ltd. MIT License</span>
+    <div class="footer__links">
+      <a href="index.html">Pathwrite</a>
+      <a href="authwrite.html">Authwrite</a>
+      <a href="rulewrite.html">rulewrite</a>
+      <a href="https://github.com/richardadalton/rulewrite" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/@daltonr/rulewrite" target="_blank">npm</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Tiny rule engine (runs entirely in-browser) ──────────────────────────
+  function atom(label, val) {
+    return {
+      _val: val,
+      isSatisfiedBy: () => val,
+      evaluate: () => ({ satisfied: val, label }),
+    };
+  }
+  function andRule(a, b) {
+    return {
+      isSatisfiedBy: () => a.isSatisfiedBy() && b.isSatisfiedBy(),
+      evaluate: () => {
+        const l = a.evaluate(), r = b.evaluate();
+        return { satisfied: l.satisfied && r.satisfied, label: 'AND', children: [l, r] };
+      },
+    };
+  }
+  function orRule(a, b) {
+    return {
+      isSatisfiedBy: () => a.isSatisfiedBy() || b.isSatisfiedBy(),
+      evaluate: () => {
+        const l = a.evaluate(), r = b.evaluate();
+        return { satisfied: l.satisfied || r.satisfied, label: 'OR', children: [l, r] };
+      },
+    };
+  }
+  function allRule(...rules) {
+    return {
+      isSatisfiedBy: () => rules.every(r => r.isSatisfiedBy()),
+      evaluate: () => {
+        const children = rules.map(r => r.evaluate());
+        return { satisfied: children.every(c => c.satisfied), label: 'ALL', children };
+      },
+    };
+  }
+  function notRule(a) {
+    return {
+      isSatisfiedBy: () => !a.isSatisfiedBy(),
+      evaluate: () => {
+        const inner = a.evaluate();
+        return { satisfied: !inner.satisfied, label: 'NOT', children: [inner] };
+      },
+    };
+  }
+
+  // ── Build and render ──────────────────────────────────────────────────────
+  let currentPolicy = 'register';
+
+  function getStates() {
+    return {
+      adult:    document.getElementById('t-adult').checked,
+      verified: document.getElementById('t-verified').checked,
+      active:   document.getElementById('t-active').checked,
+      admin:    document.getElementById('t-admin').checked,
+      stock:    document.getElementById('t-stock').checked,
+    };
+  }
+
+  function buildPolicy(s) {
+    const isAdult    = atom('IsAdult', s.adult);
+    const isVerified = atom('IsEmailVerified', s.verified);
+    const isActive   = atom('IsAccountActive', s.active);
+    const isAdmin    = atom('IsAdmin', s.admin);
+    const isInStock  = atom('IsInStock', s.stock);
+    if (currentPolicy === 'register') return allRule(isAdult, isVerified);
+    if (currentPolicy === 'access')   return isActive.isSatisfiedBy
+      ? allRule(isActive, orRule(isAdmin, isVerified))
+      : allRule(isActive, orRule(atom('IsAdmin', s.admin), atom('IsEmailVerified', s.verified)));
+    if (currentPolicy === 'checkout') return allRule(isAdult, isVerified, isActive, isInStock);
+    return allRule(isAdult, isVerified);
+  }
+
+  // Re-build to get fresh atom values
+  function evaluate() {
+    const s = getStates();
+    const isAdult    = atom('IsAdult', s.adult);
+    const isVerified = atom('IsEmailVerified', s.verified);
+    const isActive   = atom('IsAccountActive', s.active);
+    const isAdmin    = atom('IsAdmin', s.admin);
+    const isInStock  = atom('IsInStock', s.stock);
+
+    let policy;
+    if (currentPolicy === 'register') policy = allRule(isAdult, isVerified);
+    else if (currentPolicy === 'access') policy = allRule(isActive, orRule(isAdmin, isVerified));
+    else policy = allRule(isAdult, isVerified, isActive, isInStock);
+
+    return policy.evaluate();
+  }
+
+  function renderTree(node, depth) {
+    const icon = node.satisfied ? '<span class="rw-tree-sat">✓</span>' : '<span class="rw-tree-fail">✗</span>';
+    const labelClass = node.children ? 'rw-tree-label-op' : 'rw-tree-label-rule';
+    let html = '<div class="rw-tree-node">';
+    html += '<div class="rw-tree-row">' + icon + ' <span class="' + labelClass + '">' + node.label + '</span></div>';
+    if (node.children) {
+      html += '<div class="rw-tree-indent">';
+      node.children.forEach(c => { html += renderTree(c, depth + 1); });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function update() {
+    const result = evaluate();
+    const verdict = document.getElementById('rw-verdict');
+    const icon    = document.getElementById('rw-verdict-icon');
+    const text    = document.getElementById('rw-verdict-text');
+    const tree    = document.getElementById('rw-tree');
+
+    if (result.satisfied) {
+      verdict.className = 'rw-demo__verdict rw-demo__verdict--satisfied';
+      icon.textContent  = '✓';
+      text.textContent  = 'SATISFIED';
+    } else {
+      verdict.className = 'rw-demo__verdict rw-demo__verdict--failed';
+      icon.textContent  = '✗';
+      text.textContent  = 'NOT SATISFIED';
+    }
+    tree.innerHTML = renderTree(result, 0);
+  }
+
+  // Wire toggles
+  ['t-adult','t-verified','t-active','t-admin','t-stock'].forEach(id => {
+    document.getElementById(id).addEventListener('change', update);
+  });
+
+  // Wire policy buttons
+  document.querySelectorAll('.rw-demo__policy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rw-demo__policy-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPolicy = btn.dataset.policy;
+      update();
+    });
+  });
+
+  update();
+
+  // ── Code tabs ─────────────────────────────────────────────────────────────
+  document.querySelectorAll('.rw-tab-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.rwtab;
+      btn.closest('section').querySelectorAll('.rw-tab-btns button').forEach(b => b.classList.remove('active'));
+      btn.closest('section').querySelectorAll('.rw-tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      btn.closest('section').querySelector('[data-rwtab="' + tab + '"].rw-tab-panel').classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
