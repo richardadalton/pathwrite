@@ -197,12 +197,12 @@ export interface PathShellProps {
    * <PathShell steps={{ details: (snap) => <DetailsStep snapshot={snap} />, review: (snap) => <ReviewStep snapshot={snap} /> }} />
    * ```
    */
-  steps?: Record<string, (snapshot: PathSnapshot) => JSX.Element>;
+  steps?: Record<string, (snapshot: PathSnapshot) => ReturnType<Component>>;
   onComplete?: (data: PathData) => void;
   onCancel?: (data: PathData) => void;
   onEvent?: (event: PathEvent) => void;
-  renderHeader?: (snapshot: PathSnapshot) => JSX.Element;
-  renderFooter?: (snapshot: PathSnapshot, actions: PathShellActions) => JSX.Element;
+  renderHeader?: (snapshot: PathSnapshot) => ReturnType<Component>;
+  renderFooter?: (snapshot: PathSnapshot, actions: PathShellActions) => ReturnType<Component>;
   backLabel?: string;
   nextLabel?: string;
   completeLabel?: string;
