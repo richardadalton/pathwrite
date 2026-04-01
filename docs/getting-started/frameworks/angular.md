@@ -132,6 +132,7 @@ export class DetailsStepComponent {
 | `setData(key, value)` | `Promise<void>` | Update a single data field. Type-safe when `TData` is specified. |
 | `goToStep(stepId, options?)` | `Promise<void>` | Jump to a step by ID (no guard check). |
 | `goToStepChecked(stepId, options?)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
+| `validate()` | `void` | Set `snapshot().hasValidated` without navigating. Triggers all inline field errors simultaneously. |
 | `services` | `TServices` | Services object passed to the nearest `<pw-shell>` via `[services]`. |
 
 ### Reading step data without local state

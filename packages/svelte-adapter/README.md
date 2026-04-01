@@ -80,6 +80,7 @@ Peer dependencies: Svelte 5+.
 | `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
 | `setData(key, value)` | `Promise<void>` | Update a single data field. Type-safe when `TData` is specified. |
 | `startSubPath(definition, data?, meta?)` | `Promise<void>` | Push a sub-path. `meta` is returned to `onSubPathComplete`/`onSubPathCancel`. |
+| `validate()` | `void` | Set `snapshot.hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 **Options:**
 
@@ -105,6 +106,9 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 | `oncomplete` | `(data: PathData) => void` | — | Called when the path finishes naturally. |
 | `oncancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
 | `onevent` | `(event: PathEvent) => void` | — | Called for every engine event. |

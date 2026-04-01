@@ -113,6 +113,7 @@ export class MyWizardComponent { }
 | `setData(key, value)` | Update a single data field. Type-safe when `TData` is specified. |
 | `startSubPath(definition, data?, meta?)` | Push a sub-path. `meta` is returned to `onSubPathComplete`/`onSubPathCancel`. |
 | `adoptEngine(engine)` | Adopt an externally-managed `PathEngine` (e.g. from `restoreOrStart()`). |
+| `validate()` | Set `snapshot().hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 ## `<pw-shell>` inputs/outputs
 
@@ -136,6 +137,8 @@ Step content is provided via `<ng-template pwStep="stepId">` directives inside `
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
+| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `<pw-shell>`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
 
 ### Outputs
 
@@ -184,6 +187,7 @@ export class DetailsStepComponent {
   // path.snapshot() — Signal<PathSnapshot | null>
   // path.setData(key, value) — type-safe with TData
   // path.next(), path.previous(), path.cancel(), etc.
+  // path.validate() — trigger inline errors on all steps simultaneously
   // path.services — typed as TServices
 }
 ```

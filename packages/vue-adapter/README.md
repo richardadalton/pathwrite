@@ -89,6 +89,7 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | `suspend()` | function | Suspend an async step while work completes. |
 | `retry()` | function | Retry the current step after a suspension or error. |
 | `restart(definition, data?)` | function | Tear down the active path without firing hooks and start fresh. |
+| `validate()` | function | Set `snapshot.value.hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 ---
 
@@ -104,6 +105,9 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so slot components render their own errors. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 
 **Emits:**
 

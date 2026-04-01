@@ -135,6 +135,7 @@ The API is identical to `@daltonr/pathwrite-react`. `usePath` creates an engine 
 | `resetStep()` | function | Restore data to step-entry state. |
 | `startSubPath(definition, data?, meta?)` | function | Push a sub-path. |
 | `restart(definition, data?)` | function | Tear down any active path and start fresh. |
+| `validate()` | function | Set `snapshot.hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 All returned callbacks are referentially stable.
 
@@ -162,6 +163,9 @@ All returned callbacks are referentially stable.
 | `renderFooter` | `(snapshot, actions) => ReactNode` | — | Replace the default navigation buttons. |
 | `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). If omitted, a default "All done." panel is shown. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
+| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `services` | `unknown` | — | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 
 ### PathShellHandle and the restart() ref pattern
 
