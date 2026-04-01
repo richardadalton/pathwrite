@@ -711,3 +711,38 @@ describe("PathFacade — adoptEngine", () => {
     expect(latestState(facade)?.stepId).toBe("step1");
   });
 });
+
+// ---------------------------------------------------------------------------
+// services
+// ---------------------------------------------------------------------------
+
+describe("PathFacade — services", () => {
+  it("is null by default", () => {
+    const facade = new PathFacade();
+    expect(facade.services).toBeNull();
+  });
+
+  it("can be set and read back untyped", () => {
+    const facade = new PathFacade();
+    const svc = { api: { submit: () => {} } };
+    facade.services = svc;
+    expect(facade.services).toBe(svc);
+  });
+
+  it("is exposed via usePathContext — type assertion narrows the value", () => {
+    // usePathContext() requires Angular DI (inject()), so we test the facade
+    // property directly — the return mapping is a trivial `facade.services as TServices`.
+    interface MyServices { label: string }
+    const facade = new PathFacade();
+    facade.services = { label: "hello" } as MyServices;
+    expect((facade.services as MyServices).label).toBe("hello");
+  });
+
+  it("can be updated after initial set", () => {
+    const facade = new PathFacade();
+    facade.services = { version: 1 };
+    expect((facade.services as { version: number }).version).toBe(1);
+    facade.services = { version: 2 };
+    expect((facade.services as { version: number }).version).toBe(2);
+  });
+});

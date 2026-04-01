@@ -392,6 +392,12 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   /** When true, calls `validate()` on the facade so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
   @Input() validateWhen = false;
   /**
+   * Arbitrary services object made available to all step components via
+   * `usePathContext<TData, TServices>().services`. Pass API clients, feature
+   * flags, or any shared dependency without prop-drilling through each step.
+   */
+  @Input() services: unknown = null;
+  /**
    * Shell layout mode:
    * - "auto" (default): Uses "form" for single-step top-level paths, "wizard" otherwise.
    * - "wizard": Progress header + Back button on left, Cancel and Submit together on right.
@@ -454,9 +460,13 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['validateWhen'] && this.validateWhen) {
       this.facade.validate();
     }
+    if (changes['services']) {
+      this.facade.services = this.services;
+    }
   }
 
   public ngOnInit(): void {
+    this.facade.services = this.services;
     this.facade.events$.pipe(takeUntil(this.destroy$)).subscribe((event) => {
       this.event.emit(event);
       if (event.type === "completed") this.complete.emit(event.data);

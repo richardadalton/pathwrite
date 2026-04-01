@@ -91,12 +91,12 @@ facade.snapshot()?.data.name; // typed as string (or whatever MyData defines)
 
 ---
 
-## `injectPath()` — recommended API for step components
+## `usePathContext()` — recommended API for step components
 
-`injectPath()` is the recommended way to access the path engine from inside step components and forms. It resolves the `PathFacade` from the nearest injector in the tree and returns a clean, signal-based interface.
+`usePathContext()` is the recommended way to access the path engine from inside step components and forms. It resolves the `PathFacade` from the nearest injector in the tree and returns a clean, signal-based interface.
 
 ```typescript
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 
 @Component({
   selector: "app-details-step",
@@ -114,11 +114,11 @@ import { injectPath } from "@daltonr/pathwrite-angular";
   `
 })
 export class DetailsStepComponent {
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
 }
 ```
 
-### `injectPath()` return value
+### `usePathContext()` return value
 
 | Member | Type | Description |
 |--------|------|-------------|
@@ -130,8 +130,9 @@ export class DetailsStepComponent {
 | `previous()` | `Promise<void>` | Go back one step. |
 | `cancel()` | `Promise<void>` | Cancel the active path. |
 | `setData(key, value)` | `Promise<void>` | Update a single data field. Type-safe when `TData` is specified. |
-| `goToStep(stepId)` | `Promise<void>` | Jump to a step by ID (no guard check). |
-| `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
+| `goToStep(stepId, options?)` | `Promise<void>` | Jump to a step by ID (no guard check). |
+| `goToStepChecked(stepId, options?)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
+| `services` | `TServices` | Services object passed to the nearest `<pw-shell>` via `[services]`. |
 
 ### Reading step data without local state
 
@@ -139,11 +140,38 @@ Rather than maintaining a local copy of form values, read directly from the sign
 
 ```typescript
 export class DetailsStepComponent {
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
 
   protected get data(): ApplicationData {
     return (this.path.snapshot()?.data ?? {}) as ApplicationData;
   }
+}
+```
+
+### Passing services to step components
+
+Use the `[services]` input on `<pw-shell>` to inject shared dependencies (API clients, feature flags, etc.) into every step component without prop-drilling. Pass your services interface as the second generic to `usePathContext`:
+
+```typescript
+// In the wizard host component:
+@Component({
+  template: `
+    <pw-shell [path]="hiringPath" [services]="svc">
+      <ng-template pwStep="details"><app-details /></ng-template>
+      <ng-template pwStep="review"><app-review /></ng-template>
+    </pw-shell>
+  `
+})
+export class HiringWizardComponent {
+  protected readonly hiringPath = hiringPath;
+  protected readonly svc: HiringServices = { api: inject(HiringApi) };
+}
+
+// In any step component:
+export class DetailsStepComponent {
+  protected readonly path = usePathContext<HiringData, HiringServices>();
+  // this.path.services — typed as HiringServices
+  submit() { this.path.services.api.save(this.path.snapshot()?.data); }
 }
 ```
 

@@ -135,6 +135,7 @@ Step content is provided via `<ng-template pwStep="stepId">` directives inside `
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 
 ### Outputs
 
@@ -167,22 +168,47 @@ import { PathShellCompletionDirective } from "@daltonr/pathwrite-angular/shell";
 })
 export class MyWizardComponent {
   protected readonly path = myPath;
-  protected readonly facade = injectPath();
+  protected readonly facade = usePathContext();
 }
 ```
 
-## `injectPath()`
+## `usePathContext()`
 
-`injectPath()` is the preferred API for step components and forms rendered inside `<pw-shell>`. It resolves the `PathFacade` from the nearest injector in the tree and returns a signal-based interface typed with an optional `TData` generic — no `providers: [PathFacade]` needed in step components.
+`usePathContext()` is the preferred API for step components and forms rendered inside `<pw-shell>`. It resolves the `PathFacade` from the nearest injector in the tree and returns a signal-based interface typed with optional `TData` and `TServices` generics — no `providers: [PathFacade]` needed in step components.
 
 ```typescript
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 
 export class DetailsStepComponent {
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
   // path.snapshot() — Signal<PathSnapshot | null>
   // path.setData(key, value) — type-safe with TData
   // path.next(), path.previous(), path.cancel(), etc.
+  // path.services — typed as TServices
+}
+```
+
+### Passing services to step components
+
+Use the `[services]` input on `<pw-shell>` to provide shared dependencies (API clients, feature flags, etc.) to all step components without prop-drilling:
+
+```typescript
+// In the wizard host component:
+@Component({
+  template: `
+    <pw-shell [path]="path" [services]="svc">
+      <ng-template pwStep="details"><app-details /></ng-template>
+    </pw-shell>
+  `
+})
+export class WizardComponent {
+  protected readonly svc: HiringServices = { api: inject(HiringApi) };
+}
+
+// In a step component:
+export class DetailsStepComponent {
+  protected readonly path = usePathContext<HiringData, HiringServices>();
+  // this.path.services — typed as HiringServices
 }
 ```
 

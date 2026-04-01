@@ -30,6 +30,13 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   private _unsubscribeFromEngine: () => void = () => {};
   private readonly _stateSignal = signal<PathSnapshot<TData> | null>(null);
 
+  /**
+   * Arbitrary services object passed via `[services]` on `<pw-shell>`.
+   * Read it in step components via `usePathContext<TData, TServices>().services`.
+   * Set directly by `PathShellComponent` — do not set this manually.
+   */
+  public services: unknown = null;
+
   public readonly state$: Observable<PathSnapshot<TData> | null> = this._state$.asObservable();
   public readonly events$: Observable<PathEvent> = this._events$.asObservable();
   /** Signal version of state$. Updates on every path state change. Requires Angular 16+. */
@@ -164,7 +171,7 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
  * path state and strongly-typed navigation actions. Mirrors React's `usePathContext()`
  * return type for consistency across adapters.
  */
-export interface UsePathContextReturn<TData extends PathData = PathData> {
+export interface UsePathContextReturn<TData extends PathData = PathData, TServices = unknown> {
   /** Current path snapshot as a signal. Returns `null` when no path is active. */
   snapshot: Signal<PathSnapshot<TData> | null>;
   /** Start (or restart) a path. */
@@ -194,6 +201,12 @@ export interface UsePathContextReturn<TData extends PathData = PathData> {
   retry: () => Promise<void>;
   /** Pause with intent to return, preserving all state. Emits `suspended`. */
   suspend: () => Promise<void>;
+  /**
+   * The services object passed to the nearest `<pw-shell>` via `[services]`.
+   * Typed as `TServices` — pass your services interface as the second generic:
+   * `usePathContext<MyData, MyServices>().services`.
+   */
+  services: TServices;
 }
 
 /**
@@ -232,7 +245,7 @@ export interface UsePathContextReturn<TData extends PathData = PathData> {
  *
  * @throws Error if PathFacade is not provided in the injector tree
  */
-export function usePathContext<TData extends PathData = PathData>(): UsePathContextReturn<TData> {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): UsePathContextReturn<TData, TServices> {
   const facade = inject(PathFacade, { optional: true }) as PathFacade<TData> | null;
 
   if (!facade) {
@@ -256,6 +269,7 @@ export function usePathContext<TData extends PathData = PathData>(): UsePathCont
     restart: () => facade.restart(),
     retry: () => facade.retry(),
     suspend: () => facade.suspend(),
+    services: facade.services as TServices,
   };
 }
 
