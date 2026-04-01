@@ -157,6 +157,38 @@ function DetailsStep() {
 }
 ```
 
+### Avoid repeated `snapshot()` calls — use `createMemo`
+
+Each call to `snapshot()` is a separate signal read. In a step component with several fields, calling it inline six times creates six subscriptions and six potential re-renders per update.
+
+Wrap it in a `createMemo` to read the signal once and share the result:
+
+```tsx
+import { createMemo } from "solid-js";
+import { usePathContext } from "@daltonr/pathwrite-solid";
+
+function DetailsStep() {
+  const { snapshot, setData } = usePathContext<ApplicationData>();
+  const data = createMemo(() => snapshot()?.data as ApplicationData | undefined);
+  const errors = createMemo(() => snapshot()?.fieldErrors);
+  const attempted = createMemo(() => snapshot()?.hasAttemptedNext ?? false);
+
+  return (
+    <div>
+      <input
+        value={data()?.name ?? ""}
+        onInput={(e) => setData("name", e.currentTarget.value)}
+      />
+      <Show when={attempted() && errors()?.name}>
+        <p class="error">{errors()?.name}</p>
+      </Show>
+    </div>
+  );
+}
+```
+
+`createMemo` caches the derived value and only recomputes when the underlying signal changes, so all reads within the component share one subscription.
+
 ---
 
 ## Complete example
@@ -203,21 +235,25 @@ export const applicationPath: PathDefinition<ApplicationData> = {
 
 ```tsx
 // DetailsStep.tsx
+import { createMemo } from "solid-js";
 import { usePathContext } from "@daltonr/pathwrite-solid";
 import type { ApplicationData } from "./application-path";
 
 export function DetailsStep() {
   const { snapshot, setData } = usePathContext<ApplicationData>();
+  const data = createMemo(() => snapshot()?.data as ApplicationData | undefined);
+  const errors = createMemo(() => snapshot()?.fieldErrors);
+  const attempted = createMemo(() => snapshot()?.hasAttemptedNext ?? false);
 
   return (
     <div>
       <label>First name</label>
       <input
-        value={snapshot()?.data.firstName ?? ""}
+        value={data()?.firstName ?? ""}
         onInput={(e) => setData("firstName", e.currentTarget.value)}
       />
-      <Show when={snapshot()?.hasAttemptedNext && snapshot()?.fieldErrors.firstName}>
-        <p class="error">{snapshot()?.fieldErrors.firstName}</p>
+      <Show when={attempted() && errors()?.firstName}>
+        <p class="error">{errors()?.firstName}</p>
       </Show>
     </div>
   );
@@ -226,23 +262,27 @@ export function DetailsStep() {
 
 ```tsx
 // CoverNoteStep.tsx
+import { createMemo } from "solid-js";
 import { usePathContext } from "@daltonr/pathwrite-solid";
 import type { ApplicationData } from "./application-path";
 
 export function CoverNoteStep() {
   const { snapshot, setData } = usePathContext<ApplicationData>();
+  const data = createMemo(() => snapshot()?.data as ApplicationData | undefined);
+  const errors = createMemo(() => snapshot()?.fieldErrors);
+  const attempted = createMemo(() => snapshot()?.hasAttemptedNext ?? false);
 
   return (
     <div>
       <label>Cover note</label>
       <textarea
-        value={snapshot()?.data.coverNote ?? ""}
+        value={data()?.coverNote ?? ""}
         onInput={(e) => setData("coverNote", e.currentTarget.value)}
         rows="6"
         placeholder="Tell us why you're a great fit..."
       />
-      <Show when={snapshot()?.hasAttemptedNext && snapshot()?.fieldErrors.coverNote}>
-        <p class="error">{snapshot()?.fieldErrors.coverNote}</p>
+      <Show when={attempted() && errors()?.coverNote}>
+        <p class="error">{errors()?.coverNote}</p>
       </Show>
     </div>
   );
