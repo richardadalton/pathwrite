@@ -356,8 +356,12 @@ export interface PathSnapshot<TData extends PathData = PathData> {
   hasValidated: boolean;
   /**
    * True after the user has clicked Next / Submit on this step at least once,
-   * regardless of whether navigation succeeded. Resets to `false` when entering
-   * a new step.
+   * regardless of whether navigation succeeded.
+   *
+   * This flag is **per-step and persistent** — navigating away and returning to
+   * a step preserves the attempted state. If the user clicked Next on step A,
+   * then navigated away and back, `hasAttemptedNext` is still `true` for step A.
+   * The flag resets for all steps only on `start()` / `restart()`.
    *
    * Use this to gate inline field-error display so errors are hidden on first
    * render and only appear after the user has attempted to proceed:
@@ -367,6 +371,10 @@ export interface PathSnapshot<TData extends PathData = PathData> {
    *   <span class="error">{snapshot.fieldErrors.email}</span>
    * {/if}
    * ```
+   *
+   * For tab mode, call `goToStep(id, { validateOnLeave: true })` to mark the
+   * departing tab as attempted before switching, so errors surface when the user
+   * returns to that tab without ever clicking Next.
    *
    * The shell itself uses this flag to gate its own automatic `fieldErrors`
    * summary rendering — errors are never shown before the first Next attempt.
@@ -592,8 +600,8 @@ export class PathEngine {
   private readonly pathStack: ActivePath[] = [];
   private readonly listeners = new Set<(event: PathEvent) => void>();
   private _status: PathStatus = "idle";
-  /** True after the user has called next() on the current step at least once. Resets on step entry. */
-  private _hasAttemptedNext = false;
+  /** Step IDs on which next() or goToStep({ validateOnLeave }) has been called. Per-step and persistent — does not reset on navigation, only on start()/restart(). */
+  private readonly _attemptedNextSteps = new Set<string>();
   /** True after validate() has been called. Global — does not reset on step navigation. Resets on start/restart. */
   private _hasValidated = false;
   /** Blocking message from canMoveNext returning { allowed: false, reason }. Cleared on step entry. */
@@ -718,6 +726,7 @@ export class PathEngine {
     this._rootPath = path;
     this._rootInitialData = initialData;
     this._hasValidated = false;
+    this._attemptedNextSteps.clear();
     return this._startAsync(path, initialData);
   }
 
@@ -739,6 +748,7 @@ export class PathEngine {
     this._status = "idle";
     this._blockingError = null;
     this._hasValidated = false;
+    this._attemptedNextSteps.clear();
     this.activePath = null;
     this.pathStack.length = 0;
     return this._startAsync(this._rootPath, { ...this._rootInitialData });
@@ -870,14 +880,21 @@ export class PathEngine {
     return Promise.resolve();
   }
 
-  /** Jumps directly to the step with the given ID. Does not check guards or shouldSkip. */
-  public goToStep(stepId: string): Promise<void> {
+  /**
+   * Jumps directly to the step with the given ID. Does not check guards or shouldSkip.
+   *
+   * Pass `{ validateOnLeave: true }` to mark the **departing** step as attempted
+   * before navigating. This causes `hasAttemptedNext` to be `true` when the user
+   * returns to that step, surfacing any inline field errors — ideal for tab-mode
+   * navigation where Next is never clicked.
+   */
+  public goToStep(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
     const active = this.requireActivePath();
     const targetIndex = active.definition.steps.findIndex((s) => s.id === stepId);
     if (targetIndex === -1) {
       throw new Error(`Step "${stepId}" not found in path "${active.definition.id}".`);
     }
-    return this._goToStepAsync(active, targetIndex);
+    return this._goToStepAsync(active, targetIndex, options);
   }
 
   /**
@@ -890,14 +907,14 @@ export class PathEngine {
    * emitted (so the UI can react). `shouldSkip` is not evaluated.
    * Throws if the target step ID does not exist.
    */
-  public goToStepChecked(stepId: string): Promise<void> {
+  public goToStepChecked(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
     const active = this.requireActivePath();
     const targetIndex = active.definition.steps.findIndex((s) => s.id === stepId);
     if (targetIndex === -1) {
       return Promise.reject(new Error(`Step "${stepId}" not found in path "${active.definition.id}".`));
     }
     if (targetIndex === active.currentStepIndex) return Promise.resolve();
-    return this._goToStepCheckedAsync(active, targetIndex);
+    return this._goToStepCheckedAsync(active, targetIndex, options);
   }
 
   /**
@@ -984,7 +1001,7 @@ export class PathEngine {
       error: this._error,
       hasPersistence: this._hasPersistence,
       hasValidated: this._hasValidated,
-      hasAttemptedNext: this._hasAttemptedNext,
+      hasAttemptedNext: this._attemptedNextSteps.has(item.id),
       blockingError: this._blockingError,
       canMoveNext: isCompleted ? false : this.evaluateCanMoveNextSync(effectiveStep, active),
       canMovePrevious: isCompleted ? false : this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
@@ -1080,7 +1097,7 @@ export class PathEngine {
 
     // Record that the user has attempted to advance — used by shells and step
     // templates to gate error display ("punish late, reward early").
-    this._hasAttemptedNext = true;
+    this._attemptedNextSteps.add(this.getCurrentItem(active).id);
 
     // Phase: validating — canMoveNext guard
     this._status = "validating";
@@ -1170,8 +1187,12 @@ export class PathEngine {
     }
   }
 
-  private async _goToStepAsync(active: ActivePath, targetIndex: number): Promise<void> {
+  private async _goToStepAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }): Promise<void> {
     if (this._status !== "idle") return;
+
+    if (options?.validateOnLeave) {
+      this._attemptedNextSteps.add(this.getCurrentItem(active).id);
+    }
 
     this._status = "leaving";
     this.emitStateChanged("goToStep");
@@ -1192,8 +1213,12 @@ export class PathEngine {
     }
   }
 
-  private async _goToStepCheckedAsync(active: ActivePath, targetIndex: number): Promise<void> {
+  private async _goToStepCheckedAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }): Promise<void> {
     if (this._status !== "idle") return;
+
+    if (options?.validateOnLeave) {
+      this._attemptedNextSteps.add(this.getCurrentItem(active).id);
+    }
 
     this._status = "validating";
     this.emitStateChanged("goToStepChecked");
@@ -1524,8 +1549,6 @@ export class PathEngine {
   }
 
   private async enterCurrentStep(): Promise<Partial<PathData> | void> {
-    // Each step starts fresh — errors are not shown until the user attempts to proceed.
-    this._hasAttemptedNext = false;
     this._blockingError = null;
     const active = this.activePath;
     if (!active) return;

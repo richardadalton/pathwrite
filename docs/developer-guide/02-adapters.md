@@ -84,8 +84,8 @@ startSubPath(path, initialData, meta)  // push a sub-path
 next()                       // advance one step (or complete on the last step)
 previous()                   // go back one step
 cancel()                     // cancel the active path
-goToStep(stepId)             // jump directly to a step (bypasses guards)
-goToStepChecked(stepId)      // jump directly, checking guards first
+goToStep(stepId, options?)   // jump directly to a step (bypasses guards); pass { validateOnLeave: true } to mark the departing step as attempted
+goToStepChecked(stepId, options?)  // jump directly, checking guards first
 setData(key, value)          // update a data field
 resetStep()                  // reset current step data to step-entry state
 restart()                    // cancel and restart with the same definition/data

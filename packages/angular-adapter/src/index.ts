@@ -135,15 +135,15 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.resetStep();
   }
 
-  public goToStep(stepId: string): Promise<void> {
-    return this._engine.goToStep(stepId);
+  public goToStep(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
+    return this._engine.goToStep(stepId, options);
   }
 
   /** Jump to a step by ID, checking the current step's canMoveNext (forward) or
    *  canMovePrevious (backward) guard first. Navigation is blocked if the guard
    *  returns false. Throws if the step ID does not exist. */
-  public goToStepChecked(stepId: string): Promise<void> {
-    return this._engine.goToStepChecked(stepId);
+  public goToStepChecked(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
+    return this._engine.goToStepChecked(stepId, options);
   }
 
   public validate(): void {
@@ -181,10 +181,10 @@ export interface UsePathContextReturn<TData extends PathData = PathData> {
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
   /** Reset the current step's data to what it was when the step was entered. */
   resetStep: () => Promise<void>;
-  /** Jump to a step by ID without checking guards. */
-  goToStep: (stepId: string) => Promise<void>;
+  /** Jump to a step by ID without checking guards. Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. */
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /** Jump to a step by ID, checking guards first. */
-  goToStepChecked: (stepId: string) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /**
    * Tears down any active path and immediately starts the given path fresh.
    * Use for "Start over" / retry flows.
@@ -251,8 +251,8 @@ export function usePathContext<TData extends PathData = PathData>(): UsePathCont
     cancel: () => facade.cancel(),
     setData: (key, value) => facade.setData(key, value),
     resetStep: () => facade.resetStep(),
-    goToStep: (stepId) => facade.goToStep(stepId),
-    goToStepChecked: (stepId) => facade.goToStepChecked(stepId),
+    goToStep: (stepId, options) => facade.goToStep(stepId, options),
+    goToStepChecked: (stepId, options) => facade.goToStepChecked(stepId, options),
     restart: () => facade.restart(),
     retry: () => facade.retry(),
     suspend: () => facade.suspend(),

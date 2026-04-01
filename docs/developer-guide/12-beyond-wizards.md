@@ -166,7 +166,7 @@ The `PathShell` configuration suppresses the built-in chrome and delegates navig
 </PathShell>
 ```
 
-`TabBar` reads `snapshot.steps` for tab labels and status, and calls `goToStep` to switch tabs freely:
+`TabBar` reads `snapshot.steps` for tab labels and status, and calls `goToStep` to switch tabs freely. Pass `{ validateOnLeave: true }` to mark the departing tab as attempted, so inline field errors appear if the user returns to that tab later:
 
 ```tsx
 function TabBar() {
@@ -176,7 +176,7 @@ function TabBar() {
       {snapshot.steps.map((step) => (
         <button
           key={step.id}
-          onClick={() => goToStep(step.id)}
+          onClick={() => goToStep(step.id, { validateOnLeave: true })}
           data-active={step.status === "current"}
           data-visited={step.status === "completed"}
         >
@@ -190,7 +190,7 @@ function TabBar() {
 
 `step.status` gives `"current"` for the active tab, `"completed"` for tabs the user has already visited, and `"upcoming"` for those not yet reached — enough to drive active and visited styling with no extra state. The save button calls `next()` on the final tab, which triggers `onComplete`. The engine handles the `"completing"` / `"error"` cycle the same way it does for a wizard.
 
-One thing to be aware of: `goToStep` bypasses guards and `shouldSkip`, which is exactly what you want for free tab switching. The trade-off is that `hasAttemptedNext` is never set by tab navigation, so field-level errors gated on that flag will not surface until the user explicitly clicks through to the next tab. If you need inline validation on tab switch, trigger it externally before calling `goToStep`.
+`hasAttemptedNext` is per-step and persistent — switching back to a tab you previously filled in (and left via `validateOnLeave`) will show its errors immediately. Users can switch freely without being blocked; completion is gated by whether any step has errors when the final `next()` is called.
 
 ---
 

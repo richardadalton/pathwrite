@@ -21,7 +21,7 @@ const { next, previous } = usePathContext();
 
 `previous()` is a no-op when already on the first step of a top-level path — the engine stays put and emits no event. When called on the first step of a sub-path, it cancels the sub-path and returns control to the parent.
 
-### `goToStep(stepId)`
+### `goToStep(stepId, options?)`
 
 Jumps directly to a named step. It calls `onLeave` on the current step and `onEnter` on the target, but it bypasses guards and `shouldSkip` entirely. Use this for non-linear flows — rejection paths, admin overrides, or any case where you know it is valid to land on a step regardless of what the guard would say.
 
@@ -31,6 +31,19 @@ await engine.goToStep("application-rejected");
 ```
 
 Because guards are not checked, `goToStep` will happily take the user to a step they could not normally reach. Use it deliberately.
+
+**`validateOnLeave` option**
+
+Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. This causes `hasAttemptedNext` to be `true` if the user later returns to that step, so inline field errors become visible without ever clicking Next. This is the idiomatic pattern for tab mode:
+
+```typescript
+// Tab bar click handler — switch tabs and reveal errors on the tab you just left
+onClick={() => goToStep(step.id, { validateOnLeave: true })}
+```
+
+**`hasAttemptedNext` is now per-step and persistent**
+
+`hasAttemptedNext` tracks which steps have been attempted, not whether the engine is currently on an attempted step. The flag for a given step is set when `next()` is called on it (or when `goToStep` is called with `validateOnLeave: true`). It persists when the user navigates away and back. The entire set is only cleared by `start()` / `restart()`.
 
 ### `goToStepChecked(stepId)`
 
@@ -51,7 +64,7 @@ When `next()` is called, the engine follows a precise sequence. Understanding th
 
 **1. `canMoveNext` is evaluated on the current step.**
 
-If the guard returns `{ allowed: false, reason }`, the engine updates the snapshot with the reason surfaced as `blockingError`, sets `hasAttemptedNext` to `true`, and stops. No hooks fire. The user stays on the current step.
+If the guard returns `{ allowed: false, reason }`, the engine updates the snapshot with the reason surfaced as `blockingError`, marks this step as attempted (`hasAttemptedNext` becomes `true`), and stops. No hooks fire. The user stays on the current step.
 
 If the guard is async, the engine enters `"validating"` status while it waits. Navigation controls should be disabled during this time. The full async flow is covered in Chapter 5.
 

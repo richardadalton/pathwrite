@@ -64,10 +64,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   previous: () => void;
   /** Cancel the active path (or sub-path). */
   cancel: () => void;
-  /** Jump directly to a step by ID, bypassing guards and shouldSkip. */
-  goToStep: (stepId: string) => void;
+  /** Jump directly to a step by ID, bypassing guards and shouldSkip. Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. */
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
   /** Jump directly to a step by ID, checking the current step's guard first. */
-  goToStepChecked: (stepId: string) => void;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
   /** Update a single data value. When `TData` is specified, key and value are type-checked. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => void;
   /** Reset the current step's data to what it was when the step was entered. */
@@ -146,8 +146,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const next = useCallback(() => engine.next(), [engine]);
   const previous = useCallback(() => engine.previous(), [engine]);
   const cancel = useCallback(() => engine.cancel(), [engine]);
-  const goToStep = useCallback((stepId: string) => engine.goToStep(stepId), [engine]);
-  const goToStepChecked = useCallback((stepId: string) => engine.goToStepChecked(stepId), [engine]);
+  const goToStep = useCallback((stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStep(stepId, options), [engine]);
+  const goToStepChecked = useCallback((stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStepChecked(stepId, options), [engine]);
   const setData = useCallback(
     <K extends string & keyof TData>(key: K, value: TData[K]) => engine.setData(key, value as unknown),
     [engine]
@@ -211,8 +211,8 @@ export interface PathShellActions {
   next: () => void;
   previous: () => void;
   cancel: () => void;
-  goToStep: (stepId: string) => void;
-  goToStepChecked: (stepId: string) => void;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
   setData: (key: string, value: unknown) => void;
   restart: () => void;
   retry: () => void;

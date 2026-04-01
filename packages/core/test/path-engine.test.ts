@@ -1369,35 +1369,110 @@ describe("PathEngine — hasAttemptedNext", () => {
     expect(engine.snapshot()?.hasAttemptedNext).toBe(false); // reset
   });
 
-  it("resets when navigating backward to a previous step", async () => {
+  it("remains true when returning to a previously-attempted step via previous()", async () => {
     const engine = new PathEngine();
     await engine.start(threeStepPath());
-    await engine.next(); // step1 → step2
-    await engine.next(); // step2 → step3
+    await engine.next(); // step1 → step2 (step1 now attempted)
+    await engine.next(); // step2 → step3 (step2 now attempted)
     expect(engine.snapshot()?.stepId).toBe("step3");
-    
+
     await engine.previous(); // back to step2
     expect(engine.snapshot()?.stepId).toBe("step2");
-    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
+    // step2 was attempted before — hasAttemptedNext persists across navigation
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
   });
 
-  it("resets when using goToStep", async () => {
+  it("is false when returning to a step that was never attempted via previous()", async () => {
     const engine = new PathEngine();
     await engine.start(threeStepPath());
-    await engine.next(); // advances to step2
-    
+    await engine.next(); // step1 → step2 (step1 now attempted; step2 never attempted)
+
+    await engine.previous(); // back to step1 — but we never called next() on step2
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    // step1 WAS attempted — hasAttemptedNext is true
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+  });
+
+  it("remains true when using goToStep to return to a previously-attempted step", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+    await engine.next(); // step1 → step2 (step1 now attempted)
+
     await engine.goToStep("step1"); // jump back to step1
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    // step1 was attempted — hasAttemptedNext persists
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+  });
+
+  it("is false when goToStep jumps to a step that was never attempted", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+    // Do not call next() — step1 never attempted
+
+    await engine.goToStep("step3"); // jump ahead without attempting step1
+    expect(engine.snapshot()?.stepId).toBe("step3");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false); // step3 never attempted
+  });
+
+  it("resets all steps on restart", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+    await engine.next(); // step1 → step2 (step1 attempted)
+
+    await engine.restart();
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false); // step1 cleared
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateOnLeave
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — goToStep validateOnLeave", () => {
+  it("marks the departing step as attempted when validateOnLeave is true", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
+
+    await engine.goToStep("step2", { validateOnLeave: true });
+    // Now on step2 — step1 should be marked attempted
+    await engine.goToStep("step1");
+    expect(engine.snapshot()?.stepId).toBe("step1");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+  });
+
+  it("does NOT mark the departing step as attempted when validateOnLeave is false/omitted", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+
+    await engine.goToStep("step2"); // no validateOnLeave
+    await engine.goToStep("step1");
     expect(engine.snapshot()?.stepId).toBe("step1");
     expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
   });
 
-  it("resets on restart", async () => {
+  it("validateOnLeave on goToStepChecked also marks the departing step", async () => {
     const engine = new PathEngine();
     await engine.start(threeStepPath());
-    await engine.next(); // advances to step2
-    
-    await engine.restart();
+
+    await engine.goToStepChecked("step2", { validateOnLeave: true });
+    await engine.goToStep("step1");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+  });
+
+  it("marks only the departing step, not the destination", async () => {
+    const engine = new PathEngine();
+    await engine.start(threeStepPath());
+
+    // Jump from step1 to step3 with validateOnLeave
+    await engine.goToStep("step3", { validateOnLeave: true });
+    // step3 should NOT be marked (we haven't tried to leave it)
+    expect(engine.snapshot()?.stepId).toBe("step3");
     expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
+
+    // Jump back to step1 — it WAS the departing step
+    await engine.goToStep("step1");
+    expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
   });
 });
 

@@ -45,8 +45,8 @@ export interface PathShellActions {
   next: () => Promise<void>;
   previous: () => Promise<void>;
   cancel: () => Promise<void>;
-  goToStep: (stepId: string) => Promise<void>;
-  goToStepChecked: (stepId: string) => Promise<void>;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   setData: (key: string, value: unknown) => Promise<void>;
   /** Restart the shell's current path with its current `initialData`. */
   restart: () => Promise<void>;
@@ -437,8 +437,8 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     next: () => this.facade.next(),
     previous: () => this.facade.previous(),
     cancel: () => this.facade.cancel(),
-    goToStep: (id) => this.facade.goToStep(id),
-    goToStepChecked: (id) => this.facade.goToStepChecked(id),
+    goToStep: (id, options) => this.facade.goToStep(id, options),
+    goToStepChecked: (id, options) => this.facade.goToStepChecked(id, options),
     setData: (key, value) => this.facade.setData(key, value as never),
     restart: () => this.facade.restart(),
     retry: () => this.facade.retry(),

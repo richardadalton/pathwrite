@@ -59,10 +59,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   previous: () => Promise<void>;
   /** Cancel the active path (or sub-path). */
   cancel: () => Promise<void>;
-  /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. */
-  goToStep: (stepId: string) => Promise<void>;
+  /** Jump directly to a step by ID. Calls onLeave / onEnter but bypasses guards and shouldSkip. Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. */
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /** Jump directly to a step by ID, checking the current step's canMoveNext (forward) or canMovePrevious (backward) guard first. Navigation is blocked if the guard returns false. */
-  goToStepChecked: (stepId: string) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /** Update a single data value; triggers re-renders via stateChanged. When `TData` is specified, `key` and `value` are type-checked against your data shape. */
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
   /** Reset the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. */
@@ -114,8 +114,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const next = (): Promise<void> => engine.next();
   const previous = (): Promise<void> => engine.previous();
   const cancel = (): Promise<void> => engine.cancel();
-  const goToStep = (stepId: string): Promise<void> => engine.goToStep(stepId);
-  const goToStepChecked = (stepId: string): Promise<void> => engine.goToStepChecked(stepId);
+  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStep(stepId, options);
+  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStepChecked(stepId, options);
 
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
@@ -167,8 +167,8 @@ export interface PathShellActions {
   next: () => Promise<void>;
   previous: () => Promise<void>;
   cancel: () => Promise<void>;
-  goToStep: (stepId: string) => Promise<void>;
-  goToStepChecked: (stepId: string) => Promise<void>;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   setData: (key: string, value: unknown) => Promise<void>;
   restart: () => Promise<void>;
   retry: () => Promise<void>;
