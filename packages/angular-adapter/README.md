@@ -212,6 +212,35 @@ export class DetailsStepComponent {
 }
 ```
 
+### Nested shells and `validateWhen`
+
+When `<pw-shell>` is nested inside a step of an outer shell, bind `[validateWhen]` to the outer snapshot's `hasAttemptedNext`. This triggers `validate()` on the inner engine when the outer shell's user attempts to proceed, surfacing all inner field errors at once:
+
+```typescript
+@Component({
+  selector: "app-contact-step",
+  standalone: true,
+  imports: [PathShellComponent, PathStepDirective],
+  template: `
+    <pw-shell
+      [path]="contactTabsPath"
+      [layout]="'tabs'"
+      [validateWhen]="outerSnap()?.hasAttemptedNext ?? false"
+    >
+      <ng-template pwStep="name"><app-name-tab /></ng-template>
+      <ng-template pwStep="address"><app-address-tab /></ng-template>
+    </pw-shell>
+  `
+})
+export class ContactStepComponent {
+  protected readonly outerPath = usePathContext<ApplicationData>();
+  protected readonly outerSnap = this.outerPath.snapshot;
+  protected readonly contactTabsPath = contactTabsPath;
+}
+```
+
+> **Do NOT add `providers: [PathFacade]` to step components.** Doing so creates a second, disconnected `PathFacade` instance scoped to that component — `snapshot()` will always be `null` inside it. `usePathContext()` resolves the shell's instance automatically via DI; no extra provider needed.
+
 ## Further reading
 
 - [Angular getting started guide](../../docs/getting-started/frameworks/angular.md)

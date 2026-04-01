@@ -175,6 +175,56 @@ export class DetailsStepComponent {
 }
 ```
 
+### Nested shells — wiring `validateWhen` in Angular
+
+When an inner `<pw-shell>` is nested inside a step of an outer `<pw-shell>`, you need to propagate the outer shell's `hasAttemptedNext` into the inner shell's `[validateWhen]` input. This triggers `validate()` on the inner engine when the user tries to submit the outer shell, surfacing all inner field errors at once.
+
+**Option 1 — signal binding (recommended for signal-based components):**
+
+```typescript
+@Component({
+  selector: "app-contact-step",
+  standalone: true,
+  imports: [PathShellComponent, PathStepDirective],
+  template: `
+    <pw-shell
+      [path]="contactTabsPath"
+      [layout]="'tabs'"
+      [validateWhen]="outerSnap()?.hasAttemptedNext ?? false"
+    >
+      <ng-template pwStep="name"><app-name-tab /></ng-template>
+      <ng-template pwStep="address"><app-address-tab /></ng-template>
+    </pw-shell>
+  `
+})
+export class ContactStepComponent {
+  protected readonly outerPath = usePathContext<ApplicationData>();
+  protected readonly outerSnap = this.outerPath.snapshot;
+  protected readonly contactTabsPath = contactTabsPath;
+}
+```
+
+**Option 2 — `effect()` (when the inner shell is driven manually rather than via `<pw-shell>`):**
+
+```typescript
+export class ContactStepComponent {
+  private readonly outerFacade = inject(PathFacade);
+  private readonly innerFacade = inject(PathFacade); // inner shell's scoped instance
+
+  constructor() {
+    effect(() => {
+      if (this.outerFacade.stateSignal()?.hasAttemptedNext) {
+        this.innerFacade.validate();
+      }
+    });
+  }
+}
+```
+
+Option 1 is simpler and preferred whenever you use `<pw-shell>` for both shells.
+
+---
+
 ### Type-safe `setData` with a key variable
 
 When passing a key as a variable to `setData`, use `string & keyof TData` to match the constraint — `keyof T` includes `number` and `symbol`, which `setData` does not accept:
@@ -310,6 +360,7 @@ export class MyComponent { }
 @Component({
   selector: "app-details-step",
   standalone: true,
+  // ✅ No providers: [PathFacade] here — usePathContext() resolves the shell's instance
   template: `
     <input
       [value]="path.snapshot()?.data['firstName'] ?? ''"
@@ -318,12 +369,15 @@ export class MyComponent { }
   `
 })
 export class DetailsStepComponent {
-  // injectPath() resolves the shell's PathFacade — no providers: [PathFacade] here
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
 }
 ```
 
 The parent component hosting `<pw-shell>` does **not** need its own `PathFacade` provider when using the shell.
+
+> **Gotcha — do NOT add `providers: [PathFacade]` to step components.**
+>
+> Angular's injector tree scopes a `PathFacade` to the subtree of whichever component declares `providers: [PathFacade]`. Adding it to a step component creates a **second, disconnected `PathFacade` instance** with no active engine. `usePathContext()` (or `inject(PathFacade)`) inside that component will resolve the local instance — not the shell's — so `snapshot()` will always be `null` and navigation calls will be no-ops. If you see a step that never renders, this is the most likely cause.
 
 ---
 
