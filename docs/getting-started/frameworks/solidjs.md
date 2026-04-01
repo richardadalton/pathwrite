@@ -10,6 +10,19 @@ npm install @daltonr/pathwrite-core @daltonr/pathwrite-solid
 
 Peer dependencies: `solid-js >= 1.8.0`
 
+### Required `tsconfig.json` setting
+
+Solid JSX requires `"jsxImportSource": "solid-js"` in `tsconfig.json`. The wrong value (a common mistake is `"solid-js/h"`) produces a cryptic TypeScript error that does not mention Solid or JSX. If you see unexpected JSX type errors, check this first:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
+  }
+}
+```
+
 ---
 
 ## `usePath()` — composable
