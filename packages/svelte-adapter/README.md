@@ -110,6 +110,8 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `onevent` | `(event: PathEvent) => void` | — | Called for every engine event. |
 | `completion` | `Snippet<[PathSnapshot<any>]>` | — | Custom snippet rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 
+> **Note:** Svelte requires event/callback props to be lowercase. Unlike React/Vue/Angular, passing `onComplete`, `onCancel`, or `onEvent` (camelCase) will be silently ignored. PathShell emits a `console.warn` in development if it detects one of these common mistakes.
+
 You can also replace the built-in header and footer with custom snippets:
 
 ```svelte

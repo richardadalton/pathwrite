@@ -132,6 +132,20 @@
     get services() { return services; },
   });
 
+  // Dev-mode warning: camelCase callback props are silently ignored in Svelte.
+  // Warn if the user passed onComplete/onCancel/onEvent instead of the correct
+  // lowercase forms oncomplete/oncancel/onevent.
+  if (import.meta.env?.DEV !== false) {
+    const camelCallbacks = ['onComplete', 'onCancel', 'onEvent'] as const;
+    for (const name of camelCallbacks) {
+      if (name in stepSnippets) {
+        console.warn(
+          `[PathShell] "${name}" was passed but will be ignored. Svelte uses lowercase callback props — use "${name.toLowerCase()}" instead.`
+        );
+      }
+    }
+  }
+
   // Auto-start the path when no external engine is provided
   let started = false;
   onMount(() => {
