@@ -52,7 +52,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      text-decoration: none;
     }
 
     .diamond-wrap--pathwrite {
@@ -93,7 +92,8 @@
       color: rgba(255, 255, 255, 0.92);
       letter-spacing: 0.04em;
       white-space: nowrap;
-      pointer-events: none;
+      text-decoration: none;
+      cursor: pointer;
     }
 
     /* Per-product gradients */
@@ -114,18 +114,18 @@
       border: 1px solid #2a2a3a;
     }
 
-    /* Hover: brighten + colour-matched glow */
-    .diamond-wrap:hover .diamond--pathwrite {
+    /* Hover: brighten + colour-matched glow — triggered only when hovering the text label */
+    .diamond--pathwrite:has(a:hover) {
       filter: brightness(1.1);
       box-shadow: 0 0 52px rgba(139, 92, 246, 0.6);
     }
 
-    .diamond-wrap:hover .diamond--authwrite {
+    .diamond--authwrite:has(a:hover) {
       filter: brightness(1.1);
       box-shadow: 0 0 52px rgba(16, 185, 129, 0.6);
     }
 
-    .diamond-wrap:hover .diamond--rulewrite {
+    .diamond--rulewrite:has(a:hover) {
       filter: brightness(1.1);
       box-shadow: 0 0 52px rgba(245, 158, 11, 0.6);
     }
@@ -168,23 +168,23 @@
 <body>
   <div class="products">
 
-    <a href="rulewrite.html" class="diamond-wrap diamond-wrap--rulewrite" aria-label="rulewrite">
+    <div class="diamond-wrap diamond-wrap--rulewrite">
       <div class="diamond diamond--rulewrite">
-        <span class="diamond-label">rulewrite</span>
+        <a href="rulewrite.html" class="diamond-label">rulewrite</a>
       </div>
-    </a>
+    </div>
 
-    <a href="index.html" class="diamond-wrap diamond-wrap--pathwrite" aria-label="pathwrite">
+    <div class="diamond-wrap diamond-wrap--pathwrite">
       <div class="diamond diamond--pathwrite">
-        <span class="diamond-label">pathwrite</span>
+        <a href="index.html" class="diamond-label">pathwrite</a>
       </div>
-    </a>
+    </div>
 
-    <a href="authwrite.html" class="diamond-wrap diamond-wrap--authwrite" aria-label="authwrite">
+    <div class="diamond-wrap diamond-wrap--authwrite">
       <div class="diamond diamond--authwrite">
-        <span class="diamond-label">authwrite</span>
+        <a href="authwrite.html" class="diamond-label">authwrite</a>
       </div>
-    </a>
+    </div>
 
     <div class="diamond-wrap diamond-wrap--jobwrite" aria-label="jobwrite — coming soon">
       <div class="diamond diamond--jobwrite">
