@@ -69,7 +69,7 @@
       top: 0;
     }
 
-    .diamond-wrap--jobwrite {
+    .diamond-wrap--notifywrite {
       left: calc(0.5 * var(--w));
       top: var(--w);
     }
@@ -109,9 +109,8 @@
       background: linear-gradient(135deg, #78350f 0%, #fbbf24 100%);
     }
 
-    .diamond--jobwrite {
-      background: linear-gradient(135deg, #111118 0%, #2a2a3a 100%);
-      border: 1px solid #2a2a3a;
+    .diamond--notifywrite {
+      background: linear-gradient(135deg, #1e3a8a 0%, #60a5fa 100%);
     }
 
     /* Hover: brighten + colour-matched glow — triggered only when hovering the text label */
@@ -128,6 +127,11 @@
     .diamond--rulewrite:has(a:hover) {
       filter: brightness(1.1);
       box-shadow: 0 0 52px rgba(245, 158, 11, 0.6);
+    }
+
+    .diamond--notifywrite:has(a:hover) {
+      filter: brightness(1.1);
+      box-shadow: 0 0 52px rgba(59, 130, 246, 0.6);
     }
 
     .diamond-label--muted {
@@ -186,12 +190,9 @@
       </div>
     </div>
 
-    <div class="diamond-wrap diamond-wrap--jobwrite" aria-label="jobwrite — coming soon">
-      <div class="diamond diamond--jobwrite">
-        <div class="diamond-label diamond-label--muted" style="transform: rotate(-45deg);">
-          <span>jobwrite</span>
-          <small>coming soon</small>
-        </div>
+    <div class="diamond-wrap diamond-wrap--notifywrite">
+      <div class="diamond diamond--notifywrite">
+        <a href="notifywrite.html" class="diamond-label">notifywrite</a>
       </div>
     </div>
 

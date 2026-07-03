@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>notifywrite — Headless Notification Engine for TypeScript</title>
+  <meta name="description" content="One small, zero-dependency notification engine. Add, dismiss, auto-dismiss, and clear notifications from a typed core — React, Vue, Angular, Svelte, SolidJS, and React Native adapters wrap it natively." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --color-primary:       #3b82f6;
+      --color-primary-light: #60a5fa;
+      --color-primary-glow:  rgba(59, 130, 246, 0.2);
+    }
+
+    /* ── Hero ── */
+    .nw-hero {
+      padding: 5rem 0 3rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .nw-hero__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .nw-hero__inner > * {
+      min-width: 0;
+    }
+    @media (max-width: 900px) {
+      .nw-hero__inner { grid-template-columns: 1fr; }
+    }
+    .nw-hero__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-primary-light);
+      background: var(--color-primary-glow);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 100px;
+      padding: 0.3rem 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .nw-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3.25rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+    .nw-hero h1 em {
+      font-style: normal;
+      color: var(--color-primary-light);
+    }
+    .nw-hero__sub {
+      font-size: 1.05rem;
+      color: var(--color-text-muted);
+      line-height: 1.75;
+      margin-bottom: 2rem;
+    }
+    .nw-hero__features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+    }
+    .nw-hero__feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .nw-hero__feature-icon {
+      font-size: 1rem;
+      margin-top: 0.05rem;
+      flex-shrink: 0;
+    }
+    .nw-hero__feature strong {
+      display: block;
+      color: var(--color-text);
+      margin-bottom: 0.15rem;
+    }
+    .nw-hero__feature span {
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+    .nw-hero__npm {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 1rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+      display: inline-block;
+    }
+    .nw-hero__npm span {
+      color: var(--color-primary-light);
+      user-select: all;
+    }
+    .nw-hero__actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .nw-hero .btn--primary { background: var(--color-primary); }
+    .nw-hero .btn--primary:hover { background: #2563eb; box-shadow: 0 0 24px var(--color-primary-glow); }
+
+    /* ── Stats ── */
+    .nw-stats {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .nw-stat {
+      flex: 1;
+      max-width: 220px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border-right: 1px solid var(--color-border);
+    }
+    .nw-stat:last-child { border-right: none; }
+    .nw-stat__num {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--color-primary-light);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .nw-stat__label {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+    @media (max-width: 600px) {
+      .nw-stats { flex-wrap: wrap; }
+      .nw-stat { max-width: 50%; border-bottom: 1px solid var(--color-border); }
+    }
+
+    /* ── Demo widget ── */
+    .nw-demo {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .nw-demo__header {
+      background: linear-gradient(135deg, #1e3a8a 0%, var(--color-primary) 100%);
+      padding: 0.9rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nw-demo__header-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .nw-demo__header-badge {
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.85);
+      border-radius: 100px;
+      padding: 0.2rem 0.6rem;
+      font-family: var(--font-mono);
+    }
+    .nw-demo__body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 600px) {
+      .nw-demo__body { grid-template-columns: 1fr; }
+    }
+    .nw-demo__composer {
+      padding: 1.25rem;
+      border-right: 1px solid var(--color-border);
+    }
+    @media (max-width: 600px) {
+      .nw-demo__composer { border-right: none; border-bottom: 1px solid var(--color-border); }
+    }
+    .nw-demo__section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nw-demo__input {
+      width: 100%;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.7rem;
+      color: var(--color-text);
+      margin-bottom: 0.85rem;
+    }
+    .nw-demo__input:focus { outline: none; border-color: var(--color-primary); }
+    .nw-demo__types {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem;
+      margin-bottom: 0.85rem;
+    }
+    .nw-demo__type-btn {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 0.4rem 0.5rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nw-demo__type-btn:hover { border-color: var(--color-primary); color: var(--color-text); }
+    .nw-demo__type-btn.active[data-type="info"]    { border-color: #60a5fa; background: rgba(96,165,250,0.12); color: #60a5fa; }
+    .nw-demo__type-btn.active[data-type="success"] { border-color: #22c55e; background: rgba(34,197,94,0.12); color: #22c55e; }
+    .nw-demo__type-btn.active[data-type="warning"] { border-color: #f59e0b; background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .nw-demo__type-btn.active[data-type="error"]   { border-color: #ef4444; background: rgba(239,68,68,0.12); color: #ef4444; }
+    .nw-demo__actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+    .nw-demo__add-btn, .nw-demo__clear-btn {
+      flex: 1;
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.5rem 0.6rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nw-demo__add-btn {
+      background: var(--color-primary);
+      border: 1px solid var(--color-primary);
+      color: #fff;
+    }
+    .nw-demo__add-btn:hover { background: #2563eb; }
+    .nw-demo__clear-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+    }
+    .nw-demo__clear-btn:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+    .nw-demo__auto {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      cursor: pointer;
+    }
+    .nw-demo__result {
+      padding: 1.25rem;
+    }
+    .nw-demo__toasts {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 120px;
+    }
+    .nw-demo__empty {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      padding: 1.5rem 0;
+      text-align: center;
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+    .nw-toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.7rem;
+      font-size: 0.78rem;
+      animation: nw-toast-in 0.18s ease;
+    }
+    @keyframes nw-toast-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .nw-toast--info    { border-left-color: #60a5fa; }
+    .nw-toast--success { border-left-color: #22c55e; }
+    .nw-toast--warning { border-left-color: #f59e0b; }
+    .nw-toast--error   { border-left-color: #ef4444; }
+    .nw-toast__body { flex: 1; min-width: 0; }
+    .nw-toast__type {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+    .nw-toast--info    .nw-toast__type { color: #60a5fa; }
+    .nw-toast--success .nw-toast__type { color: #22c55e; }
+    .nw-toast--warning .nw-toast__type { color: #f59e0b; }
+    .nw-toast--error   .nw-toast__type { color: #ef4444; }
+    .nw-toast__message {
+      color: var(--color-text);
+      word-break: break-word;
+    }
+    .nw-toast__dismiss {
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0.1rem 0.3rem;
+      flex-shrink: 0;
+    }
+    .nw-toast__dismiss:hover { color: var(--color-text); }
+
+    /* ── Problem section ── */
+    .nw-problem {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .nw-problem__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    .nw-problem__inner > div {
+      min-width: 0;
+    }
+    @media (max-width: 800px) {
+      .nw-problem__inner { grid-template-columns: 1fr; }
+    }
+    .nw-problem__side-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nw-problem__side-label--bad { color: #ef4444; }
+    .nw-problem__side-label--good { color: #22c55e; }
+    .nw-problem__desc {
+      font-size: 0.88rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-top: 1rem;
+    }
+
+    /* ── How it works ── */
+    .nw-how {
+      padding: 5rem 0;
+    }
+    .nw-how__steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+    @media (max-width: 720px) {
+      .nw-how__steps { grid-template-columns: 1fr; }
+    }
+    .nw-how__step {
+      min-width: 0;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .nw-how__step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary-light);
+      margin-bottom: 0.75rem;
+    }
+    .nw-how__step h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .nw-how__step p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .nw-how__step .code-block {
+      margin: 0;
+    }
+    .nw-how__step .code-block pre {
+      padding: 0.85rem;
+    }
+
+    /* ── Value props ── */
+    .nw-props {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .nw-props__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .nw-prop {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .nw-prop:hover {
+      border-color: var(--color-primary);
+      background: var(--color-bg-card-hover);
+    }
+    .nw-prop__icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .nw-prop h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .nw-prop p {
+      font-size: 0.83rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Code section ── */
+    .nw-code-section {
+      padding: 5rem 0;
+    }
+    .nw-tab-btns {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .nw-tab-btns button {
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nw-tab-btns button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-text);
+    }
+    .nw-tab-btns button.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-glow);
+      color: var(--color-primary-light);
+    }
+    .nw-tab-panel { display: none; }
+    .nw-tab-panel.active { display: block; }
+
+    /* ── Examples ── */
+    .nw-examples {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .nw-examples__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .nw-example {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .nw-example:hover { border-color: var(--color-primary); }
+    .nw-example__tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-primary-light);
+      margin-bottom: 0.6rem;
+    }
+    .nw-example h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .nw-example p {
+      font-size: 0.83rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .nw-example__rules {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .nw-example__rule {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+    }
+    .nw-example__rule span { color: var(--color-primary-light); }
+
+    /* ── Compare ── */
+    .nw-compare {
+      padding: 5rem 0;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 3rem;
+      font-size: 0.875rem;
+    }
+    .compare-table th, .compare-table td {
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--color-border);
+      text-align: center;
+    }
+    .compare-table th {
+      background: var(--color-bg-card);
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    .compare-table th:first-child,
+    .compare-table td:first-child {
+      text-align: left;
+      color: var(--color-text-muted);
+      font-size: 0.82rem;
+    }
+    .compare-table th.col-notifywrite {
+      color: var(--color-primary-light);
+      background: var(--color-primary-glow);
+    }
+    .compare-table tr:nth-child(even) td {
+      background: var(--color-bg-section-alt);
+    }
+    .compare-table .y { color: #22c55e; font-weight: 700; }
+    .compare-table .n { color: #4b5563; }
+    .compare-table .p { color: var(--color-text-muted); font-size: 0.78rem; }
+
+    /* ── Docs links ── */
+    .nw-docs {
+      padding: 5rem 0;
+      background: var(--color-bg-section-alt);
+    }
+    .nw-docs__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+    .nw-doc-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .nw-doc-card:hover {
+      border-color: var(--color-primary);
+      background: var(--color-bg-card-hover);
+    }
+    .nw-doc-card__icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .nw-doc-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .nw-doc-card p {
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="container nav__inner">
+    <a href="notifywrite.html" class="nav__logo"><span class="nav__logo-icon">&loz;</span> notifywrite</a>
+    <div class="nav__links">
+      <a href="#why">Why notifywrite</a>
+      <a href="#how">How it works</a>
+      <a href="#examples">Examples</a>
+      <a href="#compare">Compare</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/richardadalton/notifywrite" class="btn btn--sm btn--outline" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/@daltonr/notifywrite" class="btn btn--sm btn--primary" target="_blank">npm</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="nw-hero">
+  <div class="container nw-hero__inner">
+    <div class="nw-hero__copy">
+      <div class="nw-hero__eyebrow">Notification Engine &middot; TypeScript</div>
+      <h1>One notification engine.<br><em>Every framework's own reactivity.</em></h1>
+      <p class="nw-hero__sub">
+        Toast state ends up reimplemented per framework — a <code>useState</code> array here, a
+        ref there, a store somewhere else, each with its own timer bookkeeping. notifywrite is a
+        headless notification engine: a small typed core with <code>add</code>, <code>dismiss</code>,
+        and <code>clear</code>, exposed through a snapshot-and-subscribe API that six framework
+        adapters wrap natively.
+      </p>
+      <div class="nw-hero__features">
+        <div class="nw-hero__feature">
+          <span class="nw-hero__feature-icon">🔔</span>
+          <div>
+            <strong>A tiny, typed API</strong>
+            <span><code>add(message, options)</code>, <code>dismiss(id)</code>, <code>clear()</code>. Four notification types out of the box: info, success, warning, error.</span>
+          </div>
+        </div>
+        <div class="nw-hero__feature">
+          <span class="nw-hero__feature-icon">⏱️</span>
+          <div>
+            <strong>Auto-dismiss, built in</strong>
+            <span>Pass a <code>duration</code> and the engine schedules and clears its own timer — no <code>setTimeout</code> bookkeeping in your components.</span>
+          </div>
+        </div>
+        <div class="nw-hero__feature">
+          <span class="nw-hero__feature-icon">🔌</span>
+          <div>
+            <strong>Native to six frameworks</strong>
+            <span>React, Vue, Angular, Svelte, SolidJS, and React Native adapters wrap the same core engine with idiomatic hooks, signals, and stores.</span>
+          </div>
+        </div>
+      </div>
+      <div class="nw-hero__npm">$ npm install <span>@daltonr/notifywrite</span></div>
+      <div class="nw-hero__actions">
+        <a href="#how" class="btn btn--lg btn--primary">See how it works</a>
+        <a href="https://github.com/richardadalton/notifywrite" class="btn btn--lg btn--ghost" target="_blank">View on GitHub</a>
+      </div>
+    </div>
+    <div>
+      <!-- Live demo widget -->
+      <div class="nw-demo" id="nw-demo">
+        <div class="nw-demo__header">
+          <span class="nw-demo__header-title">Live notification stack</span>
+          <span class="nw-demo__header-badge">runs in-browser</span>
+        </div>
+        <div class="nw-demo__body">
+          <div class="nw-demo__composer">
+            <div class="nw-demo__section-label">Compose</div>
+            <input type="text" id="nw-message" class="nw-demo__input" value="File saved" />
+            <div class="nw-demo__types">
+              <button class="nw-demo__type-btn active" data-type="info">Info</button>
+              <button class="nw-demo__type-btn" data-type="success">Success</button>
+              <button class="nw-demo__type-btn" data-type="warning">Warning</button>
+              <button class="nw-demo__type-btn" data-type="error">Error</button>
+            </div>
+            <div class="nw-demo__actions">
+              <button class="nw-demo__add-btn" id="nw-add">Add</button>
+              <button class="nw-demo__clear-btn" id="nw-clear">Clear all</button>
+            </div>
+            <label class="nw-demo__auto">
+              <input type="checkbox" id="nw-auto" checked />
+              <span>Auto-dismiss after 3s</span>
+            </label>
+          </div>
+          <div class="nw-demo__result">
+            <div class="nw-demo__section-label">Stack <span id="nw-count">0 active</span></div>
+            <div class="nw-demo__toasts" id="nw-toasts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ── -->
+<div class="nw-stats">
+  <div class="nw-stat"><div class="nw-stat__num">6</div><div class="nw-stat__label">Framework adapters</div></div>
+  <div class="nw-stat"><div class="nw-stat__num">0</div><div class="nw-stat__label">Dependencies</div></div>
+  <div class="nw-stat"><div class="nw-stat__num">4</div><div class="nw-stat__label">Notification types</div></div>
+  <div class="nw-stat"><div class="nw-stat__num">100%</div><div class="nw-stat__label">Type safe</div></div>
+</div>
+
+<!-- ── Problem ── -->
+<section class="nw-problem" id="why">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:640px; margin:0 auto 3.5rem;">
+      <h2 class="section__title">The cost of reinventing toast state</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        Every framework ends up with its own copy of the same logic — an array of notifications, a
+        timer per entry, an id counter, add/dismiss helpers — duplicated wherever a toast needs to appear.
+      </p>
+    </div>
+    <div class="nw-problem__inner">
+      <div>
+        <div class="nw-problem__side-label nw-problem__side-label--bad">✗ &nbsp; The status quo</div>
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">useToasts.ts</span>
+          </div>
+          <pre><code><span class="kw">function</span> <span class="fn">useToasts</span>() {
+  <span class="kw">const</span> [toasts, setToasts] = <span class="fn">useState</span>([]);
+
+  <span class="kw">function</span> <span class="fn">addToast</span>(message, type, duration) {
+    <span class="kw">const</span> id = crypto.<span class="fn">randomUUID</span>();
+    <span class="fn">setToasts</span>(t => [...t, { id, message, type }]);
+    <span class="cm">// ...and now re-implement this in Vue, Svelte, Angular</span>
+    <span class="kw">if</span> (duration) {
+      <span class="fn">setTimeout</span>(() => <span class="fn">dismissToast</span>(id), duration);
+    }
+  }
+  <span class="cm">// dismissToast, clearToasts, timer cleanup on unmount...</span>
+}</code></pre>
+        </div>
+        <p class="nw-problem__desc">Not shared across frameworks. Not testable without rendering a component. Timers leak if you forget cleanup on unmount.</p>
+      </div>
+      <div>
+        <div class="nw-problem__side-label nw-problem__side-label--good">✓ &nbsp; With notifywrite</div>
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot code-block__dot--red"></span>
+            <span class="code-block__dot code-block__dot--yellow"></span>
+            <span class="code-block__dot code-block__dot--green"></span>
+            <span class="code-block__filename">notifications.ts</span>
+          </div>
+          <pre><code><span class="kw">import</span> { <span class="type">NotificationEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite'</span>;
+
+<span class="kw">export const</span> notifications = <span class="kw">new</span> <span class="fn">NotificationEngine</span>();
+
+notifications.<span class="fn">add</span>(<span class="str">'File saved'</span>, {
+  type: <span class="str">'success'</span>,
+  duration: <span class="str">3000</span>,
+});
+<span class="cm">// engine owns id generation, timers, and cleanup</span>
+<span class="cm">// every adapter subscribes to the same instance</span></code></pre>
+        </div>
+        <p class="nw-problem__desc">One engine instance, one implementation. Every framework adapter subscribes to it with a native hook, signal, or store — no logic duplicated, no timers to manually track.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ── -->
+<section class="nw-how" id="how">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:600px; margin:0 auto;">
+      <h2 class="section__title">Three steps. Any framework.</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        Create one engine instance. Wire it into your framework with the matching adapter. Add, dismiss, and clear from anywhere in your app.
+      </p>
+    </div>
+    <div class="nw-how__steps">
+      <div class="nw-how__step">
+        <div class="nw-how__step-num">Step 1 &mdash; Create</div>
+        <h3>One engine instance</h3>
+        <p>A single <code>NotificationEngine</code> holds your app's notification state. No provider is required to use it — pass it wherever you need it.</p>
+        <div class="code-block">
+          <pre><code><span class="kw">import</span> { <span class="type">NotificationEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite'</span>;
+
+<span class="kw">export const</span> notifications =
+  <span class="kw">new</span> <span class="fn">NotificationEngine</span>();</code></pre>
+        </div>
+      </div>
+      <div class="nw-how__step">
+        <div class="nw-how__step-num">Step 2 &mdash; Wire in</div>
+        <h3>Native to your framework</h3>
+        <p>Each adapter subscribes to the engine and returns state shaped for its framework — a React hook, a Vue composable, a Svelte store, an Angular signal.</p>
+        <div class="code-block">
+          <pre><code><span class="kw">import</span> { useNotifications }
+  <span class="kw">from</span> <span class="str">'@daltonr/notifywrite-react'</span>;
+
+<span class="kw">function</span> <span class="fn">ToastHost</span>() {
+  <span class="kw">const</span> { notifications } =
+    <span class="fn">useNotifications</span>(engine);
+  <span class="cm">// re-renders on add/dismiss/clear</span>
+}</code></pre>
+        </div>
+      </div>
+      <div class="nw-how__step">
+        <div class="nw-how__step-num">Step 3 &mdash; Drive it</div>
+        <h3>Add, dismiss, clear</h3>
+        <p>Call <code>add()</code> from anywhere — a form handler, an API error boundary, a background job callback. Every subscriber updates immediately.</p>
+        <div class="code-block">
+          <pre><code>engine.<span class="fn">add</span>(<span class="str">'Upload failed'</span>, {
+  type: <span class="str">'error'</span>,
+});
+
+engine.<span class="fn">dismiss</span>(id);
+engine.<span class="fn">clear</span>();</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Value props ── -->
+<section class="nw-props">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:580px; margin:0 auto;">
+      <h2 class="section__title">Everything a notification engine should do</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        From a single toast to a multi-framework app shell — notifywrite scales with you.
+      </p>
+    </div>
+    <div class="nw-props__grid">
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🔔</span>
+        <h3>Tiny, typed API</h3>
+        <p><code>add</code>, <code>dismiss</code>, <code>clear</code>, <code>snapshot</code>, <code>subscribe</code> — that's the entire surface. Nothing to learn beyond it.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">⏱️</span>
+        <h3>Self-cleaning timers</h3>
+        <p>Pass a <code>duration</code> and the engine owns the <code>setTimeout</code> handle — dismissed notifications clear their own timers automatically.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🔌</span>
+        <h3>Six framework adapters</h3>
+        <p>React, Vue, Angular, Svelte, SolidJS, and React Native — each idiomatic to its framework's reactivity model.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">📸</span>
+        <h3>Snapshot + subscribe</h3>
+        <p>Every adapter re-reads <code>snapshot()</code> on change. The pattern is simple enough to bind to any future framework in an afternoon.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🏷️</span>
+        <h3>Four notification types</h3>
+        <p><code>info</code>, <code>success</code>, <code>warning</code>, <code>error</code> ship by default — easy to theme, easy to filter, easy to test against.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">📭</span>
+        <h3>Zero dependencies</h3>
+        <p>The core engine has no runtime dependencies. Nothing to audit, nothing to update, nothing that breaks.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🧪</span>
+        <h3>Designed for testing</h3>
+        <p>A plain class with no DOM and no framework. Assert on <code>snapshot().notifications</code> after calling <code>add()</code> — no rendering required.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🔷</span>
+        <h3>Full type safety</h3>
+        <p><code>Notification</code>, <code>NotificationSnapshot</code>, <code>NotificationType</code>, and <code>AddOptions</code> are all exported and fully typed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Code tabs ── -->
+<section class="nw-code-section" id="examples">
+  <div class="container">
+    <div class="section__intro" style="max-width:640px; margin:0 auto 2.5rem; text-align:center;">
+      <h2 class="section__title">See it in action</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        The same engine, wired into four different frameworks.
+      </p>
+    </div>
+    <div class="nw-tab-btns">
+      <button class="active" data-nwtab="core">Core engine</button>
+      <button data-nwtab="react">React</button>
+      <button data-nwtab="vue">Vue</button>
+      <button data-nwtab="svelte">Svelte</button>
+    </div>
+    <div class="nw-tab-panel active" data-nwtab="core">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">notifications.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">NotificationEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite'</span>;
+
+<span class="kw">export const</span> notifications = <span class="kw">new</span> <span class="fn">NotificationEngine</span>();
+
+<span class="cm">// Add a notification — id and createdAt are generated for you</span>
+<span class="kw">const</span> id = notifications.<span class="fn">add</span>(<span class="str">'Changes saved'</span>, {
+  type: <span class="str">'success'</span>,
+  duration: <span class="str">3000</span>, <span class="cm">// auto-dismisses after 3s</span>
+});
+
+<span class="cm">// Read the current state at any time</span>
+notifications.<span class="fn">snapshot</span>().notifications;
+<span class="cm">// [{ id, message: 'Changes saved', type: 'success', createdAt }]</span>
+
+<span class="cm">// Subscribe to every add / dismiss / clear</span>
+<span class="kw">const</span> unsubscribe = notifications.<span class="fn">subscribe</span>(() => {
+  render(notifications.<span class="fn">snapshot</span>());
+});
+
+notifications.<span class="fn">dismiss</span>(id);
+notifications.<span class="fn">clear</span>();</code></pre>
+      </div>
+    </div>
+    <div class="nw-tab-panel" data-nwtab="react">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">ToastHost.tsx</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="fn">NotificationProvider</span>, useNotificationsContext } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite-react'</span>;
+<span class="kw">import</span> { notifications } <span class="kw">from</span> <span class="str">'./notifications'</span>;
+
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="type">NotificationProvider</span> engine={notifications}&gt;
+      &lt;<span class="type">ToastHost</span> /&gt;
+    &lt;/<span class="type">NotificationProvider</span>&gt;
+  );
+}
+
+<span class="kw">function</span> <span class="fn">ToastHost</span>() {
+  <span class="kw">const</span> { notifications, dismiss } = <span class="fn">useNotificationsContext</span>();
+
+  <span class="kw">return</span> (
+    &lt;<span class="kw">div</span> className=<span class="str">"toast-stack"</span>&gt;
+      {notifications.<span class="fn">map</span>(n =&gt; (
+        &lt;<span class="kw">div</span> key={n.id} className={<span class="str">`toast toast-${n.type}`</span>}&gt;
+          {n.message}
+          &lt;<span class="kw">button</span> onClick={() =&gt; <span class="fn">dismiss</span>(n.id)}&gt;&times;&lt;/<span class="kw">button</span>&gt;
+        &lt;/<span class="kw">div</span>&gt;
+      ))}
+    &lt;/<span class="kw">div</span>&gt;
+  );
+}</code></pre>
+      </div>
+    </div>
+    <div class="nw-tab-panel" data-nwtab="vue">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">ToastHost.vue</span>
+        </div>
+        <pre><code><span class="cm">&lt;script setup&gt;</span>
+<span class="kw">import</span> { injectNotifications } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite-vue'</span>;
+
+<span class="cm">// provideNotifications(engine) is called once, in a parent component</span>
+<span class="kw">const</span> { notifications, dismiss } = <span class="fn">injectNotifications</span>();
+<span class="cm">&lt;/script&gt;</span>
+
+<span class="cm">&lt;template&gt;</span>
+  &lt;<span class="kw">div</span> class=<span class="str">"toast-stack"</span>&gt;
+    &lt;<span class="kw">div</span>
+      v-for=<span class="str">"n in notifications"</span>
+      :key=<span class="str">"n.id"</span>
+      :class=<span class="str">`toast toast-${n.type}`</span>
+    &gt;
+      {{ n.message }}
+      &lt;<span class="kw">button</span> @click=<span class="str">"dismiss(n.id)"</span>&gt;&times;&lt;/<span class="kw">button</span>&gt;
+    &lt;/<span class="kw">div</span>&gt;
+  &lt;/<span class="kw">div</span>&gt;
+<span class="cm">&lt;/template&gt;</span></code></pre>
+      </div>
+    </div>
+    <div class="nw-tab-panel" data-nwtab="svelte">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">ToastHost.svelte</span>
+        </div>
+        <pre><code><span class="cm">&lt;script&gt;</span>
+  <span class="kw">import</span> { useNotificationsContext } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite-svelte'</span>;
+
+  <span class="cm">// setNotificationEngine(engine) is called once, in a parent component</span>
+  <span class="kw">const</span> { notifications, dismiss } = <span class="fn">useNotificationsContext</span>();
+<span class="cm">&lt;/script&gt;</span>
+
+&lt;<span class="kw">div</span> class=<span class="str">"toast-stack"</span>&gt;
+  {#each $notifications as n (n.id)}
+    &lt;<span class="kw">div</span> class=<span class="str">"toast toast-{n.type}"</span>&gt;
+      {n.message}
+      &lt;<span class="kw">button</span> on:click={() =&gt; dismiss(n.id)}&gt;&times;&lt;/<span class="kw">button</span>&gt;
+    &lt;/<span class="kw">div</span>&gt;
+  {/each}
+&lt;/<span class="kw">div</span>&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Examples ── -->
+<section class="nw-examples">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:580px; margin:0 auto;">
+      <h2 class="section__title">Real-world applications</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        notifywrite fits anywhere your app needs to surface transient, dismissible feedback.
+      </p>
+    </div>
+    <div class="nw-examples__grid">
+      <div class="nw-example">
+        <div class="nw-example__tag">UI &middot; Toasts</div>
+        <h3>Success / error toasts</h3>
+        <p>Confirm async actions with a short-lived notification, auto-dismissed after a few seconds or dismissible by hand.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>on save</span> = engine.add('Saved', { type: 'success', duration: 3000 })</div>
+          <div class="nw-example__rule"><span>on failure</span> = engine.add('Save failed', { type: 'error' })</div>
+        </div>
+      </div>
+      <div class="nw-example">
+        <div class="nw-example__tag">Forms &middot; Validation</div>
+        <h3>Field-level feedback</h3>
+        <p>Surface validation errors as transient warning notifications alongside inline field errors, without extra local state per form.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>policy</span> = engine.add('Check the highlighted fields', { type: 'warning' })</div>
+        </div>
+      </div>
+      <div class="nw-example">
+        <div class="nw-example__tag">Background &middot; Jobs</div>
+        <h3>Upload &amp; export status</h3>
+        <p>Long-running tasks post progress and completion notifications from a worker or callback — the UI doesn't have to poll for them.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>onComplete</span> = engine.add('Export ready', { type: 'success' })</div>
+        </div>
+      </div>
+      <div class="nw-example">
+        <div class="nw-example__tag">Architecture &middot; Multi-framework</div>
+        <h3>Shared app shells</h3>
+        <p>One engine instance drives notification UI across independently-rendered framework islands — a React shell and a Vue widget stay in sync.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>shell</span> = new NotificationEngine() shared via module scope</div>
+        </div>
+      </div>
+      <div class="nw-example">
+        <div class="nw-example__tag">Testing</div>
+        <h3>Assertions without rendering</h3>
+        <p>Call <code>add()</code> and <code>dismiss()</code> directly, then assert on <code>snapshot().notifications</code> — no component tree required.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>expect</span>(engine.snapshot().notifications).toHaveLength(1)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Compare ── -->
+<section class="nw-compare" id="compare">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:600px; margin:0 auto;">
+      <h2 class="section__title">How notifywrite compares</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        No other approach gives you one engine, one behaviour, and native adapters across six frameworks — with zero runtime dependencies.
+      </p>
+    </div>
+    <div style="overflow-x:auto; margin-top:0;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="col-notifywrite">notifywrite</th>
+            <th>Raw useState / refs</th>
+            <th>Framework toast libs</th>
+            <th>Hand-rolled event bus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Identical behaviour across frameworks</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">Depends</td>
+          </tr>
+          <tr>
+            <td>Six native framework adapters</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="p">One framework</td>
+            <td class="n">✗</td>
+          </tr>
+          <tr>
+            <td>Built-in auto-dismiss timers</td>
+            <td class="y">✓</td>
+            <td class="p">If you build it</td>
+            <td class="y">✓</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Typed notification model</td>
+            <td class="y">✓</td>
+            <td class="p">If you build it</td>
+            <td class="p">Varies</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Snapshot + subscribe API</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">Depends</td>
+          </tr>
+          <tr>
+            <td>Testable without rendering</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">Depends</td>
+          </tr>
+          <tr>
+            <td>Zero dependencies</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="y">✓</td>
+          </tr>
+          <tr>
+            <td>Full TypeScript type safety</td>
+            <td class="y">✓</td>
+            <td class="p">Varies</td>
+            <td class="p">Varies</td>
+            <td class="p">Varies</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Docs ── -->
+<section class="nw-docs" id="docs">
+  <div class="container">
+    <div class="section__intro" style="text-align:center; max-width:560px; margin:0 auto;">
+      <h2 class="section__title">Documentation</h2>
+      <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
+        The whole engine is a couple hundred lines. Reading the source is often the fastest reference.
+      </p>
+    </div>
+    <div class="nw-docs__grid">
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite#readme" target="_blank">
+        <span class="nw-doc-card__icon">⚡</span>
+        <h3>Quickstart</h3>
+        <p>Install, create an engine, wire in your framework's adapter. Up and running in a few minutes.</p>
+      </a>
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/blob/main/src/engine.ts" target="_blank">
+        <span class="nw-doc-card__icon">📐</span>
+        <h3>Core engine source</h3>
+        <p>The entire notification engine — add, dismiss, clear, subscribe, and timer handling — in one small file.</p>
+      </a>
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/tree/main/packages" target="_blank">
+        <span class="nw-doc-card__icon">🔌</span>
+        <h3>Framework adapters</h3>
+        <p>React, Vue, Angular, Svelte, SolidJS, and React Native — each adapter's source and API in one place.</p>
+      </a>
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/tree/main/demos" target="_blank">
+        <span class="nw-doc-card__icon">🗂️</span>
+        <h3>Demos</h3>
+        <p>Runnable demo apps for every supported framework, including a dependency-free vanilla JS playground.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="section section--cta" style="background: linear-gradient(135deg, #0c1a3d 0%, #0a0f1f 50%, #0a0a0f 100%); padding: 5rem 0; text-align: center;">
+  <div class="container">
+    <h2 style="font-size: clamp(1.75rem, 3.5vw, 2.75rem); font-weight: 800; margin-bottom: 1rem;">
+      Stop reimplementing toast state per framework.
+    </h2>
+    <p style="color: var(--color-text-muted); font-size: 1.05rem; max-width: 520px; margin: 0 auto 2rem; line-height: 1.7;">
+      One headless notification engine. Six native adapters. Zero runtime dependencies.
+    </p>
+    <div style="font-family: var(--font-mono); font-size: 0.9rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm); padding: 0.7rem 1.25rem; display: inline-block; color: var(--color-text-muted); margin-bottom: 2rem;">
+      npm install <span style="color: var(--color-primary-light);">@daltonr/notifywrite</span>
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="https://github.com/richardadalton/notifywrite#readme" class="btn btn--lg btn--primary" target="_blank">Read the quickstart</a>
+      <a href="https://github.com/richardadalton/notifywrite" class="btn btn--lg btn--outline" target="_blank">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <span>&copy; 2026 Devjoy Ltd. MIT License</span>
+    <div class="footer__links">
+      <a href="index.html">Pathwrite</a>
+      <a href="authwrite.html">Authwrite</a>
+      <a href="rulewrite.html">rulewrite</a>
+      <a href="notifywrite.html">notifywrite</a>
+      <a href="https://github.com/richardadalton/notifywrite" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/@daltonr/notifywrite" target="_blank">npm</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Tiny notification engine (runs entirely in-browser) ──────────────────
+  function createEngine() {
+    let nextId = 1;
+    let notifications = [];
+    const listeners = new Set();
+    const timers = new Map();
+
+    function emit() { listeners.forEach(fn => fn()); }
+
+    return {
+      add(message, options) {
+        const id = String(nextId++);
+        const type = (options && options.type) || 'info';
+        notifications = notifications.concat([{ id, message, type, createdAt: Date.now() }]);
+        if (options && options.duration) {
+          const t = setTimeout(() => { timers.delete(id); this.dismiss(id); }, options.duration);
+          timers.set(id, t);
+        }
+        emit();
+        return id;
+      },
+      dismiss(id) {
+        const t = timers.get(id);
+        if (t) { clearTimeout(t); timers.delete(id); }
+        const before = notifications.length;
+        notifications = notifications.filter(n => n.id !== id);
+        if (notifications.length !== before) emit();
+      },
+      clear() {
+        timers.forEach(t => clearTimeout(t));
+        timers.clear();
+        notifications = [];
+        emit();
+      },
+      snapshot() { return { notifications }; },
+      subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    };
+  }
+
+  const nwEngine = createEngine();
+  let nwType = 'info';
+
+  function nwEscape(value) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function nwRender() {
+    const snapshot = nwEngine.snapshot();
+    const count = document.getElementById('nw-count');
+    const toasts = document.getElementById('nw-toasts');
+    count.textContent = snapshot.notifications.length + ' active';
+
+    if (snapshot.notifications.length === 0) {
+      toasts.innerHTML = '<div class="nw-demo__empty">No notifications — add one to preview the stack.</div>';
+      return;
+    }
+
+    toasts.innerHTML = snapshot.notifications.slice().reverse().map(n => (
+      '<div class="nw-toast nw-toast--' + n.type + '">' +
+        '<div class="nw-toast__body">' +
+          '<span class="nw-toast__type">' + n.type + '</span>' +
+          '<span class="nw-toast__message">' + nwEscape(n.message) + '</span>' +
+        '</div>' +
+        '<button class="nw-toast__dismiss" data-dismiss="' + n.id + '" aria-label="Dismiss">&times;</button>' +
+      '</div>'
+    )).join('');
+  }
+
+  document.querySelectorAll('.nw-demo__type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nw-demo__type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      nwType = btn.dataset.type;
+    });
+  });
+
+  document.getElementById('nw-add').addEventListener('click', () => {
+    const input = document.getElementById('nw-message');
+    const message = input.value.trim();
+    if (!message) return;
+    const auto = document.getElementById('nw-auto').checked;
+    nwEngine.add(message, { type: nwType, duration: auto ? 3000 : undefined });
+    input.select();
+  });
+
+  document.getElementById('nw-message').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('nw-add').click();
+  });
+
+  document.getElementById('nw-clear').addEventListener('click', () => nwEngine.clear());
+
+  document.getElementById('nw-toasts').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-dismiss]');
+    if (!btn) return;
+    nwEngine.dismiss(btn.dataset.dismiss);
+  });
+
+  nwEngine.subscribe(nwRender);
+  nwEngine.add('Welcome to the playground', { type: 'success', duration: 4000 });
+  nwRender();
+
+  // ── Code tabs ─────────────────────────────────────────────────────────────
+  document.querySelectorAll('.nw-tab-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.nwtab;
+      btn.closest('section').querySelectorAll('.nw-tab-btns button').forEach(b => b.classList.remove('active'));
+      btn.closest('section').querySelectorAll('.nw-tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      btn.closest('section').querySelector('[data-nwtab="' + tab + '"].nw-tab-panel').classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
