@@ -6,7 +6,9 @@ import {
   useContext,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
+  useState,
   useSyncExternalStore
 } from "react";
 import type { ChangeEvent, PropsWithChildren, ReactElement, ReactNode } from "react";
@@ -245,19 +247,27 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
 /**
  * Binding helper for a single `<input>`, `<select>`, or `<textarea>` field.
  *
- * Returns `{ value, onChange }` tied to `snapshot.data[field]`, so you can
- * spread it directly onto an element and eliminate the repetitive
- * `onChange={e => setData("field", e.target.value)}` pattern:
+ * Returns `{ value, onChange, error, warning }` tied to `snapshot.data[field]`,
+ * so you can spread it directly onto an element and co-locate validation feedback
+ * with the field:
  *
  * ```tsx
  * function NameStep() {
  *   const name = useField<MyData, "name">("name");
- *   return <input type="text" {...name} />;
+ *   return (
+ *     <div>
+ *       <input type="text" {...name} />
+ *       {name.error && <span className="pw-field-error">{name.error}</span>}
+ *     </div>
+ *   );
  * }
  * ```
  *
  * - `value` is always a `string` (falls back to `""` when the data key is unset).
  * - `onChange` calls `setData(field, e.target.value)`.
+ * - `error` is the field's error message once the user has attempted to advance
+ *   (or `validate()` has been called), otherwise `undefined`.
+ * - `warning` is the field's warning message (shown immediately, no gate).
  *
  * For inputs that need a value transform (e.g. `.trim()`, `Number()`) keep
  * an explicit `onChange` handler — this helper is for the no-transform case.
@@ -266,7 +276,7 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
  */
 export function useField<TData extends PathData, K extends string & keyof TData>(
   field: K
-): { value: string; onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void } {
+): { value: string; onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void; error: string | undefined; warning: string | undefined } {
   const { snapshot, setData } = usePathContext<TData>();
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -276,8 +286,59 @@ export function useField<TData extends PathData, K extends string & keyof TData>
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, setData]
   );
-  return { value: String(snapshot.data[field] ?? ""), onChange };
+  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
+  return {
+    value: String(snapshot.data[field] ?? ""),
+    onChange,
+    error: showErrors ? snapshot.fieldErrors[field as string] : undefined,
+    warning: snapshot.fieldWarnings[field as string],
+  };
 }
+
+/**
+ * Renders the field-level error or warning message for a named field.
+ *
+ * Error is only shown after the user has attempted to advance (or `validate()`
+ * has been called). Warning is shown immediately.
+ *
+ * ```tsx
+ * <input type="text" {...name} />
+ * <FieldError field="name" />
+ * ```
+ *
+ * Renders nothing when there is no message to show.
+ *
+ * Must be called inside a `<PathShell>` or `<PathProvider>`.
+ */
+export function FieldError({ field, className }: { field: string; className?: string }): ReactElement | null {
+  const { snapshot } = usePathContext();
+  const inlineCtx = useContext(InlineFieldsContext);
+
+  // Register this field with the shell so it's excluded from the summary box.
+  useLayoutEffect(() => {
+    inlineCtx?.claim(field);
+    return () => inlineCtx?.unclaim(field);
+  }, [field, inlineCtx]);
+
+  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
+  const error = showErrors ? snapshot.fieldErrors[field] : undefined;
+  const warning = snapshot.fieldWarnings[field];
+  if (error) return createElement("span", { className: cls("pw-field-error", className) }, error);
+  if (warning) return createElement("span", { className: cls("pw-field-warning", className) }, warning);
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Inline field registration — used by <FieldError /> to opt fields out of
+// the shell's summary box automatically.
+// ---------------------------------------------------------------------------
+
+interface InlineFieldsContextValue {
+  claim: (field: string) => void;
+  unclaim: (field: string) => void;
+}
+
+const InlineFieldsContext = createContext<InlineFieldsContextValue | null>(null);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -531,6 +592,14 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   const effectiveHideProgress = hideProgress || layout === "tabs";
   const effectiveHideFooter = hideFooter || layout === "tabs";
 
+  // Track which fields have been claimed by a <FieldError /> component so
+  // they can be excluded from the summary box automatically.
+  const [claimedFields, setClaimedFields] = useState<Set<string>>(() => new Set());
+  const inlineFieldsCtx = useState<InlineFieldsContextValue>(() => ({
+    claim:   (field) => setClaimedFields(prev => new Set([...prev, field])),
+    unclaim: (field) => setClaimedFields(prev => { const n = new Set(prev); n.delete(field); return n; }),
+  }))[0];
+
   if (!snapshot) {
     return createElement(PathContext.Provider, { value: contextValue },
       createElement("div", { className: cls("pw-shell", className) },
@@ -577,48 +646,54 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     ? true
     : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
-  return createElement(PathContext.Provider, { value: contextValue },
-    createElement("div", { className: cls("pw-shell", progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`, className) },
-      // Root progress — persistent top-level bar visible during sub-paths
-      showRoot && defaultRootProgress(snapshot.rootProgress!),
-      // Header — progress indicator (active path)
-      showActive && (renderHeader
-        ? renderHeader(snapshot)
-        : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
-      // Body — step content
-      createElement("div", { className: "pw-shell__body" }, stepContent),
-      // Validation messages — suppressed when validationDisplay="inline"
-      validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(snapshot.fieldErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
-        ...Object.entries(snapshot.fieldErrors).map(([key, msg]) =>
-          createElement("li", { key, className: "pw-shell__validation-item" },
-            key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
-            msg
+  // Field errors/warnings not claimed by a <FieldError /> go into the summary box.
+  const summaryErrors   = Object.fromEntries(Object.entries(snapshot.fieldErrors).filter(([k]) => !claimedFields.has(k)));
+  const summaryWarnings = Object.fromEntries(Object.entries(snapshot.fieldWarnings).filter(([k]) => !claimedFields.has(k)));
+
+  return createElement(InlineFieldsContext.Provider, { value: inlineFieldsCtx },
+    createElement(PathContext.Provider, { value: contextValue },
+      createElement("div", { className: cls("pw-shell", progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`, className) },
+        // Root progress — persistent top-level bar visible during sub-paths
+        showRoot && defaultRootProgress(snapshot.rootProgress!),
+        // Header — progress indicator (active path)
+        showActive && (renderHeader
+          ? renderHeader(snapshot)
+          : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
+        // Body — step content
+        createElement("div", { className: "pw-shell__body" }, stepContent),
+        // Validation messages — suppressed when validationDisplay="inline", or when all fields are claimed inline
+        validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(summaryErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
+          ...Object.entries(summaryErrors).map(([key, msg]) =>
+            createElement("li", { key, className: "pw-shell__validation-item" },
+              key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
+              msg
+            )
           )
-        )
-      ),
-      // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
-      validationDisplay !== "inline" && Object.keys(snapshot.fieldWarnings).length > 0 && createElement("ul", { className: "pw-shell__warnings" },
-        ...Object.entries(snapshot.fieldWarnings).map(([key, msg]) =>
-          createElement("li", { key, className: "pw-shell__warnings-item" },
-            key !== "_" && createElement("span", { className: "pw-shell__warnings-label" }, formatFieldKey(key)),
-            msg
+        ),
+        // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
+        validationDisplay !== "inline" && Object.keys(summaryWarnings).length > 0 && createElement("ul", { className: "pw-shell__warnings" },
+          ...Object.entries(summaryWarnings).map(([key, msg]) =>
+            createElement("li", { key, className: "pw-shell__warnings-item" },
+              key !== "_" && createElement("span", { className: "pw-shell__warnings-label" }, formatFieldKey(key)),
+              msg
+            )
           )
-        )
-      ),
-      // Blocking error — guard returned { allowed: false, reason }
-      validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError &&
-        createElement("p", { className: "pw-shell__blocking-error" }, snapshot.blockingError),
-      // Error panel — replaces footer when an async operation has failed
-      snapshot.status === "error" && snapshot.error
-        ? defaultErrorPanel(snapshot, actions)
-        // Footer — navigation buttons
-        : !effectiveHideFooter
-          ? renderFooter
-            ? renderFooter(snapshot, actions)
-            : defaultFooter(snapshot, actions, {
-                backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, layout
-              })
-          : null
+        ),
+        // Blocking error — guard returned { allowed: false, reason }
+        validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError &&
+          createElement("p", { className: "pw-shell__blocking-error" }, snapshot.blockingError),
+        // Error panel — replaces footer when an async operation has failed
+        snapshot.status === "error" && snapshot.error
+          ? defaultErrorPanel(snapshot, actions)
+          // Footer — navigation buttons
+          : !effectiveHideFooter
+            ? renderFooter
+              ? renderFooter(snapshot, actions)
+              : defaultFooter(snapshot, actions, {
+                  backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, layout
+                })
+            : null
+      )
     )
   );
 });

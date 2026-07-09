@@ -358,6 +358,23 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Inline field-level errors and warnings (<FieldError /> component)  */
+/* ------------------------------------------------------------------ */
+.pw-field-error {
+  display: block;
+  font-size: 12px;
+  color: var(--pw-color-error);
+  margin-top: 4px;
+}
+
+.pw-field-warning {
+  display: block;
+  font-size: 12px;
+  color: var(--pw-color-warning);
+  margin-top: 4px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Footer — navigation buttons                                        */
 /* ------------------------------------------------------------------ */
 .pw-shell__footer {
