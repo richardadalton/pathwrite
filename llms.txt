@@ -1,0 +1,29 @@
+# pathwrite.io — Devjoy TypeScript libraries
+
+> pathwrite.io documents four headless, zero-runtime-dependency TypeScript libraries by Devjoy Ltd (npm scope `@daltonr`, MIT licensed): **Pathwrite** (multi-step flow / wizard engine), **notifywrite** (notification / toast engine), **Authwrite** (authorization engine), and **rulewrite** (composable business rules). Each library follows the same architecture: a plain TypeScript "engine" class or object with no framework dependencies, plus thin adapters that expose its state through each framework's own reactivity (React, Vue, Angular, Svelte, SolidJS, React Native where applicable).
+
+Key facts that apply to every library:
+
+- Core packages have zero runtime dependencies and run identically in browsers, Node.js, test runners, and React Native.
+- State is exposed through a snapshot-and-subscribe pattern: `snapshot()` returns an immutable, referentially stable object; `subscribe(listener)` returns an unsubscribe function.
+- No UI is bundled with the state engines — adapters hand you state and actions; markup is yours. (Pathwrite additionally ships an optional `PathShell` component per adapter.)
+- Everything is fully typed; define your data shape once and get inference at every call site.
+
+## Docs (markdown, written for machine consumption)
+
+- [Pathwrite](https://pathwrite.io/pathwrite.md): headless multi-step path/wizard/stepper engine — steps, guards, validation, sub-paths, persistence. Packages: `@daltonr/pathwrite-core` plus react/vue/angular/svelte/solid/react-native adapters and `@daltonr/pathwrite-store`.
+- [notifywrite](https://pathwrite.io/notifywrite.md): headless notification/toast engine — add/update/dismiss/clear, pause-and-resume auto-dismiss timers, bounded stacks, dismiss reasons, and server-driven notifications over SSE/WebSocket/polling. Packages: `@daltonr/notifywrite` plus react/vue/angular/svelte/solid/react-native adapters.
+- [Authwrite](https://pathwrite.io/authwrite.md): authorization engine where every decision returns the rule that matched and why — policies as plain TypeScript, priorities, field-level filtering, observers, enforcer modes. Package: `@daltonr/authwrite-core`.
+- [rulewrite](https://pathwrite.io/rulewrite.md): Specification-Pattern business rules — named, typed predicates composed with and/or/not/implies/prevents, evaluated with an explainable result tree. Package: `@daltonr/rulewrite`.
+
+## Source repositories (READMEs and full docs)
+
+- [Pathwrite repo](https://github.com/richardadalton/pathwrite): full docs live in `docs/` — getting started, an 11-chapter developer guide, and the complete core API reference at `docs/reference/core-api.md`.
+- [notifywrite repo](https://github.com/richardadalton/notifywrite): the whole engine is `packages/core/src/engine.ts`; server transports are `packages/core/src/remote.ts`; runnable demos per framework in `demos/`.
+- [Authwrite repo](https://github.com/richardadalton/authwrite)
+- [rulewrite repo](https://github.com/richardadalton/rulewrite)
+
+## Optional
+
+- [llms-full.txt](https://pathwrite.io/llms-full.txt): all four markdown references concatenated into one file for single-fetch consumption.
+- [Human-facing pages](https://pathwrite.io/): pathwrite.io/index.html (Pathwrite), /notifywrite.html, /authwrite.html, /rulewrite.html — marketing pages with live demos; the markdown files above carry the same information in a more parseable form.

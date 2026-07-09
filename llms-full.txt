@@ -1,0 +1,726 @@
+# pathwrite.io — Devjoy TypeScript libraries
+
+> pathwrite.io documents four headless, zero-runtime-dependency TypeScript libraries by Devjoy Ltd (npm scope `@daltonr`, MIT licensed): **Pathwrite** (multi-step flow / wizard engine), **notifywrite** (notification / toast engine), **Authwrite** (authorization engine), and **rulewrite** (composable business rules). Each library follows the same architecture: a plain TypeScript "engine" class or object with no framework dependencies, plus thin adapters that expose its state through each framework's own reactivity (React, Vue, Angular, Svelte, SolidJS, React Native where applicable).
+
+Key facts that apply to every library:
+
+- Core packages have zero runtime dependencies and run identically in browsers, Node.js, test runners, and React Native.
+- State is exposed through a snapshot-and-subscribe pattern: `snapshot()` returns an immutable, referentially stable object; `subscribe(listener)` returns an unsubscribe function.
+- No UI is bundled with the state engines — adapters hand you state and actions; markup is yours. (Pathwrite additionally ships an optional `PathShell` component per adapter.)
+- Everything is fully typed; define your data shape once and get inference at every call site.
+
+## Docs (markdown, written for machine consumption)
+
+- [Pathwrite](https://pathwrite.io/pathwrite.md): headless multi-step path/wizard/stepper engine — steps, guards, validation, sub-paths, persistence. Packages: `@daltonr/pathwrite-core` plus react/vue/angular/svelte/solid/react-native adapters and `@daltonr/pathwrite-store`.
+- [notifywrite](https://pathwrite.io/notifywrite.md): headless notification/toast engine — add/update/dismiss/clear, pause-and-resume auto-dismiss timers, bounded stacks, dismiss reasons, and server-driven notifications over SSE/WebSocket/polling. Packages: `@daltonr/notifywrite` plus react/vue/angular/svelte/solid/react-native adapters.
+- [Authwrite](https://pathwrite.io/authwrite.md): authorization engine where every decision returns the rule that matched and why — policies as plain TypeScript, priorities, field-level filtering, observers, enforcer modes. Package: `@daltonr/authwrite-core`.
+- [rulewrite](https://pathwrite.io/rulewrite.md): Specification-Pattern business rules — named, typed predicates composed with and/or/not/implies/prevents, evaluated with an explainable result tree. Package: `@daltonr/rulewrite`.
+
+## Source repositories (READMEs and full docs)
+
+- [Pathwrite repo](https://github.com/richardadalton/pathwrite): full docs live in `docs/` — getting started, an 11-chapter developer guide, and the complete core API reference at `docs/reference/core-api.md`.
+- [notifywrite repo](https://github.com/richardadalton/notifywrite): the whole engine is `packages/core/src/engine.ts`; server transports are `packages/core/src/remote.ts`; runnable demos per framework in `demos/`.
+- [Authwrite repo](https://github.com/richardadalton/authwrite)
+- [rulewrite repo](https://github.com/richardadalton/rulewrite)
+
+## Optional
+
+- [llms-full.txt](https://pathwrite.io/llms-full.txt): all four markdown references concatenated into one file for single-fetch consumption.
+- [Human-facing pages](https://pathwrite.io/): pathwrite.io/index.html (Pathwrite), /notifywrite.html, /authwrite.html, /rulewrite.html — marketing pages with live demos; the markdown files above carry the same information in a more parseable form.
+
+
+---
+
+# Pathwrite — headless multi-step path engine for TypeScript
+
+> Pathwrite is a headless, framework-agnostic engine for multi-step flows (wizards, steppers, onboarding, checkout). A flow is a plain TypeScript object (`PathDefinition`) that the zero-dependency engine (`PathEngine`) executes — navigation, guards, validation, skip logic, lifecycle hooks, stack-based sub-paths, and persistence. Framework adapters for React, Vue, Angular, Svelte, SolidJS, and React Native subscribe to the engine and expose its state through each framework's own reactivity; each also ships an optional `PathShell` UI component you can replace at any time.
+
+- npm: `@daltonr/pathwrite-core` (engine) + one adapter per framework + `@daltonr/pathwrite-store` (persistence)
+- Repo: https://github.com/richardadalton/pathwrite — full docs in `docs/` (getting started, 11-chapter developer guide, complete core API reference at `docs/reference/core-api.md`)
+- License: MIT. Zero runtime dependencies in the core.
+
+## Install
+
+```bash
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-react          # React
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-vue           # Vue 3
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-angular       # Angular
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-svelte        # Svelte 5
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-solid         # SolidJS
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-react-native  # React Native
+npm install @daltonr/pathwrite-core                                  # framework-agnostic / Node
+npm install @daltonr/pathwrite-store                                 # optional persistence backends
+```
+
+## The model
+
+Your components read state and call actions — they never own the flow logic:
+
+```tsx
+import { PathShell } from "@daltonr/pathwrite-react";
+import "@daltonr/pathwrite-react/styles.css";
+
+const signupPath = {
+  id: "signup",
+  steps: [
+    {
+      id: "details",
+      fieldErrors: ({ data }) => ({
+        name:  !data.name  ? "Name is required."  : undefined,
+        email: !data.email ? "Email is required." : undefined,
+      }),
+    },
+    { id: "review" },
+  ],
+  onComplete: async (data) => { await api.createAccount(data); },
+};
+
+function App() {
+  return (
+    <PathShell
+      path={signupPath}
+      initialData={{ name: "", email: "" }}
+      onComplete={() => navigate("/welcome")}
+      steps={{ details: <DetailsForm />, review: <ReviewPanel /> }}
+    />
+  );
+}
+```
+
+`PathShell` renders a progress indicator, step content, and navigation buttons. Swap it for your own UI whenever you need full control — `usePath()` (or the framework equivalent) gives you the raw snapshot and action functions.
+
+## PathDefinition
+
+```ts
+interface PathDefinition<TData> {
+  id: string;                       // required; appears in events, serialized state, sub-path callbacks
+  steps: PathStep<TData>[];         // required, ordered
+  onComplete?: (data: TData) => void | Promise<void>;  // engine status is "completing" while it runs
+  onCancel?: (data: TData) => void;
+  completionBehaviour?: "stayOnFinal" | "dismiss" | "reset";  // default "stayOnFinal"
+}
+```
+
+`completionBehaviour`: `"stayOnFinal"` (default) keeps the engine active with `status === "completed"` until `restart()`; `"dismiss"` clears state so `snapshot()` returns `null`; `"reset"` immediately restarts from step 1 with the original `initialData` (kiosk flows).
+
+### PathStep
+
+```ts
+interface PathStep<TData> {
+  id: string;
+  title?: string;
+  meta?: Record<string, unknown>;
+  shouldSkip?: (ctx) => boolean | Promise<boolean>;
+  canMoveNext?: (ctx) => GuardResult | Promise<GuardResult>;      // guard forward navigation
+  canMovePrevious?: (ctx) => GuardResult | Promise<GuardResult>;  // guard backward navigation
+  // Map of field ID → error message (undefined = no error). When fieldErrors is
+  // provided and canMoveNext is NOT, the engine derives canMoveNext as "all
+  // values undefined". Evaluated synchronously on every snapshot.
+  fieldErrors?: (ctx) => Record<string, string | undefined>;
+  // Same shape, but never blocks navigation — purely advisory.
+  fieldWarnings?: (ctx) => Record<string, string | undefined>;
+  onEnter?: (ctx) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  onLeave?: (ctx) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  // Fired on the parent step when a sub-path completes / is cancelled; can
+  // return a Partial<TData> to merge into the parent's data. `meta` is the
+  // object passed to startSubPath() for correlation.
+  onSubPathComplete?: (subPathId, subPathData, ctx, meta?) => Partial<TData> | void | Promise<...>;
+  onSubPathCancel?: (subPathId, subPathData, ctx, meta?) => Partial<TData> | void | Promise<...>;
+}
+```
+
+Guards return a `GuardResult`: `true`/`false` or `{ allowed: false, reason: string }` — the reason surfaces on the snapshot as `blockingError`. Hook callbacks receive a `PathStepContext<TData>` containing the current `data` and step info; returning a `Partial<TData>` from `onEnter`/`onLeave` merges it into the path data.
+
+## PathEngine
+
+```ts
+import { PathEngine } from "@daltonr/pathwrite-core";
+const engine = new PathEngine({ observers?: PathObserver[] });  // observers are permanent, wired at construction
+```
+
+| Method | Notes |
+|---|---|
+| `start(def, data?)` | Start (or replace) a path. Throws if the definition has no steps. |
+| `restart()` | Tear down without firing lifecycle hooks and restart from step 1 with the original `initialData`. Clears `blockingError`, `hasAttemptedNext`, `isDirty`. |
+| `next()` | Advance: runs `canMoveNext`, `onLeave`, `onEnter`. On the last step, completes the path. Dropped silently if `status !== "idle"` (concurrent navigation is debounced). |
+| `previous()` | Go back: runs `canMovePrevious`, `onLeave`, `onEnter`. No-op on the first step of a top-level path; cancels a sub-path when called on the sub-path's first step. |
+| `cancel()` | Cancel the active path (emits `cancelled`) or sub-path (pops it, emits `stateChanged` + `resumed` on the parent; fires `onSubPathCancel`). |
+| `goToStep(stepId)` | Jump by ID, bypassing guards and `shouldSkip`. Throws on unknown ID. |
+| `goToStepChecked(stepId)` | Jump by ID while enforcing the appropriate guard (`canMoveNext` when jumping forward, `canMovePrevious` backward); blocked silently if the guard refuses. |
+| `setData(key, value)` | Update one data value; rebuilds `fieldErrors`/`fieldWarnings`/guard results synchronously; sets `isDirty` on real change. |
+| `resetStep()` | Revert the current step's data to its values at step entry; clears `isDirty`. |
+| `startSubPath(def, data?, meta?)` | Push a sub-path; the parent is paused on a stack. `meta` is passed back to `onSubPathComplete`/`onSubPathCancel`. |
+| `retry()` | Re-run the last failed async operation when `status === "error"`. |
+| `exportState()` | Full engine state as a JSON-serializable `SerializedPathState` (step position, data, visited tracking, sub-path stack), or `null` when inactive. |
+| `snapshot()` | Current `PathSnapshot`, or `null` when no path is active. Stable between events. |
+| `subscribe(listener)` | Removable listener receiving `PathEvent`s; returns unsubscribe. |
+| `PathEngine.fromState(state, pathDefinitions, options?)` | *(static)* Reconstruct an engine from serialized state, already positioned on the saved step — no `start()` needed. `pathDefinitions` is a `Record<pathId, PathDefinition>`. |
+
+## PathSnapshot (what your UI reads)
+
+Key properties (all read-only):
+
+- **Position**: `pathId`, `stepId`, `stepTitle`, `stepMeta`, `stepIndex` (0-based among visible steps), `stepCount`, `progress` (0.0–1.0), `steps: StepSummary[]` (`{ id, title?, meta?, status: "completed" | "current" | "upcoming" }`), `isFirstStep`, `isLastStep`.
+- **Sub-paths**: `nestingLevel` (0 = top level), `rootProgress` (progress of the root path; present only when nested).
+- **Activity**: `status: "idle" | "entering" | "leaving" | "validating" | "completing" | "completed" | "error"`; `error: { message, phase, retryCount } | null`.
+- **Validation & guards**: `canMoveNext`, `canMovePrevious` (synchronous evaluation; async guards default optimistic `true`), `fieldErrors`, `fieldWarnings` (maps of field ID → message), `blockingError` (reason from the last refusing guard).
+- **Form UX**: `isDirty` (data changed since entering the step), `hasAttemptedNext` (user pressed Next at least once on this step — gate error display on it), `stepEnteredAt` (timestamp), `hasPersistence`, `formId` (selected variant when the step is a StepChoice).
+- **Data**: `data: TData` — a copy; mutating it does nothing.
+
+## Events
+
+```ts
+type PathEvent =
+  | { type: "stateChanged"; cause: "start" | "next" | "complete" | "previous" | "goToStep"
+                                  | "goToStepChecked" | "setData" | "cancel" | "restart";
+      snapshot: PathSnapshot }
+  | { type: "completed"; pathId: string; data: PathData }
+  | { type: "cancelled"; pathId: string; data: PathData }   // top-level path only
+  | { type: "resumed"; resumedPathId: string; fromSubPathId: string; snapshot: PathSnapshot }
+```
+
+Cancelling a **sub-path** emits `resumed`, not `cancelled`.
+
+## Persistence (`@daltonr/pathwrite-store`)
+
+`PathStore` is the backend interface: `save(key, state)`, `load(key)` (returns `null` when absent), `delete(key)`. Implementations shipped: **`HttpStore`** (REST: POST/GET/DELETE `baseUrl/:key`), **`LocalStorageStore`** (browser), **`AsyncStorageStore`** (React Native).
+
+Persistence is wired as an observer with a strategy: `"onEveryChange"`, `"onNext"`, `"onSubPathComplete"`, `"onComplete"`, or `"manual"`.
+
+```ts
+// Save as the user navigates
+const engine = new PathEngine({
+  observers: [httpPersistence({ store, key: "user:123:onboarding" })],
+});
+
+// Restore later
+const saved = await store.load(key);
+const engine2 = saved
+  ? PathEngine.fromState(saved, { [path.id]: path }, { observers: [httpPersistence({ store, key })] })
+  : startFresh();
+```
+
+`PathObserver` is `(event: PathEvent, engine: PathEngine) => void`, registered at construction, never removable — use it for persistence, logging, analytics. The helper `matchesStrategy(strategy, event)` lets custom observers honour the same strategy semantics. `errorPhaseMessage(phase)` maps `snapshot.error.phase` to a human-readable fallback message.
+
+## Framework adapters
+
+| Framework | Package | State API | Shell |
+|---|---|---|---|
+| React | `@daltonr/pathwrite-react` | `usePath()` hook (`useSyncExternalStore`) | `<PathShell>` |
+| Vue 3 | `@daltonr/pathwrite-vue` | `usePath()` composable (`shallowRef` + `onScopeDispose`) | `<PathShell>` |
+| Angular | `@daltonr/pathwrite-angular` | `PathFacade` injectable (RxJS `Observable` + `Signal`) | `<pw-shell>` |
+| Svelte 5 | `@daltonr/pathwrite-svelte` | `usePath()` (runes-based store) | `PathShell` with snippets |
+| SolidJS | `@daltonr/pathwrite-solid` | `usePath()` (`createSignal` accessor, `onCleanup`) | `<PathShell>` |
+| React Native | `@daltonr/pathwrite-react-native` | `usePath()` hook | `PathShell` (Expo / bare RN) |
+
+All shells share themable CSS (`styles.css` export; CSS custom properties documented in the repo's `docs/reference/shell-css.md`).
+
+## Design principles
+
+- **Workflows as artifacts** — a `PathDefinition` is a plain object: package it, version it with semver, test it without mounting anything, share it across web, mobile, and backend simultaneously.
+- **Immutable snapshots** — every action produces a new `PathSnapshot`; nothing mutates in place.
+- **Type-safe throughout** — `PathDefinition<TData>`, `PathStepContext<TData>`, `PathSnapshot<TData>` are generic over your data shape.
+- **Stack-based sub-paths** — `startSubPath()` suspends the current path; completion or cancellation restores the parent with merged data.
+- **Batteries included, removable** — `PathShell` for prototyping; drop to `usePath()` for full control.
+
+## Testing
+
+The engine runs headless — drive a whole flow in a unit test:
+
+```ts
+const engine = new PathEngine();
+await engine.start(signupPath, { name: "", email: "" });
+await engine.setData("name", "Ada");
+await engine.next();
+expect(engine.snapshot()!.stepId).toBe("review");
+```
+
+For the complete API (including StepChoice steps, `suspend()`, and serialized-state details), see `docs/reference/core-api.md` in the repo.
+
+
+---
+
+# notifywrite — headless notification engine for TypeScript
+
+> notifywrite is a headless, framework-agnostic notification (toast) engine. `NotificationEngine` is a plain zero-dependency TypeScript class that manages a queue of notifications — adding, updating, dismissing, clearing, auto-dismiss timers with pause/resume, bounded stacks, and dismiss reasons. Framework adapters for React, Vue, Angular, Svelte, SolidJS, and React Native subscribe to the engine and expose its state through each framework's own reactivity. A `/remote` subpath lets a server drive notifications over SSE, WebSocket, or polling. No UI components ship with the library.
+
+- npm: `@daltonr/notifywrite` (core) + one adapter package per framework
+- Repo: https://github.com/richardadalton/notifywrite
+- License: MIT. Zero runtime dependencies in the core. Runs in browsers, Node.js, test runners, and React Native.
+
+## Install
+
+```bash
+# Core only (framework-agnostic / Node)
+npm install @daltonr/notifywrite
+
+# With an adapter
+npm install @daltonr/notifywrite @daltonr/notifywrite-react          # React
+npm install @daltonr/notifywrite @daltonr/notifywrite-vue           # Vue 3
+npm install @daltonr/notifywrite @daltonr/notifywrite-angular       # Angular
+npm install @daltonr/notifywrite @daltonr/notifywrite-svelte        # Svelte 5
+npm install @daltonr/notifywrite @daltonr/notifywrite-solid         # SolidJS
+npm install @daltonr/notifywrite @daltonr/notifywrite-react-native  # React Native
+```
+
+## Core types (exact, from source)
+
+```ts
+export type NotificationType = 'info' | 'success' | 'error' | 'warning'
+
+export interface Notification {
+  readonly id: string        // engine-generated, sequential ("1", "2", ...)
+  readonly message: string
+  readonly type: NotificationType   // defaults to 'info'
+  readonly createdAt: number        // Date.now() at add time
+}
+
+export interface NotificationSnapshot {
+  readonly notifications: readonly Notification[]
+}
+
+export interface AddOptions {
+  type?: NotificationType    // default 'info'
+  duration?: number          // ms; > 0 schedules auto-dismiss, omit for sticky
+}
+
+export interface UpdatePatch {
+  message?: string
+  type?: NotificationType
+  // duration replaces any existing auto-dismiss timer: > 0 schedules a fresh
+  // timer for the full duration (clearing a paused one), <= 0 cancels it.
+  duration?: number
+}
+
+export type NotificationOrder = 'oldest-first' | 'newest-first'
+export type DismissReason = 'user' | 'timeout' | 'clear' | 'overflow'
+
+export interface EngineOptions {
+  // Where add() places new notifications in the snapshot. Toast UIs usually
+  // want 'newest-first'; the default 'oldest-first' preserves insertion order.
+  order?: NotificationOrder
+  // Maximum live notifications. When add() would exceed it, the oldest are
+  // dismissed with reason 'overflow'. Values < 1 mean no limit.
+  max?: number
+}
+```
+
+## NotificationEngine API
+
+```ts
+import { NotificationEngine } from '@daltonr/notifywrite'
+const engine = new NotificationEngine({ order: 'newest-first', max: 5 }) // options optional
+```
+
+| Method | Signature | Behaviour |
+|---|---|---|
+| `add` | `(message: string, options?: AddOptions) => string` | Adds a notification, returns its id. `duration > 0` schedules auto-dismiss. If `max` is exceeded, oldest entries are dropped with reason `'overflow'`. |
+| `update` | `(id: string, patch: UpdatePatch) => boolean` | Patches message/type in place, preserving `id` and `createdAt`. `patch.duration` reschedules (`> 0`) or cancels (`<= 0`) the timer. Returns `false` (no emit) when the id is not live. |
+| `dismiss` | `(id: string) => void` | Removes the notification (reason `'user'`) and clears its timer. |
+| `clear` | `() => void` | Removes everything (reason `'clear'` per notification); no-op when already empty. |
+| `pause` | `(id: string) => void` | Freezes the auto-dismiss timer, keeping the remaining time (pause-on-hover). No-op without an active timer. |
+| `resume` | `(id: string) => void` | Restarts a paused timer with whatever time was left. No-op unless paused. |
+| `remaining` | `(id: string) => number \| undefined` | Milliseconds until auto-dismiss: frozen value while paused, live countdown otherwise, `undefined` when the notification has no timer. |
+| `snapshot` | `() => NotificationSnapshot` | Referentially stable: repeated calls return the same object until the list changes — safe as `getSnapshot` for React's `useSyncExternalStore`. |
+| `subscribe` | `(listener: () => void) => () => void` | Fires on every change; returns an unsubscribe function. |
+| `onDismiss` | `(listener: (n: Notification, reason: DismissReason) => void) => () => void` | Fires whenever a notification leaves the list, with why: `'user'`, `'timeout'`, `'clear'`, or `'overflow'`. The hook for exit animations and analytics. Returns an unsubscribe function. |
+
+Semantics worth knowing:
+
+- Every mutation produces a **new notifications array** (immutable snapshots); adapters rely on reference equality.
+- Timers are engine-owned `setTimeout`s, cleared automatically on dismiss/clear — no leak-prone cleanup in components.
+- Multiple engines can run side by side (e.g. a global toast stack and a per-panel one); it's just a class.
+
+### Core usage example
+
+```ts
+import { NotificationEngine } from '@daltonr/notifywrite'
+
+const engine = new NotificationEngine({ order: 'newest-first', max: 5 })
+
+const id = engine.add('Uploading…')                       // sticky, type 'info'
+engine.update(id, { message: 'Upload complete', type: 'success', duration: 4000 })
+
+engine.pause(id)    // e.g. onMouseEnter
+engine.resume(id)   // e.g. onMouseLeave
+engine.remaining(id) // ms left, or undefined
+
+const unsubscribe = engine.subscribe(() => render(engine.snapshot()))
+const offDismiss = engine.onDismiss((n, reason) => analytics.track('toast_gone', { reason }))
+
+engine.dismiss(id)
+engine.clear()
+```
+
+## Framework adapters
+
+Every adapter returns the same actions — `add`, `update`, `dismiss`, `pause`, `resume`, `clear` — plus `notifications`. Each also offers a direct `useNotifications(engine)` for use without context. What differs is how the engine is provided and the reactive shape of `notifications`:
+
+| Framework | Package | Provide | Consume from context | `notifications` is | Read as |
+|---|---|---|---|---|---|
+| React | `@daltonr/notifywrite-react` | `<NotificationProvider engine={engine}>` | `useNotificationsContext()` | plain array | `notifications` |
+| React Native | `@daltonr/notifywrite-react-native` | same API as React | `useNotificationsContext()` | plain array | `notifications` |
+| Vue 3 | `@daltonr/notifywrite-vue` | `provideNotifications(engine)` | `injectNotifications()` | readonly `computed` ref | `notifications.value` (auto-unwrapped in templates) |
+| Angular | `@daltonr/notifywrite-angular` | `provideNotifications(engine)` in bootstrap providers | `injectNotifications()` | `Signal<readonly Notification[]>` | `notifications()` |
+| Svelte | `@daltonr/notifywrite-svelte` | `provideNotifications(engine)` | `useNotificationsContext()` | `Readable` store | `$notifications` in markup, `get(notifications)` in scripts |
+| SolidJS | `@daltonr/notifywrite-solid` | `<NotificationProvider engine={engine}>` | `useNotificationsContext()` | signal accessor | `notifications()` |
+
+Adapter implementation notes:
+
+- **React / React Native**: built on `useSyncExternalStore` for tear-free reads (the engine's stable snapshot is used as `getSnapshot` directly). React Native adapter is API-identical to React. `useNotificationsContext()` throws if there is no `NotificationProvider` ancestor.
+- **Vue**: state is a `shallowRef` updated on engine emissions, exposed as a readonly `computed`; cleanup via `onScopeDispose` (call inside a component `setup()` or an `effectScope`, or the subscription is never cleaned up). The engine is `markRaw`ed — don't wrap it in a reactive proxy.
+- **Angular**: `provideNotifications(engine)` registers a `NOTIFICATION_ENGINE` injection token; `injectNotifications()` returns a `Signal` kept current via an internal RxJS bridge (`fromEngine(engine): Observable<readonly Notification[]>` is also exported). Cleanup via `DestroyRef`.
+- **Svelte**: `readable` store that subscribes to the engine on first subscriber and tears down on last — no `onDestroy` needed.
+- **Solid**: `createSignal` accessor updated on engine emissions, disposed via `onCleanup`.
+
+### React example
+
+```tsx
+import { NotificationEngine } from '@daltonr/notifywrite'
+import { NotificationProvider, useNotificationsContext } from '@daltonr/notifywrite-react'
+
+const engine = new NotificationEngine({ order: 'newest-first' })
+
+function Toasts() {
+  const { notifications, dismiss, pause, resume } = useNotificationsContext()
+  return (
+    <div className="toast-stack">
+      {notifications.map(n => (
+        <div key={n.id} className={`toast toast-${n.type}`}
+             onMouseEnter={() => pause(n.id)} onMouseLeave={() => resume(n.id)}>
+          {n.message}
+          <button onClick={() => dismiss(n.id)}>×</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <NotificationProvider engine={engine}>
+      <button onClick={() => engine.add('Saved!', { type: 'success', duration: 4000 })}>Save</button>
+      <Toasts />
+    </NotificationProvider>
+  )
+}
+```
+
+### Vue example
+
+```vue
+<script setup>
+import { injectNotifications } from '@daltonr/notifywrite-vue'
+// a parent component called provideNotifications(engine) in its setup
+const { notifications, dismiss } = injectNotifications()
+</script>
+
+<template>
+  <div v-for="n in notifications" :key="n.id" :class="`toast toast-${n.type}`">
+    {{ n.message }} <button @click="dismiss(n.id)">×</button>
+  </div>
+</template>
+```
+
+### Svelte example
+
+```svelte
+<script>
+  import { useNotificationsContext } from '@daltonr/notifywrite-svelte'
+  // a parent component called provideNotifications(engine)
+  const { notifications, dismiss } = useNotificationsContext()
+</script>
+
+{#each $notifications as n (n.id)}
+  <div class="toast toast-{n.type}">{n.message}<button on:click={() => dismiss(n.id)}>×</button></div>
+{/each}
+```
+
+## Server-driven notifications (`@daltonr/notifywrite/remote`)
+
+The `remote` subpath bridges a back-end into the engine without the app caring how events travel. Still zero dependencies.
+
+```ts
+export type RemoteEvent =
+  | { kind: 'add';     message: string; key?: string; options?: AddOptions }
+  | { kind: 'update';  key: string; patch: UpdatePatch }
+  | { kind: 'dismiss'; key: string }
+
+// A transport: receives an emit callback, starts delivering events, returns a teardown.
+export type NotificationSource = (emit: (event: RemoteEvent) => void) => () => void
+
+export function connectSource(engine: NotificationEngine, source: NotificationSource): () => void
+```
+
+`key` is the **server's** stable identifier — engine ids are client-generated, so the server can't know them. `connectSource` maintains the key → engine-id mapping, which is what lets a server update or dismiss a toast it created earlier. Events referencing a key that is not live (never seen, or already dismissed by the user) are **silently dropped** — with a remote sender that is a normal race, not an error. Re-adding a live key remaps it to the new notification.
+
+```ts
+import { NotificationEngine } from '@daltonr/notifywrite'
+import { connectSource, sseSource, webSocketSource, pollingSource } from '@daltonr/notifywrite/remote'
+
+const engine = new NotificationEngine({ order: 'newest-first' })
+const disconnect = connectSource(engine, sseSource('/api/notifications'))
+```
+
+Wire format is JSON, one `RemoteEvent` per message. A job lifecycle as the server would send it:
+
+```jsonc
+{ "kind": "add",     "key": "job-42", "message": "Export queued…" }
+{ "kind": "update",  "key": "job-42", "patch": { "message": "Processing…" } }
+{ "kind": "update",  "key": "job-42", "patch": { "message": "Export ready", "type": "success", "duration": 5000 } }
+{ "kind": "dismiss", "key": "job-42" }
+```
+
+### Built-in transports
+
+```ts
+// Server-Sent Events. Reconnection handled natively by EventSource.
+sseSource(url: string, options?: { parse?: (data: string) => RemoteEvent }): NotificationSource
+
+// WebSocket. Pass a URL to let the source OWN the connection (reconnects after
+// unexpected close; reconnectDelay ms, default 3000, 0 disables), or pass an
+// existing socket to SHARE it — a shared socket is only listened to, never
+// closed or reconnected.
+webSocketSource(urlOrSocket: string | WebSocketLike,
+                options?: { parse?: (data: string) => RemoteEvent; reconnectDelay?: number }): NotificationSource
+
+// Polling, for servers without a streaming endpoint. The fetcher returns the
+// batch of events since its last call (e.g. via a cursor). Fetch errors are
+// swallowed and polling continues on the next tick.
+pollingSource(fetcher: () => Promise<readonly RemoteEvent[]>, intervalMs: number): NotificationSource
+```
+
+Notes:
+
+- `parse` defaults to `JSON.parse`; messages whose parse throws are ignored.
+- `sseSource`/`webSocketSource` look up the global `EventSource`/`WebSocket` constructors (browsers and recent Node.js) and throw a descriptive error if missing; structural types (`EventSourceLike`, `WebSocketLike`) are exported so drop-in replacements (e.g. reconnecting-websocket) satisfy them.
+- Custom transports are just functions: `connectSource(engine, emit => { const stop = myBus.on('notify', emit); return stop })`.
+- Framework adapters need no changes — they observe engine emissions regardless of who caused them.
+
+## Testing
+
+The engine is a plain class with no DOM and no framework — assert without rendering:
+
+```ts
+import { NotificationEngine } from '@daltonr/notifywrite'
+
+const engine = new NotificationEngine()
+engine.add('hello', { type: 'success' })
+expect(engine.snapshot().notifications).toHaveLength(1)
+expect(engine.snapshot().notifications[0].type).toBe('success')
+```
+
+With fake timers, `duration`, `pause`, `resume`, and `remaining` are fully deterministic.
+
+## Common recipes
+
+- **Toast UI ordering**: construct with `{ order: 'newest-first' }` so the newest toast renders first without copying/reversing the array.
+- **Pause on hover**: `onMouseEnter={() => pause(n.id)}`, `onMouseLeave={() => resume(n.id)}`.
+- **Progress bar**: poll `remaining(id)` (e.g. via `requestAnimationFrame`) against the original duration.
+- **Async action lifecycle**: `const id = add('Saving…')` then `update(id, { message: 'Saved', type: 'success', duration: 3000 })` on success or `update(id, { message: 'Failed', type: 'error' })` on error.
+- **Bounded stack**: `new NotificationEngine({ max: 5 })`; listen for `onDismiss(..., reason === 'overflow')` if you need to react to drops.
+- **Exit animations / analytics**: `onDismiss((n, reason) => ...)` — `reason` is `'user' | 'timeout' | 'clear' | 'overflow'`.
+- **Multiple stacks**: create two engines; nothing is global.
+- **Multi-framework app shells**: share one engine instance via module scope across independently rendered framework islands (e.g. a React shell and a Vue widget stay in sync).
+
+## Package map
+
+| Package | Contents |
+|---|---|
+| `@daltonr/notifywrite` | `NotificationEngine` + all core types; `@daltonr/notifywrite/remote` subpath with `connectSource`, `sseSource`, `webSocketSource`, `pollingSource`, `RemoteEvent`, `NotificationSource` |
+| `@daltonr/notifywrite-react` | `NotificationProvider`, `useNotificationsContext()`, `useNotifications(engine)`, `NotificationContext` |
+| `@daltonr/notifywrite-vue` | `provideNotifications(engine)`, `injectNotifications()`, `useNotifications(engine)` |
+| `@daltonr/notifywrite-angular` | `provideNotifications(engine)`, `injectNotifications()`, `fromEngine(engine)`, `NOTIFICATION_ENGINE` token |
+| `@daltonr/notifywrite-svelte` | `provideNotifications(engine)`, `useNotificationsContext()`, `useNotifications(engine)` |
+| `@daltonr/notifywrite-solid` | `NotificationProvider`, `useNotificationsContext()`, `useNotifications(engine)` |
+| `@daltonr/notifywrite-react-native` | Same API as the React adapter (`useSyncExternalStore` lives in `react` itself) |
+
+Core type exports: `NotificationEngine`, `Notification`, `NotificationSnapshot`, `NotificationType`, `AddOptions`, `UpdatePatch`, `DismissReason`, `EngineOptions`, `NotificationOrder`.
+
+Runnable demos for every adapter — plus a vanilla JS playground and an Express + React server-push demo (`npm run demo:server`) — live in the repo's `demos/` directory.
+
+
+---
+
+# Authwrite — authorization for TypeScript that explains itself
+
+> Authwrite (AuthEngine) is a zero-dependency TypeScript authorization library. Policies are plain TypeScript objects — no DSL, no config files, no sidecar — evaluated anywhere (Node, edge, browser). Every decision returns the rule that matched, why, and how long evaluation took. Observers handle audit logging, caching, and metrics without touching policy logic; an enforcer wrapper supports audit / enforce / suspended / lockdown modes for gradual adoption and incident response.
+
+- npm: `@daltonr/authwrite-core` (engine + types), `@daltonr/authwrite-testing` (test helpers)
+- Repo: https://github.com/richardadalton/authwrite
+- License: MIT.
+
+## Quick start
+
+```ts
+import { createAuthEngine } from '@daltonr/authwrite-core'
+
+const engine = createAuthEngine({
+  policy: {
+    id: 'documents',
+    version: '1.0.0',
+    defaultEffect: 'deny',            // safe starting point
+    rules: [
+      {
+        id: 'owner-full-access',
+        match: ({ subject, resource }) =>
+          resource?.id !== undefined && resource.ownerId === subject.id,
+        allow: ['*'],
+      },
+      {
+        id: 'archived-blocks-mutation',
+        priority: 10,                  // higher number wins; deny beats allow at equal priority
+        match: ({ resource }) => resource?.attributes?.status === 'archived',
+        deny: ['write', 'delete'],
+      },
+    ],
+  },
+})
+
+const decision = await engine.evaluate({
+  subject:  { id: 'u1', roles: ['editor'] },
+  resource: { type: 'document', id: 'doc-1', ownerId: 'u1' },
+  action:   'delete',
+})
+
+decision.allowed     // boolean
+decision.reason      // 'owner-full-access' | 'archived-blocks-mutation' | 'default' | ...
+decision.rule        // the full rule object that decided
+decision.durationMs  // evaluation time
+```
+
+## Core concepts
+
+- **Policies are plain TypeScript** — `PolicyDefinition<Subject, Resource>` is a typed object; rules are functions (`match` selects when a rule applies, optional `condition` adds a further check, `allow`/`deny` list actions, `'*'` = all).
+- **Every decision carries a reason** — `evaluate()` always returns a `Decision` naming the rule that determined the outcome. No silent denials.
+- **Three action categories** — instance actions (`resource` with `id`), type actions (`resource` without `id`, e.g. `create`), and subject actions (no `resource` at all, e.g. `change-password`).
+- **Priority resolves conflicts** — higher `priority` number wins; deny beats allow at equal priority; `defaultEffect` applies when nothing matches.
+- **Observers handle side effects** — `observers: [{ async onDecision({ decision }) { ... } }]` receive every decision after evaluation: audit logs, metrics, caching.
+- **Field-level filtering** — policies may add `fieldRules` with `expose`/`redact` lists; `engine.evaluateRead({ subject, resource })` returns `{ decision, allowedFields }` for building safe read responses.
+
+## Gradual adoption: enforcer modes
+
+```ts
+const enforcer = createEnforcer(engine, { mode: 'audit' })   // Phase 1: log would-be denials, never block
+const enforcer = createEnforcer(engine, { mode: 'enforce' }) // Phase 2: enforce
+enforcer.setMode('suspended')  // incident response: block everything, keep audit trail
+enforcer.setMode('lockdown')   // most severe: bypass engine entirely, no observers
+```
+
+## Testing
+
+```ts
+import { decisionRecorder, coverageReport } from '@daltonr/authwrite-testing'
+
+const recorder = decisionRecorder()
+const engine = createAuthEngine({ policy, observers: [recorder] })
+// ... run your test suite ...
+const report = coverageReport(engine, recorder.all())
+report.untouchedRules   // rules that never fired — add a test!
+report.coveragePercent  // e.g. 87.5
+```
+
+## Package map
+
+| Package | Description | Status |
+|---|---|---|
+| `@daltonr/authwrite-core` | Zero-dependency engine, all types | released |
+| `@daltonr/authwrite-testing` | `decisionRecorder`, `coverageReport` | released |
+| `@daltonr/authwrite-express` / `-fastify` / `-nextjs` / `-hono` | Framework middleware/adapters | in progress |
+| `@daltonr/authwrite-observer-pg` / `-observer-redis` / `-observer-otel` | Audit log / cache / telemetry observers | in progress |
+| `@daltonr/authwrite-loader-db` / `-loader-yaml` | Policy loaders | in progress |
+
+See the repo README for full details and current package status.
+
+
+---
+
+# rulewrite — composable business rules for TypeScript
+
+> rulewrite brings the Specification Pattern to TypeScript: capture each business rule as a named, typed predicate, compose rules with logical operators (`and`, `or`, `not`, `implies`, `prevents`), project them across types with `.on()`, apply them over collections with `someOf`/`allOf`/`noneOf`, and evaluate them either as a boolean (`isSatisfiedBy`) or as a full explainable result tree (`evaluate`) for diagnostics, audit logs, and UI feedback.
+
+- npm: `@daltonr/rulewrite`
+- Repo: https://github.com/richardadalton/rulewrite — docs in `docs/` (quickstart, developer guide, API reference); runnable examples in `examples/` (checkout, authorization, attendance).
+- License: MIT. Zero dependencies.
+
+## Quick start
+
+```ts
+import { rule } from '@daltonr/rulewrite';
+
+const isAdult    = rule<User>(u => u.age >= 18, 'IsAdult');
+const isVerified = rule<User>(u => u.emailVerified, 'IsVerified');
+
+const canRegister = isAdult.and(isVerified);
+
+canRegister.isSatisfiedBy(user);  // boolean
+canRegister.evaluate(user);       // full evaluation tree
+```
+
+## API
+
+### `rule<T>(predicate, label)`
+
+```ts
+function rule<T>(predicate: (value: T) => boolean, label: string): Rule<T>
+```
+
+Creates an atomic rule — a named predicate over a single type. The label appears in evaluation output.
+
+### `Rule<T>`
+
+```ts
+interface Rule<T> {
+  isSatisfiedBy(value: T): boolean;
+  evaluate(value: T): EvaluationResult;
+
+  and(other: Rule<T>): Rule<T>;       // both must be satisfied
+  or(other: Rule<T>): Rule<T>;        // at least one satisfied
+  not(): Rule<T>;                     // must not be satisfied
+  implies(other: Rule<T>): Rule<T>;   // if A satisfied, B must be too (false only when A && !B)
+  prevents(other: Rule<T>): Rule<T>;  // A and B cannot both be satisfied (NAND)
+
+  on<C>(selector: (ctx: C) => T): Rule<C>;         // project into a wider context
+  someOf<C>(selector: (ctx: C) => T[]): Rule<C>;   // at least one item satisfies (empty → false)
+  allOf<C>(selector: (ctx: C) => T[]): Rule<C>;    // all items satisfy (empty → true, vacuous)
+  noneOf<C>(selector: (ctx: C) => T[]): Rule<C>;   // no items satisfy (empty → true)
+}
+```
+
+### `EvaluationResult`
+
+```ts
+interface EvaluationResult {
+  satisfied: boolean;
+  label: string;                    // e.g. 'IsAdult', 'AND', 'IMPLIES'
+  children?: EvaluationResult[];    // per-operand results, recursively
+}
+```
+
+## Composition patterns
+
+```ts
+// Chaining
+const eligible = isAdult.and(isVerified).and(isActive);
+const allowed  = isOwner.or(isAdmin);
+const flagged  = hasPendingPayment.prevents(canWithdraw);
+const policy   = containsAlcohol.implies(isAgeVerified);
+// implies captures conditional requirements: "IF the order contains alcohol,
+// the customer must be age-verified" — an AND would demand verification on every order.
+
+// Projecting single-type rules into a context
+type OrderContext = { customer: User; product: Product };
+const customerIsAdult = isAdult.on((ctx: OrderContext) => ctx.customer);
+
+// Cross-type rules are written directly against the context
+const withinBudget = rule<OrderContext>(
+  ctx => ctx.product.price <= ctx.customer.creditLimit, 'WithinBudget');
+
+// Collections
+type Team = { members: User[] };
+const allAdults = isAdult.allOf<Team>(t => t.members);
+```
+
+## Why rules instead of plain functions?
+
+Plain predicates compose with `&&`/`||` but lose structure. rulewrite rules carry their composition tree, so you can **explain** a decision, not just compute it — `evaluate()` shows exactly which sub-rule passed or failed, recursively. `.on()` keeps rules focused on one type and projects them into wider contexts only at the composition site, so the same `isAdult` works on a `User`, a `Department.leader`, or any field of any context.
