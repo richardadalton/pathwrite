@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>notifywrite — Headless Notification Engine for TypeScript</title>
-  <meta name="description" content="One small, zero-dependency notification engine. Add, dismiss, auto-dismiss, and clear notifications from a typed core — React, Vue, Angular, Svelte, SolidJS, and React Native adapters wrap it natively." />
+  <meta name="description" content="One small, zero-dependency notification engine. Add, update, pause, dismiss, and auto-dismiss notifications from a typed core — drive it from the server over SSE, WebSocket, or polling. React, Vue, Angular, Svelte, SolidJS, and React Native adapters wrap it natively." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -302,6 +302,9 @@
     @keyframes nw-toast-in {
       from { opacity: 0; transform: translateY(-4px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+    .nw-toast:hover {
+      background: var(--color-bg-card-hover);
     }
     .nw-toast--info    { border-left-color: #60a5fa; }
     .nw-toast--success { border-left-color: #22c55e; }
@@ -650,23 +653,31 @@
       <p class="nw-hero__sub">
         Toast state ends up reimplemented per framework — a <code>useState</code> array here, a
         ref there, a store somewhere else, each with its own timer bookkeeping. notifywrite is a
-        headless notification engine: a small typed core with <code>add</code>, <code>dismiss</code>,
-        and <code>clear</code>, exposed through a snapshot-and-subscribe API that six framework
-        adapters wrap natively.
+        headless notification engine: a small typed core with <code>add</code>, <code>update</code>,
+        <code>dismiss</code>, and <code>clear</code>, exposed through a snapshot-and-subscribe API
+        that six framework adapters wrap natively — and that your server can drive over SSE,
+        WebSocket, or polling.
       </p>
       <div class="nw-hero__features">
         <div class="nw-hero__feature">
           <span class="nw-hero__feature-icon">🔔</span>
           <div>
             <strong>A tiny, typed API</strong>
-            <span><code>add(message, options)</code>, <code>dismiss(id)</code>, <code>clear()</code>. Four notification types out of the box: info, success, warning, error.</span>
+            <span><code>add(message, options)</code>, <code>update(id, patch)</code>, <code>dismiss(id)</code>, <code>clear()</code>. Four notification types out of the box: info, success, warning, error.</span>
           </div>
         </div>
         <div class="nw-hero__feature">
           <span class="nw-hero__feature-icon">⏱️</span>
           <div>
-            <strong>Auto-dismiss, built in</strong>
-            <span>Pass a <code>duration</code> and the engine schedules and clears its own timer — no <code>setTimeout</code> bookkeeping in your components.</span>
+            <strong>Auto-dismiss you can pause</strong>
+            <span>Pass a <code>duration</code> and the engine owns the timer. <code>pause(id)</code> freezes it with its remaining time — hover-to-pause is two event handlers.</span>
+          </div>
+        </div>
+        <div class="nw-hero__feature">
+          <span class="nw-hero__feature-icon">📡</span>
+          <div>
+            <strong>Server-driven, transport-agnostic</strong>
+            <span><code>connectSource()</code> bridges SSE, WebSocket, or polling into the engine — the server adds, updates, and dismisses toasts by its own stable key.</span>
           </div>
         </div>
         <div class="nw-hero__feature">
@@ -706,7 +717,7 @@
             </div>
             <label class="nw-demo__auto">
               <input type="checkbox" id="nw-auto" checked />
-              <span>Auto-dismiss after 3s</span>
+              <span>Auto-dismiss after 3s &mdash; hover a toast to pause</span>
             </label>
           </div>
           <div class="nw-demo__result">
@@ -723,7 +734,7 @@
 <div class="nw-stats">
   <div class="nw-stat"><div class="nw-stat__num">6</div><div class="nw-stat__label">Framework adapters</div></div>
   <div class="nw-stat"><div class="nw-stat__num">0</div><div class="nw-stat__label">Dependencies</div></div>
-  <div class="nw-stat"><div class="nw-stat__num">4</div><div class="nw-stat__label">Notification types</div></div>
+  <div class="nw-stat"><div class="nw-stat__num">3</div><div class="nw-stat__label">Server transports</div></div>
   <div class="nw-stat"><div class="nw-stat__num">100%</div><div class="nw-stat__label">Type safe</div></div>
 </div>
 
@@ -827,15 +838,19 @@ notifications.<span class="fn">add</span>(<span class="str">'File saved'</span>,
       </div>
       <div class="nw-how__step">
         <div class="nw-how__step-num">Step 3 &mdash; Drive it</div>
-        <h3>Add, dismiss, clear</h3>
-        <p>Call <code>add()</code> from anywhere — a form handler, an API error boundary, a background job callback. Every subscriber updates immediately.</p>
+        <h3>Add, update, dismiss</h3>
+        <p>Call the engine from anywhere — a form handler, an error boundary, a job callback, or a server stream. Every subscriber updates immediately.</p>
         <div class="code-block">
-          <pre><code>engine.<span class="fn">add</span>(<span class="str">'Upload failed'</span>, {
-  type: <span class="str">'error'</span>,
+          <pre><code><span class="kw">const</span> id = engine.<span class="fn">add</span>(<span class="str">'Uploading…'</span>);
+
+engine.<span class="fn">update</span>(id, {
+  message: <span class="str">'Upload complete'</span>,
+  type: <span class="str">'success'</span>,
+  duration: <span class="str">3000</span>,
 });
 
-engine.<span class="fn">dismiss</span>(id);
-engine.<span class="fn">clear</span>();</code></pre>
+engine.<span class="fn">pause</span>(id); <span class="cm">// e.g. on hover</span>
+engine.<span class="fn">resume</span>(id);</code></pre>
         </div>
       </div>
     </div>
@@ -855,12 +870,32 @@ engine.<span class="fn">clear</span>();</code></pre>
       <div class="nw-prop">
         <span class="nw-prop__icon">🔔</span>
         <h3>Tiny, typed API</h3>
-        <p><code>add</code>, <code>dismiss</code>, <code>clear</code>, <code>snapshot</code>, <code>subscribe</code> — that's the entire surface. Nothing to learn beyond it.</p>
+        <p><code>add</code>, <code>update</code>, <code>dismiss</code>, <code>clear</code>, <code>pause</code>, <code>resume</code>, <code>snapshot</code>, <code>subscribe</code> — a surface you can hold in your head.</p>
       </div>
       <div class="nw-prop">
         <span class="nw-prop__icon">⏱️</span>
         <h3>Self-cleaning timers</h3>
         <p>Pass a <code>duration</code> and the engine owns the <code>setTimeout</code> handle — dismissed notifications clear their own timers automatically.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">⏯️</span>
+        <h3>Pause &amp; resume</h3>
+        <p><code>pause(id)</code> freezes an auto-dismiss timer keeping its remaining time; <code>resume(id)</code> restarts it. <code>remaining(id)</code> tells you what's left — toast progress bars come free.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">✏️</span>
+        <h3>Update in place</h3>
+        <p><code>update(id, patch)</code> changes message, type, or duration on a live notification, preserving its id and position — one toast can walk through queued, processing, complete.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">📡</span>
+        <h3>Server-driven notifications</h3>
+        <p>The <code>/remote</code> module bridges any transport into the engine — <code>sseSource</code>, <code>webSocketSource</code>, and <code>pollingSource</code> ship built in, still zero dependencies.</p>
+      </div>
+      <div class="nw-prop">
+        <span class="nw-prop__icon">🚦</span>
+        <h3>Overflow &amp; dismiss reasons</h3>
+        <p>A <code>max</code> option bounds the stack with drop-oldest semantics, and <code>onDismiss</code> tells you why anything left: <code>user</code>, <code>timeout</code>, <code>clear</code>, or <code>overflow</code>.</p>
       </div>
       <div class="nw-prop">
         <span class="nw-prop__icon">🔌</span>
@@ -902,7 +937,7 @@ engine.<span class="fn">clear</span>();</code></pre>
     <div class="section__intro" style="max-width:640px; margin:0 auto 2.5rem; text-align:center;">
       <h2 class="section__title">See it in action</h2>
       <p style="color:var(--color-text-muted); font-size:1.05rem; line-height:1.7;">
-        The same engine, wired into four different frameworks.
+        The same engine, wired into different frameworks — and driven from the server.
       </p>
     </div>
     <div class="nw-tab-btns">
@@ -910,6 +945,7 @@ engine.<span class="fn">clear</span>();</code></pre>
       <button data-nwtab="react">React</button>
       <button data-nwtab="vue">Vue</button>
       <button data-nwtab="svelte">Svelte</button>
+      <button data-nwtab="server">Server</button>
     </div>
     <div class="nw-tab-panel active" data-nwtab="core">
       <div class="code-block">
@@ -921,7 +957,8 @@ engine.<span class="fn">clear</span>();</code></pre>
         </div>
         <pre><code><span class="kw">import</span> { <span class="type">NotificationEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite'</span>;
 
-<span class="kw">export const</span> notifications = <span class="kw">new</span> <span class="fn">NotificationEngine</span>();
+<span class="cm">// max bounds the stack — oldest are dropped with reason 'overflow'</span>
+<span class="kw">export const</span> notifications = <span class="kw">new</span> <span class="fn">NotificationEngine</span>({ max: <span class="str">5</span> });
 
 <span class="cm">// Add a notification — id and createdAt are generated for you</span>
 <span class="kw">const</span> id = notifications.<span class="fn">add</span>(<span class="str">'Changes saved'</span>, {
@@ -929,13 +966,19 @@ engine.<span class="fn">clear</span>();</code></pre>
   duration: <span class="str">3000</span>, <span class="cm">// auto-dismisses after 3s</span>
 });
 
-<span class="cm">// Read the current state at any time</span>
-notifications.<span class="fn">snapshot</span>().notifications;
-<span class="cm">// [{ id, message: 'Changes saved', type: 'success', createdAt }]</span>
+<span class="cm">// Patch a live notification in place — id and createdAt survive</span>
+notifications.<span class="fn">update</span>(id, { message: <span class="str">'Synced to server'</span> });
 
-<span class="cm">// Subscribe to every add / dismiss / clear</span>
+<span class="cm">// Freeze the timer with its remaining time, restart it later</span>
+notifications.<span class="fn">pause</span>(id);
+notifications.<span class="fn">resume</span>(id);
+
+<span class="cm">// Subscribe to every change; onDismiss also tells you why</span>
 <span class="kw">const</span> unsubscribe = notifications.<span class="fn">subscribe</span>(() => {
   render(notifications.<span class="fn">snapshot</span>());
+});
+notifications.<span class="fn">onDismiss</span>((n, reason) => {
+  <span class="cm">// 'user' | 'timeout' | 'clear' | 'overflow'</span>
 });
 
 notifications.<span class="fn">dismiss</span>(id);
@@ -1017,7 +1060,7 @@ notifications.<span class="fn">clear</span>();</code></pre>
         <pre><code><span class="cm">&lt;script&gt;</span>
   <span class="kw">import</span> { useNotificationsContext } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite-svelte'</span>;
 
-  <span class="cm">// setNotificationEngine(engine) is called once, in a parent component</span>
+  <span class="cm">// provideNotifications(engine) is called once, in a parent component</span>
   <span class="kw">const</span> { notifications, dismiss } = <span class="fn">useNotificationsContext</span>();
 <span class="cm">&lt;/script&gt;</span>
 
@@ -1029,6 +1072,33 @@ notifications.<span class="fn">clear</span>();</code></pre>
     &lt;/<span class="kw">div</span>&gt;
   {/each}
 &lt;/<span class="kw">div</span>&gt;</code></pre>
+      </div>
+    </div>
+    <div class="nw-tab-panel" data-nwtab="server">
+      <div class="code-block">
+        <div class="code-block__header">
+          <span class="code-block__dot code-block__dot--red"></span>
+          <span class="code-block__dot code-block__dot--yellow"></span>
+          <span class="code-block__dot code-block__dot--green"></span>
+          <span class="code-block__filename">server-notifications.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">NotificationEngine</span> } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite'</span>;
+<span class="kw">import</span> { connectSource, sseSource } <span class="kw">from</span> <span class="str">'@daltonr/notifywrite/remote'</span>;
+
+<span class="kw">const</span> engine = <span class="kw">new</span> <span class="fn">NotificationEngine</span>();
+
+<span class="cm">// Bridge a server stream into the engine. Also built in:</span>
+<span class="cm">// webSocketSource(url | socket) and pollingSource(fetcher, ms) —</span>
+<span class="cm">// or write your own: any (emit) =&gt; teardown function plugs in.</span>
+<span class="kw">const</span> disconnect = <span class="fn">connectSource</span>(engine, <span class="fn">sseSource</span>(<span class="str">'/api/notifications'</span>));
+
+<span class="cm">// The server addresses toasts by its own stable key —</span>
+<span class="cm">// one toast walks through a whole job lifecycle:</span>
+<span class="cm">// { kind: 'add',     key: 'job-42', message: 'Export queued…' }</span>
+<span class="cm">// { kind: 'update',  key: 'job-42', patch: { message: 'Processing…' } }</span>
+<span class="cm">// { kind: 'update',  key: 'job-42', patch: { message: 'Export ready',</span>
+<span class="cm">//                      type: 'success', duration: 5000 } }</span>
+<span class="cm">// { kind: 'dismiss', key: 'job-42' }</span></code></pre>
       </div>
     </div>
   </div>
@@ -1062,11 +1132,20 @@ notifications.<span class="fn">clear</span>();</code></pre>
         </div>
       </div>
       <div class="nw-example">
-        <div class="nw-example__tag">Background &middot; Jobs</div>
-        <h3>Upload &amp; export status</h3>
-        <p>Long-running tasks post progress and completion notifications from a worker or callback — the UI doesn't have to poll for them.</p>
+        <div class="nw-example__tag">Server &middot; Jobs</div>
+        <h3>Job progress from the server</h3>
+        <p>An SSE or WebSocket stream walks one toast through queued → processing → complete with key-based updates — <code>connectSource</code> keeps the server's key mapped to the toast it created.</p>
         <div class="nw-example__rules">
-          <div class="nw-example__rule"><span>onComplete</span> = engine.add('Export ready', { type: 'success' })</div>
+          <div class="nw-example__rule"><span>on event</span> = { kind: 'update', key: jobId, patch: { message, type } }</div>
+        </div>
+      </div>
+      <div class="nw-example">
+        <div class="nw-example__tag">UX &middot; Timers</div>
+        <h3>Pause on hover</h3>
+        <p>Freeze a toast's auto-dismiss while the pointer is over it and let it finish afterwards — the engine keeps the remaining time, so no timer maths in your component.</p>
+        <div class="nw-example__rules">
+          <div class="nw-example__rule"><span>onMouseEnter</span> = engine.pause(n.id)</div>
+          <div class="nw-example__rule"><span>onMouseLeave</span> = engine.resume(n.id)</div>
         </div>
       </div>
       <div class="nw-example">
@@ -1132,6 +1211,20 @@ notifications.<span class="fn">clear</span>();</code></pre>
             <td class="p">If you build it</td>
           </tr>
           <tr>
+            <td>Update / pause / resume live toasts</td>
+            <td class="y">✓</td>
+            <td class="p">If you build it</td>
+            <td class="p">Varies</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
+            <td>Server-driven (SSE / WebSocket / polling)</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="p">If you build it</td>
+          </tr>
+          <tr>
             <td>Typed notification model</td>
             <td class="y">✓</td>
             <td class="p">If you build it</td>
@@ -1187,10 +1280,15 @@ notifications.<span class="fn">clear</span>();</code></pre>
         <h3>Quickstart</h3>
         <p>Install, create an engine, wire in your framework's adapter. Up and running in a few minutes.</p>
       </a>
-      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/blob/main/src/engine.ts" target="_blank">
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/blob/main/packages/core/src/engine.ts" target="_blank">
         <span class="nw-doc-card__icon">📐</span>
         <h3>Core engine source</h3>
-        <p>The entire notification engine — add, dismiss, clear, subscribe, and timer handling — in one small file.</p>
+        <p>The entire notification engine — add, update, dismiss, pause/resume, overflow, and timer handling — in one small file.</p>
+      </a>
+      <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/blob/main/packages/core/src/remote.ts" target="_blank">
+        <span class="nw-doc-card__icon">📡</span>
+        <h3>Server notifications</h3>
+        <p>The <code>/remote</code> module: <code>connectSource</code> plus SSE, WebSocket, and polling transports — with a full-stack Express + React demo.</p>
       </a>
       <a class="nw-doc-card" href="https://github.com/richardadalton/notifywrite/tree/main/packages" target="_blank">
         <span class="nw-doc-card__icon">🔌</span>
@@ -1213,7 +1311,7 @@ notifications.<span class="fn">clear</span>();</code></pre>
       Stop reimplementing toast state per framework.
     </h2>
     <p style="color: var(--color-text-muted); font-size: 1.05rem; max-width: 520px; margin: 0 auto 2rem; line-height: 1.7;">
-      One headless notification engine. Six native adapters. Zero runtime dependencies.
+      One headless notification engine. Six native adapters. Server-driven over SSE, WebSocket, or polling. Zero runtime dependencies.
     </p>
     <div style="font-family: var(--font-mono); font-size: 0.9rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm); padding: 0.7rem 1.25rem; display: inline-block; color: var(--color-text-muted); margin-bottom: 2rem;">
       npm install <span style="color: var(--color-primary-light);">@daltonr/notifywrite</span>
@@ -1246,31 +1344,46 @@ notifications.<span class="fn">clear</span>();</code></pre>
     let nextId = 1;
     let notifications = [];
     const listeners = new Set();
-    const timers = new Map();
+    const timers = new Map(); // id -> { handle, deadline, remaining }
 
     function emit() { listeners.forEach(fn => fn()); }
 
-    return {
+    const engine = {
       add(message, options) {
         const id = String(nextId++);
         const type = (options && options.type) || 'info';
         notifications = notifications.concat([{ id, message, type, createdAt: Date.now() }]);
         if (options && options.duration) {
-          const t = setTimeout(() => { timers.delete(id); this.dismiss(id); }, options.duration);
-          timers.set(id, t);
+          const handle = setTimeout(() => { timers.delete(id); engine.dismiss(id); }, options.duration);
+          timers.set(id, { handle, deadline: Date.now() + options.duration, remaining: null });
         }
         emit();
         return id;
       },
+      // Freeze the auto-dismiss timer, keeping its remaining time
+      pause(id) {
+        const state = timers.get(id);
+        if (!state || state.remaining !== null) return;
+        clearTimeout(state.handle);
+        state.remaining = Math.max(0, state.deadline - Date.now());
+      },
+      // Restart a paused timer for whatever time was left
+      resume(id) {
+        const state = timers.get(id);
+        if (!state || state.remaining === null) return;
+        state.handle = setTimeout(() => { timers.delete(id); engine.dismiss(id); }, state.remaining);
+        state.deadline = Date.now() + state.remaining;
+        state.remaining = null;
+      },
       dismiss(id) {
-        const t = timers.get(id);
-        if (t) { clearTimeout(t); timers.delete(id); }
+        const state = timers.get(id);
+        if (state) { clearTimeout(state.handle); timers.delete(id); }
         const before = notifications.length;
         notifications = notifications.filter(n => n.id !== id);
         if (notifications.length !== before) emit();
       },
       clear() {
-        timers.forEach(t => clearTimeout(t));
+        timers.forEach(state => clearTimeout(state.handle));
         timers.clear();
         notifications = [];
         emit();
@@ -1278,6 +1391,7 @@ notifications.<span class="fn">clear</span>();</code></pre>
       snapshot() { return { notifications }; },
       subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     };
+    return engine;
   }
 
   const nwEngine = createEngine();
@@ -1304,7 +1418,7 @@ notifications.<span class="fn">clear</span>();</code></pre>
     }
 
     toasts.innerHTML = snapshot.notifications.slice().reverse().map(n => (
-      '<div class="nw-toast nw-toast--' + n.type + '">' +
+      '<div class="nw-toast nw-toast--' + n.type + '" data-id="' + n.id + '" title="Auto-dismiss pauses while hovering">' +
         '<div class="nw-toast__body">' +
           '<span class="nw-toast__type">' + n.type + '</span>' +
           '<span class="nw-toast__message">' + nwEscape(n.message) + '</span>' +
@@ -1341,6 +1455,16 @@ notifications.<span class="fn">clear</span>();</code></pre>
     const btn = e.target.closest('[data-dismiss]');
     if (!btn) return;
     nwEngine.dismiss(btn.dataset.dismiss);
+  });
+
+  // Pause auto-dismiss while hovering a toast, resume on leave
+  document.getElementById('nw-toasts').addEventListener('mouseover', (e) => {
+    const toast = e.target.closest('.nw-toast');
+    if (toast && !toast.contains(e.relatedTarget)) nwEngine.pause(toast.dataset.id);
+  });
+  document.getElementById('nw-toasts').addEventListener('mouseout', (e) => {
+    const toast = e.target.closest('.nw-toast');
+    if (toast && !toast.contains(e.relatedTarget)) nwEngine.resume(toast.dataset.id);
   });
 
   nwEngine.subscribe(nwRender);
