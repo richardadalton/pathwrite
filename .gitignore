@@ -27,3 +27,4 @@ apps/**/*.config.js
 
 # SvelteKit build output
 packages/*/.svelte-kit/
+.tmp/
