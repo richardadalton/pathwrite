@@ -836,20 +836,40 @@ export class PathEngine {
 
   public next(): Promise<void> {
     const active = this.requireActivePath();
-    // Reset the retry sequence. If we're recovering from an error the user
-    // explicitly clicked Next again — clear the error and reset to idle so
-    // _nextAsync's entry guard passes. For any other non-idle status (busy)
-    // the guard in _nextAsync will drop this call.
-    this._retryCount = 0;
-    this._error = null;
-    this._pendingRetry = null;
-    if (this._status === "error") this._status = "idle";
+    this._beginNavigation();
     return this._nextAsync(active);
   }
 
   public previous(): Promise<void> {
     const active = this.requireActivePath();
+    this._beginNavigation();
     return this._previousAsync(active);
+  }
+
+  /**
+   * Resets the retry sequence before a fresh user-initiated navigation. If we
+   * are recovering from an error the user explicitly acted again — clear the
+   * error and reset to idle so the navigation's entry guard passes. For any
+   * other non-idle status (busy) that guard will drop the call.
+   */
+  private _beginNavigation(): void {
+    this._retryCount = 0;
+    this._error = null;
+    this._pendingRetry = null;
+    if (this._status === "error") this._status = "idle";
+  }
+
+  /**
+   * Records a failed navigation phase the same way `_nextAsync` does: sets
+   * `snapshot.error`, stores the retry, moves to status `"error"` and emits.
+   * Every navigation method routes hook / guard failures through here so the
+   * caller's promise resolves and the shell can offer "Try again".
+   */
+  private _failNavigation(err: unknown, phase: ErrorPhase, retry: () => Promise<void>, cause: StateChangeCause): void {
+    this._error = { message: PathEngine.errorMessage(err), phase, retryCount: this._retryCount };
+    this._pendingRetry = retry;
+    this._status = "error";
+    this.emitStateChanged(cause);
   }
 
   /**
@@ -899,6 +919,7 @@ export class PathEngine {
    *  API consistency. */
   public async cancel(): Promise<void> {
     const active = this.requireActivePath();
+    this._beginNavigation();
     if (this._status !== "idle") return;
 
     const cancelledPathId = active.definition.id;
@@ -956,6 +977,7 @@ export class PathEngine {
     if (targetIndex === -1) {
       throw new Error(`Step "${stepId}" not found in path "${active.definition.id}".`);
     }
+    this._beginNavigation();
     return this._goToStepAsync(active, targetIndex, options);
   }
 
@@ -976,6 +998,7 @@ export class PathEngine {
       return Promise.reject(new Error(`Step "${stepId}" not found in path "${active.definition.id}".`));
     }
     if (targetIndex === active.currentStepIndex) return Promise.resolve();
+    this._beginNavigation();
     return this._goToStepCheckedAsync(active, targetIndex, options);
   }
 
@@ -1230,33 +1253,46 @@ export class PathEngine {
     this._status = "leaving";
     this.emitStateChanged("previous");
 
+    const step = this.getEffectiveStep(active);
+    const retry = () => this._previousAsync(active);
+
+    // Phase: validating — canMovePrevious guard
+    let prevGuard: { allowed: boolean; reason: string | null };
     try {
-      const step = this.getEffectiveStep(active);
-
-      const prevGuard = await this.canMovePrevious(active, step);
-      if (!prevGuard.allowed) this._blockingError = prevGuard.reason;
-
-      if (prevGuard.allowed) {
-        this.applyPatch(await this.leaveCurrentStep(active, step));
-        active.currentStepIndex -= 1;
-        await this.skipSteps(-1);
-
-        if (active.currentStepIndex < 0) {
-          this._status = "idle";
-          await this.cancel();
-          return;
-        }
-
-        this.applyPatch(await this.enterCurrentStep());
-      }
-
-      this._status = "idle";
-      this.emitStateChanged("previous");
+      prevGuard = await this.canMovePrevious(active, step);
     } catch (err) {
+      this._failNavigation(err, "validating", retry, "previous");
+      return;
+    }
+
+    if (!prevGuard.allowed) {
+      this._blockingError = prevGuard.reason;
       this._status = "idle";
       this.emitStateChanged("previous");
-      throw err;
+      return;
     }
+
+    // Phase: leaving — onLeave hook. Nothing has moved yet, so a retry
+    // re-runs the whole previous() safely.
+    try {
+      this.applyPatch(await this.leaveCurrentStep(active, step));
+    } catch (err) {
+      this._failNavigation(err, "leaving", retry, "previous");
+      return;
+    }
+
+    active.currentStepIndex -= 1;
+    await this.skipSteps(-1);
+
+    if (active.currentStepIndex < 0) {
+      this._status = "idle";
+      await this.cancel();
+      return;
+    }
+
+    // Phase: entering — onEnter on the new step. The index has moved, so the
+    // stored retry re-runs only the enter hook.
+    await this._enterCurrentStepWithErrorHandling("previous");
   }
 
   private async _goToStepAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }): Promise<void> {
@@ -1269,20 +1305,19 @@ export class PathEngine {
     this._status = "leaving";
     this.emitStateChanged("goToStep");
 
+    // Phase: leaving — onLeave hook
     try {
       const currentStep = this.getEffectiveStep(active);
       this.applyPatch(await this.leaveCurrentStep(active, currentStep));
-
-      active.currentStepIndex = targetIndex;
-
-      this.applyPatch(await this.enterCurrentStep());
-      this._status = "idle";
-      this.emitStateChanged("goToStep");
     } catch (err) {
-      this._status = "idle";
-      this.emitStateChanged("goToStep");
-      throw err;
+      this._failNavigation(err, "leaving", () => this._goToStepAsync(active, targetIndex, options), "goToStep");
+      return;
     }
+
+    active.currentStepIndex = targetIndex;
+
+    // Phase: entering — onEnter on the target step
+    await this._enterCurrentStepWithErrorHandling("goToStep");
   }
 
   private async _goToStepCheckedAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }): Promise<void> {
@@ -1295,29 +1330,41 @@ export class PathEngine {
     this._status = "validating";
     this.emitStateChanged("goToStepChecked");
 
+    const currentStep = this.getEffectiveStep(active);
+    const retry = () => this._goToStepCheckedAsync(active, targetIndex, options);
+
+    // Phase: validating — the guard for the direction of travel
+    let guardResult: { allowed: boolean; reason: string | null };
     try {
-      const currentStep = this.getEffectiveStep(active);
       const goingForward = targetIndex > active.currentStepIndex;
-      const guardResult = goingForward
+      guardResult = goingForward
         ? await this.canMoveNext(active, currentStep)
         : await this.canMovePrevious(active, currentStep);
-
-      if (!guardResult.allowed) this._blockingError = guardResult.reason;
-
-      if (guardResult.allowed) {
-        this._status = "leaving";
-        this.applyPatch(await this.leaveCurrentStep(active, currentStep));
-        active.currentStepIndex = targetIndex;
-        this.applyPatch(await this.enterCurrentStep());
-      }
-
-      this._status = "idle";
-      this.emitStateChanged("goToStepChecked");
     } catch (err) {
+      this._failNavigation(err, "validating", retry, "goToStepChecked");
+      return;
+    }
+
+    if (!guardResult.allowed) {
+      this._blockingError = guardResult.reason;
       this._status = "idle";
       this.emitStateChanged("goToStepChecked");
-      throw err;
+      return;
     }
+
+    // Phase: leaving — onLeave hook
+    this._status = "leaving";
+    try {
+      this.applyPatch(await this.leaveCurrentStep(active, currentStep));
+    } catch (err) {
+      this._failNavigation(err, "leaving", retry, "goToStepChecked");
+      return;
+    }
+
+    active.currentStepIndex = targetIndex;
+
+    // Phase: entering — onEnter on the target step
+    await this._enterCurrentStepWithErrorHandling("goToStepChecked");
   }
 
   private async _cancelSubPathAsync(
@@ -1329,7 +1376,19 @@ export class PathEngine {
     // path (which has a valid currentStepIndex) rather than the cancelled
     // sub-path (which may have currentStepIndex = -1).
     this.activePath = this.pathStack.pop() ?? null;
+    await this._runSubPathCancelHook(cancelledPathId, cancelledData, cancelledMeta);
+  }
 
+  /**
+   * Runs the parent step's `onSubPathCancel` hook with the parent already
+   * active. Split out so that a failure stores a retry that re-runs only the
+   * hook — the cancelled sub-path is already gone and must not be re-popped.
+   */
+  private async _runSubPathCancelHook(
+    cancelledPathId: string,
+    cancelledData: PathData,
+    cancelledMeta?: Record<string, unknown>
+  ): Promise<void> {
     this._status = "leaving";
     this.emitStateChanged("cancel");
 
@@ -1355,9 +1414,12 @@ export class PathEngine {
       this._status = "idle";
       this.emitStateChanged("cancel");
     } catch (err) {
-      this._status = "idle";
-      this.emitStateChanged("cancel");
-      throw err;
+      this._failNavigation(
+        err,
+        "leaving",
+        () => this._runSubPathCancelHook(cancelledPathId, cancelledData, cancelledMeta),
+        "cancel"
+      );
     }
   }
 

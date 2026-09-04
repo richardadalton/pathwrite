@@ -4234,3 +4234,169 @@ describe("PathEngine — hasAttemptedNext is scoped to the path instance", () =>
     expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Error / retry model for previous(), goToStep(), goToStepChecked(), cancel() — C7
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — error handling for navigation other than next()", () => {
+  // next() and start() route hook failures into snapshot.error with a retry.
+  // previous(), goToStep(), goToStepChecked() and sub-path cancel() reset to
+  // idle and rethrow instead: snapshot.error stays null, no retry is offered,
+  // and any caller that does not await gets an unhandled rejection.
+
+  function flaky(fail: { current: boolean }, message: string) {
+    return async () => { if (fail.current) throw new Error(message); };
+  }
+
+  it("previous(): a throwing onLeave sets snapshot.error (phase leaving) instead of rejecting, and retry() recovers", async () => {
+    const fail = { current: true };
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }, { id: "s2", onLeave: flaky(fail, "save failed") }]
+    });
+    await engine.next();
+
+    await expect(engine.previous()).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s2");
+    expect(snap.status).toBe("error");
+    expect(snap.error).toEqual({ message: "save failed", phase: "leaving", retryCount: 0 });
+
+    fail.current = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(snap.stepId).toBe("s1");
+  });
+
+  it("previous(): a throwing onEnter on the target sets snapshot.error (phase entering), and retry() re-runs it", async () => {
+    const fail = { current: true };
+    let enterCalls = 0;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", onEnter: async () => { enterCalls++; if (fail.current && enterCalls > 1) throw new Error("load failed"); } },
+        { id: "s2" }
+      ]
+    });
+    await engine.next();
+
+    await expect(engine.previous()).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s1");
+    expect(snap.status).toBe("error");
+    expect(snap.error).toEqual({ message: "load failed", phase: "entering", retryCount: 0 });
+
+    fail.current = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(enterCalls).toBe(3);
+  });
+
+  it("goToStep(): a throwing onLeave sets snapshot.error and retry() completes the jump", async () => {
+    const fail = { current: true };
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }, { id: "s2" }, { id: "s3", onLeave: flaky(fail, "save failed") }]
+    });
+    await engine.goToStep("s3");
+
+    await expect(engine.goToStep("s1")).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s3");
+    expect(snap.status).toBe("error");
+    expect(snap.error).toEqual({ message: "save failed", phase: "leaving", retryCount: 0 });
+
+    fail.current = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.stepId).toBe("s1");
+  });
+
+  it("goToStepChecked(): a rejecting guard sets snapshot.error (phase validating) and retry() re-checks", async () => {
+    const fail = { current: true };
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1", canMoveNext: async () => { if (fail.current) throw new Error("check failed"); return true; } },
+        { id: "s2" }
+      ]
+    });
+
+    await expect(engine.goToStepChecked("s2")).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.stepId).toBe("s1");
+    expect(snap.status).toBe("error");
+    expect(snap.error).toEqual({ message: "check failed", phase: "validating", retryCount: 0 });
+
+    fail.current = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.stepId).toBe("s2");
+  });
+
+  it("cancel() of a sub-path: a throwing onSubPathCancel sets snapshot.error and retry() re-runs the hook", async () => {
+    const fail = { current: true };
+    let hookCalls = 0;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "parent",
+      steps: [{
+        id: "p1",
+        onSubPathCancel: async () => {
+          hookCalls++;
+          if (fail.current) throw new Error("cleanup failed");
+          return { cleaned: true };
+        }
+      }]
+    }, {});
+    await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] }, {});
+
+    await expect(engine.cancel()).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.status).toBe("error");
+    expect(snap.error?.message).toBe("cleanup failed");
+    expect(snap.error?.retryCount).toBe(0);
+    expect(hookCalls).toBe(1);
+
+    fail.current = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(hookCalls).toBe(2);
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(snap.pathId).toBe("parent");
+    expect(snap.data.cleaned).toBe(true);
+  });
+
+  it("retry() after a previous() failure increments retryCount on repeated failure", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }, { id: "s2", onLeave: async () => { throw new Error("still down"); } }]
+    });
+    await engine.next();
+
+    await engine.previous();
+    await engine.retry();
+    await engine.retry();
+
+    expect(engine.snapshot()!.error).toEqual({ message: "still down", phase: "leaving", retryCount: 2 });
+    expect(engine.snapshot()!.stepId).toBe("s2");
+  });
+});
