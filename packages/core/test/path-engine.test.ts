@@ -4485,3 +4485,93 @@ describe("PathEngine — previous() runs its guard under status validating", () 
     expect(engine.snapshot()!.blockingError).toBe("locked");
   });
 });
+
+// ---------------------------------------------------------------------------
+// stateChanged cause on completion failure and retry — C9
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — stateChanged cause reflects the method that triggered it", () => {
+  // StateChangeCause "identifies the public method that triggered a
+  // stateChanged event". _finishActivePathWithErrorHandling hard-coded
+  // "next", so a completion failure reached from start() (every step
+  // skipped) or from retry() was reported as a Next click. The "retry" cause
+  // exists in the union but was never emitted.
+
+  function causesOf(events: PathEvent[], status?: PathStatus): string[] {
+    return events
+      .filter((e): e is Extract<PathEvent, { type: "stateChanged" }> => e.type === "stateChanged")
+      .filter((e) => status === undefined || e.snapshot.status === status)
+      .map((e) => e.cause);
+  }
+
+  it("a completion failure reached from start() (all steps skipped) is reported with cause 'start'", async () => {
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+    await engine.start({
+      id: "express",
+      steps: [{ id: "s1", shouldSkip: () => true }, { id: "s2", shouldSkip: () => true }],
+      onComplete: async () => { throw new Error("submit failed"); }
+    });
+
+    expect(engine.snapshot()!.status).toBe("error");
+    expect(causesOf(events, "error")).toEqual(["start"]);
+  });
+
+  it("retry() after a completion failure emits cause 'retry', not 'next'", async () => {
+    let fail = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }],
+      onComplete: async () => { if (fail) throw new Error("submit failed"); }
+    });
+    await engine.next();
+    expect(engine.snapshot()!.status).toBe("error");
+
+    const events = collectEvents(engine);
+    await engine.retry(); // fails again
+    expect(causesOf(events, "error")).toEqual(["retry"]);
+
+    fail = false;
+    events.length = 0;
+    await engine.retry(); // succeeds
+    expect(causesOf(events)).not.toContain("next");
+  });
+
+  it("retry() after an onEnter failure emits cause 'retry'", async () => {
+    let fail = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1" }, { id: "s2", onEnter: async () => { if (fail) throw new Error("load failed"); } }]
+    });
+    await engine.next();
+    expect(engine.snapshot()!.error?.phase).toBe("entering");
+
+    const events = collectEvents(engine);
+    fail = false;
+    await engine.retry();
+
+    expect(engine.snapshot()!.status).toBe("idle");
+    expect(causesOf(events)).toEqual(["retry"]);
+  });
+
+  it("retry() after an onLeave failure emits cause 'retry' for every phase it re-runs", async () => {
+    let fail = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "s1", onLeave: async () => { if (fail) throw new Error("save failed"); } }, { id: "s2" }]
+    });
+    await engine.next();
+    expect(engine.snapshot()!.error?.phase).toBe("leaving");
+
+    const events = collectEvents(engine);
+    fail = false;
+    await engine.retry();
+
+    expect(engine.snapshot()!.stepId).toBe("s2");
+    expect(causesOf(events).every((c) => c === "retry")).toBe(true);
+    expect(causesOf(events).length).toBeGreaterThan(0);
+  });
+});
