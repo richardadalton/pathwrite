@@ -4130,3 +4130,107 @@ describe("PathEngine — async guards are not re-invoked on every snapshot", () 
     warnSpy.mockRestore();
   });
 });
+
+// ---------------------------------------------------------------------------
+// hasAttemptedNext across sub-path instances — C6
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — hasAttemptedNext is scoped to the path instance", () => {
+  // _attemptedNextSteps is keyed by bare step id and lives on the engine, so
+  // an attempt inside one sub-path instance leaks into the next instance of
+  // the same sub-path, and into any other path whose step shares the id.
+
+  const subPath: PathDefinition = {
+    id: "add-item",
+    steps: [
+      { id: "details", fieldErrors: ({ data }) => ({ amount: !data.amount ? "Amount is required." : undefined }) },
+      { id: "confirm" }
+    ]
+  };
+  const parentPath: PathDefinition = {
+    id: "claim",
+    steps: [{ id: "items" }, { id: "review" }]
+  };
+
+  it("is false on a fresh instance of a sub-path that was attempted and cancelled", async () => {
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+
+    await engine.startSubPath(subPath, {});
+    await engine.next(); // blocked by fieldErrors
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
+    await engine.cancel();
+
+    await engine.startSubPath(subPath, {});
+    expect(engine.snapshot()!.stepId).toBe("details");
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
+  });
+
+  it("is false on a fresh instance of a sub-path that was previously completed", async () => {
+    const engine = new PathEngine();
+    await engine.start(parentPath, {});
+
+    await engine.startSubPath(subPath, { amount: 10 });
+    await engine.next();
+    await engine.next(); // completes the sub-path
+    expect(engine.snapshot()!.pathId).toBe("claim");
+
+    await engine.startSubPath(subPath, {});
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
+  });
+
+  it("a sub-path step does not inherit attempted state from a parent step with the same id", async () => {
+    const parent: PathDefinition = {
+      id: "parent",
+      steps: [
+        { id: "details", fieldErrors: ({ data }) => ({ name: !data.name ? "Name is required." : undefined }) },
+        { id: "next" }
+      ]
+    };
+    const engine = new PathEngine();
+    await engine.start(parent, {});
+    await engine.next(); // blocked → parent "details" attempted
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
+
+    await engine.startSubPath(subPath, {});
+    expect(engine.snapshot()!.stepId).toBe("details");
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
+  });
+
+  it("a parent step does not inherit attempted state from a sub-path step with the same id", async () => {
+    const parent: PathDefinition = {
+      id: "parent",
+      steps: [{ id: "items" }, { id: "details" }]
+    };
+    const engine = new PathEngine();
+    await engine.start(parent, {});
+
+    await engine.startSubPath(subPath, {});
+    await engine.next(); // blocked → sub-path "details" attempted
+    await engine.cancel();
+
+    await engine.next(); // parent moves to its own "details" step, never attempted
+    expect(engine.snapshot()!.stepId).toBe("details");
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
+  });
+
+  it("the parent step keeps its own attempted state across a sub-path round trip", async () => {
+    const parent: PathDefinition = {
+      id: "parent",
+      steps: [
+        { id: "items", fieldErrors: ({ data }) => ({ items: !data.items ? "Add an item." : undefined }) },
+        { id: "review" }
+      ]
+    };
+    const engine = new PathEngine();
+    await engine.start(parent, {});
+    await engine.next(); // blocked → parent "items" attempted
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
+
+    await engine.startSubPath(subPath, {});
+    await engine.cancel();
+
+    expect(engine.snapshot()!.stepId).toBe("items");
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
+  });
+});

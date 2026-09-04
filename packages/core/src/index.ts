@@ -571,6 +571,13 @@ interface ActivePath {
   resolvedChoiceStep?: PathStep;
   /** Step IDs that have been confirmed skipped via shouldSkip during navigation. Used for accurate stepCount / progress in snapshots. */
   resolvedSkips: Set<string>;
+  /**
+   * Step IDs (within this path instance) the user has tried to advance from.
+   * Backs `snapshot.hasAttemptedNext`. Lives on the instance so that a fresh
+   * launch of the same sub-path starts clean, and so that a parent and a
+   * sub-path whose steps share an id never see each other's attempts.
+   */
+  attemptedNextSteps: Set<string>;
 }
 
 function isStepChoice(item: PathStep | StepChoice): item is StepChoice {
@@ -607,7 +614,6 @@ export class PathEngine {
   private readonly listeners = new Set<(event: PathEvent) => void>();
   private _status: PathStatus = "idle";
   /** Step IDs on which next() or goToStep({ validateOnLeave }) has been called. Per-step and persistent — does not reset on navigation, only on start()/restart(). */
-  private readonly _attemptedNextSteps = new Set<string>();
   /** True after validate() has been called. Global — does not reset on step navigation. Resets on start/restart. */
   private _hasValidated = false;
   /** Blocking message from canMoveNext returning { allowed: false, reason }. Cleared on step entry. */
@@ -696,6 +702,7 @@ export class PathEngine {
         currentStepIndex: clampIndex(definition, stackItem.currentStepIndex),
         data: { ...stackItem.data },
         visitedStepIds: new Set(stackItem.visitedStepIds),
+        attemptedNextSteps: new Set(),
         resolvedSkips: new Set(),
         subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined,
         stepEntryData: stackItem.stepEntryData ? { ...stackItem.stepEntryData } : { ...stackItem.data },
@@ -716,6 +723,7 @@ export class PathEngine {
       currentStepIndex: clampIndex(activeDefinition, state.currentStepIndex),
       data: { ...state.data },
       visitedStepIds: new Set(state.visitedStepIds),
+      attemptedNextSteps: new Set(),
       resolvedSkips: new Set(),
       // Active path's subPathMeta is not serialized (it's transient metadata
       // from the parent when this path was started). On restore, it's undefined.
@@ -801,7 +809,6 @@ export class PathEngine {
     this._status = "idle";
     this._blockingError = null;
     this._hasValidated = false;
-    this._attemptedNextSteps.clear();
     this._error = null;
     this._pendingRetry = null;
     this._retryCount = 0;
@@ -1056,7 +1063,7 @@ export class PathEngine {
       error: this._error,
       hasPersistence: this._hasPersistence,
       hasValidated: this._hasValidated,
-      hasAttemptedNext: this._attemptedNextSteps.has(item.id),
+      hasAttemptedNext: active.attemptedNextSteps.has(item.id),
       blockingError: this._blockingError,
       canMoveNext: isCompleted ? false : this.evaluateCanMoveNextSync(effectiveStep, active),
       canMovePrevious: isCompleted ? false : this.evaluateGuardSync(effectiveStep.canMovePrevious, active),
@@ -1137,6 +1144,7 @@ export class PathEngine {
       currentStepIndex: 0,
       data: { ...initialData },
       visitedStepIds: new Set(),
+      attemptedNextSteps: new Set(),
       resolvedSkips: new Set(),
       subPathMeta: undefined,
       stepEntryData: { ...initialData },  // Will be updated in enterCurrentStep
@@ -1161,7 +1169,7 @@ export class PathEngine {
 
     // Record that the user has attempted to advance — used by shells and step
     // templates to gate error display ("punish late, reward early").
-    this._attemptedNextSteps.add(this.getCurrentItem(active).id);
+    active.attemptedNextSteps.add(this.getCurrentItem(active).id);
 
     // Phase: validating — canMoveNext guard
     this._status = "validating";
@@ -1255,7 +1263,7 @@ export class PathEngine {
     if (this._status !== "idle") return;
 
     if (options?.validateOnLeave) {
-      this._attemptedNextSteps.add(this.getCurrentItem(active).id);
+      active.attemptedNextSteps.add(this.getCurrentItem(active).id);
     }
 
     this._status = "leaving";
@@ -1281,7 +1289,7 @@ export class PathEngine {
     if (this._status !== "idle") return;
 
     if (options?.validateOnLeave) {
-      this._attemptedNextSteps.add(this.getCurrentItem(active).id);
+      active.attemptedNextSteps.add(this.getCurrentItem(active).id);
     }
 
     this._status = "validating";
