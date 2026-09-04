@@ -4575,3 +4575,136 @@ describe("PathEngine — stateChanged cause reflects the method that triggered i
     expect(causesOf(events).length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A throwing subscriber must not corrupt engine state — C8
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — subscriber errors do not escape into engine state", () => {
+  // emit() calls each listener directly. emitStateChanged("next") runs before
+  // the try/catch in _nextAsync, so a subscriber that throws leaves _status at
+  // "validating" forever and every later navigation is silently dropped.
+
+  it("a throwing subscriber does not leave the engine stuck in a busy status", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = new PathEngine();
+    await engine.start(threeStepPath("w"));
+    engine.subscribe(() => { throw new Error("listener exploded"); });
+
+    await expect(engine.next()).resolves.toBeUndefined();
+
+    let snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.stepId).toBe("step2");
+
+    // Navigation keeps working afterwards.
+    await engine.next();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.stepId).toBe("step3");
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("other subscribers still receive every event when one of them throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("w"));
+    engine.subscribe(() => { throw new Error("listener exploded"); });
+    const received: string[] = [];
+    engine.subscribe((e) => { received.push(e.type === "stateChanged" ? e.snapshot.status : e.type); });
+
+    await engine.next();
+
+    expect(received).toEqual(["validating", "leaving", "idle"]);
+    errorSpy.mockRestore();
+  });
+
+  it("a throwing subscriber during start() still leaves the engine idle on the first step", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = new PathEngine();
+    engine.subscribe(() => { throw new Error("listener exploded"); });
+
+    await expect(engine.start(twoStepPath("w"))).resolves.toBeUndefined();
+
+    expect(engine.snapshot()!.status).toBe("idle");
+    expect(engine.snapshot()!.stepId).toBe("step1");
+    errorSpy.mockRestore();
+  });
+
+  it("a throwing subscriber does not turn a successful navigation into an error state", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("w"));
+    engine.subscribe(() => { throw new Error("listener exploded"); });
+
+    await engine.next();
+
+    expect(engine.snapshot()!.error).toBeNull();
+    errorSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Completing through a skipped last step — C9
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — completion snapshot when the last step is skipped", () => {
+  // finishActivePath backs currentStepIndex up to steps.length - 1 even when
+  // that step is in resolvedSkips, so the completed snapshot points at a step
+  // the user never saw: stepId "b", stepIndex 1 with stepCount 1, steps [a].
+
+  const path: PathDefinition = {
+    id: "w",
+    steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }]
+  };
+
+  it("the completed snapshot sits on the last visible step, not the skipped one", async () => {
+    const engine = new PathEngine();
+    await engine.start(path);
+    await engine.next(); // b is skipped → completes
+
+    const snap = engine.snapshot()!;
+    expect(snap.status).toBe("completed");
+    expect(snap.stepId).toBe("a");
+    expect(snap.stepIndex).toBe(0);
+    expect(snap.stepCount).toBe(1);
+    expect(snap.steps.map((s) => s.id)).toEqual(["a"]);
+    expect(snap.isLastStep).toBe(true);
+    expect(snap.progress).toBe(1);
+  });
+
+  it("a failing onComplete reached through a skipped last step shows the error on the last visible step", async () => {
+    let fail = true;
+    const engine = new PathEngine();
+    await engine.start({ ...path, onComplete: async () => { if (fail) throw new Error("submit failed"); } });
+    await engine.next();
+
+    let snap = engine.snapshot()!;
+    expect(snap.status).toBe("error");
+    expect(snap.stepId).toBe("a");
+    expect(snap.stepIndex).toBe(0);
+
+    fail = false;
+    await engine.retry();
+    snap = engine.snapshot()!;
+    expect(snap.status).toBe("completed");
+    expect(snap.stepId).toBe("a");
+  });
+
+  it("several trailing skipped steps back up to the last visible one", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }, { id: "c", shouldSkip: () => true }]
+    });
+    await engine.next();
+
+    const snap = engine.snapshot()!;
+    expect(snap.status).toBe("completed");
+    expect(snap.stepId).toBe("a");
+    expect(snap.stepCount).toBe(1);
+    expect(snap.stepIndex).toBe(0);
+  });
+});

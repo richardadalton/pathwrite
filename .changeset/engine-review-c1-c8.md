@@ -2,7 +2,7 @@
 "@daltonr/pathwrite-core": patch
 ---
 
-Engine fixes for findings C1–C7 of the September 2026 review, plus its first two "from reading" items (`previous()` guard status; `stateChanged` cause on completion failures and retries).
+Engine fixes for findings C1–C9 of the September 2026 review, plus its first two "from reading" items (`previous()` guard status; `stateChanged` cause on completion failures and retries).
 
 **Bug fixes**
 
@@ -12,6 +12,8 @@ Engine fixes for findings C1–C7 of the September 2026 review, plus its first t
 - Async `canMoveNext` / `canMovePrevious` / `fieldErrors` functions are invoked once by `snapshot()` to detect that they are async, then skipped, and warned about once — not on every `setData`.
 - `hasAttemptedNext` is scoped to the path instance. A fresh launch of a sub-path starts clean, and a parent and sub-path whose steps share an id no longer see each other's attempts.
 - `previous()` runs `canMovePrevious` under status `"validating"` and only moves to `"leaving"` for `onLeave`, matching the documented `PathStatus` contract and `next()`. It now emits `validating → leaving → idle` (one more `stateChanged` than before).
+- A subscriber that throws no longer aborts the emit loop or unwinds into the navigation that emitted the event (which left the engine stuck in a busy status). The error is reported via `console.error` and the remaining subscribers still receive the event.
+- Completing a path whose trailing step(s) were skipped leaves the completed / error snapshot on the last *visible* step instead of the skipped one.
 - `stateChanged.cause` now identifies the method that actually triggered the event: a completion failure reached from `start()` (all steps skipped) reports `"start"` instead of `"next"`, and every `retry()` emits `"retry"` instead of replaying the original cause.
 
 **Behaviour changes** (bug fixes, but observable)

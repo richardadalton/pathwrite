@@ -1474,7 +1474,7 @@ export class PathEngine {
       // currentStepIndex was incremented past the last step in _nextAsync to
       // trigger completion. Back it up so snapshot() can reference the final step
       // if any stateChanged events fire during or after the completion sequence.
-      finished.currentStepIndex = finished.definition.steps.length - 1;
+      finished.currentStepIndex = this.lastVisibleIndex(finished);
 
       // Top-level path completed — call onComplete before changing state so
       // that if it throws the engine remains on the final step and can retry.
@@ -1530,7 +1530,7 @@ export class PathEngine {
         if (!this.activePath) this.activePath = active;
         // Back up to the last valid step so snapshot() can render it while error is shown
         if (this.activePath.currentStepIndex >= this.activePath.definition.steps.length) {
-          this.activePath.currentStepIndex = this.activePath.definition.steps.length - 1;
+          this.activePath.currentStepIndex = this.lastVisibleIndex(this.activePath);
         }
         this.emitStateChanged(cause);
       }
@@ -1581,8 +1581,29 @@ export class PathEngine {
 
   private emit(event: PathEvent): void {
     for (const listener of this.listeners) {
-      listener(event);
+      // A subscriber that throws must not abort the emit loop or unwind into
+      // the navigation that emitted the event — that would leave the engine
+      // stuck in a busy status with every later call silently dropped.
+      try {
+        listener(event);
+      } catch (err) {
+        console.error(`[pathwrite] A subscriber threw while handling "${event.type}":`, err);
+      }
     }
+  }
+
+  /**
+   * Index of the last step that is not in `resolvedSkips`. Used when a path
+   * completes so the completed / error snapshot points at a step the user
+   * actually saw rather than a trailing skipped one. Falls back to the last
+   * defined step if every step was skipped.
+   */
+  private lastVisibleIndex(active: ActivePath): number {
+    const { steps } = active.definition;
+    for (let i = steps.length - 1; i >= 0; i--) {
+      if (!active.resolvedSkips.has(steps[i].id)) return i;
+    }
+    return steps.length - 1;
   }
 
   private emitStateChanged(cause: StateChangeCause): void {
