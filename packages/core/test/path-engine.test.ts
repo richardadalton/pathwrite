@@ -3910,3 +3910,110 @@ describe("PathEngine — StepChoice", () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// start() while a path is active — C4
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — start() while a path is active", () => {
+  // core-api.md: "If a path is already active, calling start() replaces it
+  // without firing any lifecycle hooks on the old path." A re-run React effect
+  // or a Strict Mode double-invoke calls start() twice; that must not nest.
+
+  it("start() replaces the active path instead of nesting it as a sub-path", async () => {
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+    await engine.start(twoStepPath("a"), { from: "a" });
+    await engine.next();
+
+    await engine.start(threeStepPath("b"), { from: "b" });
+
+    const snap = engine.snapshot()!;
+    expect(snap.pathId).toBe("b");
+    expect(snap.stepId).toBe("step1");
+    expect(snap.nestingLevel).toBe(0);
+    expect(snap.data).toEqual({ from: "b" });
+    expect(engine.exportState()!.pathStack).toEqual([]);
+    // Torn down silently, like restart(): no cancelled / resumed for the old path.
+    expect(events.map(e => e.type)).not.toContain("cancelled");
+    expect(events.map(e => e.type)).not.toContain("resumed");
+  });
+
+  it("calling start() twice with the same definition leaves a single top-level path", async () => {
+    const path = twoStepPath("form");
+    const engine = new PathEngine();
+    await engine.start(path, {});
+    await engine.start(path, {});
+
+    expect(engine.snapshot()!.nestingLevel).toBe(0);
+
+    // previous() on the first step of a top-level path is a no-op — it must
+    // not pop back to a stale copy of the same path.
+    await engine.previous();
+    const snap = engine.snapshot()!;
+    expect(snap.pathId).toBe("form");
+    expect(snap.stepId).toBe("step1");
+    expect(snap.nestingLevel).toBe(0);
+  });
+
+  it("cancel() after a second start() ends the path instead of resuming a stale copy", async () => {
+    const path = twoStepPath("form");
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+    await engine.start(path, {});
+    await engine.start(path, {});
+
+    await engine.cancel();
+
+    expect(engine.snapshot()).toBeNull();
+    expect(events.filter(e => e.type === "cancelled")).toHaveLength(1);
+  });
+
+  it("start() while a sub-path is active clears the whole stack", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("parent"), {});
+    await engine.startSubPath(twoStepPath("sub"), {});
+    expect(engine.snapshot()!.nestingLevel).toBe(1);
+
+    await engine.start(twoStepPath("other"), {});
+
+    const snap = engine.snapshot()!;
+    expect(snap.pathId).toBe("other");
+    expect(snap.nestingLevel).toBe(0);
+    expect(engine.exportState()!.pathStack).toEqual([]);
+  });
+
+  it("start() on a completed engine starts the new path", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "a", steps: [{ id: "only" }] }, {});
+    await engine.next();
+    expect(engine.snapshot()!.status).toBe("completed");
+
+    await engine.start(twoStepPath("b"), {});
+
+    const snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.pathId).toBe("b");
+    expect(snap.stepId).toBe("step1");
+  });
+
+  it("start() while a path is active resets transient state", async () => {
+    const path: PathDefinition = {
+      id: "form",
+      steps: [
+        { id: "step1", canMoveNext: () => ({ allowed: false, reason: "nope" }) },
+        { id: "step2" }
+      ]
+    };
+    const engine = new PathEngine();
+    await engine.start(path, {});
+    await engine.next();
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(true);
+    expect(engine.snapshot()!.blockingError).toBe("nope");
+
+    await engine.start(path, {});
+
+    expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
+    expect(engine.snapshot()!.blockingError).toBeNull();
+  });
+});

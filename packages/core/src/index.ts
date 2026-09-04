@@ -749,13 +749,19 @@ export class PathEngine {
   // Public API
   // ---------------------------------------------------------------------------
 
+  /**
+   * Starts a top-level path. If a path is already active (or completed) it is
+   * torn down first — the whole sub-path stack included — without firing any
+   * lifecycle hooks on the old path. Calling `start()` twice therefore leaves a
+   * single top-level path, which is what a re-run effect or a Strict Mode
+   * double-invoke expects. To nest a path, use `startSubPath()`.
+   */
   public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
     this.assertPathHasSteps(path);
     this._rootPath = path;
     this._rootInitialData = initialData;
-    this._hasValidated = false;
-    this._attemptedNextSteps.clear();
-    return this._startAsync(path, initialData);
+    this.teardownForStart();
+    return this._startAsync(path, initialData, false);
   }
 
   /**
@@ -773,13 +779,26 @@ export class PathEngine {
     if (!this._rootPath) {
       throw new Error("Cannot restart: engine has not been started. Call start() first.");
     }
+    this.teardownForStart();
+    return this._startAsync(this._rootPath, { ...this._rootInitialData }, false);
+  }
+
+  /**
+   * Drops the active path and the entire sub-path stack without firing
+   * lifecycle hooks or emitting `cancelled`, and clears every piece of
+   * transient state so a fresh top-level path can start. Shared by `start()`
+   * and `restart()`.
+   */
+  private teardownForStart(): void {
     this._status = "idle";
     this._blockingError = null;
     this._hasValidated = false;
     this._attemptedNextSteps.clear();
+    this._error = null;
+    this._pendingRetry = null;
+    this._retryCount = 0;
     this.activePath = null;
     this.pathStack.length = 0;
-    return this._startAsync(this._rootPath, { ...this._rootInitialData });
   }
 
   /**
@@ -797,7 +816,7 @@ export class PathEngine {
   public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
     if (this._status === "completed") return Promise.resolve();
     this.requireActivePath();
-    return this._startAsync(path, initialData, meta);
+    return this._startAsync(path, initialData, true, meta);
   }
 
   public next(): Promise<void> {
@@ -1085,13 +1104,21 @@ export class PathEngine {
   // Private async helpers
   // ---------------------------------------------------------------------------
 
-  private async _startAsync(path: PathDefinition, initialData: PathData, subPathMeta?: Record<string, unknown>): Promise<void> {
+  private async _startAsync(
+    path: PathDefinition,
+    initialData: PathData,
+    asSubPath: boolean,
+    subPathMeta?: Record<string, unknown>
+  ): Promise<void> {
     if (this._status !== "idle") return;
 
-    if (this.activePath !== null) {
+    // Only startSubPath() nests. start() and restart() have already torn the
+    // previous path down, so there is nothing to push.
+    if (asSubPath) {
+      const parent = this.requireActivePath();
       // Store the meta on the parent before pushing to stack
       const parentWithMeta: ActivePath = {
-        ...this.activePath,
+        ...parent,
         subPathMeta
       };
       this.pathStack.push(parentWithMeta);
