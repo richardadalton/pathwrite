@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PathData, PathDefinition, PathEngine, PathEvent, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
+import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -4015,5 +4015,118 @@ describe("PathEngine — start() while a path is active", () => {
 
     expect(engine.snapshot()!.hasAttemptedNext).toBe(false);
     expect(engine.snapshot()!.blockingError).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Async guards in snapshots — C5
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — async guards are not re-invoked on every snapshot", () => {
+  // snapshot() has to call a guard once to find out that it is async. After
+  // that it must stop calling it: an async canMoveNext that hits an API would
+  // otherwise fire on every setData (keystroke) via stateChanged → snapshot().
+
+  function asyncGuardPath(guard: (ctx: unknown) => Promise<GuardResult>): PathDefinition {
+    return { id: "p", steps: [{ id: "s1", canMoveNext: guard }, { id: "s2" }] };
+  }
+
+  it("invokes an async canMoveNext once for detection, not on every setData", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const guard = vi.fn(async () => true as const);
+    const engine = new PathEngine();
+    await engine.start(asyncGuardPath(guard));
+
+    for (const ch of ["a", "ab", "abc", "abcd", "abcde"]) {
+      await engine.setData("username", ch);
+      engine.snapshot();
+    }
+
+    expect(guard).toHaveBeenCalledTimes(1);
+    warnSpy.mockRestore();
+  });
+
+  it("warns about an async canMoveNext once, not on every snapshot", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const engine = new PathEngine();
+    await engine.start(asyncGuardPath(async () => true));
+
+    for (let i = 0; i < 5; i++) {
+      await engine.setData("n", i);
+      engine.snapshot();
+    }
+
+    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async guard"));
+    expect(asyncWarnings).toHaveLength(1);
+    warnSpy.mockRestore();
+  });
+
+  it("still enforces the async guard during navigation after it has been skipped in snapshots", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const guard = vi.fn(async () => ({ allowed: false as const, reason: "taken" }));
+    const engine = new PathEngine();
+    await engine.start(asyncGuardPath(guard));
+    await engine.setData("username", "admin");
+    engine.snapshot();
+    engine.snapshot();
+
+    await engine.next();
+
+    expect(engine.snapshot()?.stepId).toBe("s1");
+    expect(engine.snapshot()?.blockingError).toBe("taken");
+    // One detection call from snapshots, one real call from next().
+    expect(guard).toHaveBeenCalledTimes(2);
+    warnSpy.mockRestore();
+  });
+
+  it("invokes an async canMovePrevious once for detection", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const guard = vi.fn(async () => true as const);
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "s1" }, { id: "s2", canMovePrevious: guard }] });
+    await engine.next();
+
+    for (let i = 0; i < 5; i++) {
+      await engine.setData("n", i);
+      engine.snapshot();
+    }
+
+    expect(guard).toHaveBeenCalledTimes(1);
+    warnSpy.mockRestore();
+  });
+
+  it("invokes an async fieldErrors once and warns once", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fieldErrors = vi.fn(async () => ({})) as unknown as PathStep["fieldErrors"];
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "s1", fieldErrors }, { id: "s2" }] });
+
+    for (let i = 0; i < 5; i++) {
+      await engine.setData("n", i);
+      engine.snapshot();
+    }
+
+    expect(fieldErrors).toHaveBeenCalledTimes(1);
+    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async fieldErrors"));
+    expect(asyncWarnings).toHaveLength(1);
+    warnSpy.mockRestore();
+  });
+
+  it("detects each async guard separately — one detection call and one warning per guard", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const guard1 = vi.fn(async () => true as const);
+    const guard2 = vi.fn(async () => true as const);
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "s1", canMoveNext: guard1 }, { id: "s2", canMoveNext: guard2 }, { id: "s3" }] });
+    await engine.setData("a", 1);
+    await engine.next(); // guard1: detection + navigation
+    await engine.setData("b", 2);
+    await engine.setData("b", 3);
+
+    expect(guard1).toHaveBeenCalledTimes(2);
+    expect(guard2).toHaveBeenCalledTimes(1);
+    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async guard"));
+    expect(asyncWarnings).toHaveLength(2);
+    warnSpy.mockRestore();
   });
 });

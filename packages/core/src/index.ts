@@ -626,6 +626,14 @@ export class PathEngine {
   private _retryCount = 0;
   private _hasPersistence = false;
   private _hasWarnedAsyncShouldSkip = false;
+  /**
+   * Guards / fieldErrors functions that returned a promise when a snapshot
+   * evaluated them. snapshot() has to call a function once to discover that
+   * it is async; after that it must not call it again — an async canMoveNext
+   * that hits an API would otherwise fire on every setData (keystroke) via
+   * stateChanged → snapshot(). Navigation still awaits these normally.
+   */
+  private readonly _knownAsyncFns = new WeakSet<Function>();
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -1721,6 +1729,8 @@ export class PathEngine {
     active: ActivePath
   ): boolean {
     if (!guard) return true;
+    // Already known to be async: don't call it again, return the optimistic default.
+    if (this._knownAsyncFns.has(guard)) return true;
     const item = this.getCurrentItem(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
@@ -1732,7 +1742,9 @@ export class PathEngine {
       const result = guard(ctx);
       if (result === true) return true;
       if (result && typeof (result as Promise<unknown>).then === "function") {
-        // Async guard detected - suppress the unhandled rejection, warn, return optimistic default
+        // Async guard detected - remember it so snapshots stop calling it,
+        // suppress the unhandled rejection, warn once, return optimistic default
+        this._knownAsyncFns.add(guard);
         (result as Promise<unknown>).catch(() => {});
         console.warn(
           `[pathwrite] Async guard detected on step "${item.id}". ` +
@@ -1784,6 +1796,8 @@ export class PathEngine {
     active: ActivePath
   ): Record<string, string> {
     if (!fn) return {};
+    // Already known to be async: don't call it again, return the safe default.
+    if (this._knownAsyncFns.has(fn)) return {};
     const item = this.getCurrentItem(active);
     const ctx: PathStepContext = {
       pathId: active.definition.id,
@@ -1803,6 +1817,8 @@ export class PathEngine {
         return filtered;
       }
       if (result && typeof (result as unknown as { then?: unknown }).then === "function") {
+        this._knownAsyncFns.add(fn);
+        (result as unknown as Promise<unknown>).catch(() => {});
         console.warn(
           `[pathwrite] Async fieldErrors detected on step "${item.id}". ` +
           `fieldErrors must be synchronous. Returning {} as default. ` +
