@@ -1250,13 +1250,14 @@ export class PathEngine {
     // on their first step (the currentStepIndex < 0 branch below handles that).
     if (active.currentStepIndex === 0 && this.pathStack.length === 0) return;
 
-    this._status = "leaving";
-    this.emitStateChanged("previous");
-
     const step = this.getEffectiveStep(active);
     const retry = () => this._previousAsync(active);
 
-    // Phase: validating — canMovePrevious guard
+    // Phase: validating — canMovePrevious guard (same contract as next():
+    // "validating" while a guard runs, "leaving" only once onLeave starts)
+    this._status = "validating";
+    this.emitStateChanged("previous");
+
     let prevGuard: { allowed: boolean; reason: string | null };
     try {
       prevGuard = await this.canMovePrevious(active, step);
@@ -1274,6 +1275,8 @@ export class PathEngine {
 
     // Phase: leaving — onLeave hook. Nothing has moved yet, so a retry
     // re-runs the whole previous() safely.
+    this._status = "leaving";
+    this.emitStateChanged("previous");
     try {
       this.applyPatch(await this.leaveCurrentStep(active, step));
     } catch (err) {

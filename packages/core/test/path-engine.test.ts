@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
+import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathStatus, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -403,7 +403,8 @@ describe("PathEngine — events", () => {
     await engine.next();
     const before = events.filter((e) => e.type === "stateChanged").length;
     await engine.previous();
-    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 2);
+    // validating → leaving → idle, the same three emissions as next()
+    expect(events.filter((e) => e.type === "stateChanged").length).toBe(before + 3);
   });
 
   it("emits completed with final data when the path finishes", async () => {
@@ -4398,5 +4399,89 @@ describe("PathEngine — error handling for navigation other than next()", () =>
 
     expect(engine.snapshot()!.error).toEqual({ message: "still down", phase: "leaving", retryCount: 2 });
     expect(engine.snapshot()!.stepId).toBe("s2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// previous() runs canMovePrevious under "validating" — C8
+// ---------------------------------------------------------------------------
+
+describe("PathEngine — previous() runs its guard under status validating", () => {
+  // core-api.md: "validating" = a canMoveNext or canMovePrevious guard is
+  // running; "leaving" = the onLeave hook is running. next() honours this.
+  // previous() set "leaving" before running its guard, so shells that show
+  // "Checking…" on validating never showed it for Back.
+
+  it("the status observed while canMovePrevious runs is validating", async () => {
+    let observed: PathStatus | undefined;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1" },
+        { id: "s2", canMovePrevious: async () => { observed = engine.snapshot()!.status; return true; } }
+      ]
+    });
+    await engine.next();
+
+    await engine.previous();
+
+    expect(observed).toBe("validating");
+  });
+
+  it("previous() emits validating, then leaving, then idle — the same sequence as next()", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1" },
+        { id: "s2", canMovePrevious: async () => true, onLeave: async () => {} }
+      ]
+    });
+    await engine.next();
+
+    const statuses: PathStatus[] = [];
+    engine.subscribe((e) => {
+      if (e.type === "stateChanged" && e.cause === "previous") statuses.push(e.snapshot.status);
+    });
+    await engine.previous();
+
+    expect(statuses).toEqual(["validating", "leaving", "idle"]);
+  });
+
+  it("previous() emits validating even when the step has no guard, mirroring next()", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath("w"));
+    await engine.next();
+
+    const statuses: PathStatus[] = [];
+    engine.subscribe((e) => {
+      if (e.type === "stateChanged" && e.cause === "previous") statuses.push(e.snapshot.status);
+    });
+    await engine.previous();
+
+    expect(statuses).toEqual(["validating", "leaving", "idle"]);
+  });
+
+  it("a blocked canMovePrevious returns to idle from validating without ever entering leaving", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "w",
+      steps: [
+        { id: "s1" },
+        { id: "s2", canMovePrevious: async () => ({ allowed: false, reason: "locked" }) }
+      ]
+    });
+    await engine.next();
+
+    const statuses: PathStatus[] = [];
+    engine.subscribe((e) => {
+      if (e.type === "stateChanged" && e.cause === "previous") statuses.push(e.snapshot.status);
+    });
+    await engine.previous();
+
+    expect(statuses).toEqual(["validating", "idle"]);
+    expect(engine.snapshot()!.stepId).toBe("s2");
+    expect(engine.snapshot()!.blockingError).toBe("locked");
   });
 });
