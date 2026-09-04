@@ -49,6 +49,12 @@ export interface SerializedPathState {
     stepEnteredAt?: number;
   }>;
   _status: PathStatus;
+  /**
+   * The `initialData` the root path was started with. `restart()` (and
+   * `completionBehaviour: "reset"`) reset to this after a `fromState()` restore.
+   * Absent from states exported by older versions — falls back to `{}`.
+   */
+  initialData?: PathData;
 }
 
 /**
@@ -702,6 +708,12 @@ export class PathEngine {
 
     engine._status = state._status ?? "idle";
 
+    // restart() needs the root definition and its initial data, exactly as
+    // start() records them. The root is the bottom of the stack when sub-paths
+    // are active, otherwise the active path itself.
+    engine._rootPath = engine.pathStack[0]?.definition ?? activeDefinition;
+    engine._rootInitialData = state.initialData ? { ...state.initialData } : {};
+
     // Re-derive the selected inner step for any StepChoice slots (not serialized —
     // always recomputed from current data on restore).
     for (const stackItem of engine.pathStack) {
@@ -1048,7 +1060,8 @@ export class PathEngine {
         stepEntryData: { ...p.stepEntryData },
         stepEnteredAt: p.stepEnteredAt
       })),
-      _status: this._status
+      _status: this._status,
+      initialData: { ...this._rootInitialData }
     };
   }
 
@@ -1295,13 +1308,19 @@ export class PathEngine {
     const finishedData = { ...finished.data };
 
     if (this.pathStack.length > 0) {
-      const parent = this.pathStack.pop()!;
+      // Peek at the parent — do NOT pop it yet. The sub-path must stay active
+      // and the parent must stay on the stack until onSubPathComplete has
+      // succeeded. If the hook throws, the error wrapper leaves the engine on
+      // the sub-path's final step and a retry() re-enters here, re-running the
+      // hook. Popping first would make the retry see the parent as a
+      // top-level path and complete it instead.
+      const parent = this.pathStack[this.pathStack.length - 1];
       // The meta is stored on the parent, not the sub-path
       const finishedMeta = parent.subPathMeta;
-      this.activePath = parent;
       const parentItem = this.getCurrentItem(parent);
       const parentStep = this.getEffectiveStep(parent);
 
+      let patch: Partial<PathData> | void | null | undefined;
       if (parentStep.onSubPathComplete) {
         const ctx: PathStepContext = {
           pathId: parent.definition.id,
@@ -1309,11 +1328,17 @@ export class PathEngine {
           data: { ...parent.data },
           isFirstEntry: !parent.visitedStepIds.has(parentItem.id)
         };
-        this.applyPatch(
-          await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta)
-        );
+        patch = await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta);
       }
 
+      // Hook succeeded (or there was none) — now it is safe to resume the parent.
+      this.pathStack.pop();
+      this.activePath = parent;
+      this.applyPatch(patch);
+
+      // Settle before emitting: `resumed` is a terminal, settled event (see
+      // matchesStrategy) and adapters take their snapshot straight from it.
+      this._status = "idle";
       this.emit({
         type: "resumed",
         resumedPathId: parent.definition.id,

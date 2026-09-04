@@ -2162,6 +2162,86 @@ describe("PathEngine — error handling", () => {
     expect(events).not.toContain("completed");
     expect(engine.snapshot()!.error?.phase).toBe("completing");
   });
+
+  it("retry() after onSubPathComplete throws re-runs the hook and resumes the parent instead of completing it", async () => {
+    let hookCalls = 0;
+    const onComplete = vi.fn();
+    const engine = new PathEngine();
+    const events = collectEvents(engine);
+
+    const parent: PathDefinition = {
+      id: "parent",
+      steps: [
+        {
+          id: "p1",
+          onSubPathComplete: async (_id, subData) => {
+            hookCalls++;
+            if (hookCalls === 1) throw new Error("save failed");
+            return { saved: subData.value };
+          }
+        },
+        { id: "p2" }
+      ],
+      onComplete
+    };
+    const sub: PathDefinition = { id: "sub", steps: [{ id: "s1" }] };
+
+    await engine.start(parent, {});
+    await engine.startSubPath(sub, { value: 42 });
+    await engine.next(); // completes the sub-path → hook throws
+
+    expect(hookCalls).toBe(1);
+    expect(engine.snapshot()!.status).toBe("error");
+    expect(engine.snapshot()!.error).toEqual({ message: "save failed", phase: "completing", retryCount: 0 });
+
+    await engine.retry();
+
+    // The hook must run again, and succeed this time.
+    expect(hookCalls).toBe(2);
+    // The parent resumes on the step that launched the sub-path — it is NOT completed.
+    const snap = engine.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(snap.pathId).toBe("parent");
+    expect(snap.stepId).toBe("p1");
+    expect(snap.nestingLevel).toBe(0);
+    expect(snap.data.saved).toBe(42);
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(events.map(e => e.type)).not.toContain("completed");
+    const resumed = events.filter(e => e.type === "resumed");
+    expect(resumed).toHaveLength(1);
+    // Adapters read their snapshot straight off the resumed event, so it must be settled.
+    expect((resumed[0] as Extract<PathEvent, { type: "resumed" }>).snapshot.status).toBe("idle");
+
+    // And the parent can still carry on to its remaining step.
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("p2");
+  });
+
+  it("retry() after repeated onSubPathComplete failures keeps the error state without completing the parent", async () => {
+    const onComplete = vi.fn();
+    const engine = new PathEngine();
+    let hookCalls = 0;
+
+    await engine.start({
+      id: "parent",
+      steps: [
+        { id: "p1", onSubPathComplete: async () => { hookCalls++; throw new Error("still down"); } },
+        { id: "p2" }
+      ],
+      onComplete
+    }, {});
+    await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] }, {});
+    await engine.next();
+    await engine.retry();
+    await engine.retry();
+
+    expect(hookCalls).toBe(3);
+    const snap = engine.snapshot()!;
+    expect(snap.status).toBe("error");
+    expect(snap.error).toEqual({ message: "still down", phase: "completing", retryCount: 2 });
+    expect(onComplete).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -3402,6 +3482,81 @@ describe("PathEngine — exportState / fromState", () => {
     await engine2.cancel();
 
     expect(engine2.snapshot()?.pathId).toBe("parent");
+  });
+
+  it("restart() works on an engine restored via fromState instead of throwing", async () => {
+    const path = threeStepPath("form");
+    const engine1 = new PathEngine();
+    await engine1.start(path, { name: "" });
+    await engine1.setData("name", "Alice");
+    await engine1.next();
+    const state = engine1.exportState()!;
+
+    const engine2 = PathEngine.fromState(state, { form: path });
+    expect(engine2.snapshot()?.stepId).toBe("step2");
+
+    // A restored session must support "Start over" exactly like a started one.
+    await expect(engine2.restart()).resolves.toBeUndefined();
+
+    const snap = engine2.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(snap.pathId).toBe("form");
+    expect(snap.stepId).toBe("step1");
+  });
+
+  it("restart() after fromState resets data to the original initialData", async () => {
+    const path = twoStepPath("form");
+    const engine1 = new PathEngine();
+    await engine1.start(path, { name: "", agreed: false });
+    await engine1.setData("name", "Alice");
+    await engine1.setData("agreed", true);
+    await engine1.next();
+
+    const engine2 = PathEngine.fromState(engine1.exportState()!, { form: path });
+    await engine2.restart();
+
+    expect(engine2.snapshot()!.data).toEqual({ name: "", agreed: false });
+  });
+
+  it("restart() survives a fromState round-trip on a restored engine that was itself restored", async () => {
+    const path = twoStepPath("form");
+    const engine1 = new PathEngine();
+    await engine1.start(path, { count: 0 });
+    await engine1.next();
+
+    const engine2 = PathEngine.fromState(engine1.exportState()!, { form: path });
+    const engine3 = PathEngine.fromState(engine2.exportState()!, { form: path });
+    await engine3.restart();
+
+    expect(engine3.snapshot()!.stepId).toBe("step1");
+    expect(engine3.snapshot()!.data).toEqual({ count: 0 });
+  });
+
+  it("completionBehaviour 'reset' completes cleanly on an engine restored via fromState", async () => {
+    const onComplete = vi.fn();
+    const path: PathDefinition = {
+      id: "form",
+      completionBehaviour: "reset",
+      steps: [{ id: "step1" }, { id: "step2" }],
+      onComplete
+    };
+    const engine1 = new PathEngine();
+    await engine1.start(path, { name: "" });
+    await engine1.setData("name", "Alice");
+    await engine1.next();
+
+    const engine2 = PathEngine.fromState(engine1.exportState()!, { form: path });
+    const events = collectEvents(engine2);
+    await engine2.next(); // completes → engine calls restart() internally
+
+    expect(onComplete).toHaveBeenCalledWith({ name: "Alice" });
+    expect(events.map(e => e.type)).toContain("completed");
+    const snap = engine2.snapshot()!;
+    expect(snap.status).toBe("idle");
+    expect(snap.error).toBeNull();
+    expect(snap.stepId).toBe("step1");
+    expect(snap.data).toEqual({ name: "" });
   });
 });
 
