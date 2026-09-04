@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PathData, PathDefinition, PathEngine, PathEvent, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine, PathEvent, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -3438,20 +3438,90 @@ describe("PathEngine — exportState / fromState", () => {
     expect(snapshot2.data).toEqual({ a: 1, b: "test", c: [1, 2, 3] });
   });
 
-  it("fromState restores _status field", async () => {
+  // C3 — a serialized state can carry a mid-flight status (exportState() called
+  // from a listener while a hook was running). A restored engine must never be
+  // stuck in that phase: every navigation method guards on status === "idle".
+  it.each(["entering", "validating", "leaving", "completing", "error"] as const)(
+    "fromState normalises a mid-flight _status of %s to idle so the restored engine can navigate",
+    async (status) => {
+      const path = twoStepPath("test");
+      const state: SerializedPathState = {
+        version: 1,
+        pathId: "test",
+        currentStepIndex: 0,
+        data: {},
+        visitedStepIds: ["step1"],
+        pathStack: [],
+        _status: status
+      };
+
+      const engine = PathEngine.fromState(state, { test: path });
+      expect(engine.snapshot()?.status).toBe("idle");
+
+      await engine.next();
+      expect(engine.snapshot()?.stepId).toBe("step2");
+    }
+  );
+
+  it("fromState preserves a completed _status", async () => {
     const path = twoStepPath("test");
-    const state: any = {
+    const state: SerializedPathState = {
       version: 1,
       pathId: "test",
-      currentStepIndex: 0,
+      currentStepIndex: 1,
       data: {},
-      visitedStepIds: ["step1"],
+      visitedStepIds: ["step1", "step2"],
       pathStack: [],
-      _status: "validating"
+      _status: "completed"
     };
 
     const engine = PathEngine.fromState(state, { test: path });
-    expect(engine.snapshot()?.status).toBe("validating");
+    expect(engine.snapshot()?.status).toBe("completed");
+  });
+
+  it("state exported by an autosave listener during an async onLeave restores to a usable engine", async () => {
+    // A naive autosave that persists on every stateChanged, including mid-flight ones.
+    const path: PathDefinition = {
+      id: "test",
+      steps: [
+        { id: "step1", onLeave: () => new Promise<void>(r => setTimeout(r, 10)) },
+        { id: "step2" }
+      ]
+    };
+    let captured: SerializedPathState | null = null;
+    const engine1 = new PathEngine();
+    engine1.subscribe((e) => {
+      if (e.type === "stateChanged" && e.snapshot.status === "leaving") captured = engine1.exportState();
+    });
+    await engine1.start(path);
+    await engine1.next();
+    expect(captured!._status).toBe("leaving");
+
+    // "Page reload" while the save was in flight: the leave never completed,
+    // so the user is still on step1 and must be able to try again.
+    const engine2 = PathEngine.fromState(captured!, { test: path });
+    expect(engine2.snapshot()?.status).toBe("idle");
+    expect(engine2.snapshot()?.stepId).toBe("step1");
+
+    await engine2.next();
+    expect(engine2.snapshot()?.stepId).toBe("step2");
+  });
+
+  it("fromState clamps an out-of-range currentStepIndex to the last step", async () => {
+    const path = twoStepPath("test");
+    const state: SerializedPathState = {
+      version: 1,
+      pathId: "test",
+      currentStepIndex: 99,
+      data: {},
+      visitedStepIds: [],
+      pathStack: [],
+      _status: "idle"
+    };
+
+    const engine = PathEngine.fromState(state, { test: path });
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(engine.snapshot()?.status).toBe("idle");
   });
 
   it("can restore and complete a path normally", async () => {

@@ -664,8 +664,18 @@ export class PathEngine {
 
     const engine = new PathEngine(options);
 
+    // Serialized state may be hand-edited, truncated, or written by a different
+    // version of the path definition. Keep every restored index inside the
+    // definition it points at so snapshot() never dereferences a missing step.
+    const clampIndex = (definition: PathDefinition, index: unknown): number => {
+      const last = definition.steps.length - 1;
+      const n = typeof index === "number" && Number.isInteger(index) ? index : 0;
+      return Math.min(Math.max(n, 0), Math.max(last, 0));
+    };
+
     // Restore the path stack (sub-paths)
-    for (const stackItem of state.pathStack) {
+    const stack = Array.isArray(state.pathStack) ? state.pathStack : [];
+    for (const stackItem of stack) {
       const definition = pathDefinitions[stackItem.pathId];
       if (!definition) {
         throw new Error(
@@ -675,7 +685,7 @@ export class PathEngine {
       }
       engine.pathStack.push({
         definition,
-        currentStepIndex: stackItem.currentStepIndex,
+        currentStepIndex: clampIndex(definition, stackItem.currentStepIndex),
         data: { ...stackItem.data },
         visitedStepIds: new Set(stackItem.visitedStepIds),
         resolvedSkips: new Set(),
@@ -695,7 +705,7 @@ export class PathEngine {
 
     engine.activePath = {
       definition: activeDefinition,
-      currentStepIndex: state.currentStepIndex,
+      currentStepIndex: clampIndex(activeDefinition, state.currentStepIndex),
       data: { ...state.data },
       visitedStepIds: new Set(state.visitedStepIds),
       resolvedSkips: new Set(),
@@ -706,7 +716,13 @@ export class PathEngine {
       stepEnteredAt: state.stepEnteredAt ?? Date.now()
     };
 
-    engine._status = state._status ?? "idle";
+    // Only settled states survive a restore. A state exported while a hook was
+    // running ("entering", "validating", "leaving", "completing") describes work
+    // that never finished — the user is still on the step they were on — and
+    // every navigation method guards on "idle", so restoring that status verbatim
+    // would leave the engine unable to move. "error" is dropped too: the error
+    // details and retry closure are not serialized, so there is nothing to retry.
+    engine._status = state._status === "completed" ? "completed" : "idle";
 
     // restart() needs the root definition and its initial data, exactly as
     // start() records them. The root is the bottom of the stack when sub-paths
