@@ -34,14 +34,14 @@ Snapshots are never reactive proxies. The engine does not use `Proxy`, `Object.d
 
 The engine exposes `subscribe(listener)` and `snapshot()`. That is the entire contract between the engine and the outside world.
 
-An observer is any object that implements the `PathObserver` interface. Observers are registered when the engine is constructed and are called on every state change — after `next()`, after `previous()`, after `goToStep()`, after a sub-path completes, and at completion.
+An observer is any function matching the `PathObserver` type — `(event, engine) => void`. Observers are registered when the engine is constructed and are called on every event — after `next()`, after `previous()`, after `goToStep()`, after a sub-path completes, and at completion.
 
 This is how persistence plugs in without touching the engine:
 
 ```typescript
 const engine = new PathEngine({
   observers: [
-    httpPersistence({ store, key, strategy: "onEveryChange" }),
+    persistence({ store, key, strategy: "onEveryChange" }),
     analyticsObserver,
     auditLogObserver,
   ],
@@ -142,9 +142,7 @@ The closest single alternative is XState. The gap is persistence, the simpler me
 
 ## The coupling between workflow and UI
 
-There is an unavoidable coupling between a path definition and the UI that renders it. Both sides must agree on field names in `TData`, step IDs, and which fields `fieldErrors` reports. The CONNASCENCE_AND_TYPES guide covers this in detail, including the current state of type safety and where it can be improved.
-
-The short version:
+There is an unavoidable coupling between a path definition and the UI that renders it. Both sides must agree on field names in `TData`, step IDs, and which fields `fieldErrors` reports. The current state of type safety across that boundary, and where it can be improved:
 
 - `TData` field access is well-managed — `usePathContext<MyData>()` gives fully typed access to `snapshot.data`, and a misspelled field name is a compile error.
 - Step IDs are currently unchecked — both the path definition and the UI use string literals with no compile-time link between them. Renaming a step ID does not produce a build error.
