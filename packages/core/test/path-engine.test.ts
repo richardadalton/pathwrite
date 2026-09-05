@@ -5009,3 +5009,48 @@ describe("PathEngine — goToStep / goToStepChecked to the current step", () => 
     expect(onEnter).toHaveBeenCalledTimes(1); // "b" has no onEnter; "a" not re-entered
   });
 });
+
+describe("PathEngine — goToStep to a step previously resolved as skipped", () => {
+  function skippingPath(): PathDefinition {
+    return { id: "p", steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }, { id: "c" }, { id: "d" }] };
+  }
+
+  for (const method of ["goToStep", "goToStepChecked"] as const) {
+    it(`${method}("b") after b was skipped makes b visible and current`, async () => {
+      const engine = new PathEngine();
+      await engine.start(skippingPath());
+      await engine.next();
+      expect(engine.snapshot()?.stepId).toBe("c");
+      expect(engine.snapshot()?.stepCount).toBe(3);
+
+      await engine[method]("b");
+      const s = engine.snapshot()!;
+      expect(s.stepId).toBe("b");
+      expect(s.steps.map((x) => x.id)).toEqual(["a", "b", "c", "d"]);
+      expect(s.stepIndex).toBe(1);
+      expect(s.steps[s.stepIndex].id).toBe("b");
+      expect(s.steps[s.stepIndex].status).toBe("current");
+      expect(s.stepCount).toBe(4);
+      expect(s.progress).toBeCloseTo(1 / 3);
+    });
+  }
+
+  it("moving on from the overridden step re-evaluates shouldSkip for the steps it passes", async () => {
+    const engine = new PathEngine();
+    await engine.start(skippingPath());
+    await engine.next();
+    await engine.goToStep("b");
+    await engine.next();
+    expect(engine.snapshot()?.stepId).toBe("c");
+    expect(engine.snapshot()?.stepCount).toBe(4); // b was visited, so it stays in the visible list
+  });
+
+  it("previous() from the overridden step skips over nothing it didn't pass", async () => {
+    const engine = new PathEngine();
+    await engine.start(skippingPath());
+    await engine.next();
+    await engine.goToStep("b");
+    await engine.previous();
+    expect(engine.snapshot()?.stepId).toBe("a");
+  });
+});

@@ -1391,7 +1391,7 @@ export class PathEngine {
     if (this.isStale(gen)) return;
     this.applyPatch(patch);
 
-    active.currentStepIndex = targetIndex;
+    this.jumpTo(active, targetIndex);
 
     // Phase: entering — onEnter on the target step
     await this._enterCurrentStepWithErrorHandling(cause);
@@ -1445,7 +1445,7 @@ export class PathEngine {
     if (this.isStale(gen)) return;
     this.applyPatch(patch);
 
-    active.currentStepIndex = targetIndex;
+    this.jumpTo(active, targetIndex);
 
     // Phase: entering — onEnter on the target step
     await this._enterCurrentStepWithErrorHandling(cause);
@@ -1685,6 +1685,19 @@ export class PathEngine {
         console.error(`[pathwrite] A subscriber threw while handling "${event.type}":`, err);
       }
     }
+  }
+
+  /**
+   * Moves `active` straight to `targetIndex` for `goToStep` / `goToStepChecked`.
+   * Neither method evaluates `shouldSkip`, so a target that an earlier
+   * navigation resolved as skipped is being deliberately overridden: take it
+   * out of `resolvedSkips`, otherwise `snapshot()` would report the step as
+   * current while leaving it out of `steps` / `stepCount` and pointing
+   * `stepIndex` at a different step.
+   */
+  private jumpTo(active: ActivePath, targetIndex: number): void {
+    active.currentStepIndex = targetIndex;
+    active.resolvedSkips.delete(active.definition.steps[targetIndex].id);
   }
 
   /**
