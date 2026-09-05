@@ -13,7 +13,7 @@ const IE_COUNTIES = [
 
 export function AddressIEStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
-  const county = snapshot.data.county ?? "";
+  const county = snapshot?.data.county ?? "";
   const [open, setOpen] = useState(false);
 
   function select(c: string) {

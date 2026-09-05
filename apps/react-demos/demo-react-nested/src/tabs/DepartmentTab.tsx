@@ -5,6 +5,7 @@ import { TabBar } from "./TabBar";
 
 export function DepartmentTab() {
   const { snapshot, setData } = usePathContext<EmployeeDetails>();
+  if (!snapshot) return null;
   const data = snapshot.data;
   const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
   const errors = showErrors ? snapshot.fieldErrors : {};

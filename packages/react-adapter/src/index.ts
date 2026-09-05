@@ -229,13 +229,17 @@ export function PathProvider({ children, onEvent, services }: PathProviderProps)
  * }
  * ```
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): UsePathReturn<TData> & { services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
+  // `snapshot` is genuinely nullable here: under a bare <PathProvider> it is
+  // null until start() (and after cancel / a "dismiss" completion). Step
+  // components rendered by <PathShell> only exist while a snapshot does, so
+  // they can narrow with a plain `if (!snapshot) return null;`.
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> }),
+    ...(ctx.path as unknown as UsePathReturn<TData>),
     services: ctx.services as TServices
   };
 }
@@ -286,12 +290,14 @@ export function useField<TData extends PathData, K extends string & keyof TData>
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, setData]
   );
-  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
+  // No active path (bare <PathProvider> before start()): render an empty,
+  // message-free field rather than crash.
+  const showErrors = !!snapshot && (snapshot.hasAttemptedNext || snapshot.hasValidated);
   return {
-    value: String(snapshot.data[field] ?? ""),
+    value: String(snapshot?.data[field] ?? ""),
     onChange,
     error: showErrors ? snapshot.fieldErrors[field as string] : undefined,
-    warning: snapshot.fieldWarnings[field as string],
+    warning: snapshot?.fieldWarnings[field as string],
   };
 }
 
@@ -320,9 +326,9 @@ export function FieldError({ field, className }: { field: string; className?: st
     return () => inlineCtx?.unclaim(field);
   }, [field, inlineCtx]);
 
-  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
+  const showErrors = !!snapshot && (snapshot.hasAttemptedNext || snapshot.hasValidated);
   const error = showErrors ? snapshot.fieldErrors[field] : undefined;
-  const warning = snapshot.fieldWarnings[field];
+  const warning = snapshot?.fieldWarnings[field];
   if (error) return createElement("span", { className: cls("pw-field-error", className) }, error);
   if (warning) return createElement("span", { className: cls("pw-field-warning", className) }, warning);
   return null;

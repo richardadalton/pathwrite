@@ -5,6 +5,7 @@ import type { DemoData } from "./demo-path";
 
 export function SkipToggleStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
+  if (!snapshot) return null;
   const skipOptional = snapshot.data.skipNext ?? false;
 
   return (

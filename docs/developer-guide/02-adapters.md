@@ -317,6 +317,7 @@ When a step component needs access to the path — to read data, call `setData`,
 // React / Solid
 function DetailsStep() {
   const { snapshot, setData } = usePathContext<HiringData>();
+  if (!snapshot) return null; // React: null under a bare <PathProvider> before start()
   return (
     <input
       value={snapshot.data.name}

@@ -187,13 +187,17 @@ export function PathProvider({ children, onEvent, services }: PathProviderProps)
  *
  * `TData` narrows `snapshot.data`; `TServices` types the `services` value.
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): UsePathReturn<TData> & { services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
+  // `snapshot` is genuinely nullable here: under a bare <PathProvider> it is
+  // null until start() (and after cancel / a "dismiss" completion). Step
+  // components rendered by <PathShell> only exist while a snapshot does, so
+  // they can narrow with a plain `if (!snapshot) return null;`.
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData> }),
+    ...(ctx.path as unknown as UsePathReturn<TData>),
     services: ctx.services as TServices
   };
 }

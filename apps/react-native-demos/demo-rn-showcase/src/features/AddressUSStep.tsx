@@ -16,7 +16,7 @@ const US_STATES = [
 
 export function AddressUSStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
-  const state = snapshot.data.state ?? "";
+  const state = snapshot?.data.state ?? "";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 

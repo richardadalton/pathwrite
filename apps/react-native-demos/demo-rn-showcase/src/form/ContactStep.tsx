@@ -5,6 +5,7 @@ import type { ContactData } from "./path";
 
 export function ContactStep() {
   const { snapshot, setData } = usePathContext<ContactData>();
+  if (!snapshot) return null;
   const data     = snapshot.data;
   const errors   = snapshot.hasAttemptedNext ? (snapshot.fieldErrors ?? {}) : {};
   const warnings = snapshot.fieldWarnings ?? {};

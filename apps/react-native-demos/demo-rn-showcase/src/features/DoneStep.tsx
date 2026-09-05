@@ -5,6 +5,7 @@ import type { DemoData } from "./demo-path";
 
 export function DoneStep() {
   const { snapshot } = usePathContext<DemoData>();
+  if (!snapshot) return null;
   const name = snapshot.data.name ?? "there";
 
   return (

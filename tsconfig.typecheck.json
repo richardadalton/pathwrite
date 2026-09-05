@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@daltonr/pathwrite-core": ["packages/core/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/test/**/*.test-d.ts"]
+}

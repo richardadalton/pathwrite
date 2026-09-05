@@ -119,7 +119,7 @@ Step components rendered inside `<PathShell>` call `usePathContext()` to read `s
 
 ## usePathContext
 
-`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` or `<PathProvider>` ancestor. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. Pass your data type as `TData` to get typed access to `snapshot.data` and `setData`; pass `TServices` to type the `services` field on `PathStepContext`. Throws if called outside a provider.
+`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` or `<PathProvider>` ancestor. `snapshot` is typed `PathSnapshot | null`, exactly like `usePath`: it is `null` under a bare `<PathProvider>` until `start()` is called (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so a plain `if (!snapshot) return null;` narrows it. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. Pass your data type as `TData` to get typed access to `snapshot.data` and `setData`; pass `TServices` to type the `services` field on `PathStepContext`. Throws if called outside a provider.
 
 ---
 

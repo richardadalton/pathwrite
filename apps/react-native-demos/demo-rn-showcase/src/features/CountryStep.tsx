@@ -10,6 +10,7 @@ const COUNTRIES = [
 
 export function CountryStep() {
   const { snapshot, setData } = usePathContext<DemoData>();
+  if (!snapshot) return null;
   const country = snapshot.data.country ?? "";
 
   return (

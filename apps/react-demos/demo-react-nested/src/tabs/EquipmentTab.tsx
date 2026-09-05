@@ -5,6 +5,7 @@ import { TabBar } from "./TabBar";
 
 export function EquipmentTab() {
   const { snapshot, setData } = usePathContext<EmployeeDetails>();
+  if (!snapshot) return null;
   const data = snapshot.data;
 
   return (
