@@ -69,6 +69,8 @@ Pass `strategy` to `persistence()` to control when saves fire.
 
 ## restoreOrStart()
 
+The observer `persistence()` returns has two extra methods: `flush()` saves immediately (cancelling a pending debounce window) and resolves once every queued save has landed — call it on `beforeunload` or before unmount; `dispose()` cancels a pending debounce window and ignores later events so a timer never outlives the host component.
+
 `restoreOrStart()` handles the standard load/restore-or-start pattern in a single call. It tries `store.load(key)`; if a saved state is found it reconstructs the engine at the saved step via `PathEngine.fromState()`; if nothing is found it creates a fresh engine and calls `engine.start(path, initialData)`. Observers are wired before the first event in both cases, so the persistence observer never misses a state transition.
 
 ```typescript

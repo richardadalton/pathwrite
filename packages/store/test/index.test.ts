@@ -805,3 +805,127 @@ describe("persistence — completion delete vs. reset save (S6)", () => {
     expect(store.records.get("k")?.currentStepIndex).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// persistence().flush() / dispose() (review: debounce timer outlives the host)
+// ---------------------------------------------------------------------------
+
+describe("persistence — flush() and dispose()", () => {
+  const twoSteps: PathDefinition = { id: "p", steps: [{ id: "a" }, { id: "b" }] };
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("dispose() cancels a pending debounced save and ignores later events", async () => {
+    const store = new MemoryStore();
+    const obs = persistence({ store, key: "k", strategy: "onEveryChange", debounceMs: 500 });
+    const engine = new PathEngine({ observers: [obs] });
+    await engine.start(twoSteps);
+    await engine.setData("name", "Ada");           // schedules a save in 500 ms
+    obs.dispose();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(store.records.has("k")).toBe(false);
+
+    await engine.setData("name", "Grace");         // after dispose: nothing scheduled
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(store.records.has("k")).toBe(false);
+  });
+
+  it("flush() saves the latest state immediately and cancels the pending timer", async () => {
+    const store = new MemoryStore();
+    const obs = persistence({ store, key: "k", strategy: "onEveryChange", debounceMs: 500 });
+    const engine = new PathEngine({ observers: [obs] });
+    await engine.start(twoSteps);
+    await engine.setData("name", "Ada");
+    await obs.flush();                             // e.g. on beforeunload / unmount
+    expect(store.records.get("k")?.data).toEqual({ name: "Ada" });
+
+    const before = store.records.get("k");
+    await vi.advanceTimersByTimeAsync(1000);       // the debounce timer must not fire a second save
+    expect(store.records.get("k")).toBe(before);
+  });
+
+  it("flush() resolves only once an in-flight save has landed", async () => {
+    const store = new SlowStore();
+    const obs = persistence({ store, key: "k", strategy: "onNext" });
+    const engine = new PathEngine({ observers: [obs] });
+    await engine.start(twoSteps);
+    await engine.next();                           // save #1 in flight (slow)
+    let flushed = false;
+    const p = obs.flush().then(() => { flushed = true; });
+    await Promise.resolve();
+    expect(flushed).toBe(false);
+    store.release();
+    await p;
+    expect(flushed).toBe(true);
+    expect(store.saved).toHaveLength(1);
+  });
+
+  it("flush() before any event resolves without saving", async () => {
+    const store = new MemoryStore();
+    const obs = persistence({ store, key: "k" });
+    await expect(obs.flush()).resolves.toBeUndefined();
+    expect(store.records.size).toBe(0);
+  });
+
+  it("flush() with the manual strategy saves the current state on demand", async () => {
+    const store = new MemoryStore();
+    const obs = persistence({ store, key: "k", strategy: "manual" });
+    const engine = new PathEngine({ observers: [obs] });
+    await engine.start(twoSteps);
+    await engine.next();
+    expect(store.records.has("k")).toBe(false);
+    await obs.flush();
+    expect(store.records.get("k")?.currentStepIndex).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HttpStore.load — 204 / empty body / malformed record (review item)
+// ---------------------------------------------------------------------------
+
+describe("HttpStore.load — response handling", () => {
+  function fetchWith(status: number, body: string | null, ok = status >= 200 && status < 300) {
+    return vi.fn(() => Promise.resolve({
+      ok, status, statusText: "x",
+      text: () => Promise.resolve(body ?? ""),
+      json: () => (body ? Promise.resolve(JSON.parse(body)) : Promise.reject(new SyntaxError("Unexpected end of JSON input")))
+    } as unknown as Response));
+  }
+
+  it("returns null for 204 No Content", async () => {
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(204, null) as any });
+    await expect(store.load("k")).resolves.toBeNull();
+  });
+
+  it("returns null for a 200 with an empty body", async () => {
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, "") as any });
+    await expect(store.load("k")).resolves.toBeNull();
+  });
+
+  it("rejects, via onError, when the body is not JSON", async () => {
+    const onError = vi.fn();
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, "<html>oops</html>") as any, onError });
+    await expect(store.load("k")).rejects.toThrow(/JSON/);
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), "load", "k");
+  });
+
+  it("rejects when the JSON is not a SerializedPathState", async () => {
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, JSON.stringify({ hello: "world" })) as any });
+    await expect(store.load("k")).rejects.toThrow(/SerializedPathState/);
+    const bad = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, JSON.stringify({ version: 2, pathId: "p", currentStepIndex: 0, data: {}, visitedStepIds: [], pathStack: [], _status: "idle" })) as any });
+    await expect(bad.load("k")).rejects.toThrow(/version/);
+  });
+
+  it("still returns a valid record", async () => {
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, JSON.stringify(mockState)) as any });
+    await expect(store.load("k")).resolves.toEqual(mockState);
+  });
+});
+
+describe("HttpStore.load — JSON null body", () => {
+  it("returns null for a JSON `null` body (nothing stored)", async () => {
+    const fetchNull = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null"), json: () => Promise.resolve(null) } as unknown as Response));
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchNull as any });
+    await expect(store.load("k")).resolves.toBeNull();
+  });
+});

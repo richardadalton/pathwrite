@@ -270,6 +270,22 @@ Saved state that cannot be used never blocks the app. If `store.load` fails (cor
 
 When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the path starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place — `restoreOrStart` treats any record with `_status: "completed"` as finished and starts fresh, so a leftover completed record never resumes.
 
+### Flushing and disposing
+
+`persistence()` returns the observer with two extra methods. `flush()` saves right now — cancelling any pending debounce window — and resolves once every queued store operation has landed; call it from a `beforeunload` or `visibilitychange` handler, or before the host component unmounts, so a debounced save is never lost. `dispose()` cancels a pending debounce window and makes the observer ignore every later event, so a timer never outlives the component that created it.
+
+```typescript
+const saver = persistence({ store, key, strategy: "onEveryChange", debounceMs: 500 });
+const engine = new PathEngine({ observers: [saver] });
+
+window.addEventListener("beforeunload", () => { void saver.flush(); });
+// on unmount:
+await saver.flush();
+saver.dispose();
+```
+
+`HttpStore.load()` treats a `204 No Content` or an empty body as "no saved state" and returns `null`; a body that is not JSON, or JSON that is not a `SerializedPathState`, is reported through `onError` and rejected — `restoreOrStart` then starts fresh (see above).
+
 ---
 
 ## Offline patterns

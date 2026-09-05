@@ -121,12 +121,28 @@ export class HttpStore implements PathStore {
         method: "GET",
         headers: await this.buildHeaders({ "Content-Type": "application/json" }),
       });
-      if (response.status === 404) return null;
+      if (response.status === 404 || response.status === 204) return null;
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      const data = await response.json();
-      return data as SerializedPathState;
+      // Read as text so an empty body ("no record") is distinguishable from a
+      // corrupt one; `json()` would throw the same SyntaxError for both.
+      const raw = typeof response.text === "function"
+        ? await response.text()
+        : JSON.stringify(await response.json());
+      if (raw.trim() === "") return null;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        throw new Error(`HttpStore.load: the response for "${key}" is not valid JSON.`);
+      }
+      if (parsed === null) return null; // a JSON `null` body: nothing stored
+      const problem = describeInvalidState(parsed);
+      if (problem) {
+        throw new Error(`HttpStore.load: the response for "${key}" is not a SerializedPathState (${problem}).`);
+      }
+      return parsed as SerializedPathState;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.options.onError?.(err, "load", key);
@@ -192,7 +208,29 @@ export interface PersistenceOptions {
  * });
  * ```
  */
-export function persistence(options: PersistenceOptions): PathObserver {
+/**
+ * The observer returned by `persistence()`: a `PathObserver` with two extra
+ * methods for host components and page-unload handlers.
+ */
+export interface PersistenceObserver extends PathObserver {
+  /**
+   * Save now. Cancels a pending debounce window, writes the engine's current
+   * state if anything changed since the last save (or if the strategy is
+   * `"manual"`), and resolves once every queued store operation has landed.
+   * Call it from `beforeunload` / `visibilitychange` handlers or before a
+   * host component unmounts. Resolves immediately when no engine has been
+   * seen yet.
+   */
+  flush(): Promise<void>;
+  /**
+   * Stop persisting. Cancels a pending debounce window and ignores every
+   * later event, so a timer never outlives the host component. Does not wait
+   * for in-flight saves; call `flush()` first if you need them.
+   */
+  dispose(): void;
+}
+
+export function persistence(options: PersistenceOptions): PersistenceObserver {
   const strategy = options.strategy ?? "onNext";
   const debounceMs = options.debounceMs ?? 0;
 
@@ -211,6 +249,11 @@ export function persistence(options: PersistenceOptions): PathObserver {
   //   that finished after that PUT wiped the new session.
   let queue: Promise<void> = Promise.resolve();
   let saveQueued = false;
+  // For flush(): the engine the observer is attached to, whether the engine
+  // has changed since the last export, and whether dispose() has been called.
+  let lastEngine: PathEngine | null = null;
+  let changedSinceSave = false;
+  let disposed = false;
 
   /** Runs `op` after every previously queued operation, whether they succeeded or not. */
   const enqueue = (op: () => Promise<void>): Promise<void> => {
@@ -225,6 +268,7 @@ export function persistence(options: PersistenceOptions): PathObserver {
     saveQueued = true;
     return enqueue(async () => {
       saveQueued = false;
+      changedSinceSave = false;
       const state = engine.exportState();
       if (!state) return;
       try {
@@ -256,7 +300,11 @@ export function persistence(options: PersistenceOptions): PathObserver {
     }
   };
 
-  return (event: PathEvent, engine: PathEngine): void => {
+  const observer = ((event: PathEvent, engine: PathEngine): void => {
+    if (disposed) return;
+    lastEngine = engine;
+    if (event.type === "stateChanged" || event.type === "resumed") changedSinceSave = true;
+
     if (strategy === "onComplete") {
       if (event.type === "completed") {
         // An audit record of the finished path. It is a valid
@@ -290,7 +338,46 @@ export function persistence(options: PersistenceOptions): PathObserver {
     if (matchesStrategy(strategy, event)) scheduleSave(engine);
 
     if (event.type === "completed") performDelete();
+  }) as PersistenceObserver;
+
+  observer.flush = async (): Promise<void> => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      changedSinceSave = true; // the debounced save never ran
+    }
+    if (lastEngine && !disposed && (changedSinceSave || strategy === "manual")) {
+      void performSave(lastEngine);
+    }
+    await queue;
   };
+
+  observer.dispose = (): void => {
+    disposed = true;
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+  };
+
+  return observer;
+}
+
+/**
+ * Returns a short description of why `value` is not a usable
+ * `SerializedPathState`, or `null` when it is. Only the shape `fromState()`
+ * dereferences is checked; the engine validates the rest.
+ */
+function describeInvalidState(value: unknown): string | null {
+  if (!value || typeof value !== "object") return "not an object";
+  const v = value as Record<string, unknown>;
+  if (v.version !== 1) return `unsupported version ${String(v.version)}`;
+  if (typeof v.pathId !== "string") return "missing pathId";
+  if (typeof v.currentStepIndex !== "number") return "missing currentStepIndex";
+  if (!v.data || typeof v.data !== "object") return "missing data";
+  if (!Array.isArray(v.visitedStepIds)) return "missing visitedStepIds";
+  if (!Array.isArray(v.pathStack)) return "missing pathStack";
+  return null;
 }
 
 // ---------------------------------------------------------------------------
