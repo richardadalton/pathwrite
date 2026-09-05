@@ -36,7 +36,7 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/daltonr/pathwrite.git",
+    "url": "git+https://github.com/richardadalton/pathwrite.git",
     "directory": "packages/store"
   },
   "dependencies": {
