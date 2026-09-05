@@ -229,15 +229,17 @@ export class PathShellCompletionDirective {
 
       <!-- Completion panel — shown when path finishes with stayOnFinal -->
       <ng-container *ngIf="s.status === 'completed'; else activeContent">
-        <ng-container *ngIf="customCompletion; else defaultCompletion">
-          <ng-container *ngTemplateOutlet="customCompletion.templateRef; context: { $implicit: s }"></ng-container>
-        </ng-container>
-        <ng-template #defaultCompletion>
-          <div class="pw-shell__completion">
-            <p class="pw-shell__completion-message">All done.</p>
-            <button type="button" class="pw-shell__completion-restart" (click)="facade.restart()">Start over</button>
-          </div>
-        </ng-template>
+        <div class="pw-shell__body">
+          <ng-container *ngIf="customCompletion; else defaultCompletion">
+            <ng-container *ngTemplateOutlet="customCompletion.templateRef; context: { $implicit: s }"></ng-container>
+          </ng-container>
+          <ng-template #defaultCompletion>
+            <div class="pw-shell__completion">
+              <p class="pw-shell__completion-message">All done.</p>
+              <button type="button" class="pw-shell__completion-restart" (click)="facade.restart()">Start over</button>
+            </div>
+          </ng-template>
+        </div>
       </ng-container>
 
       <!-- Active step content -->
@@ -485,6 +487,12 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
       this.event.emit(event);
       if (event.type === "completed") this.complete.emit(event.data);
       if (event.type === "cancelled") this.cancel.emit(event.data);
+      // Back to the empty state ("No active path.") once the path is gone —
+      // after a cancel, or a "dismiss" completion. `started` otherwise keeps
+      // the empty state hidden during the async start.
+      if (event.type === "cancelled" || (event.type === "completed" && !this.facade.snapshot())) {
+        this.started = false;
+      }
       if (this.restoreKey && this.outerFacade && event.type === "stateChanged") {
         this.outerFacade.setData(
           this.restoreKey as any,

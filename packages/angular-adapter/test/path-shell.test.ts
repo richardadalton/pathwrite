@@ -275,3 +275,45 @@ describe("PathShell (Angular) — late engine input", () => {
     expect(el.querySelector(".b")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Empty state after cancel; completion panel inside the body (review: Angular drift)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — empty state and completion markup", () => {
+  async function mountTwoSteps() {
+    @Component({
+      standalone: true,
+      imports: [PathShellComponent, PathStepDirective],
+      template: `
+        <pw-shell [path]="path">
+          <ng-template pwStep="a"><div class="a">A</div></ng-template>
+          <ng-template pwStep="b"><div class="b">B</div></ng-template>
+        </pw-shell>
+      `
+    })
+    class Host { path: PathDefinition = { id: "m", steps: [{ id: "a" }, { id: "b" }] }; }
+    const fixture = TestBed.createComponent(Host);
+    const settle = async () => { for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); } fixture.detectChanges(); };
+    await settle();
+    return { el: fixture.nativeElement as HTMLElement, settle };
+  }
+
+  it('shows "No active path." after the path is cancelled, like the other shells', async () => {
+    const { el, settle } = await mountTwoSteps();
+    expect(el.querySelector(".a")).not.toBeNull();
+    (el.querySelector(".pw-shell__btn--cancel") as HTMLButtonElement).click();
+    await settle();
+    expect(el.querySelector(".a")).toBeNull();
+    expect(el.textContent).toContain("No active path.");
+  });
+
+  it("wraps the completion panel in .pw-shell__body", async () => {
+    const { el, settle } = await mountTwoSteps();
+    (el.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await settle();
+    (el.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await settle();
+    expect(el.querySelector(".pw-shell__body .pw-shell__completion")).not.toBeNull();
+  });
+});
