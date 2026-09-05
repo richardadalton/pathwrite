@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { usePath, setPathContext, getPathContextOrNull, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
-  import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
+  import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout, PathShellActions } from './index.svelte.js';
   import { PathEngine as PathEngineClass } from '@daltonr/pathwrite-core';
   import type { SerializedPathState } from '@daltonr/pathwrite-core';
   import type { Snippet, Component } from 'svelte';
@@ -63,7 +63,7 @@
     onevent?: (event: any) => void;
     // Optional override snippets for header and footer
     header?: Snippet<[PathSnapshot<any>]>;
-    footer?: Snippet<[PathSnapshot<any>, object]>;
+    footer?: Snippet<[PathSnapshot<any>, PathShellActions]>;
     /** Snippet rendered when `snapshot.status === "completed"`. Defaults to a simple "All done." panel with a restart button. */
     completion?: Snippet<[PathSnapshot<any>]>;
     // All other props treated as step components keyed by step ID
@@ -211,7 +211,11 @@
   }
 
   let snap = $derived(pathReturn.snapshot);
-  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(), retry, suspend });
+  let actions: PathShellActions = $derived({
+    next, previous, cancel, goToStep, goToStepChecked,
+    setData: (key, value) => setData(key as never, value as never),
+    restart: () => restartFn(), retry, suspend
+  });
 
   let effectiveHideProgress = $derived(hideProgress || layout === 'tabs');
   let effectiveHideFooter = $derived(hideFooter || layout === 'tabs');

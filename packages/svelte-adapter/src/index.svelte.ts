@@ -232,6 +232,26 @@ export function usePath<TData extends PathData = PathData>(
   };
 }
 
+/**
+ * Navigation actions handed to a custom `footer` snippet of `<PathShell>`
+ * (`{#snippet footer(snap, actions)}`). Same shape as the other adapters'
+ * `PathShellActions`.
+ */
+export interface PathShellActions {
+  next: () => Promise<void>;
+  previous: () => Promise<void>;
+  cancel: () => Promise<void>;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  setData: (key: string, value: unknown) => Promise<void>;
+  /** Restart the shell's current path with its current `initialData`. */
+  restart: () => Promise<void>;
+  /** Re-run the operation that set `snapshot.error`. */
+  retry: () => Promise<void>;
+  /** Pause with intent to return, preserving all state. Emits `suspended`. */
+  suspend: () => Promise<void>;
+}
+
 // ---------------------------------------------------------------------------
 // Context API for PathShell
 // ---------------------------------------------------------------------------
