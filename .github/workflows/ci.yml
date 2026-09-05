@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install (clean, from the lockfile)
+        run: npm ci
+
+      # Builds all eight packages in dependency order (core first). The
+      # Svelte package's build runs svelte-check over its .svelte files.
+      - name: Build
+        run: npm run build
+
+      # vitest (unit + adapter shell tests), then `test:types`: the *.test-d.ts
+      # assertions and a tsc pass over every test file.
+      - name: Test
+        run: npm test
