@@ -308,6 +308,25 @@ describe("restoreOrStart", () => {
     expect(engine.snapshot()?.stepId).toBe("step1");
   });
 
+  it("marks the engine as persisted on a fresh start", async () => {
+    const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
+    const { engine } = await restoreOrStart({ store, key: "test-wizard", path: simplePath });
+    expect(engine.snapshot()?.hasPersistence).toBe(true);
+  });
+
+  it("marks the engine as persisted on a restore", async () => {
+    const savedState: SerializedPathState = {
+      version: 1, pathId: "simple", currentStepIndex: 0,
+      data: {}, visitedStepIds: ["step1"], pathStack: [], _status: "idle",
+    };
+    const store = new HttpStore({
+      baseUrl: "/api",
+      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
+    });
+    const { engine } = await restoreOrStart({ store, key: "test-wizard", path: simplePath, pathDefinitions });
+    expect(engine.snapshot()?.hasPersistence).toBe(true);
+  });
+
   it("restores from saved state when it exists", async () => {
     const savedState: SerializedPathState = {
       version: 1, pathId: "simple", currentStepIndex: 1,

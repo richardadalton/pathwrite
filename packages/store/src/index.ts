@@ -307,11 +307,16 @@ export async function restoreOrStart(
   let engine: PathEngine;
   let restored: boolean;
 
+  // A store is attached in both branches, so tell the engine: shells read
+  // snapshot.hasPersistence to offer "your progress is saved, come back
+  // later" copy when retries are exhausted.
+  const engineOptions = { observers, hasPersistence: true };
+
   if (saved) {
-    engine = PathEngine.fromState(saved, pathDefs, { observers });
+    engine = PathEngine.fromState(saved, pathDefs, engineOptions);
     restored = true;
   } else {
-    engine = new PathEngine({ observers });
+    engine = new PathEngine(engineOptions);
     await engine.start(options.path, options.initialData);
     restored = false;
   }
