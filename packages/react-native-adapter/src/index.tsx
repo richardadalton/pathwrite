@@ -608,10 +608,13 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     <Text style={styles.btnCancelText}>{cancelLabel}</Text>
                   </Pressable>
                 )}
+                {/* Next stays pressable when the guard would block: next() marks
+                    the step attempted so the validation summary / blocking
+                    reason can appear ("punish late"). Same as the other shells. */}
                 <Pressable
                   style={[styles.btn, styles.btnPrimary, snapshot.status !== "idle" && styles.btnDisabled]}
                   onPress={next}
-                  disabled={snapshot.status !== "idle" || !snapshot.canMoveNext}
+                  disabled={snapshot.status !== "idle"}
                 >
                   {snapshot.status !== "idle" && loadingLabel
                     ? <Text style={styles.btnPrimaryText}>{loadingLabel}</Text>
