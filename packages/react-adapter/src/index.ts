@@ -146,7 +146,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const getSnapshot = useCallback(() => snapshotRef.current, []);
 
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot);
+  // The third argument is the server snapshot: without it React throws
+  // "Missing getServerSnapshot" under react-dom/server. The engine's current
+  // snapshot is the right value on the server too (null until start(), which
+  // only runs in a client effect).
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   // Stable action callbacks
   const start = useCallback(
@@ -321,7 +325,10 @@ export function FieldError({ field, className }: { field: string; className?: st
   const inlineCtx = useContext(InlineFieldsContext);
 
   // Register this field with the shell so it's excluded from the summary box.
-  useLayoutEffect(() => {
+  // Layout timing matters on the client (the summary must not flash the field
+  // before the claim lands); on the server there is no layout phase and React
+  // warns about useLayoutEffect, so fall back to a plain effect there.
+  useIsomorphicLayoutEffect(() => {
     inlineCtx?.claim(field);
     return () => inlineCtx?.unclaim(field);
   }, [field, inlineCtx]);
@@ -338,6 +345,8 @@ export function FieldError({ field, className }: { field: string; className?: st
 // Inline field registration — used by <FieldError /> to opt fields out of
 // the shell's summary box automatically.
 // ---------------------------------------------------------------------------
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 interface InlineFieldsContextValue {
   claim: (field: string) => void;

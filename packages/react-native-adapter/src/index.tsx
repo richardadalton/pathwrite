@@ -132,7 +132,9 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const getSnapshot = useCallback(() => snapshotRef.current, []);
 
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot);
+  // Third argument: server snapshot, needed for static / server rendering
+  // (e.g. Expo Router web export) — without it React throws.
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const start = useCallback(
     (path: PathDefinition<any>, initialData: PathData = {}) => engine.start(path, initialData),
