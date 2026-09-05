@@ -11,6 +11,7 @@ export type {
   PathEngine,
   PathEvent,
   PathSnapshot,
+  StepStatus,
   PathStep,
   PathStepContext,
   ProgressLayout,

@@ -15,9 +15,9 @@ export function SubwizardIntroStep() {
         the sub-wizard completes or is cancelled.
       </Text>
       <TouchableOpacity
-        style={[styles.btn, snapshot.isNavigating && styles.btnDisabled]}
+        style={[styles.btn, snapshot.status !== "idle" && styles.btnDisabled]}
         onPress={() => startSubPath(subPath, {})}
-        disabled={snapshot.isNavigating}
+        disabled={snapshot.status !== "idle"}
         activeOpacity={0.8}
       >
         <Text style={styles.btnText}>Launch sub-wizard →</Text>

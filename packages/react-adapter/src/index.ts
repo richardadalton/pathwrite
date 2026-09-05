@@ -1171,6 +1171,7 @@ export type {
   RootProgress,
   SerializedPathState,
   StepChoice,
+  StepStatus,
 } from "@daltonr/pathwrite-core";
 
 export { PathEngine } from "@daltonr/pathwrite-core";

@@ -55,7 +55,8 @@ export const INITIAL_DATA: CourseData = {
   completedTopics: [],
 };
 
-export function getQuizScore(topicId: TopicId, data: CourseData): number {
+// Accepts the (deeply read-only) snapshot data as well as CourseData: only quizAnswers is read.
+export function getQuizScore(topicId: TopicId, data: Pick<CourseData, "quizAnswers">): number {
   const topic = TOPICS[topicId];
   const answers = data.quizAnswers[topicId] ?? {};
   const correct = topic.quizQuestions.filter(

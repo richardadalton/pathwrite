@@ -56,7 +56,7 @@
               <button
                 type="button"
                 class="btn-review"
-                disabled={ctx.snapshot.isNavigating}
+                disabled={ctx.snapshot.status !== "idle"}
                 onclick={() => launchReview(approver.id, approver.name)}
               >
                 Review →

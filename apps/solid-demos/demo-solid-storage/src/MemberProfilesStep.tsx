@@ -66,7 +66,7 @@ export default function MemberProfilesStep() {
                   <button
                     type="button"
                     class="btn-edit"
-                    disabled={ctx.snapshot()?.isNavigating}
+                    disabled={ctx.snapshot()?.status !== "idle"}
                     onClick={() => openProfile(member, i())}
                   >
                     Edit
@@ -77,7 +77,7 @@ export default function MemberProfilesStep() {
                   <button
                     type="button"
                     class="btn-fill"
-                    disabled={ctx.snapshot()?.isNavigating}
+                    disabled={ctx.snapshot()?.status !== "idle"}
                     onClick={() => openProfile(member, i())}
                   >
                     Fill in Profile →

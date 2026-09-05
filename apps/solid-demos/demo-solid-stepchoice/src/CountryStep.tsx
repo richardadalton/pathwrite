@@ -27,7 +27,7 @@ export default function CountryStep(props: Props) {
               name="country"
               value="US"
               checked={data().country === "US"}
-              onChange={() => setData({ country: "US" })}
+              onChange={() => setData("country", "US")}
             />
             <span class="radio-option-label">🇺🇸 United States</span>
           </label>
@@ -37,7 +37,7 @@ export default function CountryStep(props: Props) {
               name="country"
               value="IE"
               checked={data().country === "IE"}
-              onChange={() => setData({ country: "IE" })}
+              onChange={() => setData("country", "IE")}
             />
             <span class="radio-option-label">🇮🇪 Ireland</span>
           </label>

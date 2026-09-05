@@ -78,7 +78,7 @@ export default function ApprovalReviewStep() {
                     <button
                       type="button"
                       class="btn-fill"
-                      disabled={ctx.snapshot()?.isNavigating}
+                      disabled={ctx.snapshot()?.status !== "idle"}
                       onClick={() => launchReview(approver.id, approver.name)}
                     >
                       Review →

@@ -26,7 +26,7 @@ export default function BillingAddressStep(props: Props) {
           id="billingName"
           type="text"
           value={data().billingName}
-          onInput={(e) => setData({ billingName: e.currentTarget.value })}
+          onInput={(e) => setData("billingName", e.currentTarget.value)}
           placeholder="Jane Smith"
         />
         {errors().billingName && <span class="field-error">{errors().billingName}</span>}
@@ -40,7 +40,7 @@ export default function BillingAddressStep(props: Props) {
           id="billingAddress"
           type="text"
           value={data().billingAddress}
-          onInput={(e) => setData({ billingAddress: e.currentTarget.value })}
+          onInput={(e) => setData("billingAddress", e.currentTarget.value)}
           placeholder="123 Main St"
         />
         {errors().billingAddress && <span class="field-error">{errors().billingAddress}</span>}
@@ -54,7 +54,7 @@ export default function BillingAddressStep(props: Props) {
           id="billingCity"
           type="text"
           value={data().billingCity}
-          onInput={(e) => setData({ billingCity: e.currentTarget.value })}
+          onInput={(e) => setData("billingCity", e.currentTarget.value)}
           placeholder="Dublin"
         />
         {errors().billingCity && <span class="field-error">{errors().billingCity}</span>}
@@ -68,7 +68,7 @@ export default function BillingAddressStep(props: Props) {
           id="billingPostcode"
           type="text"
           value={data().billingPostcode}
-          onInput={(e) => setData({ billingPostcode: e.currentTarget.value })}
+          onInput={(e) => setData("billingPostcode", e.currentTarget.value)}
           placeholder="D01 F5P2"
         />
         {errors().billingPostcode && <span class="field-error">{errors().billingPostcode}</span>}

@@ -67,7 +67,7 @@ async function openProfile(member: Person, index: number) {
           <button
             type="button"
             class="btn-edit"
-            :disabled="snapshot?.isNavigating"
+            :disabled="snapshot?.status !== 'idle'"
             @click="openProfile(member, i)"
           >
             Edit
@@ -79,7 +79,7 @@ async function openProfile(member: Person, index: number) {
           <button
             type="button"
             class="btn-fill"
-            :disabled="snapshot?.isNavigating"
+            :disabled="snapshot?.status !== 'idle'"
             @click="openProfile(member, i)"
           >
             Fill in Profile →

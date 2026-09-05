@@ -24,7 +24,7 @@ export default function ShippingAddressStep(props: Props) {
           id="shippingName"
           type="text"
           value={data().shippingName}
-          onInput={(e) => setData({ shippingName: e.currentTarget.value })}
+          onInput={(e) => setData("shippingName", e.currentTarget.value)}
           placeholder="Jane Smith"
         />
         {errors().shippingName && <span class="field-error">{errors().shippingName}</span>}
@@ -38,7 +38,7 @@ export default function ShippingAddressStep(props: Props) {
           id="shippingAddress"
           type="text"
           value={data().shippingAddress}
-          onInput={(e) => setData({ shippingAddress: e.currentTarget.value })}
+          onInput={(e) => setData("shippingAddress", e.currentTarget.value)}
           placeholder="123 Main St"
         />
         {errors().shippingAddress && <span class="field-error">{errors().shippingAddress}</span>}
@@ -52,7 +52,7 @@ export default function ShippingAddressStep(props: Props) {
           id="shippingCity"
           type="text"
           value={data().shippingCity}
-          onInput={(e) => setData({ shippingCity: e.currentTarget.value })}
+          onInput={(e) => setData("shippingCity", e.currentTarget.value)}
           placeholder="Dublin"
         />
         {errors().shippingCity && <span class="field-error">{errors().shippingCity}</span>}
@@ -66,7 +66,7 @@ export default function ShippingAddressStep(props: Props) {
           id="shippingPostcode"
           type="text"
           value={data().shippingPostcode}
-          onInput={(e) => setData({ shippingPostcode: e.currentTarget.value })}
+          onInput={(e) => setData("shippingPostcode", e.currentTarget.value)}
           placeholder="D01 F5P2"
         />
         {errors().shippingPostcode && <span class="field-error">{errors().shippingPostcode}</span>}
@@ -77,7 +77,7 @@ export default function ShippingAddressStep(props: Props) {
           <input
             type="checkbox"
             checked={data().billingSameAsShipping}
-            onChange={(e) => setData({ billingSameAsShipping: e.currentTarget.checked })}
+            onChange={(e) => setData("billingSameAsShipping", e.currentTarget.checked)}
           />
           <span class="radio-option-label">Billing address same as shipping</span>
         </label>

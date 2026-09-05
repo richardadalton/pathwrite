@@ -12,8 +12,12 @@
 
   const ctx = usePathContext<EmployeeDetails>();
 
+  // A step component only renders while a path is active, so the snapshot is present.
+
+  const snapshot = $derived(ctx.snapshot!);
+
   let errors = $derived(
-    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated ? (ctx.snapshot?.fieldErrors ?? {}) : {}
+    snapshot.hasAttemptedNext || snapshot.hasValidated ? (snapshot.fieldErrors ?? {}) : {}
   );
 </script>
 
@@ -25,7 +29,7 @@
       <input
         id="jobTitle"
         type="text"
-        value={ctx.snapshot.data.jobTitle ?? ""}
+        value={snapshot.data.jobTitle ?? ""}
         oninput={(e) => ctx.setData("jobTitle", e.currentTarget.value)}
         placeholder="e.g. Senior Software Engineer"
       />
@@ -44,7 +48,7 @@
             <div class="toggle">
               <input
                 type="checkbox"
-                checked={(ctx.snapshot.data[perm.key] ?? "no") === "yes"}
+                checked={(snapshot.data[perm.key] ?? "no") === "yes"}
                 onchange={(e) => ctx.setData(perm.key, e.currentTarget.checked ? "yes" : "no")}
               />
               <span class="toggle-track"></span>

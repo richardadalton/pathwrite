@@ -50,7 +50,7 @@ export function ApprovalReviewStep() {
                 <button
                   type="button"
                   className="btn-review"
-                  disabled={snap.isNavigating}
+                  disabled={snap.status !== "idle"}
                   onClick={() => launchReview(approver.id, approver.name)}
                 >
                   Review →

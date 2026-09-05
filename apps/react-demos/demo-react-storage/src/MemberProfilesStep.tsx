@@ -59,7 +59,7 @@ export function MemberProfilesStep() {
                   <button
                     type="button"
                     className="btn-edit"
-                    disabled={snap.isNavigating}
+                    disabled={snap.status !== "idle"}
                     onClick={() => openProfile(member, i)}
                   >
                     Edit
@@ -69,7 +69,7 @@ export function MemberProfilesStep() {
                 <button
                   type="button"
                   className="btn-fill"
-                  disabled={snap.isNavigating}
+                  disabled={snap.status !== "idle"}
                   onClick={() => openProfile(member, i)}
                 >
                   Fill in Profile →

@@ -6,8 +6,12 @@
 
   const ctx = usePathContext<EmployeeDetails>();
 
+  // A step component only renders while a path is active, so the snapshot is present.
+
+  const snapshot = $derived(ctx.snapshot!);
+
   let errors = $derived(
-    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated ? (ctx.snapshot?.fieldErrors ?? {}) : {}
+    snapshot.hasAttemptedNext || snapshot.hasValidated ? (snapshot.fieldErrors ?? {}) : {}
   );
 </script>
 
@@ -18,7 +22,7 @@
       <label for="department">Department <span class="required">*</span></label>
       <select
         id="department"
-        value={ctx.snapshot.data.department ?? ""}
+        value={snapshot.data.department ?? ""}
         onchange={(e) => ctx.setData("department", e.currentTarget.value)}
       >
         <option value="">Select a department…</option>
@@ -34,7 +38,7 @@
       <input
         id="manager"
         type="text"
-        value={ctx.snapshot.data.manager ?? ""}
+        value={snapshot.data.manager ?? ""}
         oninput={(e) => ctx.setData("manager", e.currentTarget.value)}
         placeholder="e.g. John Murphy"
       />
@@ -44,7 +48,7 @@
       <label for="office">Office Location <span class="optional">(optional)</span></label>
       <select
         id="office"
-        value={ctx.snapshot.data.office ?? ""}
+        value={snapshot.data.office ?? ""}
         onchange={(e) => ctx.setData("office", e.currentTarget.value)}
       >
         <option value="">Select an office…</option>
@@ -59,7 +63,7 @@
       <input
         id="startDate"
         type="date"
-        value={ctx.snapshot.data.startDate ?? ""}
+        value={snapshot.data.startDate ?? ""}
         oninput={(e) => ctx.setData("startDate", e.currentTarget.value)}
       />
     </div>

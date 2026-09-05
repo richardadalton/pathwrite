@@ -70,7 +70,7 @@ const allDone = computed(
             <button
               type="button"
               class="btn-review"
-              :disabled="snapshot?.isNavigating"
+              :disabled="snapshot?.status !== 'idle'"
               @click="launchReview(approver.id, approver.name)"
             >
               Review →

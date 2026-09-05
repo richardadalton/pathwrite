@@ -24,7 +24,7 @@ export default function PaymentStep(props: Props) {
           id="cardNumber"
           type="text"
           value={data().cardNumber}
-          onInput={(e) => setData({ cardNumber: e.currentTarget.value })}
+          onInput={(e) => setData("cardNumber", e.currentTarget.value)}
           placeholder="4242 4242 4242 4242"
           maxLength={19}
         />
@@ -40,7 +40,7 @@ export default function PaymentStep(props: Props) {
             id="cardExpiry"
             type="text"
             value={data().cardExpiry}
-            onInput={(e) => setData({ cardExpiry: e.currentTarget.value })}
+            onInput={(e) => setData("cardExpiry", e.currentTarget.value)}
             placeholder="MM / YY"
             maxLength={7}
           />
@@ -55,7 +55,7 @@ export default function PaymentStep(props: Props) {
             id="cardCvc"
             type="text"
             value={data().cardCvc}
-            onInput={(e) => setData({ cardCvc: e.currentTarget.value })}
+            onInput={(e) => setData("cardCvc", e.currentTarget.value)}
             placeholder="123"
             maxLength={4}
           />

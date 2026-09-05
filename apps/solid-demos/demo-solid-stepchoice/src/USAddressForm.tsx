@@ -25,7 +25,7 @@ export default function USAddressForm(props: Props) {
           id="streetAddress"
           type="text"
           value={data().streetAddress}
-          onInput={(e) => setData({ streetAddress: e.currentTarget.value })}
+          onInput={(e) => setData("streetAddress", e.currentTarget.value)}
           placeholder="123 Main St"
         />
         {errors().streetAddress && <span class="field-error">{errors().streetAddress}</span>}
@@ -39,7 +39,7 @@ export default function USAddressForm(props: Props) {
           id="aptUnit"
           type="text"
           value={data().aptUnit}
-          onInput={(e) => setData({ aptUnit: e.currentTarget.value })}
+          onInput={(e) => setData("aptUnit", e.currentTarget.value)}
           placeholder="Apt 4B"
         />
       </div>
@@ -53,7 +53,7 @@ export default function USAddressForm(props: Props) {
             id="city"
             type="text"
             value={data().city}
-            onInput={(e) => setData({ city: e.currentTarget.value })}
+            onInput={(e) => setData("city", e.currentTarget.value)}
             placeholder="Los Angeles"
           />
           {errors().city && <span class="field-error">{errors().city}</span>}
@@ -63,7 +63,7 @@ export default function USAddressForm(props: Props) {
           <label for="state">
             State <span class="required">*</span>
           </label>
-          <select id="state" value={data().state} onChange={(e) => setData({ state: e.currentTarget.value })}>
+          <select id="state" value={data().state} onChange={(e) => setData("state", e.currentTarget.value)}>
             <option value="">Select state…</option>
             {US_STATES.map((s) => (
               <option value={s.code}>{s.name}</option>
@@ -81,7 +81,7 @@ export default function USAddressForm(props: Props) {
           id="zipCode"
           type="text"
           value={data().zipCode}
-          onInput={(e) => setData({ zipCode: e.currentTarget.value })}
+          onInput={(e) => setData("zipCode", e.currentTarget.value)}
           placeholder="90210"
           maxLength={10}
         />

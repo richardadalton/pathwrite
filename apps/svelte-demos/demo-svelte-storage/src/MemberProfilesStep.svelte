@@ -56,14 +56,14 @@
             <button
               type="button"
               class="btn-edit"
-              disabled={ctx.snapshot?.isNavigating}
+              disabled={ctx.snapshot?.status !== "idle"}
               onclick={() => openProfile(member, i)}>Edit</button
             >
           {:else}
             <button
               type="button"
               class="btn-fill"
-              disabled={ctx.snapshot?.isNavigating}
+              disabled={ctx.snapshot?.status !== "idle"}
               onclick={() => openProfile(member, i)}>Fill in Profile →</button
             >
           {/if}

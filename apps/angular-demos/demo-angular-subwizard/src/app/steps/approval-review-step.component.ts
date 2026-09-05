@@ -157,7 +157,7 @@ import {
                 <button
                   type="button"
                   class="btn-review"
-                  [disabled]="path.snapshot()?.isNavigating"
+                  [disabled]="path.snapshot()?.status !== 'idle'"
                   (click)="launchReview(approver.id, approver.name)"
                 >
                   Review →

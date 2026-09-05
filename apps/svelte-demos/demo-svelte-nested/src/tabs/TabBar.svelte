@@ -8,10 +8,12 @@
    * then uses `goToStep` to switch between tabs freely.
    */
   const ctx = usePathContext<EmployeeDetails>();
+  // A step component only renders while a path is active, so the snapshot is present.
+  const snapshot = $derived(ctx.snapshot!);
 </script>
 
 <div class="tab-bar">
-  {#each ctx.snapshot.steps as step (step.id)}
+  {#each snapshot.steps as step (step.id)}
     <button
       type="button"
       class="tab-btn"

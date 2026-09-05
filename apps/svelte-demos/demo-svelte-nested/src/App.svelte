@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PathShell } from "@daltonr/pathwrite-svelte";
   import { employeeOnboardingPath, ONBOARDING_INITIAL, type OnboardingData } from "./onboarding";
+  import type { PathData } from "@daltonr/pathwrite-core";
   import EnterNameStep from "./EnterNameStep.svelte";
   import EmployeeDetailsStep from "./EmployeeDetailsStep.svelte";
   import ConfirmStep from "./ConfirmStep.svelte";
@@ -9,12 +10,13 @@
   let isCancelled = $state(false);
   let completedData = $state<OnboardingData | null>(null);
 
-  function handleComplete(data: OnboardingData) {
-    completedData = data;
+  // PathShell's callbacks receive PathData; narrow to this demo's data type.
+  function handleComplete(data: PathData) {
+    completedData = data as OnboardingData;
     isCompleted = true;
   }
 
-  function handleCancel(_data: OnboardingData) {
+  function handleCancel() {
     isCancelled = true;
   }
 

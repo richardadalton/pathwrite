@@ -49,7 +49,12 @@ async function openDrilldown() {
           Launch a short subpath for extra context. You can still continue without it.
         </p>
       </div>
-      <button type="button" class="btn-secondary" :disabled="snapshot?.isNavigating" @click="openDrilldown">
+      <button
+        type="button"
+        class="btn-secondary"
+        :disabled="snapshot?.status !== 'idle'"
+        @click="openDrilldown"
+      >
         Open Drilldown
       </button>
     </div>

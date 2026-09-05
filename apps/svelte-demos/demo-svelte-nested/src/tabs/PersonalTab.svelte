@@ -5,8 +5,12 @@
 
   const ctx = usePathContext<EmployeeDetails>();
 
+  // A step component only renders while a path is active, so the snapshot is present.
+
+  const snapshot = $derived(ctx.snapshot!);
+
   let errors = $derived(
-    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated ? (ctx.snapshot?.fieldErrors ?? {}) : {}
+    snapshot.hasAttemptedNext || snapshot.hasValidated ? (snapshot.fieldErrors ?? {}) : {}
   );
 </script>
 
@@ -19,7 +23,7 @@
         <input
           id="firstName"
           type="text"
-          value={ctx.snapshot.data.firstName ?? ""}
+          value={snapshot.data.firstName ?? ""}
           oninput={(e) => ctx.setData("firstName", e.currentTarget.value)}
           placeholder="Jane"
           autocomplete="given-name"
@@ -31,7 +35,7 @@
         <input
           id="lastName"
           type="text"
-          value={ctx.snapshot.data.lastName ?? ""}
+          value={snapshot.data.lastName ?? ""}
           oninput={(e) => ctx.setData("lastName", e.currentTarget.value)}
           placeholder="Smith"
           autocomplete="family-name"
@@ -45,7 +49,7 @@
       <input
         id="dateOfBirth"
         type="date"
-        value={ctx.snapshot.data.dateOfBirth ?? ""}
+        value={snapshot.data.dateOfBirth ?? ""}
         oninput={(e) => ctx.setData("dateOfBirth", e.currentTarget.value)}
       />
     </div>
@@ -55,7 +59,7 @@
       <input
         id="phone"
         type="tel"
-        value={ctx.snapshot.data.phone ?? ""}
+        value={snapshot.data.phone ?? ""}
         oninput={(e) => ctx.setData("phone", e.currentTarget.value)}
         placeholder="+353 86 123 4567"
         autocomplete="tel"
@@ -67,7 +71,7 @@
       <input
         id="personalEmail"
         type="email"
-        value={ctx.snapshot.data.personalEmail ?? ""}
+        value={snapshot.data.personalEmail ?? ""}
         oninput={(e) => ctx.setData("personalEmail", e.currentTarget.value)}
         placeholder="jane@personal.com"
         autocomplete="email"

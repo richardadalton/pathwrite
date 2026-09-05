@@ -25,7 +25,7 @@ export default function IrishAddressForm(props: Props) {
           id="addressLine1"
           type="text"
           value={data().addressLine1}
-          onInput={(e) => setData({ addressLine1: e.currentTarget.value })}
+          onInput={(e) => setData("addressLine1", e.currentTarget.value)}
           placeholder="12 O'Connell Street"
         />
         {errors().addressLine1 && <span class="field-error">{errors().addressLine1}</span>}
@@ -39,7 +39,7 @@ export default function IrishAddressForm(props: Props) {
           id="addressLine2"
           type="text"
           value={data().addressLine2}
-          onInput={(e) => setData({ addressLine2: e.currentTarget.value })}
+          onInput={(e) => setData("addressLine2", e.currentTarget.value)}
           placeholder="Apartment 3"
         />
       </div>
@@ -52,7 +52,7 @@ export default function IrishAddressForm(props: Props) {
           id="town"
           type="text"
           value={data().town}
-          onInput={(e) => setData({ town: e.currentTarget.value })}
+          onInput={(e) => setData("town", e.currentTarget.value)}
           placeholder="Dublin"
         />
         {errors().town && <span class="field-error">{errors().town}</span>}
@@ -62,11 +62,7 @@ export default function IrishAddressForm(props: Props) {
         <label for="county">
           County <span class="required">*</span>
         </label>
-        <select
-          id="county"
-          value={data().county}
-          onChange={(e) => setData({ county: e.currentTarget.value })}
-        >
+        <select id="county" value={data().county} onChange={(e) => setData("county", e.currentTarget.value)}>
           <option value="">Select county…</option>
           {IE_COUNTIES.map((c) => (
             <option value={c}>{c}</option>
@@ -83,7 +79,7 @@ export default function IrishAddressForm(props: Props) {
           id="eircode"
           type="text"
           value={data().eircode}
-          onInput={(e) => setData({ eircode: e.currentTarget.value })}
+          onInput={(e) => setData("eircode", e.currentTarget.value)}
           placeholder="D01 F5P2"
           maxLength={8}
         />

@@ -5,6 +5,10 @@
   import TabBar from "./TabBar.svelte";
 
   const ctx = usePathContext<EmployeeDetails, { showValidation: boolean }>();
+
+  // A step component only renders while a path is active, so the snapshot is present.
+
+  const snapshot = $derived(ctx.snapshot!);
 </script>
 
 <div class="tab-content">
@@ -14,7 +18,7 @@
       <label for="laptopType">Laptop <span class="optional">(optional)</span></label>
       <select
         id="laptopType"
-        value={ctx.snapshot.data.laptopType ?? "macbook-pro"}
+        value={snapshot.data.laptopType ?? "macbook-pro"}
         onchange={(e) => ctx.setData("laptopType", e.currentTarget.value)}
       >
         {#each LAPTOP_TYPES as laptop (laptop.value)}
@@ -33,7 +37,7 @@
               type="radio"
               name="needsPhone"
               value={val}
-              checked={(ctx.snapshot.data.needsPhone ?? "no") === val}
+              checked={(snapshot.data.needsPhone ?? "no") === val}
               onchange={() => ctx.setData("needsPhone", val)}
             />
             <span class="radio-option-label">
@@ -54,7 +58,7 @@
               type="radio"
               name="needsAccessCard"
               value={val}
-              checked={(ctx.snapshot.data.needsAccessCard ?? "yes") === val}
+              checked={(snapshot.data.needsAccessCard ?? "yes") === val}
               onchange={() => ctx.setData("needsAccessCard", val)}
             />
             <span class="radio-option-label">
@@ -70,7 +74,7 @@
       <input
         id="otherEquipment"
         type="text"
-        value={ctx.snapshot.data.otherEquipment ?? ""}
+        value={snapshot.data.otherEquipment ?? ""}
         oninput={(e) => ctx.setData("otherEquipment", e.currentTarget.value)}
         placeholder="e.g. standing desk, external monitor…"
       />

@@ -6,6 +6,10 @@
 
   const ctx = usePathContext<OnboardingData>();
 
+  // A step component only renders while a path is active, so the snapshot is present.
+
+  const snapshot = $derived(ctx.snapshot!);
+
   function laptopLabel(val: string) {
     return LAPTOP_TYPES.find((l) => l.value === val)?.label ?? val;
   }
@@ -14,7 +18,7 @@
     return val === "yes" ? "Yes" : "No";
   }
 
-  let d = $derived((ctx.snapshot.data.details?.data ?? {}) as EmployeeDetails);
+  let d = $derived((snapshot.data.details?.data ?? {}) as EmployeeDetails);
 
   let activePerms = $derived(
     [
@@ -37,7 +41,7 @@
     <div class="review-card">
       <div class="review-row">
         <span class="review-key">Name</span>
-        <span>{ctx.snapshot.data.employeeName}</span>
+        <span>{snapshot.data.employeeName}</span>
       </div>
     </div>
   </div>

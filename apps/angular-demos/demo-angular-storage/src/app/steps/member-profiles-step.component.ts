@@ -165,7 +165,7 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "../wizar
               <button
                 type="button"
                 class="btn-edit"
-                [disabled]="path.snapshot()?.isNavigating"
+                [disabled]="path.snapshot()?.status !== 'idle'"
                 (click)="openProfile(member, $index)"
               >
                 Edit
@@ -174,7 +174,7 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "../wizar
               <button
                 type="button"
                 class="btn-fill"
-                [disabled]="path.snapshot()?.isNavigating"
+                [disabled]="path.snapshot()?.status !== 'idle'"
                 (click)="openProfile(member, $index)"
               >
                 Fill in Profile →

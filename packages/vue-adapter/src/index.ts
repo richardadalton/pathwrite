@@ -770,6 +770,7 @@ export type {
   PathDefinition,
   PathEvent,
   PathSnapshot,
+  StepStatus,
   PathStep,
   PathStepContext,
   ProgressLayout,

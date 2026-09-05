@@ -1066,6 +1066,7 @@ export type {
   RootProgress,
   SerializedPathState,
   StepChoice,
+  StepStatus,
 } from "@daltonr/pathwrite-core";
 // A value export, like the React adapter — `new PathEngine()` without a second import.
 export { PathEngine } from "@daltonr/pathwrite-core";

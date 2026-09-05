@@ -26,7 +26,7 @@ export default function SelectPlanStep(props: Props) {
               name="plan"
               value="free"
               checked={data().plan === "free"}
-              onChange={() => setData({ plan: "free" })}
+              onChange={() => setData("plan", "free")}
             />
             <span class="radio-option-label">{PLAN_LABELS["free"]} — no payment required</span>
           </label>
@@ -36,7 +36,7 @@ export default function SelectPlanStep(props: Props) {
               name="plan"
               value="paid"
               checked={data().plan === "paid"}
-              onChange={() => setData({ plan: "paid" })}
+              onChange={() => setData("plan", "paid")}
             />
             <span class="radio-option-label">{PLAN_LABELS["paid"]}</span>
           </label>
