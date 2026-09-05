@@ -468,8 +468,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         : "wizard"
       : layout;
   const isFormMode = resolvedLayout === "form";
+  // A custom header is the consumer's decision: show it whenever progress is
+  // not hidden, even for a single-step path. Only the default dots hide for
+  // one step (same rule as the React shell).
   const showProgress =
-    !effectiveHideProgress && (snapshot.stepCount > 1 || snapshot.nestingLevel > 0);
+    !effectiveHideProgress && (renderHeader ? true : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0));
 
   return (
     <PathContext.Provider value={contextValue}>

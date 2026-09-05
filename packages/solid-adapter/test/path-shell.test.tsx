@@ -713,3 +713,38 @@ describe("PathShell (Solid) — StepChoice content lookup", () => {
     expect(container.querySelector(".by-choice")).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Custom header visibility (review finding A7)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — custom header visibility", () => {
+  const header = (s: PathSnapshot) => <div class="custom-header">Step {s.stepIndex + 1}</div>;
+
+  it("renders a custom header for a single-step path (the default header is what hides for one step)", async () => {
+    dispose = render(
+      () => <PathShell path={singleStepPath} renderHeader={header} steps={{ only: () => <div>Only</div> }} />,
+      container
+    );
+    await tick();
+    expect(container.querySelector(".custom-header")).not.toBeNull();
+  });
+
+  it("hides a custom header when hideProgress is set", async () => {
+    dispose = render(
+      () => <PathShell path={threeStepPath()} hideProgress renderHeader={header} steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }} />,
+      container
+    );
+    await tick();
+    expect(container.querySelector(".custom-header")).toBeNull();
+  });
+
+  it("hides a custom header under layout=\"tabs\"", async () => {
+    dispose = render(
+      () => <PathShell path={threeStepPath()} layout="tabs" renderHeader={header} steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }} />,
+      container
+    );
+    await tick();
+    expect(container.querySelector(".custom-header")).toBeNull();
+  });
+});

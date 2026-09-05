@@ -201,9 +201,12 @@ export class PathShellCompletionDirective {
         </div>
       </div>
 
-      <!-- Header — custom or default progress indicator -->
+      <!-- Header — custom or default progress indicator. hideProgress / layout="tabs"
+           hide both; only the default one additionally hides for a single-step path. -->
       <ng-container *ngIf="customHeader; else defaultHeader">
-        <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
+        <ng-container *ngIf="!effectiveHideProgress">
+          <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
+        </ng-container>
       </ng-container>
       <ng-template #defaultHeader>
         <div class="pw-shell__header" *ngIf="!effectiveHideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'">

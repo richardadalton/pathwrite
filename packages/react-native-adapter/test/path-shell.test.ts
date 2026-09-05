@@ -114,3 +114,21 @@ describe("PathShell (React Native) — validateWhen true at mount", () => {
     expect(screen.getByText("Required")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Custom header visibility (review finding A7 — same drift as Solid)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (React Native) — custom header visibility", () => {
+  const renderHeader = (s: { stepIndex: number }) => createElement("span", { "data-testid": "custom-header" }, `Step ${s.stepIndex + 1}`);
+
+  it("renders a custom header for a single-step path", async () => {
+    await renderShell({ id: "s", steps: [{ id: "only" }] }, { renderHeader });
+    expect(screen.queryByTestId("custom-header")).not.toBeNull();
+  });
+
+  it("hides a custom header when hideProgress is set", async () => {
+    await renderShell({ id: "m", steps: [{ id: "a" }, { id: "b" }] }, { renderHeader, hideProgress: true });
+    expect(screen.queryByTestId("custom-header")).toBeNull();
+  });
+});

@@ -7,7 +7,7 @@ import { Component, TemplateRef } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from "@angular/platform-browser-dynamic/testing";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
-import { PathShellComponent, PathStepDirective } from "../src/shell";
+import { PathShellComponent, PathStepDirective, PathShellHeaderDirective } from "../src/shell";
 
 beforeAll(() => {
   // vitest compiles TypeScript with esbuild, which emits no decorator
@@ -16,6 +16,7 @@ beforeAll(() => {
   // directive takes TemplateRef through its constructor, so give JIT the
   // same ctorParameters hint the AOT compiler would have written.
   (PathStepDirective as any).ctorParameters = () => [{ type: TemplateRef }];
+  (PathShellHeaderDirective as any).ctorParameters = () => [{ type: TemplateRef }];
   TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting(), { teardown: { destroyAfterEach: true } });
 });
 afterEach(() => TestBed.resetTestingModule());
@@ -113,5 +114,54 @@ describe("PathShell (Angular) — StepChoice content lookup", () => {
     `);
     expect(el.querySelector(".by-inner")).not.toBeNull();
     expect(el.querySelector(".by-choice")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Custom header visibility (review finding A7)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — custom header visibility", () => {
+  const multi: PathDefinition = { id: "m", steps: [{ id: "a" }, { id: "b" }, { id: "c" }] };
+  const single: PathDefinition = { id: "s", steps: [{ id: "only" }] };
+
+  async function mount(path: PathDefinition, shellAttrs: string): Promise<HTMLElement> {
+    @Component({
+      standalone: true,
+      imports: [PathShellComponent, PathStepDirective, PathShellHeaderDirective],
+      template: `
+        <pw-shell [path]="path" ${shellAttrs}>
+          <ng-template pwShellHeader let-s><div class="custom-header">Step {{ s.stepIndex + 1 }}</div></ng-template>
+          <ng-template pwStep="a"><div>A</div></ng-template>
+          <ng-template pwStep="b"><div>B</div></ng-template>
+          <ng-template pwStep="c"><div>C</div></ng-template>
+          <ng-template pwStep="only"><div>Only</div></ng-template>
+        </pw-shell>
+      `
+    })
+    class Host {
+      path = path;
+    }
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await tick();
+    await tick();
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it("hides a custom header when hideProgress is set", async () => {
+    const el = await mount(multi, `[hideProgress]="true"`);
+    expect(el.querySelector(".custom-header")).toBeNull();
+  });
+
+  it("hides a custom header under layout=\"tabs\"", async () => {
+    const el = await mount(multi, `layout="tabs"`);
+    expect(el.querySelector(".custom-header")).toBeNull();
+  });
+
+  it("renders a custom header for a single-step path", async () => {
+    const el = await mount(single, ``);
+    expect(el.querySelector(".custom-header")).not.toBeNull();
   });
 });

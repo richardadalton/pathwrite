@@ -326,7 +326,12 @@ export const PathShell: Component<PathShellProps> = (props) => {
   const effectiveHideProgress = () => props.hideProgress || props.layout === "tabs";
   const effectiveHideFooter = () => props.hideFooter || props.layout === "tabs";
   const showRoot = () => !effectiveHideProgress() && !!snap().rootProgress && props.progressLayout !== "activeOnly";
-  const showActive = () => !effectiveHideProgress() && (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly";
+  // A custom header is the consumer's decision: show it whenever progress is
+  // not hidden, even for a single-step path. Only the *default* header hides
+  // for one step (same rule as the React / Vue shells).
+  const showActive = () => !effectiveHideProgress() && (props.renderHeader
+    ? true
+    : (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly");
 
   // The step render function must only run when the *step* changes. The
   // snapshot signal is `{ equals: false }` (a new object on every engine
