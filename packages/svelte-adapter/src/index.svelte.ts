@@ -47,7 +47,7 @@ export interface UsePathOptions {
 
 export interface UsePathReturn<TData extends PathData = PathData> {
   /**
-   * Current path snapshot, or `null` when no path is active. Reactive via `$state`.
+   * Current path snapshot, or `null` when no path is active. Reactive via `$state.raw`.
    *
    * ⚠️ **Do not destructure.** `const { snapshot } = usePath()` captures the value
    * once and loses reactivity. Always access as `path.snapshot`.
@@ -153,7 +153,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const resolveEngine = (): PathEngine => options?.engine ?? (ownEngine ??= new PathEngineClass());
   let engine = resolveEngine();
 
-  let _snapshot: PathSnapshot<TData> | null = $state(engine.snapshot() as PathSnapshot<TData> | null);
+  // `$state.raw`, not `$state`: snapshots are immutable values the engine
+  // replaces wholesale on every change and nothing mutates them in place, so a
+  // deep proxy over each one (and its `data`) would be pure overhead. Every
+  // update below reassigns the whole value, which is what `$state.raw` tracks.
+  let _snapshot: PathSnapshot<TData> | null = $state.raw(engine.snapshot() as PathSnapshot<TData> | null);
 
   const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
