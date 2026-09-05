@@ -14,24 +14,32 @@ Peer dependencies: Vue 3.3+
 
 ## Quick start
 
-```vue
-<!-- SignupFlow.vue -->
-<script setup lang="ts">
-import { PathShell } from "@daltonr/pathwrite-vue";
+```typescript
+// signup-path.ts — the data type and path, shared by every step component
 import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
 
-interface SignupData extends PathData {
+export interface SignupData extends PathData {
   name: string;
   email: string;
 }
 
-const signupPath: PathDefinition<SignupData> = {
+export const signupPath: PathDefinition<SignupData> = {
   id: "signup",
   steps: [
     { id: "details", title: "Your Details" },
     { id: "review",  title: "Review" },
   ],
 };
+```
+
+```vue
+<!-- SignupFlow.vue -->
+<script setup lang="ts">
+import { PathShell } from "@daltonr/pathwrite-vue";
+import type { PathData } from "@daltonr/pathwrite-core";
+import { signupPath } from "./signup-path";
+import DetailsStep from "./DetailsStep.vue";
+import ReviewStep from "./ReviewStep.vue";
 
 function handleComplete(data: PathData) {
   console.log("Done!", data);
@@ -54,6 +62,7 @@ function handleComplete(data: PathData) {
 <!-- DetailsStep.vue -->
 <script setup lang="ts">
 import { usePathContext } from "@daltonr/pathwrite-vue";
+import type { SignupData } from "./signup-path";
 
 const { snapshot, setData } = usePathContext<SignupData>();
 </script>

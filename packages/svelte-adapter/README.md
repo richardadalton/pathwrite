@@ -22,8 +22,9 @@ Peer dependencies: Svelte 5+.
   import { applicationPath } from "./application-path";
   import DetailsStep from "./DetailsStep.svelte";
   import CoverNoteStep from "./CoverNoteStep.svelte";
+  import type { PathData } from "@daltonr/pathwrite-core";
 
-  function handleComplete(data) {
+  function handleComplete(data: PathData) {
     console.log("Submitted:", data);
   }
 </script>

@@ -33,7 +33,6 @@ const signupPath: PathDefinition<SignupData> = {
 
 function DetailsStep() {
   const { snapshot, setData } = usePathContext<SignupData>();
-  if (!snapshot) return null;
   return (
     <div>
       <input value={snapshot.data.name} onChange={(e) => setData("name", e.target.value)} placeholder="Name" />
@@ -44,7 +43,6 @@ function DetailsStep() {
 
 function ReviewStep() {
   const { snapshot } = usePathContext<SignupData>();
-  if (!snapshot) return null;
   return <p>Signing up as {snapshot.data.name} ({snapshot.data.email})</p>;
 }
 

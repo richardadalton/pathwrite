@@ -28,7 +28,7 @@ export const Pressable = (props: any) =>
   );
 export const ScrollView = (props: any) => createElement("div", domProps(props), props.children);
 export const KeyboardAvoidingView = (props: any) => createElement("div", domProps(props), props.children);
-export const TextInput = (props: any) =>
+export const TextInput = (props: { value?: string; onChangeText?: (text: string) => void; placeholder?: string; testID?: string; [k: string]: unknown }) =>
   createElement("input", {
     ...domProps(props),
     value: props.value ?? "",

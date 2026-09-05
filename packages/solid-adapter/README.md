@@ -35,7 +35,7 @@ import { PathShell } from "@daltonr/pathwrite-solid";
 import "@daltonr/pathwrite-solid/styles.css";
 import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
 
-interface SignupData extends PathData {
+export interface SignupData extends PathData {
   name: string;
   email: string;
 }
@@ -66,6 +66,7 @@ export function SignupFlow() {
 ```tsx
 // DetailsStep.tsx
 import { usePathContext } from "@daltonr/pathwrite-solid";
+import type { SignupData } from "./SignupFlow";
 
 export function DetailsStep() {
   const { snapshot, setData } = usePathContext<SignupData>();

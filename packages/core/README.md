@@ -12,9 +12,10 @@ npm install @daltonr/pathwrite-core
 
 ```typescript
 import { PathEngine } from "@daltonr/pathwrite-core";
-import type { PathDefinition } from "@daltonr/pathwrite-core";
+import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
 
-interface SignupData {
+// Data types extend PathData (a string-keyed record) so the engine can store them.
+interface SignupData extends PathData {
   name: string;
   email: string;
 }

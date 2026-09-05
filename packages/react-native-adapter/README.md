@@ -17,7 +17,7 @@ Peer dependencies: `react-native >= 0.72.0`, `react >= 18.0.0`
 ```tsx
 import { PathShell, usePathContext } from "@daltonr/pathwrite-react-native";
 import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Text, TextInput } from "react-native";
 
 interface SignupData extends PathData {
   name: string;
@@ -33,7 +33,6 @@ const signupPath: PathDefinition<SignupData> = {
 
 function DetailsStep() {
   const { snapshot, setData } = usePathContext<SignupData>();
-  if (!snapshot) return null;
   return (
     <TextInput
       value={snapshot.data.name}
@@ -45,7 +44,6 @@ function DetailsStep() {
 
 function ReviewStep() {
   const { snapshot } = usePathContext<SignupData>();
-  if (!snapshot) return null;
   return <Text>Signing up as {snapshot.data.name}</Text>;
 }
 
