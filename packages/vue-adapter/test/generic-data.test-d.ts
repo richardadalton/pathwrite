@@ -43,6 +43,9 @@ test("the engine option is typed over the same data", () => {
   });
   // @ts-expect-error — an engine over other data
   usePath<Form>({ engine: new PathEngine<{ zip: string }>() });
+  // The untyped surface (the default data, PathShell's engine prop) still
+  // accepts a typed engine.
+  usePath({ engine: new PathEngine<Form>() });
 });
 
 test("usePathContext<TData> narrows the context snapshot", () => {
