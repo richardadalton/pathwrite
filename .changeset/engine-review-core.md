@@ -1,8 +1,9 @@
 ---
 "@daltonr/pathwrite-core": patch
+"@daltonr/pathwrite-store": patch
 ---
 
-Engine fixes for findings C1–C9 of the September 2026 review, plus its first two "from reading" items (`previous()` guard status; `stateChanged` cause on completion failures and retries).
+Engine fixes for findings C1–C9 of the September 2026 review and all of its core "from reading" bugs (`previous()` guard status; `stateChanged` cause on completion failures and retries; `suspend()`, `validate()` and `goToStep` edge cases; `start()`/`restart()` during an in-flight navigation; fuller `exportState()`), plus the store's `restoreOrStart` now marking the engine as persisted.
 
 **Bug fixes**
 
@@ -15,8 +16,15 @@ Engine fixes for findings C1–C9 of the September 2026 review, plus its first t
 - A subscriber that throws no longer aborts the emit loop or unwinds into the navigation that emitted the event (which left the engine stuck in a busy status). The error is reported via `console.error` and the remaining subscribers still receive the event.
 - Completing a path whose trailing step(s) were skipped leaves the completed / error snapshot on the last *visible* step instead of the skipped one.
 - `stateChanged.cause` now identifies the method that actually triggered the event: a completion failure reached from `start()` (all steps skipped) reports `"start"` instead of `"next"`, and every `retry()` emits `"retry"` instead of replaying the original cause.
+- `suspend()` only acts on a settled engine (`idle` or `error`). Called mid-navigation it no longer resets the status and lets the in-flight navigation land on a "suspended" engine; called after completion it no longer lets a later `next()` run `onComplete` again.
+- `start()` and `restart()` are safe to call while a hook or guard of the old path is still running. The abandoned navigation used to resume against the new path — re-running `onEnter` on its first step, emitting a stray `stateChanged`, applying a stale patch or error, or completing / resuming the old path after the restart. It now exits without touching the engine.
+- `goToStep` / `goToStepChecked` to a step an earlier navigation had resolved as skipped now clears it from the skip cache, so the snapshot lists it as current instead of reporting a `stepIndex` that pointed at a different step.
+- `validate()` also works while the status is `"error"`, so an outer shell whose Next just failed can still reveal the inner tabs' errors. The error and its retry are left untouched.
+- `exportState()` now includes `attemptedStepIds` and `skippedStepIds` (active path and each stack entry), `hasValidated` and `blockingError`. After a restore, `hasAttemptedNext`, `blockingError`, `stepCount` and `progress` are right immediately instead of after the first navigation. All new fields are optional; states saved by earlier versions still load (still `version: 1`).
+- `@daltonr/pathwrite-store`: `restoreOrStart` constructs the engine with `hasPersistence: true` on both the fresh-start and restore branches, so `snapshot.hasPersistence` is true whenever a store is attached that way and shells can show their "your progress is saved" escalation copy.
 
 **Behaviour changes** (bug fixes, but observable)
 
 - `start()` on an engine with an active path now **replaces** it, as documented, instead of nesting it as a sub-path. Code that relied on `start()` to nest should call `startSubPath()`. `start()` during an in-flight hook now proceeds (like `restart()`) rather than being silently dropped.
+- `goToStep()` to the step the path is already on no longer runs `onLeave` / `onEnter` or re-snapshots the step's entry data (so `resetStep()` still reverts edits made before the call); it behaves like `goToStepChecked()` did. With `{ validateOnLeave: true }` both still mark the step attempted and emit `stateChanged`.
 - `previous()`, `goToStep()`, `goToStepChecked()` and a sub-path `cancel()` now use the same error / retry model as `next()`: when a hook or guard fails they **resolve**, set `snapshot.error` with the failing phase, move to status `"error"` and store a `retry()`. They no longer reject. Programmer errors (unknown step id, no active path) still throw.
