@@ -96,3 +96,21 @@ describe("PathShell (React Native) — Next is pressable when the step is invali
     expect(screen.getByText("Content b")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateWhen already true at mount (review finding A3)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (React Native) — validateWhen true at mount", () => {
+  it("shows the validation summary straight after mounting", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await renderShell(path, { validateWhen: true, validationDisplay: "summary" });
+    expect(screen.getByText("Required")).not.toBeNull();
+  });
+});

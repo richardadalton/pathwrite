@@ -498,9 +498,12 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
         if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
       }
     }
-    this.facade.start(this.path, startData).then(() => {
-      if (restoreStepId) this.facade.goToStep(restoreStepId!);
-    });
+    // ngOnChanges applied validateWhen before ngOnInit started the path, and
+    // start() resets the engine's validated flag — re-apply it once the path
+    // (and any restore jump) has settled.
+    this.facade.start(this.path, startData)
+      .then(() => (restoreStepId ? this.facade.goToStep(restoreStepId) : undefined))
+      .then(() => { if (this.validateWhen) this.facade.validate(); });
   }
 
   /**

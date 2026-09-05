@@ -641,3 +641,32 @@ describe("PathShell (Vue) — fieldErrors", () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// validateWhen already true at mount (review finding A3)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — validateWhen true at mount", () => {
+  const path: PathDefinition = {
+    id: "p",
+    steps: [
+      { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+      { id: "step-b", title: "Step B" }
+    ]
+  };
+
+  it("shows the validation summary straight after mounting", async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(PathShell, { path, validateWhen: true, validationDisplay: "summary" }, {
+          "step-a": () => h("div", "A"),
+          "step-b": () => h("div", "B")
+        });
+      }
+    }), { attachTo: document.body });
+    await settled(wrapper);
+    expect(wrapper.find(".pw-shell__validation").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Required");
+    wrapper.unmount();
+  });
+});

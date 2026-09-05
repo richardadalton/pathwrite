@@ -302,14 +302,16 @@ export const PathShell = defineComponent({
             if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
           }
         }
-        const p = start(props.path, startData);
-        if (restoreStepId) {
-          p.then(() => goToStep(restoreStepId!));
-        }
+        // start() resets the engine's validated flag, so a validateWhen that
+        // is already true at mount is re-applied once the path (and any
+        // restore jump) has settled.
+        start(props.path, startData)
+          .then(() => (restoreStepId ? goToStep(restoreStepId) : undefined))
+          .then(() => { if (props.validateWhen) validate(); });
       }
     });
 
-    watch(() => props.validateWhen, (val) => { if (val) validate(); });
+    watch(() => props.validateWhen, (val) => { if (val) validate(); }, { immediate: true });
 
     const actions: PathShellActions = {
       next, previous, cancel, goToStep, goToStepChecked, setData,

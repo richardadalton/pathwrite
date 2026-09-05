@@ -637,3 +637,33 @@ describe("PathShell (Solid) — the snapshot passed to a step render function is
     expect(parentMounted).toHaveBeenCalledTimes(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateWhen already true at mount (review finding A3)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — validateWhen true at mount", () => {
+  it("shows the validation summary straight after mounting", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+        { id: "step-b", title: "Step B" },
+      ],
+    };
+    dispose = render(
+      () => (
+        <PathShell
+          path={path}
+          validateWhen={true}
+          validationDisplay="summary"
+          steps={{ "step-a": () => <div>A</div>, "step-b": () => <div>B</div> }}
+        />
+      ),
+      container
+    );
+    await tick();
+    expect(container.querySelector(".pw-shell__validation")).not.toBeNull();
+    expect(container.textContent).toContain("Required");
+  });
+});

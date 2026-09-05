@@ -783,3 +783,29 @@ describe("PathShell — restoreKey", () => {
     expect(screen.queryByText("Inner Content B")).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateWhen already true at mount (review finding A3)
+// ---------------------------------------------------------------------------
+
+describe("PathShell — validateWhen true at mount", () => {
+  it("shows the validation summary straight after mounting", async () => {
+    const path: PathDefinition = {
+      id: "p",
+      steps: [
+        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
+        { id: "step-b", title: "Step B" }
+      ]
+    };
+    await act(async () =>
+      render(createElement(PathShell, {
+        path,
+        validateWhen: true,
+        validationDisplay: "summary",
+        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
+      }))
+    );
+    expect(document.querySelector(".pw-shell__validation")).not.toBeNull();
+    expect(screen.getByText("Required")).toBeTruthy();
+  });
+});

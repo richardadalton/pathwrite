@@ -551,6 +551,13 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   useEffect(() => {
     if (validateWhen) validate();
   }, [validateWhen, validate]);
+  // The effect above runs before the mount start() below, and start() resets
+  // the engine's validated flag — so a validateWhen that is already true at
+  // mount has to be re-applied once the path (and any restore jump) has
+  // settled. Read the latest value through a ref: the prop may have changed
+  // by the time start() resolves.
+  const validateWhenRef = useRef(validateWhen);
+  validateWhenRef.current = validateWhen;
 
   useImperativeHandle(ref, () => ({
     restart: () => restart(),
@@ -571,10 +578,9 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
           if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
         }
       }
-      const p = start(pathDef, startData);
-      if (restoreStepId) {
-        Promise.resolve(p).then(() => goToStep(restoreStepId!));
-      }
+      Promise.resolve(start(pathDef, startData))
+        .then(() => (restoreStepId ? goToStep(restoreStepId) : undefined))
+        .then(() => { if (validateWhenRef.current) validate(); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
