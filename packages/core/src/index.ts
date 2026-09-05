@@ -643,7 +643,10 @@ export function errorPhaseMessage(phase: ErrorPhase): string {
 export class PathEngine<TData extends PathData = PathData> {
   private activePath: ActivePath | null = null;
   private readonly pathStack: ActivePath[] = [];
-  private readonly listeners = new Set<(event: PathEvent<TData>) => void>();
+  // Kept over the untyped event so that PathEngine<Typed> is assignable to
+  // PathEngine (a Set of typed listeners would make the class invariant in
+  // TData). Listeners only ever receive this engine's own events.
+  private readonly listeners = new Set<(event: PathEvent) => void>();
   private _status: PathStatus = "idle";
   /** Step IDs on which next() or goToStep({ validateOnLeave }) has been called. Per-step and persistent — does not reset on navigation, only on start()/restart(). */
   /** True after validate() has been called. Global — does not reset on step navigation. Resets on start/restart. */
@@ -687,7 +690,7 @@ export class PathEngine<TData extends PathData = PathData> {
     if (options?.observers) {
       for (const observer of options.observers) {
         // Wrap so observer receives the engine instance as the second argument
-        this.listeners.add((event) => observer(event, this));
+        this.listeners.add((event) => observer(event as PathEvent<TData>, this));
       }
     }
     if (options?.hasPersistence) {
@@ -801,8 +804,9 @@ export class PathEngine<TData extends PathData = PathData> {
   }
 
   public subscribe(listener: (event: PathEvent<TData>) => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    const untyped = listener as unknown as (event: PathEvent) => void;
+    this.listeners.add(untyped);
+    return () => this.listeners.delete(untyped);
   }
 
   // ---------------------------------------------------------------------------
