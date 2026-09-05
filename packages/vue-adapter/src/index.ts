@@ -35,7 +35,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UsePathOptions {
+export interface UsePathOptions<TData extends PathData = PathData> {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
    * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
@@ -52,19 +52,19 @@ export interface UsePathOptions {
    * `restoreOrStart()`) or is swapped is adopted — the hook re-subscribes and
    * re-seeds its snapshot from the new engine.
    */
-  engine?: MaybeRefOrGetter<PathEngine | undefined>;
+  engine?: MaybeRefOrGetter<PathEngine<TData> | undefined>;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
-  onEvent?: (event: PathEvent) => void;
+  onEvent?: (event: PathEvent<TData>) => void;
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Reactive — triggers Vue re-renders on change. */
   snapshot: DeepReadonly<Ref<PathSnapshot<TData> | null>>;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
-  /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
+  start: (path: PathDefinition<TData>, initialData?: Partial<TData>) => Promise<void>;
+  /** Push a sub-path onto the stack. Requires an active path. A sub-path has its own data, so any definition is accepted. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
   startSubPath: (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData?: PathData,
     meta?: Record<string, unknown>
   ) => Promise<void>;
@@ -101,26 +101,28 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 // usePath composable
 // ---------------------------------------------------------------------------
 
-export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
+export function usePath<TData extends PathData = PathData>(
+  options?: UsePathOptions<TData>
+): UsePathReturn<TData> {
   // toRaw() strips any Vue reactive proxy the caller may have accidentally applied
   // (e.g. ref(engine) instead of shallowRef(engine)). PathEngine uses private class
   // fields that are inaccessible through a Proxy, so we always work on the raw instance.
-  let ownEngine: PathEngine | null = null;
-  const resolveEngine = (): PathEngine => {
+  let ownEngine: PathEngine<TData> | null = null;
+  const resolveEngine = (): PathEngine<TData> => {
     const external = toValue(options?.engine);
-    return external ? (toRaw(external) as PathEngine) : (ownEngine ??= new PathEngine());
+    return external ? toRaw(external) : (ownEngine ??= new PathEngine<TData>());
   };
   let engine = resolveEngine();
 
   // Seed immediately from existing engine state — essential when restoring a
   // persisted path (the engine is already started before usePath is called).
-  const _snapshot = shallowRef<PathSnapshot<TData> | null>(engine.snapshot() as PathSnapshot<TData> | null);
+  const _snapshot = shallowRef<PathSnapshot<TData> | null>(engine.snapshot());
 
-  const onEngineEvent = (event: PathEvent): void => {
+  const onEngineEvent = (event: PathEvent<TData>): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
-      _snapshot.value = event.snapshot as PathSnapshot<TData>;
+      _snapshot.value = event.snapshot;
     } else if (event.type === "completed" || event.type === "cancelled") {
-      _snapshot.value = engine.snapshot() as PathSnapshot<TData> | null;
+      _snapshot.value = engine.snapshot();
     }
     options?.onEvent?.(event);
   };
@@ -131,7 +133,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     if (next === engine) return;
     unsubscribe();
     engine = next;
-    _snapshot.value = engine.snapshot() as PathSnapshot<TData> | null;
+    _snapshot.value = engine.snapshot();
     unsubscribe = engine.subscribe(onEngineEvent);
   });
 
@@ -139,11 +141,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const snapshot = readonly(_snapshot) as DeepReadonly<Ref<PathSnapshot<TData> | null>>;
 
-  const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
+  const start = (path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> =>
     engine.start(path, initialData);
 
   const startSubPath = (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData: PathData = {},
     meta?: Record<string, unknown>
   ): Promise<void> => engine.startSubPath(path, initialData, meta);
@@ -157,8 +159,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
     engine.goToStepChecked(stepId, options);
 
-  const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
-    engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
+  const setData = <K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
+    engine.setData(key, value);
 
   const resetStep = (): Promise<void> => engine.resetStep();
 
@@ -259,7 +261,7 @@ export interface PathShellActions {
 export const PathShell = defineComponent({
   name: "PathShell",
   props: {
-    path: { type: Object as PropType<PathDefinition<any>>, required: true },
+    path: { type: Object as PropType<PathDefinition>, required: true },
     /**
      * An externally-managed engine — for example, the engine returned by
      * `restoreOrStart()` from `@daltonr/pathwrite-store`. When supplied, `PathShell` will skip its own
@@ -345,7 +347,7 @@ export const PathShell = defineComponent({
         if (event.type === "completed") emit("complete", event.data);
         if (event.type === "cancelled") emit("cancel", event.data);
         if (props.restoreKey && outerCtx && event.type === "stateChanged") {
-          (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(props.restoreKey, {
+          void outerCtx.path.setData(props.restoreKey, {
             ...event.snapshot,
             serializedState: currentEngine().exportState(),
           });
