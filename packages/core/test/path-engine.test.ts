@@ -4785,3 +4785,159 @@ describe("PathEngine — suspend() only acts on a settled engine", () => {
     expect(events.filter((e) => e.type === "suspended")).toHaveLength(1);
   });
 });
+
+describe("PathEngine — start()/restart() during an in-flight navigation", () => {
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  function eventsOn(engine: PathEngine): string[] {
+    const out: string[] = [];
+    engine.subscribe((e) => {
+      const s = engine.snapshot();
+      out.push(e.type === "stateChanged" ? `${e.cause}:${s?.pathId}/${s?.stepId}:${s?.status}` : e.type);
+    });
+    return out;
+  }
+
+  it("start(B) while A's onLeave is pending: B's first step is entered exactly once and sees no stray events", async () => {
+    const enteredB1 = vi.fn();
+    const A: PathDefinition = { id: "A", steps: [{ id: "a1", onLeave: async () => { await sleep(20); } }, { id: "a2", onEnter: vi.fn() }] };
+    const B: PathDefinition = { id: "B", steps: [{ id: "b1", onEnter: enteredB1 }, { id: "b2" }] };
+    const engine = new PathEngine();
+    await engine.start(A);
+
+    const stale = engine.next();
+    await tick();
+    await engine.start(B);
+    const events = eventsOn(engine);
+
+    await stale;
+    expect(enteredB1).toHaveBeenCalledTimes(1);
+    expect(events).toEqual([]);
+    expect((A.steps[1] as PathStep).onEnter).not.toHaveBeenCalled();
+    const s = engine.snapshot()!;
+    expect(s.pathId).toBe("B");
+    expect(s.stepId).toBe("b1");
+    expect(s.status).toBe("idle");
+  });
+
+  it("restart() while onLeave is pending leaves the fresh path on step 1", async () => {
+    const enteredA2 = vi.fn();
+    const engine = new PathEngine();
+    await engine.start({
+      id: "A",
+      steps: [{ id: "a1", onLeave: async () => { await sleep(20); } }, { id: "a2", onEnter: enteredA2 }]
+    });
+
+    const stale = engine.next();
+    await tick();
+    await engine.restart();
+    const events = eventsOn(engine);
+
+    await stale;
+    expect(enteredA2).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+    expect(engine.snapshot()?.stepId).toBe("a1");
+    expect(engine.snapshot()?.status).toBe("idle");
+  });
+
+  it("a stale guard rejection does not put the new path into error", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "A",
+      steps: [{ id: "a1", canMoveNext: async () => { await sleep(20); throw new Error("stale failure"); } }, { id: "a2" }]
+    });
+
+    const stale = engine.next();
+    await tick();
+    await engine.restart();
+    await stale;
+    expect(engine.snapshot()?.status).toBe("idle");
+    expect(engine.snapshot()?.error).toBeNull();
+  });
+
+  it("a stale onEnter resolving does not overwrite the new path's error state", async () => {
+    let slowEnter = true;
+    const engine = new PathEngine();
+    await engine.start({
+      id: "A",
+      steps: [
+        { id: "a1" },
+        { id: "a2", onEnter: async () => { if (slowEnter) { await sleep(20); return { fromStale: true }; } } }
+      ]
+    });
+
+    const stale = engine.next();
+    await tick();
+    expect(engine.snapshot()?.status).toBe("entering");
+
+    // Restart onto a path whose first step fails to enter.
+    slowEnter = false;
+    await engine.start({ id: "B", steps: [{ id: "b1", onEnter: () => { throw new Error("b1 failed"); } }] });
+    expect(engine.snapshot()?.status).toBe("error");
+
+    await stale;
+    expect(engine.snapshot()?.status).toBe("error"); // stale success did not flip it to idle
+    expect(engine.snapshot()?.data).toEqual({});     // stale patch not applied
+  });
+
+  it("restart() while onComplete is pending: the old path does not complete afterwards", async () => {
+    const events: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((e) => events.push(e.type));
+    await engine.start({
+      id: "A",
+      steps: [{ id: "a1" }],
+      onComplete: async () => { await sleep(20); }
+    });
+
+    const stale = engine.next();
+    await tick();
+    expect(engine.snapshot()?.status).toBe("completing");
+    await engine.restart();
+
+    await stale;
+    expect(events).not.toContain("completed");
+    expect(engine.snapshot()?.status).toBe("idle");
+    expect(engine.snapshot()?.stepId).toBe("a1");
+  });
+
+  it("restart() while a sub-path's onSubPathComplete is pending: the parent is not resumed", async () => {
+    const events: string[] = [];
+    const engine = new PathEngine();
+    engine.subscribe((e) => events.push(e.type));
+    await engine.start({
+      id: "parent",
+      steps: [{ id: "p1", onSubPathComplete: async () => { await sleep(20); return { merged: true }; } }, { id: "p2" }]
+    });
+    await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] });
+
+    const stale = engine.next();
+    await tick();
+    await engine.restart();
+    const nesting = engine.snapshot()?.nestingLevel;
+
+    await stale;
+    expect(events).not.toContain("resumed");
+    expect(engine.snapshot()?.nestingLevel).toBe(nesting);
+    expect(engine.snapshot()?.data).toEqual({});
+    expect(engine.snapshot()?.stepId).toBe("p1");
+  });
+
+  it("restart() while an async shouldSkip is pending does not move the fresh path", async () => {
+    const engine = new PathEngine();
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await engine.start({
+      id: "A",
+      steps: [{ id: "a1" }, { id: "a2", shouldSkip: async () => { await sleep(20); return true; } }, { id: "a3" }]
+    });
+
+    const stale = engine.next();
+    await tick();
+    await engine.restart();
+    await stale;
+    expect(engine.snapshot()?.stepId).toBe("a1");
+    expect(engine.snapshot()?.stepCount).toBe(3); // a2 not marked skipped on the fresh instance
+    spy.mockRestore();
+  });
+});
