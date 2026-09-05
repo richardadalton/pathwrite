@@ -7,6 +7,7 @@ import { Component, TemplateRef } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from "@angular/platform-browser-dynamic/testing";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
+import { PathEngine } from "@daltonr/pathwrite-core";
 import { PathShellComponent, PathStepDirective, PathShellHeaderDirective } from "../src/shell";
 
 beforeAll(() => {
@@ -232,5 +233,45 @@ describe("PathShell (Angular) — restoreKey remount fidelity", () => {
     expect(el.querySelector(".inner-b")).not.toBeNull();
     expect(el.textContent).toContain("City required");
     expect(calls).toEqual({ enterA: 1, leaveA: 1, enterB: 1 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A late engine input is adopted (Angular already did this via ngOnChanges — pinned by a test)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — late engine input", () => {
+  it("shows the empty state until the engine arrives, then renders and drives that engine", async () => {
+    const started = new PathEngine();
+    await started.start({ id: "late", steps: [{ id: "a" }, { id: "b" }] }, { name: "restored" });
+
+    @Component({
+      standalone: true,
+      imports: [PathShellComponent, PathStepDirective],
+      template: `
+        <pw-shell [path]="path" [autoStart]="false" [engine]="engine">
+          <ng-template pwStep="a"><div class="a">Content A</div></ng-template>
+          <ng-template pwStep="b"><div class="b">Content B</div></ng-template>
+        </pw-shell>
+      `
+    })
+    class Host {
+      path: PathDefinition = { id: "late", steps: [{ id: "a" }, { id: "b" }] };
+      engine?: PathEngine;
+    }
+    const fixture = TestBed.createComponent(Host);
+    const settle = async () => { for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); } fixture.detectChanges(); };
+    await settle();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector(".a")).toBeNull();
+
+    fixture.componentInstance.engine = started;
+    await settle();
+    expect(el.querySelector(".a")).not.toBeNull();
+
+    (el.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await settle();
+    expect(started.snapshot()?.stepId).toBe("b");
+    expect(el.querySelector(".b")).not.toBeNull();
   });
 });

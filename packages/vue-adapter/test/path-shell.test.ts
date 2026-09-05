@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { defineComponent, h, nextTick } from "vue";
+import { defineComponent, h, nextTick, shallowRef } from "vue";
 import { mount, flushPromises, VueWrapper } from "@vue/test-utils";
-import { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
+import { PathDefinition, PathEngine, PathSnapshot } from "@daltonr/pathwrite-core";
 import { PathShell, PathShellActions, usePathContext, usePath } from "../src/index";
 
 // ---------------------------------------------------------------------------
@@ -726,6 +726,37 @@ describe("PathShell (Vue) — restoreKey remount fidelity", () => {
     expect(enterA).toHaveBeenCalledTimes(1);
     expect(leaveA).toHaveBeenCalledTimes(1);
     expect(enterB).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A late engine prop is adopted (review: late `engine` prop ignored)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — late engine prop", () => {
+  it("shows the empty state until the engine arrives, then renders and drives that engine", async () => {
+    const started = new PathEngine();
+    await started.start(threeStepPath(), { name: "restored" });
+    const engineRef = shallowRef<PathEngine | undefined>(undefined);
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(PathShell, { path: threeStepPath(), autoStart: false, ...(engineRef.value ? { engine: engineRef.value } : {}) }, {
+          "step-a": () => h("div", "Content A"), "step-b": () => h("div", "Content B"), "step-c": () => h("div", "Content C")
+        });
+      }
+    }), { attachTo: document.body });
+    await settled(wrapper);
+    expect(wrapper.text()).toContain("No active path");
+
+    engineRef.value = started;
+    await settled(wrapper);
+    expect(wrapper.text()).toContain("Content A");
+
+    await wrapper.find(".pw-shell__btn--next").trigger("click");
+    await settled(wrapper);
+    expect(started.snapshot()?.stepId).toBe("step-b");
+    expect(wrapper.text()).toContain("Content B");
     wrapper.unmount();
   });
 });

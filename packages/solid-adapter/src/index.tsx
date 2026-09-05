@@ -7,6 +7,7 @@ import {
   createContext,
   useContext,
   createEffect,
+  on,
   For,
   Show,
   type Component,
@@ -41,7 +42,13 @@ export interface UsePathOptions {
    * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
    * - `PathShell` will skip its own `autoStart` call.
    */
-  engine?: PathEngine;
+  /**
+   * An externally managed engine — a plain engine or an accessor. With an
+   * accessor the hook tracks it, so an engine that arrives later (e.g. from an
+   * async `restoreOrStart()`) or is swapped is adopted — the hook
+   * re-subscribes and re-seeds its snapshot from the new engine.
+   */
+  engine?: PathEngine | Accessor<PathEngine | undefined>;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
   onEvent?: (event: PathEvent) => void;
 }
@@ -90,7 +97,12 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 // ---------------------------------------------------------------------------
 
 export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  const engine = options?.engine ?? new PathEngine();
+  let ownEngine: PathEngine | null = null;
+  const resolveEngine = (): PathEngine => {
+    const external = typeof options?.engine === "function" ? options.engine() : options?.engine;
+    return external ?? (ownEngine ??= new PathEngine());
+  };
+  let engine = resolveEngine();
 
   const [snapshot, setSnapshot] = createSignal<PathSnapshot<TData> | null>(
     engine.snapshot() as PathSnapshot<TData> | null,
@@ -98,16 +110,26 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     { equals: false }
   );
 
-  const unsubscribe = engine.subscribe((event: PathEvent) => {
+  const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
       setSnapshot(event.snapshot as PathSnapshot<TData>);
     } else if (event.type === "completed" || event.type === "cancelled") {
       setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
     }
     options?.onEvent?.(event);
-  });
+  };
+  let unsubscribe = engine.subscribe(onEngineEvent);
 
-  onCleanup(unsubscribe);
+  // Adopt a late or swapped engine: re-subscribe and re-seed the snapshot.
+  createEffect(on(resolveEngine, (next) => {
+    if (next === engine) return;
+    unsubscribe();
+    engine = next;
+    setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
+    unsubscribe = engine.subscribe(onEngineEvent);
+  }, { defer: true }));
+
+  onCleanup(() => unsubscribe());
 
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
@@ -280,17 +302,20 @@ export const PathShell: Component<PathShellProps> = (props) => {
       return null; // unusable state (e.g. the path definition changed): start fresh below
     }
   })();
-  const engine = props.engine ?? restoredEngine ?? new PathEngine();
+  // The shell's own engine is created once; an `engine` prop — present at
+  // mount or arriving later — always takes precedence and is adopted by usePath.
+  const ownEngine = restoredEngine ?? new PathEngine();
+  const currentEngine = (): PathEngine => props.engine ?? ownEngine;
 
   const pathReturn = usePath({
-    engine,
+    engine: currentEngine,
     onEvent(event) {
       props.onEvent?.(event);
       if (event.type === "completed") props.onComplete?.(event.data as PathData);
       if (event.type === "cancelled") props.onCancel?.(event.data as PathData);
       if (props.restoreKey && outerCtx && event.type === "stateChanged") {
         (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          props.restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
+          props.restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
         );
       }
     },

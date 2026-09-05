@@ -123,13 +123,12 @@ export type PathProviderProps = PropsWithChildren<{
 // ---------------------------------------------------------------------------
 
 export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  // Use provided engine or create a stable new one for this hook's lifetime.
-  // options.engine must be a stable reference (don't recreate on every render).
-  const engineRef = useRef<PathEngine | null>(null);
-  if (engineRef.current === null) {
-    engineRef.current = options?.engine ?? new PathEngine();
-  }
-  const engine = engineRef.current;
+  // Use the provided engine, or one created once for this hook's lifetime.
+  // `options.engine` is read on every render: an engine that arrives later
+  // (e.g. from an async restoreOrStart()) or is swapped is adopted — the hook
+  // re-subscribes and re-seeds its snapshot from the new engine.
+  const ownEngineRef = useRef<PathEngine | null>(null);
+  const engine = options?.engine ?? (ownEngineRef.current ??= new PathEngine());
 
   // Keep the onEvent callback current without changing the subscribe identity
   const onEventRef = useRef(options?.onEvent);
@@ -139,10 +138,10 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   // persisted path (the engine is already started before usePath is called).
   // We track whether we've seeded to avoid calling engine.snapshot() on every
   // re-render (React evaluates useRef's argument each time).
-  const seededRef = useRef(false);
+  const seededForRef = useRef<PathEngine | null>(null);
   const snapshotRef = useRef<PathSnapshot<TData> | null>(null);
-  if (!seededRef.current) {
-    seededRef.current = true;
+  if (seededForRef.current !== engine) {
+    seededForRef.current = engine;
     try {
       snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
     } catch {
@@ -606,7 +605,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       return null; // unusable state (e.g. the path definition changed): start fresh below
     }
   });
-  const [engine] = useState(() => externalEngine ?? restoredEngine ?? new PathEngine());
+  // The shell's own engine is created once; an `engine` prop — present at
+  // mount or arriving later — always takes precedence and is adopted by usePath.
+  const [ownEngine] = useState(() => restoredEngine ?? new PathEngine());
+  const engine = externalEngine ?? ownEngine;
 
   const pathReturn = usePath({
     engine,

@@ -109,7 +109,7 @@ function DetailsStep() {
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | required | The path to run. |
 | `steps` | `Record<string, (snapshot: PathSnapshot) => JSX.Element>` | — | Step render functions keyed by step ID (or `formId` for `StepChoice` steps; the shell falls back to the choice ID when an inner step ID has no entry). Each function is called once when its step becomes current and the component it returns is kept across engine events until the step changes, so inputs keep focus and local state. The `snapshot` argument is live — its properties read the current snapshot reactively. |
-| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with managing the engine internally. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with managing the engine internally. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
 | `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |

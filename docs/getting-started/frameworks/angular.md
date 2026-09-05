@@ -336,7 +336,7 @@ Each `<ng-template pwStep="<stepId>">` is instantiated and rendered when the act
 |-------|------|---------|-------------|
 | `path` | `PathDefinition` | — | The path definition to drive. Required unless `[engine]` is provided. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
-| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `autoStart` is suppressed. Use `@if (engine)` to gate mounting until the engine is ready. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `autoStart` is suppressed. Use `@if (engine)` to gate mounting until the engine is ready. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `<pw-shell>`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. Ignored when `[engine]` is provided. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |

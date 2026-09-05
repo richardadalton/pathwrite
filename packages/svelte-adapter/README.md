@@ -99,7 +99,7 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `path` | `PathDefinition` | — | Path to run. Mutually exclusive with `engine`. |
-| `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). Mutually exclusive with `path`. |
+| `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). Mutually exclusive with `path`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
 | `autoStart` | `boolean` | `true` | Start on mount. Ignored when `engine` is provided. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |

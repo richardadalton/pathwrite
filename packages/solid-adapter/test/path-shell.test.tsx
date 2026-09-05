@@ -813,3 +813,32 @@ describe("PathShell (Solid) — restoreKey remount fidelity", () => {
     expect(enterB).toHaveBeenCalledTimes(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A late engine prop is adopted (review: late `engine` prop ignored)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — late engine prop", () => {
+  it("shows the empty state until the engine arrives, then renders and drives that engine", async () => {
+    const { createSignal } = await import("solid-js");
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const started = new PathEngine();
+    await started.start(threeStepPath(), { name: "restored" });
+    const [engine, setEngine] = createSignal<InstanceType<typeof PathEngine> | undefined>(undefined);
+    dispose = render(
+      () => <PathShell path={threeStepPath()} autoStart={false} engine={engine()} steps={{ "step-a": () => <div>Content A</div>, "step-b": () => <div>Content B</div>, "step-c": () => <div>Content C</div> }} />,
+      container
+    );
+    await tick();
+    expect(container.textContent).toContain("No active path");
+
+    setEngine(started);
+    await tick();
+    expect(container.textContent).toContain("Content A");
+
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+    expect(started.snapshot()?.stepId).toBe("step-b");
+    expect(container.textContent).toContain("Content B");
+  });
+});

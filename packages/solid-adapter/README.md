@@ -135,7 +135,7 @@ Each step render function runs once, when its step becomes current, and the comp
 | `path` | `PathDefinition` | required | The path to run. |
 | `steps` | `Record<string, (snapshot: PathSnapshot) => JSX.Element>` | — | Step render functions keyed by step ID (or `formId` for `StepChoice` steps). |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
+| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` to suppress the summary and handle errors inside step components. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |

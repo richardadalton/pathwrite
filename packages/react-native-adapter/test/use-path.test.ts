@@ -15,7 +15,7 @@ import { act, cleanup, render, renderHook, screen } from "@testing-library/react
 
 afterEach(() => cleanup());
 import { PathDefinition, PathEngine, PathEvent, PathStepContext } from "@daltonr/pathwrite-core";
-import { usePath, PathProvider, usePathContext } from "../src/index";
+import { usePath, PathProvider, PathShell, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
 // ---------------------------------------------------------------------------
@@ -374,5 +374,56 @@ describe("usePathContext", () => {
     await act(async () => {});
     expect(screen.getByTestId("a").textContent).toBe("step1");
     expect(screen.getByTestId("b").textContent).toBe("step1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A late or swapped engine is adopted (review: late `engine` prop ignored)
+// ---------------------------------------------------------------------------
+
+describe("usePath — late / swapped engine", () => {
+  it("adopts an engine passed on a later render and reports its snapshot", async () => {
+    const late = new PathEngine();
+    await late.start(twoStepPath(), { name: "late" });
+    await late.next();
+
+    const { result, rerender } = renderHook((props: { engine?: PathEngine }) => usePath(props), { initialProps: {} });
+    expect(result.current.snapshot).toBeNull();
+
+    rerender({ engine: late });
+    expect(result.current.snapshot?.stepId).toBe("step2");
+    expect(result.current.snapshot?.data.name).toBe("late");
+
+    await act(() => result.current.previous());
+    expect(late.snapshot()?.stepId).toBe("step1");   // actions go to the adopted engine
+    expect(result.current.snapshot?.stepId).toBe("step1");
+  });
+
+  it("stops listening to the previous engine after a swap", async () => {
+    const a = new PathEngine(); await a.start(twoStepPath());
+    const b = new PathEngine(); await b.start(threeStepPath());
+    const { result, rerender } = renderHook((props: { engine: PathEngine }) => usePath(props), { initialProps: { engine: a } });
+    rerender({ engine: b });
+    expect(result.current.snapshot?.stepCount).toBe(3);
+    await act(async () => { await a.next(); });        // the old engine moves on…
+    expect(result.current.snapshot?.stepId).toBe("step1"); // …the hook does not follow it
+  });
+});
+
+describe("PathShell — late engine prop", () => {
+  it("shows the empty state until the engine arrives, then renders and drives that engine", async () => {
+    const engine = new PathEngine();
+    await engine.start(twoStepPath(), { name: "restored" });
+
+    const steps = { step1: createElement("span", null, "Content 1"), step2: createElement("span", null, "Content 2") };
+    const { rerender } = render(createElement(PathShell, { path: twoStepPath(), autoStart: false, steps } as any));
+    expect(screen.getByText(/No active path/)).toBeTruthy();
+
+    await act(async () => { rerender(createElement(PathShell, { path: twoStepPath(), autoStart: false, engine, steps } as any)); });
+    expect(screen.getByText("Content 1")).toBeTruthy();
+
+    await act(async () => (screen.getByText(/^Next →$/).closest("button") as HTMLButtonElement).click());
+    expect(engine.snapshot()?.stepId).toBe("step2");
+    expect(screen.getByText("Content 2")).toBeTruthy();
   });
 });

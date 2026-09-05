@@ -102,7 +102,7 @@ Step components rendered inside `<PathShell>` snippets call `usePathContext()` t
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | — | The path to run. Pass `path` for simple wizards where the shell manages the engine. |
-| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with `path`. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with `path`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
 | `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |

@@ -3,6 +3,7 @@ import {
   shallowRef,
   readonly,
   toRaw,
+  toValue,
   onScopeDispose,
   defineComponent,
   h,
@@ -12,6 +13,7 @@ import {
   inject,
   type Ref,
   type DeepReadonly,
+  type MaybeRefOrGetter,
   type PropType,
   type InjectionKey,
   type VNode
@@ -44,7 +46,13 @@ export interface UsePathOptions {
    * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
    * - `PathShell` will skip its own `autoStart` call.
    */
-  engine?: PathEngine;
+  /**
+   * An externally managed engine. May be a plain engine, a ref, or a getter:
+   * the hook watches it, so an engine that arrives later (e.g. from an async
+   * `restoreOrStart()`) or is swapped is adopted — the hook re-subscribes and
+   * re-seeds its snapshot from the new engine.
+   */
+  engine?: MaybeRefOrGetter<PathEngine | undefined>;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
   onEvent?: (event: PathEvent) => void;
 }
@@ -93,7 +101,12 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   // toRaw() strips any Vue reactive proxy the caller may have accidentally applied
   // (e.g. ref(engine) instead of shallowRef(engine)). PathEngine uses private class
   // fields that are inaccessible through a Proxy, so we always work on the raw instance.
-  const engine = toRaw(options?.engine) ?? new PathEngine();
+  let ownEngine: PathEngine | null = null;
+  const resolveEngine = (): PathEngine => {
+    const external = toValue(options?.engine);
+    return external ? (toRaw(external) as PathEngine) : (ownEngine ??= new PathEngine());
+  };
+  let engine = resolveEngine();
 
   // Seed immediately from existing engine state — essential when restoring a
   // persisted path (the engine is already started before usePath is called).
@@ -101,16 +114,26 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     engine.snapshot() as PathSnapshot<TData> | null
   );
 
-  const unsubscribe = engine.subscribe((event: PathEvent) => {
+  const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
       _snapshot.value = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
       _snapshot.value = engine.snapshot() as PathSnapshot<TData> | null;
     }
     options?.onEvent?.(event);
+  };
+  let unsubscribe = engine.subscribe(onEngineEvent);
+
+  // Adopt a late or swapped engine: re-subscribe and re-seed the snapshot.
+  watch(resolveEngine, (next) => {
+    if (next === engine) return;
+    unsubscribe();
+    engine = next;
+    _snapshot.value = engine.snapshot() as PathSnapshot<TData> | null;
+    unsubscribe = engine.subscribe(onEngineEvent);
   });
 
-  onScopeDispose(unsubscribe);
+  onScopeDispose(() => unsubscribe());
 
   const snapshot = readonly(_snapshot) as DeepReadonly<Ref<PathSnapshot<TData> | null>>;
 
@@ -283,17 +306,20 @@ export const PathShell = defineComponent({
         return null; // unusable state (e.g. the path definition changed): start fresh below
       }
     })();
-    const engine = toRaw(props.engine) ?? restoredEngine ?? new PathEngine();
+    // The shell's own engine is created once; an `engine` prop — present at
+    // mount or arriving later — always takes precedence and is adopted by usePath.
+    const ownEngine = restoredEngine ?? new PathEngine();
+    const currentEngine = (): PathEngine => toRaw(props.engine) ?? ownEngine;
 
     const pathReturn = usePath({
-      engine,
+      engine: currentEngine,
       onEvent(event) {
         emit("event", event);
         if (event.type === "completed") emit("complete", event.data);
         if (event.type === "cancelled") emit("cancel", event.data);
         if (props.restoreKey && outerCtx && event.type === "stateChanged") {
           (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-            props.restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
+            props.restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
           );
         }
       }

@@ -101,7 +101,7 @@ Step components call `usePathContext()` inside named slots to access engine stat
 |---|---|---|---|
 | `path` | `PathDefinition` | required | The path to run. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
-| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |

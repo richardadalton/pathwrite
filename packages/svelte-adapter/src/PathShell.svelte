@@ -116,19 +116,21 @@
       return null; // unusable state (e.g. the path definition changed): start fresh below
     }
   })();
-  // svelte-ignore state_referenced_locally — the engine is chosen once, at init
-  const engine: PathEngine = engineProp ?? restoredEngine ?? new PathEngineClass();
+  // The shell's own engine is created once; an `engine` prop — present at
+  // mount or arriving later — always takes precedence and is adopted by usePath.
+  const ownEngine: PathEngine = restoredEngine ?? new PathEngineClass();
+  const currentEngine = (): PathEngine => engineProp ?? ownEngine;
 
   // Initialize path engine
   const pathReturn = usePath({
-    engine,
+    get engine() { return currentEngine(); },
     onEvent: (event) => {
       onevent?.(event);
       if (event.type === 'completed') oncomplete?.(event.data);
       if (event.type === 'cancelled') oncancel?.(event.data);
       if (restoreKey && outerCtx && event.type === 'stateChanged') {
         (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(
-          restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
+          restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
         );
       }
     }

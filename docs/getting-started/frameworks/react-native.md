@@ -200,7 +200,7 @@ export function DetailsStep() {
 | `path` | `PathDefinition` | required | The path to drive. |
 | `steps` | `Record<string, ReactNode>` | required | Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the active step. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
-| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |

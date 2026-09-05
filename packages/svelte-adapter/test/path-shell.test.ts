@@ -119,3 +119,31 @@ describe("PathShell (Svelte) — restoreKey remount fidelity", () => {
     expect(calls).toEqual({ enterA: 1, leaveA: 1, enterB: 1 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// A late engine prop is adopted (review: late `engine` prop ignored)
+// ---------------------------------------------------------------------------
+
+import LateEngineHost from "./fixtures/LateEngineHost.svelte";
+import { PathEngine } from "@daltonr/pathwrite-core";
+
+describe("PathShell (Svelte) — late engine prop", () => {
+  it("shows the empty state until the engine arrives, then renders and drives that engine", async () => {
+    const started = new PathEngine();
+    await started.start({ id: "late", steps: [{ id: "step-a" }, { id: "step-b" }] }, { name: "restored" });
+    instance = mount(LateEngineHost, { target: container });
+    flushSync();
+    await tick();
+    expect(container.textContent).toContain("No active path");
+
+    (instance as { setEngine: (e: PathEngine) => void }).setEngine(started);
+    flushSync();
+    await tick();
+    expect(container.querySelector(".step-a")).not.toBeNull();
+
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+    expect(started.snapshot()?.stepId).toBe("step-b");
+    expect(container.querySelector(".step-b")).not.toBeNull();
+  });
+});

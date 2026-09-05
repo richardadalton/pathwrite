@@ -39,6 +39,12 @@ export interface UsePathOptions {
    * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
    * - `PathShell` will skip its own `autoStart` call.
    */
+  /**
+   * An externally managed engine. Pass it as a getter (`get engine() { … }`)
+   * over a reactive prop to have the hook track it: an engine that arrives
+   * later (e.g. from an async `restoreOrStart()`) or is swapped is adopted —
+   * the hook re-subscribes and re-seeds its snapshot from the new engine.
+   */
   engine?: PathEngine;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
   onEvent?: (event: PathEvent) => void;
@@ -146,25 +152,40 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 export function usePath<TData extends PathData = PathData>(
   options?: UsePathOptions
 ): UsePathReturn<TData> {
-  const engine = options?.engine ?? new PathEngineClass();
+  let ownEngine: PathEngine | null = null;
+  const resolveEngine = (): PathEngine => options?.engine ?? (ownEngine ??= new PathEngineClass());
+  let engine = resolveEngine();
 
-  // Reactive snapshot via $state rune
   let _snapshot: PathSnapshot<TData> | null = $state(
     engine.snapshot() as PathSnapshot<TData> | null
   );
 
-  // Subscribe to engine events
-  const unsubscribe = engine.subscribe((event: PathEvent) => {
+  const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
       _snapshot = event.snapshot as PathSnapshot<TData>;
     } else if (event.type === "completed" || event.type === "cancelled") {
       _snapshot = engine.snapshot() as PathSnapshot<TData> | null;
     }
     options?.onEvent?.(event);
+  };
+  let unsubscribe = engine.subscribe(onEngineEvent);
+
+  // Adopt a late or swapped engine (the `engine` option is a getter over a
+  // reactive prop): re-subscribe and re-seed the snapshot. Created in its own
+  // effect root so usePath() also works outside a component.
+  const stopWatching = $effect.root(() => {
+    $effect(() => {
+      const next = resolveEngine();
+      if (next === engine) return;
+      unsubscribe();
+      engine = next;
+      _snapshot = engine.snapshot() as PathSnapshot<TData> | null;
+      unsubscribe = engine.subscribe(onEngineEvent);
+    });
   });
 
   // Auto-cleanup when component is destroyed
-  onDestroy(unsubscribe);
+  onDestroy(() => { unsubscribe(); stopWatching(); });
 
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);

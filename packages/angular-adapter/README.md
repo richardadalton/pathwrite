@@ -128,7 +128,7 @@ Step content is provided via `<ng-template pwStep="stepId">` directives inside `
 |-------|------|---------|-------------|
 | `path` | `PathDefinition` | — | Path definition to drive. Required unless `engine` is provided. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
-| `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). Suppresses `autoStart`. |
+| `engine` | `PathEngine` | — | Externally-managed engine (e.g. from `restoreOrStart()`). Suppresses `autoStart`. May be provided after mount (e.g. once an async `restoreOrStart()` resolves): the shell adopts it, re-subscribing and re-seeding from the new engine. Set `autoStart` to `false` if the shell should not start its own path in the meantime. |
 | `autoStart` | `boolean` | `true` | Start the path on `ngOnInit`. Ignored when `engine` is provided. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so step components render their own errors. |
 | `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
