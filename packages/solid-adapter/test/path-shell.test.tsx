@@ -667,3 +667,49 @@ describe("PathShell (Solid) — validateWhen true at mount", () => {
     expect(container.textContent).toContain("Required");
   });
 });
+
+// ---------------------------------------------------------------------------
+// StepChoice content lookup — formId then stepId (review finding A5)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — StepChoice content lookup", () => {
+  const choicePath: PathDefinition = {
+    id: "choice",
+    steps: [
+      {
+        id: "type",
+        select: () => "type-b",
+        steps: [{ id: "type-a" }, { id: "type-b" }],
+      },
+      { id: "done" },
+    ],
+  };
+
+  it("falls back to the choice id when nothing is registered under the inner step id", async () => {
+    dispose = render(
+      () => <PathShell path={choicePath} steps={{ type: () => <div class="by-choice">Choice content</div>, done: () => <div /> }} />,
+      container
+    );
+    await tick();
+    expect(container.querySelector(".by-choice")).not.toBeNull();
+  });
+
+  it("prefers the inner step id when both are registered", async () => {
+    dispose = render(
+      () => (
+        <PathShell
+          path={choicePath}
+          steps={{
+            type: () => <div class="by-choice">Choice content</div>,
+            "type-b": () => <div class="by-inner">Inner B</div>,
+            done: () => <div />,
+          }}
+        />
+      ),
+      container
+    );
+    await tick();
+    expect(container.querySelector(".by-inner")).not.toBeNull();
+    expect(container.querySelector(".by-choice")).toBeNull();
+  });
+});

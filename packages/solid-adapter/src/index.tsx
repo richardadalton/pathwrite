@@ -335,9 +335,14 @@ export const PathShell: Component<PathShellProps> = (props) => {
   // DOM node and focus on each keystroke. Key the rendered content on the
   // step's identity and create it untracked; live state reaches the step
   // through the reactive snapshot proxy below or `usePathContext()`.
+  // Which key of `props.steps` renders the current step: the StepChoice's
+  // inner step id (`formId`) when content is registered under it, otherwise
+  // the slot's own id — the same fallback the React / Vue / Svelte shells use.
   const stepLookupKey = createMemo<string | null>(() => {
     const s = snapshot();
-    return s ? (s.formId ?? s.stepId) : null;
+    if (!s) return null;
+    if (s.formId && props.steps?.[s.formId]) return s.formId;
+    return s.stepId;
   });
   const stepIdentity = createMemo<string | null>(() => {
     const s = snapshot();

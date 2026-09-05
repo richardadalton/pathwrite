@@ -62,3 +62,56 @@ describe("PathShell (Angular) — validateWhen true at mount", () => {
     expect(el.textContent).toContain("Required");
   });
 });
+
+// ---------------------------------------------------------------------------
+// StepChoice content lookup — formId then stepId (review finding A5)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — StepChoice content lookup", () => {
+  const choicePath: PathDefinition = {
+    id: "choice",
+    steps: [
+      {
+        id: "type",
+        select: () => "type-b",
+        steps: [{ id: "type-a" }, { id: "type-b" }]
+      },
+      { id: "done" }
+    ]
+  };
+
+  async function mount(template: string): Promise<HTMLElement> {
+    @Component({ standalone: true, imports: [PathShellComponent, PathStepDirective], template })
+    class Host {
+      path = choicePath;
+    }
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await tick();
+    await tick();
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it("falls back to the choice id when nothing is registered under the inner step id", async () => {
+    const el = await mount(`
+      <pw-shell [path]="path">
+        <ng-template pwStep="type"><div class="by-choice">Choice content</div></ng-template>
+        <ng-template pwStep="done"><div>Done</div></ng-template>
+      </pw-shell>
+    `);
+    expect(el.querySelector(".by-choice")).not.toBeNull();
+  });
+
+  it("prefers the inner step id when both are registered", async () => {
+    const el = await mount(`
+      <pw-shell [path]="path">
+        <ng-template pwStep="type"><div class="by-choice">Choice content</div></ng-template>
+        <ng-template pwStep="type-b"><div class="by-inner">Inner B</div></ng-template>
+        <ng-template pwStep="done"><div>Done</div></ng-template>
+      </pw-shell>
+    `);
+    expect(el.querySelector(".by-inner")).not.toBeNull();
+    expect(el.querySelector(".by-choice")).toBeNull();
+  });
+});

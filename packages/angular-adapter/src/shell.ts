@@ -242,7 +242,7 @@ export class PathShellCompletionDirective {
         <div class="pw-shell__body">
           <ng-container *ngFor="let stepDir of stepDirectives">
             <!-- Match by formId first (inner step of a StepChoice), then stepId -->
-            <ng-container *ngIf="stepDir.stepId === (s.formId ?? s.stepId)">
+            <ng-container *ngIf="stepDir.stepId === activeStepId(s)">
               <ng-container *ngTemplateOutlet="stepDir.templateRef; injector: shellInjector"></ng-container>
             </ng-container>
           </ng-container>
@@ -426,6 +426,16 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   @Output() event = new EventEmitter<PathEvent>();
 
   @ContentChildren(PathStepDirective) stepDirectives!: QueryList<PathStepDirective>;
+
+  /**
+   * The `pwStep` id that renders the current step: a StepChoice's inner step id
+   * (`formId`) when a template is registered under it, otherwise the slot's own
+   * `stepId` — the same fallback the other shells use.
+   */
+  protected activeStepId(s: PathSnapshot): string {
+    if (s.formId && this.stepDirectives?.some((d) => d.stepId === s.formId)) return s.formId;
+    return s.stepId;
+  }
   @ContentChild(PathShellHeaderDirective) customHeader?: PathShellHeaderDirective;
   @ContentChild(PathShellFooterDirective) customFooter?: PathShellFooterDirective;
   @ContentChild(PathShellCompletionDirective) customCompletion?: PathShellCompletionDirective;
