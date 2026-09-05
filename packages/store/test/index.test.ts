@@ -472,3 +472,79 @@ describe("persistence — real engine, slow store (S1)", () => {
     expect(store.saved.map((s) => s.currentStepIndex)).toEqual([2]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// onComplete strategy record and restoreOrStart (review finding S2)
+// ---------------------------------------------------------------------------
+
+/** In-memory PathStore that keeps the last saved record. */
+class MemoryStore {
+  public records = new Map<string, SerializedPathState>();
+  public deletes = 0;
+  save(key: string, state: SerializedPathState): Promise<void> { this.records.set(key, JSON.parse(JSON.stringify(state))); return Promise.resolve(); }
+  load(key: string): Promise<SerializedPathState | null> { return Promise.resolve(this.records.get(key) ?? null); }
+  delete(key: string): Promise<void> { this.deletes++; this.records.delete(key); return Promise.resolve(); }
+}
+
+describe("persistence onComplete + restoreOrStart (S2)", () => {
+  const twoSteps: PathDefinition = { id: "audit", steps: [{ id: "a" }, { id: "b" }] };
+
+  it("writes a valid, recognisably final record (stayOnFinal)", async () => {
+    const store = new MemoryStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onComplete" })] });
+    await engine.start(twoSteps, { name: "" });
+    await engine.setData("name", "Ada");
+    await engine.next();
+    await engine.next();
+    await flush();
+
+    const rec = store.records.get("k")!;
+    expect(rec).toBeDefined();
+    expect(rec.data).toEqual({ name: "Ada" });
+    expect(rec._status).toBe("completed");
+    expect(rec.currentStepIndex).toBeGreaterThanOrEqual(0);
+    expect(rec.currentStepIndex).toBeLessThan(twoSteps.steps.length);
+    expect(store.deletes).toBe(0); // audit record is left in place
+  });
+
+  it("writes the final data even when the path dismisses on completion", async () => {
+    const store = new MemoryStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onComplete" })] });
+    await engine.start({ ...twoSteps, completionBehaviour: "dismiss" }, { name: "" });
+    await engine.setData("name", "Ada");
+    await engine.next();
+    await engine.next();
+    await flush();
+
+    const rec = store.records.get("k")!;
+    expect(rec.data).toEqual({ name: "Ada" });
+    expect(rec._status).toBe("completed");
+    expect(rec.currentStepIndex).toBeGreaterThanOrEqual(0);
+  });
+
+  it("restoreOrStart starts fresh (not on step 1 with the final data) when it finds the record", async () => {
+    const store = new MemoryStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onComplete" })] });
+    await engine.start(twoSteps, { name: "" });
+    await engine.setData("name", "Ada");
+    await engine.next();
+    await engine.next();
+    await flush();
+
+    const { engine: next, restored } = await restoreOrStart({ store, key: "k", path: twoSteps, initialData: { name: "" } });
+    expect(restored).toBe(false);
+    const s = next.snapshot()!;
+    expect(s.status).toBe("idle");
+    expect(s.stepId).toBe("a");
+    expect(s.data).toEqual({ name: "" });
+  });
+
+  it("restoreOrStart also starts fresh for a record written by an older version (currentStepIndex: -1)", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", { version: 1, pathId: "audit", currentStepIndex: -1, data: { name: "Ada" }, visitedStepIds: [], pathStack: [], _status: "idle" });
+    const { engine, restored } = await restoreOrStart({ store, key: "k", path: twoSteps, initialData: { name: "" } });
+    expect(restored).toBe(false);
+    expect(engine.snapshot()?.stepId).toBe("a");
+    expect(engine.snapshot()?.data).toEqual({ name: "" });
+  });
+});

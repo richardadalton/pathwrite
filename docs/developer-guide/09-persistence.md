@@ -80,7 +80,7 @@ Saves when a sub-path finishes and the parent path resumes. This is the natural 
 persistence({ store, key: "user:123:wizard", strategy: "onComplete" })
 ```
 
-Saves a single record when the path completes — nothing mid-flow. Use this when you only want to capture the final submitted state for audit purposes, not to enable resumption. Unlike every other strategy, `"onComplete"` does *not* delete the record after saving, since the record is the point.
+Saves a single record when the path completes — nothing mid-flow. Use this when you only want to capture the final submitted state for audit purposes, not to enable resumption. Unlike every other strategy, `"onComplete"` does *not* delete the record after saving, since the record is the point. The record is a normal `SerializedPathState` with `_status: "completed"` and the final `data`; `restoreOrStart` recognises it and starts fresh rather than resuming a finished path.
 
 ### `"manual"`
 
@@ -266,7 +266,7 @@ The `pathDefinitions` option is required when the path uses sub-paths, as `fromS
 
 ### Completion cleanup
 
-When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the wizard starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place.
+When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the wizard starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place — `restoreOrStart` treats any record with `_status: "completed"` as finished and starts fresh, so a leftover completed record never resumes.
 
 ---
 

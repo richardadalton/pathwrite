@@ -237,14 +237,23 @@ export function persistence(options: PersistenceOptions): PathObserver {
   return (event: PathEvent, engine: PathEngine): void => {
     if (strategy === "onComplete") {
       if (event.type === "completed") {
+        // An audit record of the finished path. It is a valid
+        // SerializedPathState (so nothing that loads it can crash) and is
+        // marked "completed" so restoreOrStart knows to start fresh rather
+        // than resume it. The engine still holds the finished path for
+        // "stayOnFinal" / "reset"; for "dismiss" it is already gone, so the
+        // record is synthesised from the event.
+        const exported = engine.exportState();
         const finalState: SerializedPathState = {
-          version: 1,
-          pathId: event.pathId,
-          currentStepIndex: -1,
+          ...(exported ?? {
+            version: 1 as const,
+            pathId: event.pathId,
+            currentStepIndex: 0,
+            visitedStepIds: [],
+            pathStack: [],
+          }),
           data: event.data,
-          visitedStepIds: [],
-          pathStack: [],
-          _status: "idle",
+          _status: "completed",
         };
         options.store.save(options.key, finalState)
           .then(() => options.onSaveSuccess?.())
@@ -323,12 +332,19 @@ export async function restoreOrStart(
   let engine: PathEngine;
   let restored: boolean;
 
+  // A finished path is never resumed. The "onComplete" strategy leaves its
+  // audit record in place (status "completed"; older versions wrote
+  // currentStepIndex -1), and a state saved with status "completed" by any
+  // other strategy is one whose completion-time delete never landed. Either
+  // way the user starts fresh; the record is left for the app to deal with.
+  const isFinished = saved !== null && (saved._status === "completed" || saved.currentStepIndex < 0);
+
   // A store is attached in both branches, so tell the engine: shells read
   // snapshot.hasPersistence to offer "your progress is saved, come back
   // later" copy when retries are exhausted.
   const engineOptions = { observers, hasPersistence: true };
 
-  if (saved) {
+  if (saved && !isFinished) {
     engine = PathEngine.fromState(saved, pathDefs, engineOptions);
     restored = true;
   } else {
