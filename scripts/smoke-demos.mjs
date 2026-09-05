@@ -10,7 +10,7 @@ const stripAnsi = (text) => text.replace(/\u001b\[[0-9;]*m/g, "");
 const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 
 const isReady = (output) =>
-  /Compiled successfully\.|Angular Live Development Server is listening|VITE v\d|ready in \d+ ms|Local:\s+http:\/\//i.test(
+  /Compiled successfully\.|Angular Live Development Server is listening|VITE v\d|ready in \d+ ms|Local:\s+http:\/\/|Waiting on http:\/\//i.test(
     output
   );
 
