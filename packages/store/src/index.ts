@@ -440,26 +440,26 @@ function describeInvalidState(value: unknown): string | null {
 // restoreOrStart — convenience factory
 // ---------------------------------------------------------------------------
 
-export interface RestoreOrStartOptions {
+export interface RestoreOrStartOptions<TData extends PathData = PathData> {
   /** The store to load saved state from. Any PathStore implementation works. */
   store: PathStore;
   /** Storage key that identifies this path's saved state. */
   key: string;
   /** Path definition to start when no saved state exists. */
-  path: PathDefinition<any>;
+  path: PathDefinition<TData>;
   /**
    * Map of all path definitions that may appear in serialized state
    * (active path + any sub-paths). Defaults to `{ [path.id]: path }`.
    */
-  pathDefinitions?: Record<string, PathDefinition<any>>;
+  pathDefinitions?: Record<string, PathDefinition>;
   /** Initial data for a fresh (non-restored) start. Defaults to `{}`. */
-  initialData?: PathData;
+  initialData?: Partial<TData>;
   /**
    * Observers to wire on the engine before the first event fires.
    * Build these explicitly — e.g. `persistence({ store, key })` — and
    * pass them here. `restoreOrStart` does not create any observers itself.
    */
-  observers?: PathObserver[];
+  observers?: PathObserver<TData>[];
   /**
    * Called when saved state exists but cannot be used — the store failed to
    * load it (corrupt JSON, network), its `version` is unsupported, or it
@@ -491,9 +491,9 @@ export interface RestoreOrStartOptions {
  * });
  * ```
  */
-export async function restoreOrStart(
-  options: RestoreOrStartOptions
-): Promise<{ engine: PathEngine; restored: boolean }> {
+export async function restoreOrStart<TData extends PathData = PathData>(
+  options: RestoreOrStartOptions<TData>
+): Promise<{ engine: PathEngine<TData>; restored: boolean }> {
   const observers = options.observers ?? [];
   const pathDefs = options.pathDefinitions ?? { [options.path.id]: options.path };
   // A store is attached in both branches, so tell the engine: shells read
@@ -517,7 +517,7 @@ export async function restoreOrStart(
     const isFinished = saved !== null && (saved._status === "completed" || saved.currentStepIndex < 0);
 
     if (saved && !isFinished) {
-      const engine = PathEngine.fromState(saved, pathDefs, engineOptions);
+      const engine = PathEngine.fromState<TData>(saved, pathDefs, engineOptions);
       return { engine, restored: true };
     }
   } catch (error) {
@@ -532,7 +532,7 @@ export async function restoreOrStart(
     });
   }
 
-  const engine = new PathEngine(engineOptions);
+  const engine = new PathEngine<TData>(engineOptions);
   await engine.start(options.path, options.initialData);
   return { engine, restored: false };
 }

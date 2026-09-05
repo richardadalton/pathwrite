@@ -280,7 +280,7 @@ const coursePath = createCoursePath({ courseApi, analytics });
 />
 ```
 
-All adapters accept `PathDefinition<any>` at their public boundary, so a `PathDefinition<CourseData>` passes without a cast. The `TData` generic is a compile-time narrowing tool; it does not affect runtime behaviour.
+Every adapter, the store's `restoreOrStart` and the engine itself are generic over the data type, so a `PathDefinition<CourseData>` flows through without a cast and `setData`, `snapshot.data` and the hooks are typed by it. Prefer a `type` alias for the data: an `interface` that extends `PathData` carries a string index signature, which makes every key legal for `setData` (values for known keys are still checked). The `TData` generic is a compile-time narrowing tool; it does not affect runtime behaviour.
 
 ---
 
