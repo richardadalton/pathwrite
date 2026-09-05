@@ -427,3 +427,11 @@ describe("PathShell — late engine prop", () => {
     expect(screen.getByText("Content 2")).toBeTruthy();
   });
 });
+
+describe("package exports", () => {
+  it("re-exports PathEngine as a value, like the React adapter", async () => {
+    const mod = await import("../src/index");
+    expect(typeof mod.PathEngine).toBe("function");
+    expect(new mod.PathEngine().snapshot()).toBeNull();
+  });
+});

@@ -30,6 +30,7 @@ import {
   PathSnapshot,
   SerializedPathState,
   ProgressLayout,
+  RootProgress,
   formatFieldKey,
   errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
@@ -318,6 +319,12 @@ export interface PathShellProps {
   hideCancel?: boolean;
   /** If true, hide the progress dots. Also hidden automatically when the path has only one step. */
   hideProgress?: boolean;
+  /**
+   * Which progress indicators to show while a sub-path is active: `"merged"`
+   * (default) shows the root path's bar above the active path's dots,
+   * `"rootOnly"` only the root bar, `"activeOnly"` only the active dots.
+   */
+  progressLayout?: ProgressLayout;
   /** If true, hide the footer (navigation buttons). Defaults to `false`. The error panel is still shown on async failure regardless of this prop. */
   hideFooter?: boolean;
   /** When true, calls `validate()` on the engine so all steps show inline errors simultaneously. Useful when this shell is nested inside a step of an outer shell: bind to the outer snapshot's `hasAttemptedNext`. */
@@ -402,6 +409,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   cancelLabel = "Cancel",
   hideCancel = false,
   hideProgress = false,
+  progressLayout = "merged",
   hideFooter = false,
   layout = "auto",
   validationDisplay = "summary",
@@ -516,10 +524,69 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     );
   }
 
+  const effectiveHideProgress = hideProgress || layout === "tabs";
+
+  // Default progress dots for the active path (also shown, all ticked, above
+  // the completion panel — like the other shells).
+  const renderDots = (snap: PathSnapshot): ReactElement => (
+    <View style={styles.header} testID="pw-progress">
+      <View style={styles.stepper}>
+        {snap.steps.map((step, i) => (
+          <View
+            key={step.id}
+            style={[
+              styles.dot,
+              step.status === "completed" && styles.dotCompleted,
+              step.status === "current" && styles.dotCurrent,
+            ]}
+          >
+            <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
+              {step.status === "completed" ? "✓" : String(i + 1)}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {(() => {
+        const cur = snap.steps.find(s => s.status === "current");
+        const title = cur?.title ?? cur?.id;
+        return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
+      })()}
+      <View style={styles.track}>
+        <View style={[styles.trackFill, { width: `${snap.progress * 100}%` as any }]} />
+      </View>
+    </View>
+  );
+
+  // Root path progress, shown above the active path while a sub-path runs.
+  const renderRootProgress = (root: RootProgress): ReactElement => (
+    <View style={styles.header} testID="pw-root-progress">
+      <View style={styles.stepper}>
+        {root.steps.map((step, i) => (
+          <View
+            key={step.id}
+            style={[
+              styles.dot,
+              step.status === "completed" && styles.dotCompleted,
+              step.status === "current" && styles.dotCurrent,
+            ]}
+          >
+            <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
+              {step.status === "completed" ? "✓" : String(i + 1)}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.track}>
+        <View style={[styles.trackFill, { width: `${root.progress * 100}%` as any }]} />
+      </View>
+    </View>
+  );
+
   if (snapshot.status === "completed") {
     return (
       <PathContext.Provider value={contextValue}>
         <View style={[styles.shell, style]}>
+          {!effectiveHideProgress && snapshot.stepCount > 1 && renderDots(snapshot)}
           {completionContent ?? (
             <View style={styles.completionPanel}>
               <Text style={styles.completionMessage}>All done.</Text>
@@ -533,7 +600,6 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
     );
   }
 
-  const effectiveHideProgress = hideProgress || layout === "tabs";
   const effectiveHideFooter = hideFooter || layout === "tabs";
   const resolvedLayout =
     layout === "auto" || layout === "tabs"
@@ -545,8 +611,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // A custom header is the consumer's decision: show it whenever progress is
   // not hidden, even for a single-step path. Only the default dots hide for
   // one step (same rule as the React shell).
+  const showRoot = !effectiveHideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
   const showProgress =
-    !effectiveHideProgress && (renderHeader ? true : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0));
+    !effectiveHideProgress && (renderHeader
+      ? true
+      : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
   return (
     <PathContext.Provider value={contextValue}>
@@ -555,39 +624,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
+        {/* Root progress — persistent top-level bar visible during sub-paths */}
+        {showRoot && renderRootProgress(snapshot.rootProgress!)}
         {/* Header — progress dots or custom */}
-        {showProgress && (
-          renderHeader
-            ? renderHeader(snapshot)
-            : (
-              <View style={styles.header}>
-                <View style={styles.stepper}>
-                  {snapshot.steps.map((step, i) => (
-                    <View
-                      key={step.id}
-                      style={[
-                        styles.dot,
-                        step.status === "completed" && styles.dotCompleted,
-                        step.status === "current" && styles.dotCurrent,
-                      ]}
-                    >
-                      <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
-                        {step.status === "completed" ? "✓" : String(i + 1)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-                {(() => {
-                  const cur = snapshot.steps.find(s => s.status === "current");
-                  const title = cur?.title ?? cur?.id;
-                  return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
-                })()}
-                <View style={styles.track}>
-                  <View style={[styles.trackFill, { width: `${snapshot.progress * 100}%` as any }]} />
-                </View>
-              </View>
-            )
-        )}
+        {showProgress && (renderHeader ? renderHeader(snapshot) : renderDots(snapshot))}
 
         {/* Body — step content */}
         {disableBodyScroll
@@ -608,7 +648,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         )}
 
         {/* Warning messages */}
-        {Object.keys(snapshot.fieldWarnings).length > 0 && (
+        {validationDisplay !== "inline" && Object.keys(snapshot.fieldWarnings).length > 0 && (
           <View style={styles.warnings}>
             {Object.entries(snapshot.fieldWarnings).map(([key, msg]) => (
               <Text key={key} style={styles.warningItem}>
@@ -945,7 +985,6 @@ export type {
   PathData,
   FieldErrors,
   PathDefinition,
-  PathEngine,
   PathEvent,
   PathSnapshot,
   PathStep,
@@ -955,3 +994,5 @@ export type {
   SerializedPathState,
   StepChoice,
 } from "@daltonr/pathwrite-core";
+// A value export, like the React adapter — `new PathEngine()` without a second import.
+export { PathEngine } from "@daltonr/pathwrite-core";

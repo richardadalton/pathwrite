@@ -213,6 +213,7 @@ export function DetailsStep() {
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header (dots, title, progress bar). Also hidden automatically for single-step top-level paths. |
+| `progressLayout` | `"merged" \| "rootOnly" \| "activeOnly"` | `"merged"` | Which progress indicators to show while a sub-path is active: the root path\'s bar above the active dots, only the root bar, or only the active dots. |
 | `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
 | `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body wrapper with a plain `View`. Use when the step content contains a `FlatList` or other virtualized list to avoid the "VirtualizedList inside ScrollView" warning. The step is then responsible for its own scrolling. |

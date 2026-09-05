@@ -160,6 +160,7 @@ All returned callbacks are referentially stable.
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header. Also hidden automatically for single-step paths. |
+| `progressLayout` | `"merged" \| "rootOnly" \| "activeOnly"` | `"merged"` | Which progress indicators to show while a sub-path is active: the root path\'s bar above the active dots, only the root bar, or only the active dots. |
 | `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
 | `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body with a plain `View`. Use when a step contains a `FlatList` or other virtualized list. |
 | `keyboardVerticalOffset` | `number` | `0` | Passed to the internal `KeyboardAvoidingView`. Set it to the height of any header or navigation bar above the shell (e.g. a React Navigation header). |

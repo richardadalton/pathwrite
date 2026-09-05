@@ -8,7 +8,7 @@ import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
-import { PathShell } from "../src/index";
+import { PathShell, usePathContext } from "../src/index";
 
 afterEach(() => cleanup());
 
@@ -177,5 +177,73 @@ describe("PathShell (React Native) — restoreKey remount fidelity", () => {
     expect(enterA).toHaveBeenCalledTimes(1);
     expect(leaveA).toHaveBeenCalledTimes(1);
     expect(enterB).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sub-path progress, warning gating, completion header (review: RN shell drift)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (React Native) — sub-path progress layout", () => {
+  const child: PathDefinition = { id: "child", steps: [{ id: "c1" }, { id: "c2" }] };
+  function Launcher() {
+    const { startSubPath } = usePathContext();
+    return createElement("button", { onClick: () => startSubPath(child) }, "launch");
+  }
+  const parent: PathDefinition = { id: "parent", steps: [{ id: "p1" }, { id: "p2" }] };
+  const steps = { p1: createElement(Launcher), p2: createElement("span", null, "P2"), c1: createElement("span", null, "C1"), c2: createElement("span", null, "C2") };
+
+  async function mountAndLaunch(props: Record<string, unknown> = {}) {
+    await act(async () => render(createElement(PathShell, { path: parent, steps, ...props } as any)));
+    await act(async () => { screen.getByText("launch").click(); });
+    expect(screen.getByText("C1")).not.toBeNull();
+  }
+
+  it("shows the root path's progress above the active path's dots while a sub-path runs (merged)", async () => {
+    await mountAndLaunch();
+    expect(screen.queryByTestId("pw-root-progress")).not.toBeNull();
+    expect(screen.queryByTestId("pw-progress")).not.toBeNull();
+  });
+
+  it('progressLayout="activeOnly" hides the root bar', async () => {
+    await mountAndLaunch({ progressLayout: "activeOnly" });
+    expect(screen.queryByTestId("pw-root-progress")).toBeNull();
+    expect(screen.queryByTestId("pw-progress")).not.toBeNull();
+  });
+
+  it('progressLayout="rootOnly" hides the active dots', async () => {
+    await mountAndLaunch({ progressLayout: "rootOnly" });
+    expect(screen.queryByTestId("pw-root-progress")).not.toBeNull();
+    expect(screen.queryByTestId("pw-progress")).toBeNull();
+  });
+});
+
+describe("PathShell (React Native) — warnings follow validationDisplay", () => {
+  const path: PathDefinition = { id: "w", steps: [{ id: "a", fieldWarnings: () => ({ email: "Looks like a typo" }) }, { id: "b" }] };
+  it("shows warnings in the summary by default", async () => {
+    await renderShell(path);
+    expect(screen.queryByText("Looks like a typo")).not.toBeNull();
+  });
+  it('does not render them when validationDisplay="inline"', async () => {
+    await renderShell(path, { validationDisplay: "inline" });
+    expect(screen.queryByText("Looks like a typo")).toBeNull();
+  });
+});
+
+describe("PathShell (React Native) — completion panel", () => {
+  const two: PathDefinition = { id: "c", steps: [{ id: "a" }, { id: "b" }] };
+  it("keeps the progress header above the completion panel", async () => {
+    await renderShell(two);
+    await act(async () => { nextButton().click(); });
+    await act(async () => { nextButton().click(); });
+    expect(screen.getByText("All done.")).not.toBeNull();
+    expect(screen.queryByTestId("pw-progress")).not.toBeNull();
+  });
+  it("hides it under hideProgress", async () => {
+    await renderShell(two, { hideProgress: true });
+    await act(async () => { nextButton().click(); });
+    await act(async () => { nextButton().click(); });
+    expect(screen.getByText("All done.")).not.toBeNull();
+    expect(screen.queryByTestId("pw-progress")).toBeNull();
   });
 });
