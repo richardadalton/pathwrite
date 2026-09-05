@@ -242,12 +242,14 @@ Each value names the public method that triggered the `stateChanged` event. `"co
 ### Constructor
 
 ```typescript
-const engine = new PathEngine(options?: PathEngineOptions);
+const engine = new PathEngine<TData>(options?: PathEngineOptions<TData>);
 ```
 
+`TData` (default `PathData`) is the shape of the path data. It types `start`'s definition and initial data, `setData`, `snapshot().data`, the events passed to `subscribe` and the observers. Prefer a `type` alias for it: an `interface` that extends `PathData` carries a string index signature, which makes every key legal for `setData` (values for known keys are still checked).
+
 ```typescript
-interface PathEngineOptions {
-  observers?:      PathObserver[];
+interface PathEngineOptions<TData = PathData> {
+  observers?:      PathObserver<TData>[];
   hasPersistence?: boolean;
 }
 ```
@@ -263,7 +265,7 @@ Set `hasPersistence: true` when a `PathStore` is attached and will save progress
 #### `start(def, data?)`
 
 ```typescript
-engine.start(def: PathDefinition, data?: PathData): Promise<void>
+engine.start(def: PathDefinition<TData>, data?: Partial<TData>): Promise<void>
 ```
 
 Start or restart a path. Throws if the definition has no steps. Emits `stateChanged` with cause `"start"` once `onEnter` completes on the first step.
@@ -431,7 +433,7 @@ Pass the result to `PathEngine.fromState()` to restore the engine later.
 #### `snapshot()`
 
 ```typescript
-engine.snapshot(): PathSnapshot | null
+engine.snapshot(): PathSnapshot<TData> | null
 ```
 
 Synchronous read of the current snapshot. Returns `null` when no path is active (before `start()` is called, after cancellation, or after completion with `completionBehaviour: "dismiss"`).
@@ -445,7 +447,7 @@ Every call builds and returns a **new** object (snapshots are value objects; `da
 #### `subscribe(listener)`
 
 ```typescript
-engine.subscribe(listener: (event: PathEvent) => void): () => void
+engine.subscribe(listener: (event: PathEvent<TData>) => void): () => void
 ```
 
 Subscribe to engine events. Returns an unsubscribe function. Call it to remove the listener:
@@ -468,11 +470,11 @@ For permanent listeners that run for the engine's lifetime, use `observers` in t
 #### `PathEngine.fromState(state, pathDefinitions, options?)`
 
 ```typescript
-PathEngine.fromState(
+PathEngine.fromState<TData>(
   state:           SerializedPathState,
   pathDefinitions: Record<string, PathDefinition>,
-  options?:        PathEngineOptions
-): PathEngine
+  options?:        PathEngineOptions<TData>
+): PathEngine<TData>
 ```
 
 Reconstruct a working engine from serialized state. The engine is already positioned on the correct step — no `start()` call is needed. Throws if `state.version` is unsupported or if a path ID in the state (active path or any stack entry) is missing from `pathDefinitions`. Only settled statuses survive a restore: a state exported mid-navigation comes back as `"idle"`, `"completed"` is kept, and `"error"` is dropped (the retry closure is not serializable). Pass the same `observers` you would use on a fresh engine:

@@ -12,13 +12,14 @@ npm install @daltonr/pathwrite-core
 
 ```typescript
 import { PathEngine } from "@daltonr/pathwrite-core";
-import type { PathDefinition, PathData } from "@daltonr/pathwrite-core";
+import type { PathDefinition } from "@daltonr/pathwrite-core";
 
-// Data types extend PathData (a string-keyed record) so the engine can store them.
-interface SignupData extends PathData {
+// A type alias (not an interface): it satisfies PathData without a string
+// index signature, so setData rejects keys that are not in the type.
+type SignupData = {
   name: string;
   email: string;
-}
+};
 
 const signupPath: PathDefinition<SignupData> = {
   id: "signup",
@@ -34,7 +35,7 @@ const signupPath: PathDefinition<SignupData> = {
   onComplete: (data) => console.log("Done:", data),
 };
 
-const engine = new PathEngine();
+const engine = new PathEngine<SignupData>();
 await engine.start(signupPath, { name: "", email: "" });
 
 engine.setData("name", "Alice");
