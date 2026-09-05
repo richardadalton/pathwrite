@@ -109,7 +109,7 @@ A representative list of available scripts:
 
 The full list is in the `scripts` section of the root `package.json`.
 
-Demo apps under `apps/` do **not** install packages from npm. Each demo's `package.json` depends on the adapter with `"*"`, which npm workspaces resolve to the symlinks in the root `node_modules/@daltonr/` (e.g. `node_modules/@daltonr/pathwrite-react -> packages/react-adapter`). The packages must therefore be built (`npm run build`) before a demo will work, and a demo always exercises your current source, never a published version.
+Demo apps under `apps/` do **not** install packages from npm. Each demo's `package.json` depends on the adapter with `"*"`, which npm workspaces resolve to the symlinks in the root `node_modules/@daltonr/` (e.g. `node_modules/@daltonr/pathwrite-react -> packages/react-adapter`). The packages must therefore be built (`npm run build`) before a demo will work, and a demo always exercises your current source, never a published version. The root cause is stale `apps/**/node_modules/@daltonr/*` entries in `package-lock.json` pinned to an old published version: `npm install` faithfully re-creates the nested copies until those entries are removed. Delete the lock entries and the directories together, then run `npm install` from the root; the demos then resolve the workspace packages through the root symlinks.
 
 One thing can break this: a demo-local `apps/<framework>-demos/<demo>/node_modules/@daltonr/` — left behind by an `npm install` run *inside* the demo directory — takes precedence over the root symlink, so the demo silently runs whatever version was installed there. If a demo behaves like an older release, check for that directory and remove it:
 
