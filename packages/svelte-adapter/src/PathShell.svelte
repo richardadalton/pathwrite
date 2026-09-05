@@ -12,6 +12,7 @@
     PathDefinition,
     PathData,
     PathEngine,
+    PathEvent,
     PathSnapshot,
     ProgressLayout,
     PathShellActions,
@@ -70,17 +71,23 @@
      * Step components access it via `usePathContext<TData, TServices>()`.
      */
     services?: unknown;
+    /**
+     * Step components keyed by step id. The shell renders the entry for the
+     * active step (`snapshot.formId` first, for the inner step of a StepChoice,
+     * then `snapshot.stepId`) with no props — step components read the path
+     * through `usePathContext()`. Hyphenated ids may be given as-is
+     * (`"cover-letter"`) or in camelCase (`coverLetter`).
+     */
+    steps?: Record<string, Component>;
     // Callback props replace event dispatching in Svelte 5
     oncomplete?: (data: PathData) => void;
     oncancel?: (data: PathData) => void;
-    onevent?: (event: any) => void;
+    onevent?: (event: PathEvent) => void;
     // Optional override snippets for header and footer
     header?: Snippet<[PathSnapshot<any>]>;
     footer?: Snippet<[PathSnapshot<any>, PathShellActions]>;
     /** Snippet rendered when `snapshot.status === "completed"`. Defaults to a simple "All done." panel with a restart button. */
     completion?: Snippet<[PathSnapshot<any>]>;
-    // All other props treated as step components keyed by step ID
-    [key: string]: Component<any> | any;
   }
 
   let {
@@ -102,13 +109,16 @@
     validationDisplay = "summary",
     progressLayout = "merged",
     services = null,
+    steps = {},
     oncomplete,
     oncancel,
     onevent,
     header,
     footer,
     completion,
-    ...stepSnippets
+    // Not part of `Props` (which has no index signature, so a stray prop is a
+    // type error): kept only for the runtime camelCase-callback warning below.
+    ...rest
   }: Props = $props();
 
   // Read outer PathShell context BEFORE setting our own — gives access to
@@ -194,8 +204,10 @@
 
   // Dev-mode warning: camelCase callback props are silently ignored in Svelte.
   // Warn if the user passed onComplete/onCancel/onEvent instead of the correct
-  // lowercase forms oncomplete/oncancel/onevent. Runs once, on mount (a closure
-  // — reading the props at the top level would only capture their initial value).
+  // lowercase forms oncomplete/oncancel/onevent (a type error in TypeScript,
+  // but plain JavaScript callers get no such hint). Runs once, on mount (a
+  // closure — reading the props at the top level would only capture their
+  // initial value).
   // `import.meta.env` is a bundler convention (Vite); the cast keeps this
   // package free of Vite's ambient types.
   const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV !== false;
@@ -203,7 +215,7 @@
     if (!isDev) return;
     const camelCallbacks = ["onComplete", "onCancel", "onEvent"] as const;
     for (const name of camelCallbacks) {
-      if (name in stepSnippets) {
+      if (name in rest) {
         console.warn(
           `[PathShell] "${name}" was passed but will be ignored. Svelte uses lowercase callback props — use "${name.toLowerCase()}" instead.`
         );
@@ -241,8 +253,8 @@
     const camel = stepIdToCamelCase(stepId);
     const hint =
       camel !== stepId
-        ? ` No snippet found for "${stepId}" or its camelCase form "${camel}". If your step ID contains hyphens, pass the snippet as a camelCase prop: ${camel}={YourComponent}.`
-        : ` No snippet found for "${stepId}".`;
+        ? ` No step component found for "${stepId}" or its camelCase form "${camel}". Pass it in the \`steps\` record under either key.`
+        : ` No step component found for "${stepId}". Pass it in the \`steps\` record.`;
     console.warn(`[PathShell]${hint}`);
   }
 
@@ -369,21 +381,20 @@
       {/if}
     {/if}
 
-    <!-- Body: current step rendered via named snippet.
+    <!-- Body: the active step's component from the `steps` record.
          Prefer formId (inner step id of a StepChoice) so consumers can
-         register snippets by inner step ids directly.
-         Hyphenated step IDs (e.g. "cover-letter") are normalised to camelCase
-         ("coverLetter") as a fallback, since Svelte props must be valid JS
-         identifiers. -->
+         register components by inner step ids directly.
+         Hyphenated step IDs (e.g. "cover-letter") also resolve under their
+         camelCase form ("coverLetter"). -->
     <div class="pw-shell__body">
-      {#if snap.formId && stepSnippets[snap.formId]}
-        {@const StepComponent = stepSnippets[snap.formId]}
+      {#if snap.formId && steps[snap.formId]}
+        {@const StepComponent = steps[snap.formId]}
         <StepComponent />
-      {:else if stepSnippets[snap.stepId]}
-        {@const StepComponent = stepSnippets[snap.stepId]}
+      {:else if steps[snap.stepId]}
+        {@const StepComponent = steps[snap.stepId]}
         <StepComponent />
-      {:else if stepSnippets[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
-        {@const StepComponent = stepSnippets[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
+      {:else if steps[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
+        {@const StepComponent = steps[stepIdToCamelCase(snap.formId ?? snap.stepId)]}
         <StepComponent />
       {:else}
         {warnMissingStep(snap.stepId)}

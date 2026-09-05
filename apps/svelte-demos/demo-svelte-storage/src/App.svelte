@@ -292,11 +292,13 @@
           progressLayout="split"
           oncomplete={handleComplete}
           oncancel={handleCancel}
-          teamSetup={TeamSetupStep}
-          memberProfiles={MemberProfilesStep}
-          summary={SummaryStep}
-          background={BackgroundStep}
-          goals={GoalsStep}
+          steps={{
+            teamSetup: TeamSetupStep,
+            memberProfiles: MemberProfilesStep,
+            summary: SummaryStep,
+            background: BackgroundStep,
+            goals: GoalsStep,
+          }}
         />
       {/key}
     {/if}

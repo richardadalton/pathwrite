@@ -11,6 +11,5 @@
   validationDisplay="summary"
   nextLabel="InnerNext"
   completeLabel="InnerComplete"
-  innerA={StepA}
-  innerB={StepB}
+  steps={{ innerA: StepA, innerB: StepB }}
 />

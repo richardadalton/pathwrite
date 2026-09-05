@@ -91,11 +91,13 @@
       validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
-      selectPlan={SelectPlanStep}
-      shippingAddress={ShippingAddressStep}
-      payment={PaymentStep}
-      billingAddress={BillingAddressStep}
-      review={ReviewStep}
+      steps={{
+        selectPlan: SelectPlanStep,
+        shippingAddress: ShippingAddressStep,
+        payment: PaymentStep,
+        billingAddress: BillingAddressStep,
+        review: ReviewStep,
+      }}
     />
   {/if}
 </main>

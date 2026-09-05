@@ -10,4 +10,4 @@
   const path = { id: "late", steps: [{ id: "step-a" }, { id: "step-b" }] };
 </script>
 
-<PathShell {path} autoStart={false} {engine} stepA={StepA} stepB={StepB} />
+<PathShell {path} autoStart={false} {engine} steps={{ stepA: StepA, stepB: StepB }} />

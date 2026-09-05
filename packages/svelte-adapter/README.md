@@ -33,16 +33,8 @@ Peer dependencies: Svelte 5+.
   path={applicationPath}
   initialData={{ name: "", email: "", coverNote: "" }}
   oncomplete={handleComplete}
->
-  {#snippet details()}
-    <DetailsStep />
-  {/snippet}
-
-  <!-- Step ID is "cover-note"; PathShell resolves the camelCase snippet automatically -->
-  {#snippet coverNote()}
-    <CoverNoteStep />
-  {/snippet}
-</PathShell>
+  steps={{ details: DetailsStep, "cover-note": CoverNoteStep }}
+/>
 ```
 
 ```svelte
@@ -95,7 +87,9 @@ Peer dependencies: Svelte 5+.
 
 ## PathShell props
 
-Step content is supplied as Svelte 5 snippets whose names match each step's `id`. For hyphenated step IDs (e.g. `"cover-letter"`), pass the snippet as the camelCase prop (`coverLetter={...}`) — PathShell resolves it automatically. A `console.warn` fires in development if no snippet is found under either the exact ID or the camelCase form.
+Step content is supplied through the `steps` prop: a record of Svelte components keyed by step `id` (for a StepChoice, by the inner step's id, which is what `snapshot.formId` reports). The shell renders the active step's component with no props — step components reach the path through `usePathContext()`. Hyphenated step IDs can be used as-is (`"cover-letter": CoverLetterStep`) or in camelCase (`coverLetter: CoverLetterStep`); PathShell checks both. A `console.warn` fires in development if no component is found under either key.
+
+`Props` has no index signature, so a misspelled prop (`nextLable`, `onComplete`) is a type error rather than a silently ignored attribute.
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
@@ -117,6 +111,7 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
+| `steps` | `Record<string, Component>` | `{}` | Step components keyed by step id (see above). Each is rendered without props. |
 | `oncomplete` | `(data: PathData) => void` | — | Called when the path finishes naturally. |
 | `oncancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
 | `onevent` | `(event: PathEvent) => void` | — | Called for every engine event. |
@@ -131,12 +126,10 @@ The component instance also exposes `restart()` for `bind:this` refs, which rest
 You can also replace the built-in header and footer with custom snippets:
 
 ```svelte
-<PathShell path={myPath}>
+<PathShell path={myPath} steps={{ details: DetailsStep }}>
   {#snippet header(snap)}
     <p>Step {snap.stepIndex + 1} of {snap.stepCount}</p>
   {/snippet}
-
-  {#snippet details()}<DetailsStep />{/snippet}
 
   {#snippet footer(snap, actions)}
     <button onclick={actions.previous} disabled={snap.isFirstStep}>Back</button>
@@ -171,7 +164,7 @@ You can also replace the built-in header and footer with custom snippets:
 | Export | Description |
 |---|---|
 | `bindData(getSnapshot, setData, key)` | Two-way binding helper for inputs. Returns an object with a reactive `value` getter (reads `getSnapshot()?.data[key]`) and a `set(value)` method that calls `setData(key, value)`. Example: `const name = bindData(() => path.snapshot, path.setData, "name")`, then `<input value={name.value} oninput={(e) => name.set(e.currentTarget.value)} />`. |
-| `stepIdToCamelCase(id)` | Converts a hyphenated step ID to camelCase (`"cover-letter"` → `"coverLetter"`) — the conversion `<PathShell>` uses to resolve snippets for hyphenated step IDs. |
+| `stepIdToCamelCase(id)` | Converts a hyphenated step ID to camelCase (`"cover-letter"` → `"coverLetter"`) — the fallback key `<PathShell>` tries in its `steps` record for hyphenated step IDs. |
 | `setPathContext(ctx)` | Sets the `PathContext` that `usePathContext()` reads, under the adapter's private `Symbol` key. Used internally by `<PathShell>`; only needed when building your own shell component. |
 | `getPathContextOrNull()` | Reads the nearest ancestor `PathContext`, or `undefined` when there is none. Used internally by `<PathShell>` to reach the outer shell for `restoreKey`; call it before `setPathContext()` so it reads the parent rather than self. |
 | `formatFieldKey`, `errorPhaseMessage` | Re-exported from `@daltonr/pathwrite-core` for building custom summaries and error panels. |

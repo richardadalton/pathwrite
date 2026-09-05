@@ -74,10 +74,12 @@
       completeLabel="Complete Onboarding"
       cancelLabel="Cancel"
       validationDisplay="inline"
-      personalInfo={PersonalInfoStep}
-      aboutYou={AboutYouStep}
-      preferences={PreferencesStep}
-      review={ReviewStep}
+      steps={{
+        personalInfo: PersonalInfoStep,
+        aboutYou: AboutYouStep,
+        preferences: PreferencesStep,
+        review: ReviewStep,
+      }}
     >
       {#snippet completion(snap)}
         <CompletionPanel {snap} />

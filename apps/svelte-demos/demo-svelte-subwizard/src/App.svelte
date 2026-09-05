@@ -113,12 +113,14 @@
       validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
-      createDocument={CreateDocumentStep}
-      selectApprovers={SelectApproversStep}
-      approvalReview={ApprovalReviewStep}
-      summary={SummaryStep}
-      viewDocument={ViewDocumentStep}
-      decision={DecisionStep}
+      steps={{
+        createDocument: CreateDocumentStep,
+        selectApprovers: SelectApproversStep,
+        approvalReview: ApprovalReviewStep,
+        summary: SummaryStep,
+        viewDocument: ViewDocumentStep,
+        decision: DecisionStep,
+      }}
     />
   {/if}
 </main>

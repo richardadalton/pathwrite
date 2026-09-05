@@ -27,9 +27,11 @@
     layout="tabs"
     validateWhen={snapshot.hasAttemptedNext}
     validationDisplay="inline"
-    personal={PersonalTab}
-    department={DepartmentTab}
-    equipment={EquipmentTab}
-    roles={RolesTab}
+    steps={{
+      personal: PersonalTab,
+      department: DepartmentTab,
+      equipment: EquipmentTab,
+      roles: RolesTab,
+    }}
   />
 </div>

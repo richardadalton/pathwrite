@@ -4,7 +4,9 @@
     "composite": false,
     "declaration": false,
     "declarationMap": false,
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte"]
+  "include": ["src/**/*.ts", "src/**/*.svelte", "test/**/*.test-d.svelte"],
+  "exclude": ["node_modules", "dist"]
 }

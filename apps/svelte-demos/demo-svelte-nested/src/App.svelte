@@ -63,9 +63,11 @@
       validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
-      enterName={EnterNameStep}
-      employeeDetails={EmployeeDetailsStep}
-      confirm={ConfirmStep}
+      steps={{
+        enterName: EnterNameStep,
+        employeeDetails: EmployeeDetailsStep,
+        confirm: ConfirmStep,
+      }}
     />
   {/if}
 </main>

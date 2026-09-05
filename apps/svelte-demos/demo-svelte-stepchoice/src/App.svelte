@@ -99,10 +99,12 @@
       validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
-      country={CountryStep}
-      addressUs={USAddressForm}
-      addressIe={IrishAddressForm}
-      confirm={ConfirmStep}
+      steps={{
+        country: CountryStep,
+        addressUs: USAddressForm,
+        addressIe: IrishAddressForm,
+        confirm: ConfirmStep,
+      }}
     />
   {/if}
 </main>

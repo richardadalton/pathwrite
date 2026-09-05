@@ -74,7 +74,9 @@
       validationDisplay="inline"
       oncomplete={handleComplete}
       oncancel={handleCancel}
-      contact={ContactStep}
+      steps={{
+        contact: ContactStep,
+      }}
     />
   {/if}
 </main>

@@ -52,11 +52,13 @@
       oncomplete={(data) => {
         completedData = data as ApplicationData;
       }}
-      role={RoleStep}
-      experience={ExperienceStep}
-      eligibility={EligibilityStep}
-      coverLetter={CoverLetterStep}
-      review={ReviewStep}
+      steps={{
+        role: RoleStep,
+        experience: ExperienceStep,
+        eligibility: EligibilityStep,
+        coverLetter: CoverLetterStep,
+        review: ReviewStep,
+      }}
     />
   {/if}
 </main>

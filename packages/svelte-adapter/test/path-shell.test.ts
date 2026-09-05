@@ -47,7 +47,7 @@ describe("PathShell (Svelte) — validateWhen true at mount", () => {
         { id: "step-b", title: "Step B" },
       ],
     };
-    render({ path, validateWhen: true, validationDisplay: "summary", stepA: StepA, stepB: StepB });
+    render({ path, validateWhen: true, validationDisplay: "summary", steps: { stepA: StepA, stepB: StepB } });
     await tick();
     await tick();
     expect(container.querySelector(".step-a")).not.toBeNull();
@@ -64,7 +64,7 @@ describe("PathShell (Svelte) — validateWhen true at mount", () => {
 describe("PathShell (Svelte) — restart from the completion panel", () => {
   it("Start over restarts from step 1 with the original initial data", async () => {
     const path: PathDefinition = { id: "p", steps: [{ id: "step-a" }, { id: "step-b" }] };
-    render({ path, initialData: { name: "Ada" }, stepA: StepA, stepB: StepB });
+    render({ path, initialData: { name: "Ada" }, steps: { stepA: StepA, stepB: StepB } });
     await tick();
     (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
     await tick();
@@ -102,8 +102,7 @@ describe("PathShell (Svelte) — restoreKey remount fidelity", () => {
       path: outer,
       nextLabel: "OuterNext",
       backLabel: "OuterBack",
-      host: InnerHost,
-      after: AfterStep,
+      steps: { host: InnerHost, after: AfterStep },
     });
     await tick();
     expect(calls.enterA).toBe(1);
