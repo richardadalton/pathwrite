@@ -25,6 +25,8 @@ Engine fixes for findings C1–C9 of the September 2026 review and all of its co
 
 - `setData()` and hook patches store every key as an own property. A key of `"__proto__"` (possible from user-supplied field names or parsed JSON) used to re-parent the data object instead of storing the value, which then vanished from every snapshot and export.
 
+- `matchesStrategy("onNext", …)` (and so the store's default `persistence` strategy) now also matches the return from a sub-path: the `resumed` event on completion and the settled `stateChanged` with cause `"cancel"` on cancel. Completing a sub-path emits no `stateChanged`, so the last save was still *inside* the sub-path and a restore dropped the user back into a finished flow.
+
 **Behaviour changes** (bug fixes, but observable)
 
 - `start()` on an engine with an active path now **replaces** it, as documented, instead of nesting it as a sub-path. Code that relied on `start()` to nest should call `startSubPath()`. `start()` during an in-flight hook now proceeds (like `restart()`) rather than being silently dropped.

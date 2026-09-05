@@ -61,7 +61,7 @@ Pass `strategy` to `persistence()` to control when saves fire.
 
 | Strategy | When it saves | API calls (5 keystrokes + Next) |
 |---|---|---|
-| `"onNext"` *(default)* | After `next()` navigates to a new step | 1 |
+| `"onNext"` *(default)* | After `next()` navigates to a new step, and when a sub-path returns to its parent (completed or cancelled) | 1 |
 | `"onEveryChange"` | Every settled `stateChanged` event (add `debounceMs` for text inputs) | 6 (or 2 with `debounceMs: 500`) |
 | `"onSubPathComplete"` | When a sub-path finishes and the parent path resumes | varies |
 | `"onComplete"` | When the path completes; does not delete the record afterward (the record is marked `completed`, and `restoreOrStart` starts fresh when it finds one) | 0 mid-flow, 1 at end |

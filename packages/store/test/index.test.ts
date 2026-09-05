@@ -672,3 +672,69 @@ describe("HttpStore — HeadersInit forms (S4)", () => {
     expect(sent(asHeaders, "PUT", "Content-Type")).toBe("application/vnd.api+json");
   });
 });
+
+// ---------------------------------------------------------------------------
+// onNext saves when a sub-path returns to its parent (review finding S5)
+// ---------------------------------------------------------------------------
+
+describe("persistence onNext — sub-path return (S5)", () => {
+  const parent: PathDefinition = {
+    id: "parent",
+    steps: [
+      { id: "p1", onSubPathComplete: (_id, data) => ({ child: data.answer }) },
+      { id: "p2" }
+    ]
+  };
+  const child: PathDefinition = { id: "child", steps: [{ id: "c1" }, { id: "c2" }] };
+  const defs = { parent, child };
+
+  async function runToSubPathEnd(store: MemoryStore) {
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onNext" })] });
+    await engine.start(parent);
+    await engine.startSubPath(child);
+    await engine.setData("answer", 42);
+    await engine.next();          // c1 → c2: saved inside the sub-path
+    await flush();
+    expect(store.records.get("k")?.pathId).toBe("child");
+    expect(store.records.get("k")?.pathStack).toHaveLength(1);
+    return engine;
+  }
+
+  it("saves the parent state when the sub-path completes and the parent resumes", async () => {
+    const store = new MemoryStore();
+    const engine = await runToSubPathEnd(store);
+
+    await engine.next();          // c2 → completes the child, parent resumes on p1
+    await flush();
+    const rec = store.records.get("k")!;
+    expect(rec.pathId).toBe("parent");
+    expect(rec.pathStack).toHaveLength(0);
+    expect(rec.data).toMatchObject({ child: 42 });
+  });
+
+  it("a restore after the sub-path completed lands on the parent, not inside the finished sub-path", async () => {
+    const store = new MemoryStore();
+    const engine = await runToSubPathEnd(store);
+    await engine.next();
+    await flush();
+
+    const { engine: restored, restored: wasRestored } = await restoreOrStart({ store, key: "k", path: parent, pathDefinitions: defs });
+    expect(wasRestored).toBe(true);
+    const s = restored.snapshot()!;
+    expect(s.pathId).toBe("parent");
+    expect(s.stepId).toBe("p1");
+    expect(s.nestingLevel).toBe(0);
+    expect(s.data).toMatchObject({ child: 42 });
+  });
+
+  it("saves the parent state when the sub-path is cancelled back to the parent", async () => {
+    const store = new MemoryStore();
+    const engine = await runToSubPathEnd(store);
+
+    await engine.cancel();        // back to the parent on p1
+    await flush();
+    const rec = store.records.get("k")!;
+    expect(rec.pathId).toBe("parent");
+    expect(rec.pathStack).toHaveLength(0);
+  });
+});

@@ -5262,3 +5262,23 @@ describe("PathEngine — data keys that collide with object internals", () => {
     expect(restored.snapshot()!.data).toEqual({ constructor: 1, hasOwnProperty: "x", toString: null });
   });
 });
+
+describe("matchesStrategy — onNext covers the return from a sub-path", () => {
+  const settled = { status: "idle" } as unknown as PathSnapshot;
+  const resumed: PathEvent = { type: "resumed", resumedPathId: "parent", fromSubPathId: "child", snapshot: settled };
+
+  it("matches resumed (sub-path completed, parent resumed)", () => {
+    expect(matchesStrategy("onNext", resumed)).toBe(true);
+  });
+
+  it("matches a settled stateChanged with cause cancel (sub-path cancelled back to the parent)", () => {
+    expect(matchesStrategy("onNext", { type: "stateChanged", cause: "cancel", snapshot: settled })).toBe(true);
+    expect(matchesStrategy("onNext", { type: "stateChanged", cause: "cancel", snapshot: { status: "leaving" } as unknown as PathSnapshot })).toBe(false);
+  });
+
+  it("still ignores setData, previous and goToStep", () => {
+    for (const cause of ["setData", "previous", "goToStep", "goToStepChecked", "start", "restart"] as const) {
+      expect(matchesStrategy("onNext", { type: "stateChanged", cause, snapshot: settled })).toBe(false);
+    }
+  });
+});

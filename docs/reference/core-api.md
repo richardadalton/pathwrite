@@ -450,7 +450,7 @@ The `ObserverStrategy` values and when `matchesStrategy` returns `true` for each
 | Strategy | Fires when |
 |---|---|
 | `"onEveryChange"` | A `stateChanged` event where `status` is `"idle"` or `"error"`, or a `"resumed"` event |
-| `"onNext"` | A `stateChanged` event caused by `next` where `status` is `"idle"` or `"error"` |
+| `"onNext"` | A `stateChanged` event caused by `next` (or by a sub-path `cancel`) where `status` is `"idle"` or `"error"`, and every `resumed` event — so the return from a sub-path is always covered |
 | `"onSubPathComplete"` | A `"resumed"` event (sub-path finished or cancelled) |
 | `"onComplete"` | A `"completed"` event |
 | `"manual"` | Never — caller decides when to save |

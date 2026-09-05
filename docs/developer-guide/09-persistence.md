@@ -51,7 +51,7 @@ persistence({ store, key: "user:123:wizard" })
 // strategy defaults to "onNext"
 ```
 
-Saves once, after `next()` has successfully navigated to a new step. Data typed within a step is *not* saved until the user clicks Next. This is the right default for most forms: one save per step, no flooding the API, and the risk — data entered on the current step but not yet submitted — is limited to the current screen's worth of work.
+Saves once, after `next()` has successfully navigated to a new step, and whenever a sub-path returns to its parent (on completion or cancel) so the saved position never points inside a finished sub-flow. Data typed within a step is *not* saved until the user clicks Next. This is the right default for most forms: one save per step, no flooding the API, and the risk — data entered on the current step but not yet submitted — is limited to the current screen's worth of work.
 
 ### `"onEveryChange"`
 

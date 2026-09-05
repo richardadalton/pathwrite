@@ -544,8 +544,14 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
         (event.snapshot.status === "idle" || event.snapshot.status === "error"))
         || event.type === "resumed";
     case "onNext":
+      // "The user's position moved forward and settled." Besides next(),
+      // that includes leaving a sub-path: completion emits only `resumed`
+      // (no stateChanged), and a cancel back to the parent emits stateChanged
+      // with cause "cancel". Without these, the last save is still *inside*
+      // the sub-path and a restore drops the user back into a finished flow.
+      if (event.type === "resumed") return true;
       return event.type === "stateChanged"
-        && event.cause === "next"
+        && (event.cause === "next" || event.cause === "cancel")
         && (event.snapshot.status === "idle" || event.snapshot.status === "error");
     case "onSubPathComplete":
       return event.type === "resumed";
