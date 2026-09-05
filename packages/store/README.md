@@ -78,11 +78,14 @@ const { engine, restored } = await restoreOrStart({
   path,           // PathDefinition for the wizard
   initialData,    // used only when starting fresh (not on restore)
   observers,      // PathObserver[] — wired before the first event
-  pathDefinitions // optional: required when the path uses sub-paths
+  pathDefinitions, // optional: required when the path uses sub-paths
+  onRestoreError, // optional: called when saved state exists but cannot be used
 });
 ```
 
 `engine` is a plain `PathEngine` ready to pass to any framework adapter. `restored` is `true` when a saved session was found. When the path later completes, the `persistence` observer automatically calls `store.delete(key)` so a returning user starts fresh.
+
+Saved state that cannot be used never blocks the app. If the store fails to load it (corrupt JSON, network), its `version` is unsupported, or it names a path id that is no longer in `pathDefinitions` (a renamed path), `restoreOrStart` reports the error through `onRestoreError` (or `console.warn` when the callback is absent), deletes the record on a best-effort basis, and starts fresh with `restored: false`.
 
 ## Further reading
 

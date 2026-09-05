@@ -264,6 +264,8 @@ Internally, `restoreOrStart` calls `store.load(key)`. When a saved state is foun
 
 The `pathDefinitions` option is required when the path uses sub-paths, as `fromState` needs to reconstruct the full path stack. For paths without sub-paths it defaults to `{ [path.id]: path }` automatically.
 
+Saved state that cannot be used never blocks the app. If `store.load` fails (corrupt JSON, a network error), the record's `version` is unsupported, or it references a path id that is no longer in `pathDefinitions` (a renamed path), `restoreOrStart` reports the error through the optional `onRestoreError` callback (or `console.warn` when none is given), deletes the record on a best-effort basis, and starts fresh with `restored: false` — the user is never stuck until storage is cleared by hand.
+
 ### Completion cleanup
 
 When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the wizard starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place — `restoreOrStart` treats any record with `_status: "completed"` as finished and starts fresh, so a leftover completed record never resumes.

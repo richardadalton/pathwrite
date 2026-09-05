@@ -299,6 +299,14 @@ export interface RestoreOrStartOptions {
    * pass them here. `restoreOrStart` does not create any observers itself.
    */
   observers?: PathObserver[];
+  /**
+   * Called when saved state exists but cannot be used — the store failed to
+   * load it (corrupt JSON, network), its `version` is unsupported, or it
+   * references a path id not in `pathDefinitions` (a renamed path). The bad
+   * record is deleted (best effort) and the path starts fresh; without this
+   * callback the error is logged with `console.warn`.
+   */
+  onRestoreError?: (error: Error) => void;
 }
 
 /**
@@ -327,33 +335,43 @@ export async function restoreOrStart(
 ): Promise<{ engine: PathEngine; restored: boolean }> {
   const observers = options.observers ?? [];
   const pathDefs = options.pathDefinitions ?? { [options.path.id]: options.path };
-  const saved = await options.store.load(options.key);
-
-  let engine: PathEngine;
-  let restored: boolean;
-
-  // A finished path is never resumed. The "onComplete" strategy leaves its
-  // audit record in place (status "completed"; older versions wrote
-  // currentStepIndex -1), and a state saved with status "completed" by any
-  // other strategy is one whose completion-time delete never landed. Either
-  // way the user starts fresh; the record is left for the app to deal with.
-  const isFinished = saved !== null && (saved._status === "completed" || saved.currentStepIndex < 0);
-
   // A store is attached in both branches, so tell the engine: shells read
   // snapshot.hasPersistence to offer "your progress is saved, come back
   // later" copy when retries are exhausted.
   const engineOptions = { observers, hasPersistence: true };
 
-  if (saved && !isFinished) {
-    engine = PathEngine.fromState(saved, pathDefs, engineOptions);
-    restored = true;
-  } else {
-    engine = new PathEngine(engineOptions);
-    await engine.start(options.path, options.initialData);
-    restored = false;
+  // Saved state that cannot be used must never block the app: the user would
+  // be stuck until storage is cleared by hand. Anything that goes wrong
+  // between load and a restored engine — corrupt JSON, an unsupported
+  // version, a path id that no longer exists — is reported, the record is
+  // dropped (best effort) and the path starts fresh.
+  try {
+    const saved = await options.store.load(options.key);
+
+    // A finished path is never resumed. The "onComplete" strategy leaves its
+    // audit record in place (status "completed"; older versions wrote
+    // currentStepIndex -1), and a state saved with status "completed" by any
+    // other strategy is one whose completion-time delete never landed. Either
+    // way the user starts fresh; the record is left for the app to deal with.
+    const isFinished = saved !== null && (saved._status === "completed" || saved.currentStepIndex < 0);
+
+    if (saved && !isFinished) {
+      const engine = PathEngine.fromState(saved, pathDefs, engineOptions);
+      return { engine, restored: true };
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    if (options.onRestoreError) {
+      options.onRestoreError(err);
+    } else {
+      console.warn(`[pathwrite] Could not restore saved state for "${options.key}"; starting fresh.`, err);
+    }
+    await options.store.delete(options.key).catch(() => { /* best effort */ });
   }
 
-  return { engine, restored };
+  const engine = new PathEngine(engineOptions);
+  await engine.start(options.path, options.initialData);
+  return { engine, restored: false };
 }
 
 // Re-export core types and utilities for convenience

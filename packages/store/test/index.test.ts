@@ -548,3 +548,81 @@ describe("persistence onComplete + restoreOrStart (S2)", () => {
     expect(engine.snapshot()?.data).toEqual({ name: "" });
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreOrStart falls back to a fresh start on corrupt / stale state (S3)
+// ---------------------------------------------------------------------------
+
+describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
+  const path: PathDefinition = { id: "p", steps: [{ id: "a" }, { id: "b" }] };
+  const good: SerializedPathState = { version: 1, pathId: "p", currentStepIndex: 1, data: { name: "Ada" }, visitedStepIds: ["a", "b"], pathStack: [], _status: "idle" };
+
+  async function attempt(store: MemoryStore, extra: Record<string, unknown> = {}) {
+    const errors: Error[] = [];
+    const result = await restoreOrStart({ store, key: "k", path, initialData: { name: "" }, onRestoreError: (e) => errors.push(e), ...extra } as any);
+    return { ...result, errors };
+  }
+
+  function expectFresh(r: { engine: PathEngine; restored: boolean }) {
+    expect(r.restored).toBe(false);
+    expect(r.engine.snapshot()?.stepId).toBe("a");
+    expect(r.engine.snapshot()?.data).toEqual({ name: "" });
+  }
+
+  it("still restores a good record (control)", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", good);
+    const r = await attempt(store);
+    expect(r.restored).toBe(true);
+    expect(r.engine.snapshot()?.stepId).toBe("b");
+    expect(r.errors).toHaveLength(0);
+  });
+
+  it("starts fresh, reports the error and drops the record when the path id is unknown (renamed path)", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", { ...good, pathId: "old-name" });
+    const r = await attempt(store);
+    expectFresh(r);
+    expect(r.errors).toHaveLength(1);
+    expect(r.errors[0].message).toMatch(/old-name/);
+    expect(store.records.has("k")).toBe(false);
+  });
+
+  it("starts fresh on an unsupported state version", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", { ...good, version: 2 as any });
+    const r = await attempt(store);
+    expectFresh(r);
+    expect(r.errors).toHaveLength(1);
+    expect(store.records.has("k")).toBe(false);
+  });
+
+  it("starts fresh when the store cannot even load the record (corrupt JSON)", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", good);
+    store.load = () => Promise.reject(new SyntaxError("Unexpected token } in JSON"));
+    const r = await attempt(store);
+    expectFresh(r);
+    expect(r.errors[0]).toBeInstanceOf(SyntaxError);
+    expect(store.deletes).toBe(1);
+  });
+
+  it("starts fresh even when deleting the bad record also fails", async () => {
+    const store = new MemoryStore();
+    store.records.set("k", { ...good, pathId: "old-name" });
+    store.delete = () => Promise.reject(new Error("delete failed"));
+    const r = await attempt(store);
+    expectFresh(r);
+    expect(r.errors).toHaveLength(1); // the restore error; the delete failure is swallowed
+  });
+
+  it("without onRestoreError, warns on the console and still starts fresh", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const store = new MemoryStore();
+    store.records.set("k", { ...good, pathId: "old-name" });
+    const r = await restoreOrStart({ store, key: "k", path, initialData: { name: "" } });
+    expectFresh(r);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+});
