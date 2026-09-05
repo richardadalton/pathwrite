@@ -31,7 +31,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UsePathOptions {
+export interface UsePathOptions<TData extends PathData = PathData> {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
    * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
@@ -48,9 +48,9 @@ export interface UsePathOptions {
    * async `restoreOrStart()`) or is swapped is adopted — the hook
    * re-subscribes and re-seeds its snapshot from the new engine.
    */
-  engine?: PathEngine | Accessor<PathEngine | undefined>;
+  engine?: PathEngine<TData> | Accessor<PathEngine<TData> | undefined>;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
-  onEvent?: (event: PathEvent) => void;
+  onEvent?: (event: PathEvent<TData>) => void;
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
@@ -60,10 +60,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    */
   snapshot: Accessor<PathSnapshot<TData> | null>;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
-  /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
+  start: (path: PathDefinition<TData>, initialData?: Partial<TData>) => Promise<void>;
+  /** Push a sub-path onto the stack. Requires an active path. A sub-path has its own data, so any definition is accepted. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
   startSubPath: (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData?: PathData,
     meta?: Record<string, unknown>
   ) => Promise<void>;
@@ -100,25 +100,27 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 // usePath composable
 // ---------------------------------------------------------------------------
 
-export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  let ownEngine: PathEngine | null = null;
-  const resolveEngine = (): PathEngine => {
+export function usePath<TData extends PathData = PathData>(
+  options?: UsePathOptions<TData>
+): UsePathReturn<TData> {
+  let ownEngine: PathEngine<TData> | null = null;
+  const resolveEngine = (): PathEngine<TData> => {
     const external = typeof options?.engine === "function" ? options.engine() : options?.engine;
-    return external ?? (ownEngine ??= new PathEngine());
+    return external ?? (ownEngine ??= new PathEngine<TData>());
   };
   let engine = resolveEngine();
 
   const [snapshot, setSnapshot] = createSignal<PathSnapshot<TData> | null>(
-    engine.snapshot() as PathSnapshot<TData> | null,
+    engine.snapshot(),
     // always notify — PathEngine produces new snapshot objects on every event
     { equals: false }
   );
 
-  const onEngineEvent = (event: PathEvent): void => {
+  const onEngineEvent = (event: PathEvent<TData>): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
-      setSnapshot(event.snapshot as PathSnapshot<TData>);
+      setSnapshot(event.snapshot);
     } else if (event.type === "completed" || event.type === "cancelled") {
-      setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
+      setSnapshot(engine.snapshot());
     }
     options?.onEvent?.(event);
   };
@@ -132,7 +134,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
         if (next === engine) return;
         unsubscribe();
         engine = next;
-        setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
+        setSnapshot(engine.snapshot());
         unsubscribe = engine.subscribe(onEngineEvent);
       },
       { defer: true }
@@ -141,11 +143,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   onCleanup(() => unsubscribe());
 
-  const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
+  const start = (path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> =>
     engine.start(path, initialData);
 
   const startSubPath = (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData: PathData = {},
     meta?: Record<string, unknown>
   ): Promise<void> => engine.startSubPath(path, initialData, meta);
@@ -158,8 +160,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
     engine.goToStepChecked(stepId, options);
 
-  const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
-    engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
+  const setData = <K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
+    engine.setData(key, value);
 
   const resetStep = (): Promise<void> => engine.resetStep();
   const restart = (): Promise<void> => engine.restart();
@@ -237,7 +239,8 @@ export interface PathShellActions {
 }
 
 export interface PathShellProps {
-  path: PathDefinition<any>;
+  /** The path to run. The shell is not typed over the path's data, so a definition of any data type is accepted. */
+  path: PathDefinition;
   /**
    * An externally-managed engine — for example, the engine returned by
    * `restoreOrStart()` from `@daltonr/pathwrite-store`. When supplied, `PathShell` will skip its own
@@ -350,7 +353,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
       if (event.type === "completed") props.onComplete?.(event.data as PathData);
       if (event.type === "cancelled") props.onCancel?.(event.data as PathData);
       if (props.restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(props.restoreKey, {
+        void outerCtx.path.setData(props.restoreKey, {
           ...event.snapshot,
           serializedState: currentEngine().exportState(),
         });
@@ -403,7 +406,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
     cancel,
     goToStep,
     goToStepChecked,
-    setData: (key, value) => setData(key as any, value as any),
+    setData,
     restart: () => restart(),
     retry: () => retry(),
     suspend: () => suspend(),
