@@ -622,7 +622,7 @@ export function formatFieldKey(key: string): string {
  * the `ErrorPhase` value on `snapshot.error.phase`. Used by shells to render
  * the error panel message.
  */
-export function errorPhaseMessage(phase: string): string {
+export function errorPhaseMessage(phase: ErrorPhase): string {
   switch (phase) {
     case "entering":
       return "Failed to load this step.";
