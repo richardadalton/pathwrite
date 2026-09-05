@@ -4941,3 +4941,71 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     spy.mockRestore();
   });
 });
+
+describe("PathEngine — goToStep / goToStepChecked to the current step", () => {
+  function pathWithHooks() {
+    const onLeave = vi.fn();
+    const onEnter = vi.fn();
+    const def: PathDefinition = {
+      id: "p",
+      steps: [{ id: "a", onLeave, onEnter, fieldErrors: ({ data }) => (data.x ? {} : { x: "required" }) }, { id: "b" }]
+    };
+    return { def, onLeave, onEnter };
+  }
+
+  for (const method of ["goToStep", "goToStepChecked"] as const) {
+    it(`${method}(current) runs no hooks and keeps the step's entry data`, async () => {
+      const { def, onLeave, onEnter } = pathWithHooks();
+      const engine = new PathEngine();
+      await engine.start(def);
+      expect(onEnter).toHaveBeenCalledTimes(1);
+      await engine.setData("x", 1);
+
+      await engine[method]("a");
+      expect(onLeave).not.toHaveBeenCalled();
+      expect(onEnter).toHaveBeenCalledTimes(1);
+      expect(engine.snapshot()?.isDirty).toBe(true);
+
+      await engine.resetStep();
+      expect(engine.snapshot()?.data).toEqual({}); // entry data was not re-snapshotted
+    });
+
+    it(`${method}(current) emits nothing without validateOnLeave`, async () => {
+      const { def } = pathWithHooks();
+      const engine = new PathEngine();
+      await engine.start(def);
+      const events: PathEvent[] = [];
+      engine.subscribe((e) => events.push(e));
+      await engine[method]("a");
+      expect(events).toEqual([]);
+      expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
+    });
+
+    it(`${method}(current, { validateOnLeave: true }) marks the step attempted and emits once`, async () => {
+      const { def, onLeave, onEnter } = pathWithHooks();
+      const engine = new PathEngine();
+      await engine.start(def);
+      const events: PathEvent[] = [];
+      engine.subscribe((e) => events.push(e));
+
+      await engine[method]("a", { validateOnLeave: true });
+      expect(events).toHaveLength(1);
+      expect(events[0].type === "stateChanged" && events[0].cause).toBe(method);
+      expect(engine.snapshot()?.hasAttemptedNext).toBe(true);
+      expect(engine.snapshot()?.fieldErrors).toEqual({ x: "required" });
+      expect(engine.snapshot()?.status).toBe("idle");
+      expect(onLeave).not.toHaveBeenCalled();
+      expect(onEnter).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  it("goToStep(other) still runs onLeave and onEnter", async () => {
+    const { def, onLeave, onEnter } = pathWithHooks();
+    const engine = new PathEngine();
+    await engine.start(def);
+    await engine.goToStep("b");
+    expect(onLeave).toHaveBeenCalledTimes(1);
+    expect(engine.snapshot()?.stepId).toBe("b");
+    expect(onEnter).toHaveBeenCalledTimes(1); // "b" has no onEnter; "a" not re-entered
+  });
+});

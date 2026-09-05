@@ -996,6 +996,11 @@ export class PathEngine {
    * before navigating. This causes `hasAttemptedNext` to be `true` when the user
    * returns to that step, surfacing any inline field errors — ideal for tab-mode
    * navigation where Next is never clicked.
+   *
+   * Jumping to the step the path is already on does not navigate: no `onLeave`
+   * / `onEnter`, and the step's entry data (for `resetStep()`) is kept. With
+   * `validateOnLeave` the step is still marked as attempted, so a tab shell can
+   * surface its errors when the user re-selects the active tab.
    */
   public goToStep(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
     const active = this.requireActivePath();
@@ -1003,8 +1008,24 @@ export class PathEngine {
     if (targetIndex === -1) {
       throw new Error(`Step "${stepId}" not found in path "${active.definition.id}".`);
     }
+    if (targetIndex === active.currentStepIndex) {
+      return this._stayOnCurrentStep(active, options, "goToStep");
+    }
     this._beginNavigation();
     return this._goToStepAsync(active, targetIndex, options);
+  }
+
+  /**
+   * `goToStep` / `goToStepChecked` targeting the current step. Nothing moves,
+   * but `validateOnLeave` still marks the step attempted (and emits so shells
+   * re-render). Only acts on a settled engine, like every other navigation.
+   */
+  private _stayOnCurrentStep(active: ActivePath, options: { validateOnLeave?: boolean } | undefined, cause: StateChangeCause): Promise<void> {
+    if (options?.validateOnLeave && (this._status === "idle" || this._status === "error")) {
+      active.attemptedNextSteps.add(this.getCurrentItem(active).id);
+      this.emitStateChanged(cause);
+    }
+    return Promise.resolve();
   }
 
   /**
@@ -1015,7 +1036,9 @@ export class PathEngine {
    *
    * If the guard blocks, navigation does not occur and `stateChanged` is still
    * emitted (so the UI can react). `shouldSkip` is not evaluated.
-   * Throws if the target step ID does not exist.
+   * Throws if the target step ID does not exist. Targeting the current step
+   * behaves exactly like `goToStep` does: no guard, no hooks, `validateOnLeave`
+   * still marks the step attempted.
    */
   public goToStepChecked(stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> {
     const active = this.requireActivePath();
@@ -1023,7 +1046,9 @@ export class PathEngine {
     if (targetIndex === -1) {
       return Promise.reject(new Error(`Step "${stepId}" not found in path "${active.definition.id}".`));
     }
-    if (targetIndex === active.currentStepIndex) return Promise.resolve();
+    if (targetIndex === active.currentStepIndex) {
+      return this._stayOnCurrentStep(active, options, "goToStepChecked");
+    }
     this._beginNavigation();
     return this._goToStepCheckedAsync(active, targetIndex, options);
   }
