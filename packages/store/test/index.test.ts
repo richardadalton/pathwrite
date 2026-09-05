@@ -375,3 +375,100 @@ describe("restoreOrStart", () => {
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
 });
+
+// ---------------------------------------------------------------------------
+// persistence — driven by a real engine and a slow store (review finding S1)
+// ---------------------------------------------------------------------------
+
+/** In-memory PathStore whose save() only completes when the test releases it. */
+class SlowStore {
+  public saved: SerializedPathState[] = [];
+  private releases: Array<() => void> = [];
+  public failNext = false;
+
+  save(_key: string, state: SerializedPathState): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.releases.push(() => {
+        if (this.failNext) { this.failNext = false; reject(new Error("save failed")); return; }
+        this.saved.push(JSON.parse(JSON.stringify(state)));
+        resolve();
+      });
+    });
+  }
+  load(): Promise<SerializedPathState | null> { return Promise.resolve(null); }
+  delete(): Promise<void> { return Promise.resolve(); }
+
+  /** Number of saves currently waiting on the "network". */
+  get inFlight(): number { return this.releases.length; }
+  /** Complete the oldest in-flight save. */
+  release(): void { this.releases.shift()?.(); }
+}
+
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+describe("persistence — real engine, slow store (S1)", () => {
+  const threeSteps: PathDefinition = { id: "p", steps: [{ id: "s1" }, { id: "s2" }, { id: "s3" }] };
+
+  it("a change that arrives while a save is in flight is saved afterwards, not dropped", async () => {
+    const store = new SlowStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onNext" })] });
+    await engine.start(threeSteps);
+
+    await engine.next();            // → s2: save #1 starts and hangs
+    expect(store.inFlight).toBe(1);
+    await engine.next();            // → s3 while save #1 is still in flight
+    expect(engine.snapshot()?.stepIndex).toBe(2);
+
+    store.release();                // save #1 lands (state at s2)
+    await flush();
+    expect(store.inFlight).toBe(1); // a follow-up save for the newer state must be in flight
+    store.release();
+    await flush();
+
+    expect(store.saved.map((s) => s.currentStepIndex)).toEqual([1, 2]);
+    expect(store.saved.at(-1)?.currentStepIndex).toBe(engine.exportState()?.currentStepIndex);
+  });
+
+  it("several changes during one in-flight save collapse into a single follow-up save of the latest state", async () => {
+    const store = new SlowStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onEveryChange" })] });
+    await engine.start(threeSteps);
+    // start() itself triggered a save under onEveryChange
+    expect(store.inFlight).toBe(1);
+
+    await engine.setData("a", 1);
+    await engine.setData("b", 2);
+    await engine.setData("c", 3);
+    expect(store.inFlight).toBe(1); // still only the first save on the wire
+
+    store.release();
+    await flush();
+    expect(store.inFlight).toBe(1); // exactly one follow-up
+    store.release();
+    await flush();
+
+    expect(store.saved).toHaveLength(2);
+    expect(store.saved[1].data).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("a change that arrives while a save is failing is still saved afterwards", async () => {
+    const store = new SlowStore();
+    const errors: Error[] = [];
+    const engine = new PathEngine({
+      observers: [persistence({ store, key: "k", strategy: "onNext", onSaveError: (e) => errors.push(e) })]
+    });
+    await engine.start(threeSteps);
+
+    await engine.next();
+    await engine.next();
+    store.failNext = true;
+    store.release();                // save #1 fails
+    await flush();
+    expect(errors).toHaveLength(1);
+    expect(store.inFlight).toBe(1); // follow-up still attempted
+    store.release();
+    await flush();
+
+    expect(store.saved.map((s) => s.currentStepIndex)).toEqual([2]);
+  });
+});

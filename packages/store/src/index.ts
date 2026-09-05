@@ -187,9 +187,19 @@ export function persistence(options: PersistenceOptions): PathObserver {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSave: Promise<void> | null = null;
+  // Set when a save is requested while one is already on the wire. The state
+  // is exported when a save *starts*, so a request that arrives mid-flight
+  // would otherwise be lost — the in-flight save carries the older state and
+  // nothing re-runs for the newer one. When the in-flight save settles (success
+  // or failure) one follow-up save runs with whatever the engine holds then;
+  // several mid-flight requests collapse into that single follow-up.
+  let dirty = false;
 
   const performSave = (engine: PathEngine): Promise<void> => {
-    if (pendingSave) return pendingSave;
+    if (pendingSave) {
+      dirty = true;
+      return pendingSave;
+    }
 
     pendingSave = (async () => {
       const state = engine.exportState();
@@ -201,7 +211,13 @@ export function persistence(options: PersistenceOptions): PathObserver {
         const err = error instanceof Error ? error : new Error(String(error));
         options.onSaveError?.(err);
       }
-    })().finally(() => { pendingSave = null; });
+    })().finally(() => {
+      pendingSave = null;
+      if (dirty) {
+        dirty = false;
+        void performSave(engine);
+      }
+    });
 
     return pendingSave;
   };
