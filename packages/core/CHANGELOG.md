@@ -1,14 +1,6 @@
 # @daltonr/pathwrite-core
 
-## 0.12.0
-
-### Minor Changes
-
-- 7dab99d: **`completionBehaviour` on `PathDefinition`** — controls what the engine does after a path completes. `"stayOnFinal"` (default) keeps the completed snapshot in place; `"dismiss"` sets snapshot to `null`; `"reset"` calls `restart()` automatically.
-
-  **Per-step `hasAttemptedNext` persistence** — `snapshot.hasAttemptedNext` is now tracked per step (keyed by step ID) and persists when the user navigates away and back. No longer resets on `previous()` or `goToStep()`. Cleared only on `start()` / `restart()`.
-
-  **`validateOnLeave` option on `goToStep` / `goToStepChecked`** — `goToStep(stepId, { validateOnLeave: true })` marks the departing step as attempted before navigating, so inline field errors appear if the user returns to that tab. Designed for tab bar click handlers.
+## 0.13.0
 
 ### Patch Changes
 
@@ -43,6 +35,16 @@
   - `start()` on an engine with an active path now **replaces** it, as documented, instead of nesting it as a sub-path. Code that relied on `start()` to nest should call `startSubPath()`. `start()` during an in-flight hook now proceeds (like `restart()`) rather than being silently dropped.
   - `goToStep()` to the step the path is already on no longer runs `onLeave` / `onEnter` or re-snapshots the step's entry data (so `resetStep()` still reverts edits made before the call); it behaves like `goToStepChecked()` did. With `{ validateOnLeave: true }` both still mark the step attempted and emit `stateChanged`.
   - `previous()`, `goToStep()`, `goToStepChecked()` and a sub-path `cancel()` now use the same error / retry model as `next()`: when a hook or guard fails they **resolve**, set `snapshot.error` with the failing phase, move to status `"error"` and store a `retry()`. They no longer reject. Programmer errors (unknown step id, no active path) still throw.
+
+## 0.12.0
+
+### Minor Changes
+
+- **`completionBehaviour` on `PathDefinition`** — controls what the engine does after a path completes. `"stayOnFinal"` (default) keeps the completed snapshot in place; `"dismiss"` sets snapshot to `null`; `"reset"` calls `restart()` automatically.
+
+- **Per-step `hasAttemptedNext` persistence** — `snapshot.hasAttemptedNext` is now tracked per step (keyed by step ID) and persists when the user navigates away and back. No longer resets on `previous()` or `goToStep()`. Cleared only on `start()` / `restart()`.
+
+- **`validateOnLeave` option on `goToStep` / `goToStepChecked`** — `goToStep(stepId, { validateOnLeave: true })` marks the departing step as attempted before navigating, so inline field errors appear if the user returns to that tab. Designed for tab bar click handlers.
 
 ## 0.11.0
 

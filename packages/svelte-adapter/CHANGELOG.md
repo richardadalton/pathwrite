@@ -1,22 +1,6 @@
 # @daltonr/pathwrite-svelte
 
-## 0.12.0
-
-### Minor Changes
-
-- 7dab99d: **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `{#snippet completion(snap)}` slot to render a custom done screen when `stayOnFinal` is active.
-
-  **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
-
-  **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
-
-  **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
-
-  **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
-
-  **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
-
-  **Dev warning for camelCase callbacks** — passing `onComplete`, `onCancel`, or `onEvent` (camelCase) now emits a `console.warn` in development. Svelte requires lowercase: `oncomplete`, `oncancel`, `onevent`.
+## 0.13.0
 
 ### Patch Changes
 
@@ -26,7 +10,29 @@
 - 4cccbb1: `.svelte` files are now type-checked: `svelte-check` runs as the first step of the package build (`npm run check`). It found and this release fixes: `PathShell` calling `restart(path, initialData)` against the zero-argument `restart()` (harmless at runtime, but wrong); `PathContext.snapshot` typed non-null while it is `null` with no active path (the README already narrows it with `{#if ctx.snapshot}`); the `path` prop typed optional but passed unguarded to `start()` — the shell now throws a clear error when neither `path` nor `engine` is given; and an `import.meta.env` read that relied on Vite's ambient types.
 - f6e8bae: `PathShellActions` is exported and is the type of the second argument of a custom `footer` snippet (`{#snippet footer(snap, actions)}`), which was typed `object`. Same shape as the other adapters' `PathShellActions`.
 - Updated dependencies [ca1eba7]
-- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.13.0
+
+## 0.12.0
+
+### Minor Changes
+
+- **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `{#snippet completion(snap)}` slot to render a custom done screen when `stayOnFinal` is active.
+
+- **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
+
+- **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
+
+- **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
+
+- **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
+
+- **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+
+- **Dev warning for camelCase callbacks** — passing `onComplete`, `onCancel`, or `onEvent` (camelCase) now emits a `console.warn` in development. Svelte requires lowercase: `oncomplete`, `oncancel`, `onevent`.
+
+### Patch Changes
+
+- Updated dependencies [431a268]
   - @daltonr/pathwrite-core@0.12.0
 
 ## 0.11.0

@@ -1,22 +1,6 @@
 # @daltonr/pathwrite-solid
 
-## 0.12.0
-
-### Minor Changes
-
-- 7dab99d: **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `completionContent` prop to render a custom done screen when `stayOnFinal` is active.
-
-  **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
-
-  **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
-
-  **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
-
-  **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
-
-  **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
-
-  **`steps`, `renderHeader`, `renderFooter` accept component references directly** — previously required an arrow function wrapper; component references now type-check correctly.
+## 0.13.0
 
 ### Patch Changes
 
@@ -26,7 +10,29 @@
 - f64b309: `PathShell` now falls back from a `StepChoice`'s inner step id (`formId`) to the slot's own `stepId` when looking up step content, as the React, Vue and Svelte shells already did. A choice registered under its own id (`steps={{ type: ... }}` / `<ng-template pwStep="type">`) rendered blank in Angular and Solid; content registered under the inner id still takes precedence.
 - 2b27f9e: `PathShell` no longer tears down and re-creates the current step component on every engine event. The step render function used to be called inside a tracked render position that read the `{ equals: false }` snapshot signal, so each `setData` (every keystroke) destroyed the step and rebuilt it — the `<input>` lost its DOM node, focus and local state. The rendered step is now keyed on its identity (path, nesting level, step / form id), created once when the step becomes current and kept until the path moves on. The `snapshot` argument passed to the render function is live: its properties read the current snapshot reactively, so `(snap) => <Step snapshot={snap} />` with `createMemo(() => props.snapshot.data)` inside keeps working. `usePathContext().snapshot()` is unchanged.
 - Updated dependencies [ca1eba7]
-- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.13.0
+
+## 0.12.0
+
+### Minor Changes
+
+- **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `completionContent` prop to render a custom done screen when `stayOnFinal` is active.
+
+- **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
+
+- **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
+
+- **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
+
+- **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
+
+- **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+
+- **`steps`, `renderHeader`, `renderFooter` accept component references directly** — previously required an arrow function wrapper; component references now type-check correctly.
+
+### Patch Changes
+
+- Updated dependencies [431a268]
   - @daltonr/pathwrite-core@0.12.0
 
 ## 0.11.0

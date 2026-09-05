@@ -1,10 +1,6 @@
 # @daltonr/pathwrite-store
 
-## 0.12.0
-
-### Minor Changes
-
-- 7dab99d: Updated for `@daltonr/pathwrite-core@0.12.0` — `completionBehaviour`, per-step `hasAttemptedNext`, and `validateOnLeave`. No store-specific API changes.
+## 0.13.0
 
 ### Patch Changes
 
@@ -48,7 +44,17 @@
 - aafa325: `restoreOrStart` no longer rejects when saved state cannot be used. A failing `store.load` (corrupt JSON, network), an unsupported `version`, or a path id no longer present in `pathDefinitions` (a renamed path) used to reject the whole call, leaving the app unable to start until storage was cleared by hand. The error is now reported through the new `onRestoreError` option (or `console.warn` when absent), the record is deleted on a best-effort basis, and the path starts fresh with `restored: false`.
 - cb5d323: `persistence()` runs its store operations for a key strictly one at a time, in request order. The delete issued on completion was fire-and-forget, so with `completionBehaviour: "reset"` (which restarts and saves immediately) a slow DELETE could land after the new session's PUT and wipe it. The delete is now queued behind any in-flight save and ahead of any later one. The in-flight re-save from the previous fix is part of the same queue: a save requested while one is on the wire runs afterwards with the latest state, and several such requests collapse into one.
 - Updated dependencies [ca1eba7]
-- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.13.0
+
+## 0.12.0
+
+### Minor Changes
+
+- Updated for `@daltonr/pathwrite-core@0.12.0` — `completionBehaviour`, per-step `hasAttemptedNext`, and `validateOnLeave`. No store-specific API changes.
+
+### Patch Changes
+
+- Updated dependencies [431a268]
   - @daltonr/pathwrite-core@0.12.0
 
 ## 0.11.0

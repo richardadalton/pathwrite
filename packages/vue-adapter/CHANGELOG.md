@@ -1,20 +1,6 @@
 # @daltonr/pathwrite-vue
 
-## 0.12.0
-
-### Minor Changes
-
-- 7dab99d: **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `#completion` slot to render a custom done screen when `stayOnFinal` is active.
-
-  **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
-
-  **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
-
-  **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
-
-  **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
-
-  **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+## 0.13.0
 
 ### Patch Changes
 
@@ -22,7 +8,27 @@
 - 42cbd0a: `restoreKey` restores a remounted inner shell in place. The value stored under `data[restoreKey]` is still the inner `PathSnapshot` (so outer steps keep reading `data.<key>.data.<field>`), but it now also carries a `serializedState` field — the inner engine's `exportState()`. On remount the inner engine is rebuilt from it with `PathEngine.fromState()` instead of starting the path and jumping to the step, which re-ran `onEnter` on the first step and `onLeave` / `onEnter` on the way to the target on every remount and lost attempted / visited state (a blocked attempt's errors vanished when the user came back). A stored value without `serializedState`, written by an older version, still restores the old way. Every shell has a remount test for this. Angular's `PathFacade` gains an `engine` getter.
 - 449dae5: `PathShell` now honours `validateWhen` when it is already `true` at mount. The shells applied it before the mount-time `start()`, which resets the engine's validated flag, so a nested shell that remounted with `validateWhen` bound to the outer step's `hasAttemptedNext` (the tabbed layout) never showed its inner errors. Vue's watcher also was not immediate, so a true initial value was never applied at all. All four shells now re-apply `validateWhen` once the path (and any `restoreKey` jump) has settled. Solid and Svelte already ran the effect after `start()` and are unchanged; every shell now has a regression test for the case.
 - Updated dependencies [ca1eba7]
-- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.13.0
+
+## 0.12.0
+
+### Minor Changes
+
+- **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `#completion` slot to render a custom done screen when `stayOnFinal` is active.
+
+- **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
+
+- **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
+
+- **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
+
+- **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
+
+- **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+
+### Patch Changes
+
+- Updated dependencies [431a268]
   - @daltonr/pathwrite-core@0.12.0
 
 ## 0.11.0
