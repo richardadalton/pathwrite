@@ -118,10 +118,19 @@ The `SerializedPathState` that flows through these methods looks like this:
   currentStepIndex: number,
   data: PathData,            // all accumulated field values
   visitedStepIds: string[],
+  attemptedStepIds: string[],  // steps where Next was pressed — restores hasAttemptedNext
+  skippedStepIds: string[],    // steps shouldSkip resolved true — restores stepCount / progress
+  stepEntryData: PathData,   // data as it was on entering the current step — restores resetStep()
+  stepEnteredAt: number,
   pathStack: [...],          // sub-path stack, populated when sub-paths are in use
   _status: "idle",
+  initialData: PathData,     // what the root path was started with — restores restart()
+  hasValidated: boolean,
+  blockingError: string | null,
 }
 ```
+
+Every field after `visitedStepIds` is optional on load, so state saved by an older version still restores; the engine falls back to sensible defaults for anything missing.
 
 It is plain JSON with no functions, no class instances, and no Pathwrite-specific encoding. A backend that stores and returns this object verbatim requires no Pathwrite knowledge at all.
 

@@ -36,6 +36,19 @@ export interface SerializedPathState {
   currentStepIndex: number;
   data: PathData;
   visitedStepIds: string[];
+  /**
+   * Steps on which `next()` (or `goToStep` with `validateOnLeave`) has been
+   * called — drives `snapshot.hasAttemptedNext`. Absent from states exported
+   * by older versions — falls back to none.
+   */
+  attemptedStepIds?: string[];
+  /**
+   * Steps whose `shouldSkip` resolved `true` on the last pass — drives
+   * `snapshot.stepCount` / `progress` before the first navigation after a
+   * restore. Absent from older states — falls back to none (every step is
+   * counted until the next navigation re-evaluates `shouldSkip`).
+   */
+  skippedStepIds?: string[];
   subPathMeta?: Record<string, unknown>;
   stepEntryData?: PathData;
   stepEnteredAt?: number;
@@ -44,11 +57,17 @@ export interface SerializedPathState {
     currentStepIndex: number;
     data: PathData;
     visitedStepIds: string[];
+    attemptedStepIds?: string[];
+    skippedStepIds?: string[];
     subPathMeta?: Record<string, unknown>;
     stepEntryData?: PathData;
     stepEnteredAt?: number;
   }>;
   _status: PathStatus;
+  /** `snapshot.hasValidated` at export time. Absent from older states — falls back to `false`. */
+  hasValidated?: boolean;
+  /** `snapshot.blockingError` at export time. Absent from older states — falls back to `null`. */
+  blockingError?: string | null;
   /**
    * The `initialData` the root path was started with. `restart()` (and
    * `completionBehaviour: "reset"`) reset to this after a `fromState()` restore.
@@ -712,8 +731,8 @@ export class PathEngine {
         currentStepIndex: clampIndex(definition, stackItem.currentStepIndex),
         data: { ...stackItem.data },
         visitedStepIds: new Set(stackItem.visitedStepIds),
-        attemptedNextSteps: new Set(),
-        resolvedSkips: new Set(),
+        attemptedNextSteps: new Set(stackItem.attemptedStepIds ?? []),
+        resolvedSkips: new Set(stackItem.skippedStepIds ?? []),
         subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined,
         stepEntryData: stackItem.stepEntryData ? { ...stackItem.stepEntryData } : { ...stackItem.data },
         stepEnteredAt: stackItem.stepEnteredAt ?? Date.now()
@@ -733,8 +752,8 @@ export class PathEngine {
       currentStepIndex: clampIndex(activeDefinition, state.currentStepIndex),
       data: { ...state.data },
       visitedStepIds: new Set(state.visitedStepIds),
-      attemptedNextSteps: new Set(),
-      resolvedSkips: new Set(),
+      attemptedNextSteps: new Set(state.attemptedStepIds ?? []),
+      resolvedSkips: new Set(state.skippedStepIds ?? []),
       // Active path's subPathMeta is not serialized (it's transient metadata
       // from the parent when this path was started). On restore, it's undefined.
       subPathMeta: undefined,
@@ -749,6 +768,8 @@ export class PathEngine {
     // would leave the engine unable to move. "error" is dropped too: the error
     // details and retry closure are not serialized, so there is nothing to retry.
     engine._status = state._status === "completed" ? "completed" : "idle";
+    engine._hasValidated = state.hasValidated === true;
+    engine._blockingError = typeof state.blockingError === "string" ? state.blockingError : null;
 
     // restart() needs the root definition and its initial data, exactly as
     // start() records them. The root is the bottom of the stack when sub-paths
@@ -1176,6 +1197,8 @@ export class PathEngine {
       currentStepIndex: active.currentStepIndex,
       data: { ...active.data },
       visitedStepIds: Array.from(active.visitedStepIds),
+      attemptedStepIds: Array.from(active.attemptedNextSteps),
+      skippedStepIds: Array.from(active.resolvedSkips),
       stepEntryData: { ...active.stepEntryData },
       stepEnteredAt: active.stepEnteredAt,
       pathStack: this.pathStack.map((p) => ({
@@ -1183,12 +1206,16 @@ export class PathEngine {
         currentStepIndex: p.currentStepIndex,
         data: { ...p.data },
         visitedStepIds: Array.from(p.visitedStepIds),
+        attemptedStepIds: Array.from(p.attemptedNextSteps),
+        skippedStepIds: Array.from(p.resolvedSkips),
         subPathMeta: p.subPathMeta ? { ...p.subPathMeta } : undefined,
         stepEntryData: { ...p.stepEntryData },
         stepEnteredAt: p.stepEnteredAt
       })),
       _status: this._status,
-      initialData: { ...this._rootInitialData }
+      initialData: { ...this._rootInitialData },
+      hasValidated: this._hasValidated,
+      blockingError: this._blockingError
     };
   }
 

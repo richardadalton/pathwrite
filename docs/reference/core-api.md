@@ -309,7 +309,7 @@ Retry the last failed async operation when `snapshot.status === "error"`. Clears
 engine.exportState(): SerializedPathState | null
 ```
 
-Return the full current engine state as a plain JSON-serializable object, or `null` if no path is active. The serialized state includes the current step position, all path data, visited step tracking, and the full sub-path stack.
+Return the full current engine state as a plain JSON-serializable object, or `null` if no path is active. The serialized state includes the current step position, all path data, visited / attempted / skipped step tracking, the current step's entry data, `hasValidated`, `blockingError`, the root path's `initialData`, and the full sub-path stack.
 
 Pass the result to `PathEngine.fromState()` to restore the engine later.
 

@@ -5110,3 +5110,114 @@ describe("PathEngine — validate() while in error status", () => {
     expect(engine.snapshot()?.hasValidated).toBe(false);
   });
 });
+
+describe("PathEngine — exportState round-trips attempted, skipped, validated and blocking state", () => {
+  function def(): PathDefinition {
+    return {
+      id: "p",
+      steps: [
+        { id: "a", canMoveNext: ({ data }) => (data.ok ? true : { allowed: false, reason: "not yet" }) },
+        { id: "b", shouldSkip: () => true },
+        { id: "c" },
+        { id: "d" }
+      ]
+    };
+  }
+
+  it("serialises the new fields", async () => {
+    const engine = new PathEngine();
+    await engine.start(def());
+    await engine.next(); // blocked: attempted + blockingError
+    engine.validate();
+
+    const state = engine.exportState()!;
+    expect(state.attemptedStepIds).toEqual(["a"]);
+    expect(state.skippedStepIds).toEqual([]);
+    expect(state.hasValidated).toBe(true);
+    expect(state.blockingError).toBe("not yet");
+    expect(JSON.parse(JSON.stringify(state))).toEqual(state);
+  });
+
+  it("restores hasAttemptedNext, hasValidated and blockingError", async () => {
+    const engine = new PathEngine();
+    await engine.start(def());
+    await engine.next();
+    engine.validate();
+
+    const restored = PathEngine.fromState(engine.exportState()!, { p: def() });
+    const s = restored.snapshot()!;
+    expect(s.hasAttemptedNext).toBe(true);
+    expect(s.hasValidated).toBe(true);
+    expect(s.blockingError).toBe("not yet");
+  });
+
+  it("restores the skip cache so stepCount and progress are right before the first navigation", async () => {
+    const engine = new PathEngine();
+    await engine.start(def());
+    await engine.setData("ok", true);
+    await engine.next(); // a → c, b skipped
+    expect(engine.snapshot()?.stepCount).toBe(3);
+
+    const state = engine.exportState()!;
+    expect(state.skippedStepIds).toEqual(["b"]);
+
+    const restored = PathEngine.fromState(state, { p: def() });
+    const s = restored.snapshot()!;
+    expect(s.stepId).toBe("c");
+    expect(s.stepCount).toBe(3);
+    expect(s.stepIndex).toBe(1);
+    expect(s.progress).toBeCloseTo(0.5);
+    expect(s.steps.map((x) => x.id)).toEqual(["a", "c", "d"]);
+  });
+
+  it("serialises and restores attempted / skipped state per stack entry", async () => {
+    const parent: PathDefinition = {
+      id: "parent",
+      steps: [{ id: "p1", canMoveNext: () => ({ allowed: false, reason: "no" }) }, { id: "p2", shouldSkip: () => true }, { id: "p3" }]
+    };
+    const sub: PathDefinition = { id: "sub", steps: [{ id: "s1", canMoveNext: () => false }, { id: "s2" }] };
+    const engine = new PathEngine();
+    await engine.start(parent);
+    await engine.next(); // p1 attempted
+    await engine.startSubPath(sub);
+    await engine.next(); // s1 attempted
+
+    const state = engine.exportState()!;
+    expect(state.pathStack[0].attemptedStepIds).toEqual(["p1"]);
+    expect(state.attemptedStepIds).toEqual(["s1"]);
+
+    const restored = PathEngine.fromState(state, { parent, sub });
+    expect(restored.snapshot()?.hasAttemptedNext).toBe(true);
+    await restored.cancel(); // back to the parent
+    expect(restored.snapshot()?.stepId).toBe("p1");
+    expect(restored.snapshot()?.hasAttemptedNext).toBe(true);
+  });
+
+  it("restores state exported by an older version (fields absent) with defaults", async () => {
+    const state: SerializedPathState = {
+      version: 1,
+      pathId: "p",
+      currentStepIndex: 2,
+      data: {},
+      visitedStepIds: ["a", "c"],
+      pathStack: [],
+      _status: "idle"
+    };
+    const restored = PathEngine.fromState(state, { p: def() });
+    const s = restored.snapshot()!;
+    expect(s.hasAttemptedNext).toBe(false);
+    expect(s.hasValidated).toBe(false);
+    expect(s.blockingError).toBeNull();
+    expect(s.stepCount).toBe(4); // nothing known to be skipped yet
+  });
+
+  it("ignores a non-string blockingError in hand-edited state", () => {
+    const state = {
+      version: 1, pathId: "p", currentStepIndex: 0, data: {}, visitedStepIds: [], pathStack: [], _status: "idle",
+      blockingError: 42, hasValidated: "yes"
+    } as unknown as SerializedPathState;
+    const s = PathEngine.fromState(state, { p: def() }).snapshot()!;
+    expect(s.blockingError).toBeNull();
+    expect(s.hasValidated).toBe(false);
+  });
+});
