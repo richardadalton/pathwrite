@@ -434,3 +434,206 @@ describe("PathShell (Solid) — events", () => {
     expect(onEvent).toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Step component identity across engine events (review finding A1)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — step component identity across engine events", () => {
+  function typeInto(input: HTMLInputElement, value: string) {
+    input.value = value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  /** A step wired the way the Solid demos wire inputs: value from the
+   *  context snapshot, onInput → setData. */
+  function makeNameStep(onMount: () => void) {
+    return function NameStep() {
+      onMount();
+      const ctx = usePathContext();
+      return (
+        <input
+          id="name"
+          type="text"
+          value={(ctx.snapshot()?.data.name as string) ?? ""}
+          onInput={(e) => ctx.setData("name", e.currentTarget.value)}
+        />
+      );
+    };
+  }
+
+  const namePath: PathDefinition = {
+    id: "name",
+    steps: [{ id: "name" }, { id: "done" }],
+  };
+
+  it("keeps the same input element (and its focus) while the user types", async () => {
+    const mounted = vi.fn();
+    const NameStep = makeNameStep(mounted);
+
+    dispose = render(
+      () => <PathShell path={namePath} steps={{ name: () => <NameStep />, done: () => <div /> }} />,
+      container
+    );
+    await tick();
+
+    const input = container.querySelector("input#name") as HTMLInputElement;
+    expect(input).not.toBeNull();
+    // start() emits an "entering" and then an "idle" snapshot — one mount, not two.
+    expect(mounted).toHaveBeenCalledTimes(1);
+    const mountsAfterStart = mounted.mock.calls.length;
+
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    typeInto(input, "A");
+    await tick();
+    typeInto(container.querySelector("input#name") as HTMLInputElement, "Al");
+    await tick();
+    typeInto(container.querySelector("input#name") as HTMLInputElement, "Ali");
+    await tick();
+
+    // The data flowed through the engine...
+    expect((container.querySelector("input#name") as HTMLInputElement).value).toBe("Ali");
+    // ...without the step being torn down and re-created on each keystroke.
+    expect(container.querySelector("input#name")).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(mounted.mock.calls.length - mountsAfterStart).toBe(0);
+  });
+
+  it("does not remount the step for engine events that leave the step unchanged", async () => {
+    const mounted = vi.fn();
+    const NameStep = makeNameStep(mounted);
+    let ctx!: ReturnType<typeof usePathContext>;
+
+    function Probe() {
+      ctx = usePathContext();
+      return null;
+    }
+
+    dispose = render(
+      () => (
+        <PathShell
+          path={namePath}
+          steps={{ name: () => <><Probe /><NameStep /></>, done: () => <div /> }}
+        />
+      ),
+      container
+    );
+    await tick();
+    const input = container.querySelector("input#name");
+    const mountsAfterStart = mounted.mock.calls.length;
+
+    // Events that do not change the current step: setData, validate, resetStep.
+    await ctx.setData("name", "x");
+    await tick();
+    ctx.validate();
+    await tick();
+    await ctx.resetStep();
+    await tick();
+
+    expect(mounted.mock.calls.length - mountsAfterStart).toBe(0);
+    expect(container.querySelector("input#name")).toBe(input);
+  });
+
+  it("does mount a new component when the step actually changes", async () => {
+    const mounted = vi.fn();
+    const NameStep = makeNameStep(mounted);
+    const doneMounted = vi.fn();
+
+    dispose = render(
+      () => (
+        <PathShell
+          path={namePath}
+          steps={{
+            name: () => <NameStep />,
+            done: () => { doneMounted(); return <div>Done</div>; },
+          }}
+        />
+      ),
+      container
+    );
+    await tick();
+    const mountsAfterStart = mounted.mock.calls.length;
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+
+    expect(container.textContent).toContain("Done");
+    // The old step must not be re-created for the "validating" / "leaving"
+    // events on the way out, and the new step is created exactly once.
+    expect(mounted.mock.calls.length - mountsAfterStart).toBe(0);
+    expect(doneMounted).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("PathShell (Solid) — the snapshot passed to a step render function is live", () => {
+  it("a step that keeps the snapshot prop sees new data without being re-created", async () => {
+    const mounted = vi.fn();
+    let ctx!: ReturnType<typeof usePathContext>;
+
+    function PlanStep(props: { snapshot: PathSnapshot }) {
+      mounted();
+      ctx = usePathContext();
+      const plan = () => (props.snapshot.data.plan as string) ?? "none";
+      const errors = () => Object.keys(props.snapshot.fieldErrors).length;
+      return <p id="plan">{plan()} / {errors()} / {String(props.snapshot.hasAttemptedNext)}</p>;
+    }
+
+    dispose = render(
+      () => (
+        <PathShell
+          path={{ id: "sub", steps: [{ id: "plan", fieldErrors: ({ data }) => (data.plan ? {} : { plan: "pick one" }) }, { id: "pay" }] }}
+          steps={{ plan: (snap) => <PlanStep snapshot={snap} />, pay: () => <div /> }}
+        />
+      ),
+      container
+    );
+    await tick();
+    const p = container.querySelector("p#plan")!;
+    expect(p.textContent).toBe("none / 1 / false");
+
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+    expect(p.textContent).toBe("none / 1 / true");
+
+    await ctx.setData("plan", "pro");
+    await tick();
+    expect(container.querySelector("p#plan")).toBe(p);
+    expect(p.textContent).toBe("pro / 0 / true");
+    expect(mounted).toHaveBeenCalledTimes(1);
+  });
+
+  it("a sub-path step with the same id as the parent's step is a different component", async () => {
+    const parentMounted = vi.fn();
+    const subMounted = vi.fn();
+    let ctx!: ReturnType<typeof usePathContext>;
+
+    function Details() {
+      ctx = usePathContext();
+      if (ctx.snapshot()?.nestingLevel === 0) parentMounted(); else subMounted();
+      return <div>details@{ctx.snapshot()?.pathId}</div>;
+    }
+
+    dispose = render(
+      () => (
+        <PathShell
+          path={{ id: "parent", steps: [{ id: "details" }, { id: "end" }] }}
+          steps={{ details: () => <Details />, end: () => <div /> }}
+        />
+      ),
+      container
+    );
+    await tick();
+    expect(parentMounted).toHaveBeenCalledTimes(1);
+
+    await ctx.startSubPath({ id: "child", steps: [{ id: "details" }] });
+    await tick();
+    expect(container.textContent).toContain("details@child");
+    expect(subMounted).toHaveBeenCalledTimes(1);
+
+    await ctx.next(); // completes the sub-path, resumes the parent
+    await tick();
+    expect(container.textContent).toContain("details@parent");
+    expect(parentMounted).toHaveBeenCalledTimes(2);
+  });
+});

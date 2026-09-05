@@ -1,5 +1,7 @@
 import {
   createSignal,
+  createMemo,
+  untrack,
   onCleanup,
   onMount,
   createContext,
@@ -196,6 +198,14 @@ export interface PathShellProps {
    * ```tsx
    * <PathShell steps={{ details: (snap) => <DetailsStep snapshot={snap} />, review: (snap) => <ReviewStep snapshot={snap} /> }} />
    * ```
+   * Each function is called once when its step becomes current, and the
+   * component it returns lives until the path moves to a different step —
+   * engine events that leave the step unchanged (`setData`, `validate`,
+   * guard / hook status changes) do not re-create it, so inputs keep their
+   * DOM node, focus and local state. The `snapshot` argument is live: its
+   * properties read the current snapshot reactively, so
+   * `createMemo(() => props.snapshot.data)` stays up to date. Reading
+   * `usePathContext().snapshot()` inside the step works the same way.
    */
   steps?: Record<string, (snapshot: PathSnapshot) => ReturnType<Component>>;
   onComplete?: (data: PathData) => void;
@@ -318,11 +328,45 @@ export const PathShell: Component<PathShellProps> = (props) => {
   const showRoot = () => !effectiveHideProgress() && !!snap().rootProgress && props.progressLayout !== "activeOnly";
   const showActive = () => !effectiveHideProgress() && (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly";
 
-  const stepContent = () => {
-    const s = snap();
-    const key = s.formId ?? s.stepId;
-    const render = props.steps?.[key];
-    return render ? render(s) : null;
+  // The step render function must only run when the *step* changes. The
+  // snapshot signal is `{ equals: false }` (a new object on every engine
+  // event), so reading it in a tracked render position would tear the step
+  // component down and re-create it on every setData — losing the input's
+  // DOM node and focus on each keystroke. Key the rendered content on the
+  // step's identity and create it untracked; live state reaches the step
+  // through the reactive snapshot proxy below or `usePathContext()`.
+  const stepLookupKey = createMemo<string | null>(() => {
+    const s = snapshot();
+    return s ? (s.formId ?? s.stepId) : null;
+  });
+  const stepIdentity = createMemo<string | null>(() => {
+    const s = snapshot();
+    return s ? `${s.nestingLevel}:${s.pathId}:${s.formId ?? s.stepId}` : null;
+  });
+
+  // A snapshot whose property reads go through the signal, so a step that
+  // received it as a prop (`(snap) => <Step snapshot={snap} />`) sees the
+  // current values reactively even though the step itself is created once.
+  const liveSnapshot = new Proxy({} as PathSnapshot, {
+    get: (_target, key) => (snapshot() as unknown as Record<PropertyKey, unknown> | null)?.[key],
+    has: (_target, key) => { const s = snapshot(); return s ? key in s : false; },
+    ownKeys: () => { const s = snapshot(); return s ? Reflect.ownKeys(s) : []; },
+    getOwnPropertyDescriptor: (_target, key) => {
+      const s = snapshot();
+      const d = s ? Object.getOwnPropertyDescriptor(s, key) : undefined;
+      return d ? { ...d, configurable: true } : undefined;
+    },
+  });
+
+  // Rendered inside <PathContext.Provider>, so the memo (and the step it
+  // creates) is owned by the provider and `usePathContext()` resolves.
+  const StepContent: Component = () => {
+    const content = createMemo(() => {
+      if (stepIdentity() === null) return null;
+      const render = props.steps?.[untrack(stepLookupKey)!];
+      return render ? untrack(() => render(liveSnapshot)) : null;
+    });
+    return <>{content()}</>;
   };
 
   const showValidation = () =>
@@ -399,7 +443,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
           </Show>
           {/* Body — step content (hidden when completed) */}
           <Show when={snap().status !== "completed"}>
-          <div class="pw-shell__body">{stepContent()}</div>
+          <div class="pw-shell__body"><StepContent /></div>
           {/* Validation messages */}
           <Show when={showValidation()}>
             <ul class="pw-shell__validation">

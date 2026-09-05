@@ -89,6 +89,8 @@ export function DetailsStep() {
 
 Step components call `usePathContext()` to access engine state. `<PathShell>` provides the context automatically via `createContext` / `useContext`.
 
+Each step render function runs once, when its step becomes current, and the component it returns lives until the path moves to a different step. Engine events that leave the step unchanged (`setData` on every keystroke, `validate()`, guard and hook status changes) do not re-create it, so inputs keep their DOM node, focus and local state. Live state reaches the step reactively either through `usePathContext().snapshot()` or through the `snapshot` argument of the render function, whose properties read the current snapshot: `(snap) => <DetailsStep snapshot={snap} />` with `createMemo(() => props.snapshot.data)` inside stays up to date.
+
 ---
 
 ## usePath
