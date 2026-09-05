@@ -165,3 +165,72 @@ describe("PathShell (Angular) — custom header visibility", () => {
     expect(el.querySelector(".custom-header")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — restoreKey remount fidelity", () => {
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    const calls = { enterA: 0, leaveA: 0, enterB: 0 };
+    const inner: PathDefinition = {
+      id: "inner",
+      steps: [
+        { id: "inner-a", onEnter: () => { calls.enterA++; }, onLeave: () => { calls.leaveA++; } },
+        { id: "inner-b", onEnter: () => { calls.enterB++; }, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) }
+      ]
+    };
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+
+    @Component({
+      standalone: true,
+      imports: [PathShellComponent, PathStepDirective],
+      template: `
+        <pw-shell [path]="outer" nextLabel="OuterNext" backLabel="OuterBack">
+          <ng-template pwStep="host">
+            <pw-shell [path]="inner" restoreKey="inner" validationDisplay="summary" nextLabel="InnerNext" completeLabel="InnerComplete">
+              <ng-template pwStep="inner-a"><div class="inner-a">Inner Content A</div></ng-template>
+              <ng-template pwStep="inner-b"><div class="inner-b">Inner Content B</div></ng-template>
+            </pw-shell>
+          </ng-template>
+          <ng-template pwStep="after"><div class="after">After</div></ng-template>
+        </pw-shell>
+      `
+    })
+    class Host {
+      outer = outer;
+      inner = inner;
+    }
+
+    const fixture = TestBed.createComponent(Host);
+    // Nested shells start asynchronously one inside the other: give the inner
+    // start a few turns and re-run change detection between them.
+    const settle = async () => {
+      for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); }
+      fixture.detectChanges();
+    };
+    await settle();
+    const el: HTMLElement = fixture.nativeElement;
+    const click = async (label: string) => {
+      const btn = Array.from(el.querySelectorAll("button")).find((b) => b.textContent?.trim() === label);
+      expect(btn, `button "${label}"`).toBeDefined();
+      (btn as HTMLButtonElement).click();
+      await settle();
+    };
+    expect(calls.enterA).toBe(1);
+
+    await click("InnerNext");
+    expect(el.querySelector(".inner-b")).not.toBeNull();
+    await click("InnerComplete");
+    expect(el.textContent).toContain("City required");
+
+    await click("OuterNext");
+    expect(el.querySelector(".after")).not.toBeNull();
+    expect(el.querySelector(".inner-b")).toBeNull();
+    await click("OuterBack");
+
+    expect(el.querySelector(".inner-b")).not.toBeNull();
+    expect(el.textContent).toContain("City required");
+    expect(calls).toEqual({ enterA: 1, leaveA: 1, enterB: 1 });
+  });
+});

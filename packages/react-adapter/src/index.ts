@@ -18,6 +18,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot,
+  SerializedPathState,
   ProgressLayout,
   RootProgress,
   formatFieldKey,
@@ -388,8 +389,13 @@ export interface PathShellProps {
    * <PathShell path={detailsPath} restoreKey="details" initialData={DETAILS_INITIAL} ... />
    * ```
    *
-   * The outer path stores a full `PathSnapshot` under `data[restoreKey]`. Later steps in
-   * the outer path can read inner field values via `data.details?.data.fieldName`.
+   * The outer path stores the inner `PathSnapshot` under `data[restoreKey]` — later steps
+   * in the outer path can read inner field values via `data.details?.data.fieldName` —
+   * plus a `serializedState` field (the inner engine's `exportState()`). On remount the
+   * inner engine is rebuilt from that state with `PathEngine.fromState()`, so the user
+   * resumes exactly where they were: same step, data, attempted / visited state, and no
+   * `onEnter` / `onLeave` hooks re-run. A stored value without `serializedState` (written
+   * by an older version) still restores, by starting the path and jumping to the step.
    *
    * No-op when used on a top-level shell with no outer `PathShell` ancestor.
    */
@@ -546,8 +552,23 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // restoreKey: the outer context is null when this is a top-level shell.
   const outerCtx = useContext(PathContext);
 
+  // When remounting under restoreKey, rebuild the inner engine from the state the
+  // previous instance exported, instead of starting the path and jumping to the
+  // step (which re-ran onEnter/onLeave and lost attempted / visited state).
+  const [restoredEngine] = useState<PathEngine | null>(() => {
+    if (externalEngine || !restoreKey || !outerCtx) return null;
+    const stored = outerCtx.path.snapshot?.data[restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
+    try {
+      return PathEngine.fromState(stored.serializedState, { [pathDef.id]: pathDef });
+    } catch {
+      return null; // unusable state (e.g. the path definition changed): start fresh below
+    }
+  });
+  const [engine] = useState(() => externalEngine ?? restoredEngine ?? new PathEngine());
+
   const pathReturn = usePath({
-    engine: externalEngine,
+    engine,
     onEvent(event) {
       onEvent?.(event);
       if (event.type === "completed") onComplete?.(event.data);
@@ -555,7 +576,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       // Auto-sync inner snapshot to the parent shell's data under restoreKey.
       if (restoreKey && outerCtx && event.type === "stateChanged") {
         (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          restoreKey, event.snapshot
+          restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
         );
       }
     }
@@ -582,7 +603,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // the caller is responsible for starting it (e.g. via restoreOrStart).
   const startedRef = useRef(false);
   useEffect(() => {
-    if (autoStart && !startedRef.current && !externalEngine) {
+    if (autoStart && !startedRef.current && !externalEngine && !restoredEngine) {
       startedRef.current = true;
       let startData: PathData = initialData;
       let restoreStepId: string | undefined;

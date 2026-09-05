@@ -59,6 +59,11 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
    * facade.adoptEngine(engine);
    * ```
    */
+  /** The engine this facade is connected to (its own, or the one given to `adoptEngine`). */
+  public get engine(): PathEngine {
+    return this._engine;
+  }
+
   public adoptEngine(engine: PathEngine): void {
     // Disconnect from whatever engine we're currently listening to
     this._unsubscribeFromEngine();

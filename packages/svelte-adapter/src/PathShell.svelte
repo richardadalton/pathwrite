@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { usePath, setPathContext, getPathContextOrNull, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
   import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout } from './index.svelte.js';
+  import { PathEngine as PathEngineClass } from '@daltonr/pathwrite-core';
+  import type { SerializedPathState } from '@daltonr/pathwrite-core';
   import type { Snippet, Component } from 'svelte';
 
 
@@ -100,16 +102,33 @@
   // parent shell's snapshot and setData for restoreKey auto-wiring.
   const outerCtx = getPathContextOrNull();
 
+  // When remounting under restoreKey, rebuild the inner engine from the state the
+  // previous instance exported, instead of starting the path and jumping to the
+  // step (which re-ran onEnter/onLeave and lost attempted / visited state).
+  // svelte-ignore state_referenced_locally — read once at init on purpose: restore happens at mount only
+  const restoredEngine: PathEngine | null = (() => {
+    if (engineProp || !restoreKey || !outerCtx || !path) return null;
+    const stored = outerCtx.snapshot?.data[restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    if (!stored || typeof stored !== 'object' || !stored.serializedState) return null;
+    try {
+      return PathEngineClass.fromState(stored.serializedState, { [path.id]: path });
+    } catch {
+      return null; // unusable state (e.g. the path definition changed): start fresh below
+    }
+  })();
+  // svelte-ignore state_referenced_locally — the engine is chosen once, at init
+  const engine: PathEngine = engineProp ?? restoredEngine ?? new PathEngineClass();
+
   // Initialize path engine
   const pathReturn = usePath({
-    get engine() { return engineProp; },
+    engine,
     onEvent: (event) => {
       onevent?.(event);
       if (event.type === 'completed') oncomplete?.(event.data);
       if (event.type === 'cancelled') oncancel?.(event.data);
       if (restoreKey && outerCtx && event.type === 'stateChanged') {
         (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(
-          restoreKey, event.snapshot
+          restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
         );
       }
     }
@@ -155,7 +174,7 @@
   // Auto-start the path when no external engine is provided
   let started = false;
   onMount(() => {
-    if (autoStart && !started && !engineProp) {
+    if (autoStart && !started && !engineProp && !restoredEngine) {
       if (!path) throw new Error('[PathShell] "path" is required when no "engine" is provided');
       started = true;
       let startData: PathData = initialData ?? {};

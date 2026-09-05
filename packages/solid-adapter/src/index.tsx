@@ -19,6 +19,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot,
+  SerializedPathState,
   ProgressLayout,
   RootProgress,
   formatFieldKey,
@@ -266,15 +267,30 @@ export const PathShell: Component<PathShellProps> = (props) => {
   // Read outer PathShell context BEFORE providing our own.
   const outerCtx = useContext(PathContext);
 
+  // When remounting under restoreKey, rebuild the inner engine from the state the
+  // previous instance exported, instead of starting the path and jumping to the
+  // step (which re-ran onEnter/onLeave and lost attempted / visited state).
+  const restoredEngine: PathEngine | null = (() => {
+    if (props.engine || !props.restoreKey || !outerCtx) return null;
+    const stored = outerCtx.path.snapshot()?.data[props.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
+    try {
+      return PathEngine.fromState(stored.serializedState, { [props.path.id]: props.path });
+    } catch {
+      return null; // unusable state (e.g. the path definition changed): start fresh below
+    }
+  })();
+  const engine = props.engine ?? restoredEngine ?? new PathEngine();
+
   const pathReturn = usePath({
-    engine: props.engine,
+    engine,
     onEvent(event) {
       props.onEvent?.(event);
       if (event.type === "completed") props.onComplete?.(event.data as PathData);
       if (event.type === "cancelled") props.onCancel?.(event.data as PathData);
       if (props.restoreKey && outerCtx && event.type === "stateChanged") {
         (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          props.restoreKey, event.snapshot
+          props.restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
         );
       }
     },
@@ -283,7 +299,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
   const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
 
   onMount(() => {
-    if (props.autoStart !== false && !props.engine) {
+    if (props.autoStart !== false && !props.engine && !restoredEngine) {
       let startData: PathData = props.initialData ?? {};
       let restoreStepId: string | undefined;
       if (props.restoreKey && outerCtx) {

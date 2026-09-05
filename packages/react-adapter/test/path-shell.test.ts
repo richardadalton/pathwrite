@@ -809,3 +809,64 @@ describe("PathShell — validateWhen true at mount", () => {
     expect(screen.getByText("Required")).toBeTruthy();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+describe("PathShell — restoreKey remount fidelity", () => {
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    const leaveA = vi.fn();
+    const enterA = vi.fn();
+    const enterB = vi.fn();
+    const inner: PathDefinition = {
+      id: "inner",
+      steps: [
+        { id: "inner-a", title: "Tab A", onLeave: leaveA, onEnter: enterA },
+        { id: "inner-b", title: "Tab B", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
+      ]
+    };
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+
+    function Host() {
+      return createElement(PathShell, {
+        path: inner,
+        restoreKey: "inner",
+        validationDisplay: "summary",
+        steps: { "inner-a": createElement("div", null, "Inner Content A"), "inner-b": createElement("div", null, "Inner Content B") }
+      } as any);
+    }
+
+    await act(async () =>
+      render(createElement(PathShell, {
+        path: outer,
+        nextLabel: "Outer Next",
+        backLabel: "Outer Back",
+        steps: { host: createElement(Host), after: createElement("div", null, "After") }
+      } as any))
+    );
+    expect(enterA).toHaveBeenCalledTimes(1);
+
+    // inner-a → inner-b, then an attempt on inner-b that the field error blocks
+    await act(async () => screen.getByText("Next").click());
+    expect(screen.getByText("Inner Content B")).toBeTruthy();
+    await act(async () => screen.getByText("Complete").click()); // last inner step: the button reads "Complete"
+    expect(screen.getByText("City required")).toBeTruthy();
+    expect(leaveA).toHaveBeenCalledTimes(1);
+    expect(enterB).toHaveBeenCalledTimes(1);
+
+    // Leave the host step (inner shell unmounts) and come back (it remounts)
+    await act(async () => screen.getByText("Outer Next").click());
+    expect(screen.getByText("After")).toBeTruthy();
+    expect(screen.queryByText("Inner Content B")).toBeNull();
+    await act(async () => screen.getByText("Outer Back").click());
+
+    // Resumed on inner-b with the blocked attempt still visible…
+    expect(screen.getByText("Inner Content B")).toBeTruthy();
+    expect(screen.getByText("City required")).toBeTruthy();
+    // …and without replaying the path from inner-a to get there.
+    expect(enterA).toHaveBeenCalledTimes(1);
+    expect(leaveA).toHaveBeenCalledTimes(1);
+    expect(enterB).toHaveBeenCalledTimes(1);
+  });
+});

@@ -5,7 +5,7 @@
 // tests assert on the same behaviour the web shells are tested for.
 
 import { createElement } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
 import { PathShell } from "../src/index";
@@ -130,5 +130,52 @@ describe("PathShell (React Native) — custom header visibility", () => {
   it("hides a custom header when hideProgress is set", async () => {
     await renderShell({ id: "m", steps: [{ id: "a" }, { id: "b" }] }, { renderHeader, hideProgress: true });
     expect(screen.queryByTestId("custom-header")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+describe("PathShell (React Native) — restoreKey remount fidelity", () => {
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    const leaveA = vi.fn();
+    const enterA = vi.fn();
+    const enterB = vi.fn();
+    const inner: PathDefinition = {
+      id: "inner",
+      steps: [
+        { id: "inner-a", onLeave: leaveA, onEnter: enterA },
+        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
+      ]
+    };
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+    function Host() {
+      return createElement(PathShell, {
+        path: inner, restoreKey: "inner", validationDisplay: "summary",
+        steps: { "inner-a": createElement("span", null, "Inner Content A"), "inner-b": createElement("span", null, "Inner Content B") }
+      } as any);
+    }
+    await act(async () => render(createElement(PathShell, {
+      path: outer, nextLabel: "OuterNext", backLabel: "OuterBack",
+      steps: { host: createElement(Host), after: createElement("span", null, "After") }
+    } as any)));
+    expect(enterA).toHaveBeenCalledTimes(1);
+
+    const press = (re: RegExp) => act(async () => { (screen.getByText(re).closest("button") as HTMLButtonElement).click(); });
+    await press(/^Next →$/);
+    expect(screen.getByText("Inner Content B")).not.toBeNull();
+    await press(/^Complete$/);
+    expect(screen.getByText("City required")).not.toBeNull();
+
+    await press(/OuterNext/);
+    expect(screen.getByText("After")).not.toBeNull();
+    await press(/OuterBack/);
+
+    expect(screen.getByText("Inner Content B")).not.toBeNull();
+    expect(screen.getByText("City required")).not.toBeNull();
+    expect(enterA).toHaveBeenCalledTimes(1);
+    expect(leaveA).toHaveBeenCalledTimes(1);
+    expect(enterB).toHaveBeenCalledTimes(1);
   });
 });

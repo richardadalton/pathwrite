@@ -22,6 +22,7 @@ import {
   PathEngine,
   PathEvent,
   PathSnapshot,
+  SerializedPathState,
   ProgressLayout,
   RootProgress,
   formatFieldKey,
@@ -269,15 +270,30 @@ export const PathShell = defineComponent({
     // Read the outer PathShell's context BEFORE providing our own.
     const outerCtx = inject(PathInjectionKey, null);
 
+    // When remounting under restoreKey, rebuild the inner engine from the state the
+    // previous instance exported, instead of starting the path and jumping to the
+    // step (which re-ran onEnter/onLeave and lost attempted / visited state).
+    const restoredEngine: PathEngine | null = (() => {
+      if (props.engine || !props.restoreKey || !outerCtx) return null;
+      const stored = outerCtx.path.snapshot.value?.data[props.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+      if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
+      try {
+        return PathEngine.fromState(stored.serializedState, { [props.path.id]: props.path });
+      } catch {
+        return null; // unusable state (e.g. the path definition changed): start fresh below
+      }
+    })();
+    const engine = toRaw(props.engine) ?? restoredEngine ?? new PathEngine();
+
     const pathReturn = usePath({
-      engine: props.engine,
+      engine,
       onEvent(event) {
         emit("event", event);
         if (event.type === "completed") emit("complete", event.data);
         if (event.type === "cancelled") emit("cancel", event.data);
         if (props.restoreKey && outerCtx && event.type === "stateChanged") {
           (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-            props.restoreKey, event.snapshot
+            props.restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
           );
         }
       }
@@ -292,7 +308,7 @@ export const PathShell = defineComponent({
     onMounted(() => {
       // Skip auto-start when an external engine has been provided — the caller
       // is responsible for starting it (e.g. via restoreOrStart).
-      if (props.autoStart && !started.value && !props.engine) {
+      if (props.autoStart && !started.value && !props.engine && !restoredEngine) {
         started.value = true;
         let startData: PathData = props.initialData;
         let restoreStepId: string | undefined;

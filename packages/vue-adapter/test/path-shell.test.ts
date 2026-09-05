@@ -670,3 +670,62 @@ describe("PathShell (Vue) — validateWhen true at mount", () => {
     wrapper.unmount();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Vue) — restoreKey remount fidelity", () => {
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    const leaveA = vi.fn(); const enterA = vi.fn(); const enterB = vi.fn();
+    const inner: PathDefinition = {
+      id: "inner",
+      steps: [
+        { id: "inner-a", onLeave: leaveA, onEnter: enterA },
+        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) }
+      ]
+    };
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+    const InnerHost = defineComponent({
+      setup() {
+        return () => h(PathShell, { path: inner, restoreKey: "inner", validationDisplay: "summary", nextLabel: "InnerNext", completeLabel: "InnerComplete" }, {
+          "inner-a": () => h("div", "Inner Content A"),
+          "inner-b": () => h("div", "Inner Content B")
+        });
+      }
+    });
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(PathShell, { path: outer, nextLabel: "OuterNext", backLabel: "OuterBack" }, {
+          host: () => h(InnerHost),
+          after: () => h("div", "After")
+        });
+      }
+    }), { attachTo: document.body });
+    await settled(wrapper);
+    const click = async (label: string) => {
+      const btn = wrapper.findAll("button").find((b) => b.text() === label);
+      expect(btn, `button "${label}"`).toBeDefined();
+      await btn!.trigger("click");
+      await settled(wrapper);
+    };
+    expect(enterA).toHaveBeenCalledTimes(1);
+
+    await click("InnerNext");
+    expect(wrapper.text()).toContain("Inner Content B");
+    await click("InnerComplete");
+    expect(wrapper.text()).toContain("City required");
+
+    await click("OuterNext");
+    expect(wrapper.text()).toContain("After");
+    expect(wrapper.text()).not.toContain("Inner Content B");
+    await click("OuterBack");
+
+    expect(wrapper.text()).toContain("Inner Content B");
+    expect(wrapper.text()).toContain("City required");
+    expect(enterA).toHaveBeenCalledTimes(1);
+    expect(leaveA).toHaveBeenCalledTimes(1);
+    expect(enterB).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+});

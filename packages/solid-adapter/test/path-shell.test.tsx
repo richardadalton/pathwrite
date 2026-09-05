@@ -748,3 +748,68 @@ describe("PathShell (Solid) — custom header visibility", () => {
     expect(container.querySelector(".custom-header")).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Solid) — restoreKey remount fidelity", () => {
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    const leaveA = vi.fn(); const enterA = vi.fn(); const enterB = vi.fn();
+    const inner: PathDefinition = {
+      id: "inner",
+      steps: [
+        { id: "inner-a", onLeave: leaveA, onEnter: enterA },
+        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
+      ],
+    };
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+    dispose = render(
+      () => (
+        <PathShell
+          path={outer}
+          nextLabel="OuterNext"
+          backLabel="OuterBack"
+          steps={{
+            host: () => (
+              <PathShell
+                path={inner}
+                restoreKey="inner"
+                validationDisplay="summary"
+                nextLabel="InnerNext"
+                completeLabel="InnerComplete"
+                steps={{ "inner-a": () => <div>Inner Content A</div>, "inner-b": () => <div>Inner Content B</div> }}
+              />
+            ),
+            after: () => <div>After</div>,
+          }}
+        />
+      ),
+      container
+    );
+    await tick();
+    const click = async (label: string) => {
+      const btn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === label);
+      expect(btn, `button "${label}"`).toBeDefined();
+      (btn as HTMLButtonElement).click();
+      await tick();
+    };
+    expect(enterA).toHaveBeenCalledTimes(1);
+
+    await click("InnerNext");
+    expect(container.textContent).toContain("Inner Content B");
+    await click("InnerComplete");
+    expect(container.textContent).toContain("City required");
+
+    await click("OuterNext");
+    expect(container.textContent).toContain("After");
+    expect(container.textContent).not.toContain("Inner Content B");
+    await click("OuterBack");
+
+    expect(container.textContent).toContain("Inner Content B");
+    expect(container.textContent).toContain("City required");
+    expect(enterA).toHaveBeenCalledTimes(1);
+    expect(leaveA).toHaveBeenCalledTimes(1);
+    expect(enterB).toHaveBeenCalledTimes(1);
+  });
+});

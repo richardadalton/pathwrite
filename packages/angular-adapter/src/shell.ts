@@ -23,6 +23,7 @@ import {
   PathData,
   PathDefinition,
   PathEngine,
+  SerializedPathState,
   PathEvent,
   PathSnapshot,
   ProgressLayout,
@@ -485,13 +486,36 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
       if (event.type === "completed") this.complete.emit(event.data);
       if (event.type === "cancelled") this.cancel.emit(event.data);
       if (this.restoreKey && this.outerFacade && event.type === "stateChanged") {
-        this.outerFacade.setData(this.restoreKey as any, (event as any).snapshot as any);
+        this.outerFacade.setData(
+          this.restoreKey as any,
+          { ...(event as any).snapshot, serializedState: this.facade.engine.exportState() } as any
+        );
       }
     });
 
     if (this.autoStart && !this.engine) {
-      this.doStart();
+      if (!this.restoreFromStoredState()) this.doStart();
     }
+  }
+
+  /**
+   * When remounting under `restoreKey`, rebuild the inner engine from the state the
+   * previous instance exported, instead of starting the path and jumping to the step
+   * (which re-ran onEnter/onLeave and lost attempted / visited state). Returns false
+   * when there is nothing usable to restore from, so the caller starts normally.
+   */
+  private restoreFromStoredState(): boolean {
+    if (!this.restoreKey || !this.outerFacade || !this.path) return false;
+    const stored = this.outerFacade.snapshot()?.data[this.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    if (!stored || typeof stored !== "object" || !stored.serializedState) return false;
+    try {
+      this.facade.adoptEngine(PathEngine.fromState(stored.serializedState, { [this.path.id]: this.path }));
+    } catch {
+      return false; // unusable state (e.g. the path definition changed): start fresh
+    }
+    this.started = true;
+    if (this.validateWhen) this.facade.validate();
+    return true;
   }
 
   public ngOnDestroy(): void {

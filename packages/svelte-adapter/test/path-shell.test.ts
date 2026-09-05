@@ -78,3 +78,44 @@ describe("PathShell (Svelte) — restart from the completion panel", () => {
     expect(container.querySelector(".step-a")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// restoreKey — remount restores without re-running hooks or losing state
+// ---------------------------------------------------------------------------
+
+import InnerHost from "./fixtures/InnerHost.svelte";
+import AfterStep from "./fixtures/AfterStep.svelte";
+import { calls, resetCalls } from "./fixtures/nested-fixture";
+
+describe("PathShell (Svelte) — restoreKey remount fidelity", () => {
+  const click = async (label: string) => {
+    const btn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === label);
+    expect(btn, `button "${label}"`).toBeDefined();
+    (btn as HTMLButtonElement).click();
+    await tick();
+  };
+
+  it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
+    resetCalls();
+    const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
+    render({ path: outer, nextLabel: "OuterNext", backLabel: "OuterBack", host: InnerHost, after: AfterStep });
+    await tick();
+    expect(calls.enterA).toBe(1);
+
+    await click("InnerNext");
+    expect(container.querySelector(".step-b")).not.toBeNull();
+    await click("InnerComplete");
+    expect(container.textContent).toContain("City required");
+    expect(calls.leaveA).toBe(1);
+    expect(calls.enterB).toBe(1);
+
+    await click("OuterNext");
+    expect(container.querySelector(".after")).not.toBeNull();
+    expect(container.querySelector(".step-b")).toBeNull();
+    await click("OuterBack");
+
+    expect(container.querySelector(".step-b")).not.toBeNull();
+    expect(container.textContent).toContain("City required");
+    expect(calls).toEqual({ enterA: 1, leaveA: 1, enterB: 1 });
+  });
+});
