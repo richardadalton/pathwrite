@@ -990,7 +990,7 @@ export class PathEngine {
   public setData(key: string, value: unknown): Promise<void> {
     if (this._status === "completed") return Promise.resolve();
     const active = this.requireActivePath();
-    active.data[key] = value;
+    PathEngine.setOwn(active.data, key, value);
     this.emitStateChanged("setData");
     return Promise.resolve();
   }
@@ -1809,9 +1809,24 @@ export class PathEngine {
     if (patch && typeof patch === "object") {
       const active = this.activePath;
       if (active) {
-        Object.assign(active.data, patch);
+        for (const key of Object.keys(patch)) {
+          PathEngine.setOwn(active.data, key, (patch as Record<string, unknown>)[key]);
+        }
       }
     }
+  }
+
+  /**
+   * Stores `value` under `key` as an own, enumerable property — whatever the
+   * key. Plain assignment (and `Object.assign`) go through [[Set]], so a key
+   * of `"__proto__"` re-parents the data object instead of storing a value:
+   * the value silently vanishes from every snapshot and export, and `in`
+   * checks on the data start seeing the injected object's members. Data keys
+   * come from user input (form field names, parsed JSON), so this must not
+   * depend on the key being well-behaved.
+   */
+  private static setOwn(target: PathData, key: string, value: unknown): void {
+    Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
   }
 
   private async skipSteps(direction: 1 | -1): Promise<void> {

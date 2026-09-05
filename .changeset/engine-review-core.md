@@ -23,6 +23,8 @@ Engine fixes for findings C1–C9 of the September 2026 review and all of its co
 - `exportState()` now includes `attemptedStepIds` and `skippedStepIds` (active path and each stack entry), `hasValidated` and `blockingError`. After a restore, `hasAttemptedNext`, `blockingError`, `stepCount` and `progress` are right immediately instead of after the first navigation. All new fields are optional; states saved by earlier versions still load (still `version: 1`).
 - `@daltonr/pathwrite-store`: `restoreOrStart` constructs the engine with `hasPersistence: true` on both the fresh-start and restore branches, so `snapshot.hasPersistence` is true whenever a store is attached that way and shells can show their "your progress is saved" escalation copy.
 
+- `setData()` and hook patches store every key as an own property. A key of `"__proto__"` (possible from user-supplied field names or parsed JSON) used to re-parent the data object instead of storing the value, which then vanished from every snapshot and export.
+
 **Behaviour changes** (bug fixes, but observable)
 
 - `start()` on an engine with an active path now **replaces** it, as documented, instead of nesting it as a sub-path. Code that relied on `start()` to nest should call `startSubPath()`. `start()` during an in-flight hook now proceeds (like `restart()`) rather than being silently dropped.

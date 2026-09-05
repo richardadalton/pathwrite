@@ -5221,3 +5221,44 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
     expect(s.hasValidated).toBe(false);
   });
 });
+
+describe("PathEngine — data keys that collide with object internals", () => {
+  /** An object with an *own* "__proto__" key (an object literal would set the prototype instead). */
+  function withOwnProto(value: unknown): PathData {
+    return Object.defineProperty({}, "__proto__", { value, enumerable: true, configurable: true, writable: true }) as PathData;
+  }
+
+  it("setData('__proto__', v) stores an own property and does not re-parent the data", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "a" }] });
+    await engine.setData("__proto__", { polluted: true });
+
+    const data = engine.snapshot()!.data as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(data, "__proto__")).toBe(true);
+    expect(data["polluted"]).toBeUndefined();
+    expect(JSON.parse(JSON.stringify(engine.exportState()!.data))).toEqual({ ["__proto__"]: { polluted: true } });
+    expect(Object.getPrototypeOf(engine.snapshot()!.data)).toBe(Object.prototype);
+  });
+
+  it("a hook patch with an own '__proto__' key is applied as data, not as a prototype", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "p",
+      steps: [{ id: "a", onEnter: () => withOwnProto("from-hook") }, { id: "b" }]
+    });
+    const data = engine.snapshot()!.data as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(data, "__proto__")).toBe(true);
+    expect(data["__proto__"]).toBe("from-hook");
+  });
+
+  it("ordinary keys that shadow Object.prototype members still round-trip", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "a" }] });
+    await engine.setData("constructor", 1);
+    await engine.setData("hasOwnProperty", "x");
+    await engine.setData("toString", null);
+    const state = engine.exportState()!;
+    const restored = PathEngine.fromState(state, { p: { id: "p", steps: [{ id: "a" }] } });
+    expect(restored.snapshot()!.data).toEqual({ constructor: 1, hasOwnProperty: "x", toString: null });
+  });
+});
