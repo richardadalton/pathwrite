@@ -1,6 +1,6 @@
 # Your First Path (React)
 
-This tutorial builds a complete 3-step registration flow using `@daltonr/pathwrite-react`. By the end you will have a working wizard with validation, per-field error messages, and a completion handler — all wired up through `PathShell` and `usePathContext`.
+This tutorial builds a complete 3-step registration flow using `@daltonr/pathwrite-react`. By the end you will have a working multi-step flow with validation, per-field error messages, and a completion handler — all wired up through `PathShell` and `usePathContext`.
 
 ## What you are building
 
@@ -174,7 +174,7 @@ export function ReviewStep() {
 `PathShell` handles the progress indicator, navigation buttons, and error summary. You pass it the path definition, initial data, a completion handler, and the map of step ID to step component.
 
 ```tsx
-// src/RegistrationWizard.tsx
+// src/RegistrationPath.tsx
 import { PathShell } from "@daltonr/pathwrite-react";
 import "@daltonr/pathwrite-react/styles.css";
 
@@ -190,7 +190,7 @@ function handleComplete(data: RegistrationData) {
   // an API call, a router.push("/success"), etc.
 }
 
-export function RegistrationWizard() {
+export function RegistrationPath() {
   return (
     <PathShell
       path={registrationPath}
@@ -210,17 +210,17 @@ The keys of the `steps` map must match the `id` values in your `PathDefinition`.
 
 ## Step 5 — Render it
 
-Drop `RegistrationWizard` into your app's component tree wherever you want the wizard to appear:
+Drop `RegistrationPath` into your app's component tree wherever you want the flow to appear:
 
 ```tsx
 // src/App.tsx
-import { RegistrationWizard } from "./RegistrationWizard";
+import { RegistrationPath } from "./RegistrationPath";
 
 export function App() {
   return (
     <main>
       <h1>Sign up</h1>
-      <RegistrationWizard />
+      <RegistrationPath />
     </main>
   );
 }
@@ -246,7 +246,7 @@ export function App() {
 }
 ```
 
-See the Developer Guide for the full list of CSS variables.
+See the [Shell CSS reference](../reference/shell-css.md) for the full list of CSS variables.
 
 ## Optional — replace the shell entirely
 
@@ -256,7 +256,7 @@ Once you are ready for a fully custom UI, replace `PathShell` with your own comp
 import { usePath } from "@daltonr/pathwrite-react";
 import { registrationPath } from "./registrationPath";
 
-export function RegistrationWizard() {
+export function RegistrationPath() {
   const { snapshot, start, next, previous, setData } = usePath({
     onEvent(event) {
       if (event.type === "completed") {
@@ -291,13 +291,13 @@ export function RegistrationWizard() {
 }
 ```
 
-When using `usePath` directly, step children need access to the engine too. Wrap the wizard in a `PathProvider` and call `usePathContext()` in step components, or pass snapshot and setData down as props.
+When using `usePath` directly, step children need access to the engine too. Wrap the flow in a `PathProvider` and call `usePathContext()` in step components, or pass snapshot and setData down as props.
 
 ## Next steps
 
 - **Core Concepts** — understand how `PathDefinition`, `PathEngine`, and `PathSnapshot` relate to each other
-- **Developer Guide §6** — navigation guards (`canMoveNext`, `canMovePrevious`, `shouldSkip`) in depth
-- **Developer Guide §9** — sub-paths for nested flows
-- **Persistence Guide** — save and restore wizard state with `LocalStorageStore` or `HttpStore`
+- **[Developer Guide, Chapter 4 — Navigation and guards](../developer-guide/04-navigation.md)** — `canMoveNext`, `canMovePrevious`, `shouldSkip` in depth
+- **[Developer Guide, Chapter 6 — Sub-paths](../developer-guide/06-sub-paths.md)** — nested flows
+- **[Developer Guide, Chapter 9 — Persistence](../developer-guide/09-persistence.md)** — save and restore path state with `LocalStorageStore` or `HttpStore`
 
 © 2026 Devjoy Ltd. MIT License.

@@ -184,7 +184,7 @@ On a `PathSnapshot`, `canMoveNext` is a **derived boolean** — it reflects whet
 
 `snapshot.canMoveNext` is also auto-derived from `fieldErrors`: if the step defines `fieldErrors` but not an explicit `canMoveNext`, the engine sets `canMoveNext` to `false` whenever any field has an active error message. You only need an explicit `canMoveNext` guard when the rule is something other than "all fields valid."
 
-`snapshot.canMovePrevious` is `false` on the first step of a top-level path. On all other steps, it is `true` unless an explicit `canMovePrevious` guard blocks it.
+`snapshot.canMovePrevious` is `true` unless an explicit `canMovePrevious` guard blocks it — including on the first step. Calling `previous()` on the first step of a top-level path is simply a no-op; the shells hide the Back button there using `snapshot.isFirstStep`, not `canMovePrevious`. (On the first step of a sub-path, `previous()` cancels the sub-path and returns to the parent.)
 
 > **Angular:** The same snapshot properties are available on the `PathFacade` as signals: `facade.snapshot()?.canMoveNext`. The guard function on `PathStep` is identical across all adapters.
 
@@ -192,7 +192,7 @@ On a `PathSnapshot`, `canMoveNext` is a **derived boolean** — it reflects whet
 
 ## hasAttemptedNext
 
-`snapshot.hasAttemptedNext` becomes `true` after the user calls `next()` for the first time on the current step — regardless of whether navigation succeeded. It resets to `false` when the user arrives at a new step.
+`snapshot.hasAttemptedNext` becomes `true` after the user calls `next()` for the first time on the current step — regardless of whether navigation succeeded. As described above, it is tracked per step id: it stays `true` for that step when the user leaves and comes back, and is cleared only by `start()` / `restart()` (a new sub-path launch starts with a clean set).
 
 The purpose is progressive error disclosure: showing validation errors before the user has had a chance to fill in the form creates a confusing first impression. By gating error display on `hasAttemptedNext`, you let the user encounter the form clean, then surface errors only after they have tried to proceed.
 

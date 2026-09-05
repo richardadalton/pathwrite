@@ -28,7 +28,7 @@ const contactForm: PathDefinition<ContactData> = {
       }),
     },
   ],
-  onComplete: async ({ data }) => {
+  onComplete: async (data) => {
     await submitContactRequest(data);
   },
 };
@@ -100,7 +100,7 @@ const checkout: PathDefinition<CheckoutData> = {
       id: "confirmation",
     },
   ],
-  onComplete: async ({ data }) => {
+  onComplete: async (data) => {
     const order = await submitOrder({
       items: data.items,
       shipping: data.shippingAddress!,
@@ -109,8 +109,9 @@ const checkout: PathDefinition<CheckoutData> = {
         : data.billingAddress!,
       paymentToken: data.paymentToken!,
     });
-    // Return a patch — the engine merges this into data before completing
-    return { orderId: order.id };
+    // onComplete's return value is ignored — hand the result to your app
+    // directly (navigate, dispatch to a store, show a confirmation).
+    router.push(`/orders/${order.id}`);
   },
 };
 ```
@@ -141,28 +142,31 @@ const profileForm: PathDefinition<ProfileData> = {
     { id: "work",      title: "Work" },
     { id: "contact",   title: "Contact" },
   ],
-  onComplete: async ({ data }) => {
+  onComplete: async (data) => {
     await saveProfile(data);
   },
 };
 ```
 
-The `PathShell` configuration suppresses the built-in chrome and delegates navigation entirely to a `TabBar` component:
+The `PathShell` configuration suppresses the built-in chrome — `layout="tabs"` hides both the progress header and the footer — and delegates navigation entirely to a `TabBar` component rendered inside each step's content. The shell takes the same `steps` map as always; there is no render-prop or children API:
 
 ```tsx
+const tab = (content: ReactNode) => (
+  <>
+    <TabBar />
+    {content}
+  </>
+);
+
 <PathShell
   path={profileForm}
   layout="tabs"
->
-  {(step) => (
-    <>
-      <TabBar />
-      {step.id === "personal" && <PersonalTab />}
-      {step.id === "work"     && <WorkTab />}
-      {step.id === "contact"  && <ContactTab />}
-    </>
-  )}
-</PathShell>
+  steps={{
+    personal: tab(<PersonalTab />),
+    work:     tab(<WorkTab />),
+    contact:  tab(<ContactTab />),
+  }}
+/>
 ```
 
 `TabBar` reads `snapshot.steps` for tab labels and status, and calls `goToStep` to switch tabs freely. Pass `{ validateOnLeave: true }` to mark the departing tab as attempted, so inline field errors appear if the user returns to that tab later:
@@ -170,6 +174,7 @@ The `PathShell` configuration suppresses the built-in chrome and delegates navig
 ```tsx
 function TabBar() {
   const { snapshot, goToStep } = usePathContext();
+  if (!snapshot) return null;
   return (
     <nav>
       {snapshot.steps.map((step) => (
@@ -418,7 +423,7 @@ const onboarding: PathDefinition<OnboardingData> = {
 };
 ```
 
-The wizard metaphor does not apply here. There is no Back button — `canMovePrevious` is absent from every step. The checklist UI reads `snapshot.visitedStepIds` to show checkmarks. A sidebar indicator reads `snapshot.currentStep.id` to highlight the active item. The engine is managing state; the checklist is reading it.
+The wizard metaphor does not apply here. There is no Back button — the checklist UI simply never renders one (with no `canMovePrevious` guard the engine would allow `previous()`; the UI chooses not to offer it). The checklist UI reads `snapshot.steps` — each entry's `status` is `"completed"`, `"current"` or `"upcoming"` — to show checkmarks. A sidebar indicator compares each entry's `id` with `snapshot.stepId` to highlight the active item. The engine is managing state; the checklist is reading it.
 
 ---
 

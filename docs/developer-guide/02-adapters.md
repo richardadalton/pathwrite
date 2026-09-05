@@ -70,7 +70,7 @@ usePath({
 })
 ```
 
-**`engine`** — When you provide an external engine (for example, one created by `createPersistedEngine()` from the store package), `usePath` subscribes to it instead of creating its own. The snapshot is seeded immediately from the engine's current state, so a restored engine appears populated from the first render. The caller owns the engine's lifecycle — `usePath` will not call `start()` or `cancel()` on it automatically.
+**`engine`** — When you provide an external engine (for example, the `engine` returned by `restoreOrStart()` from `@daltonr/pathwrite-store`), `usePath` subscribes to it instead of creating its own. The snapshot is seeded immediately from the engine's current state, so a restored engine appears populated from the first render. The caller owns the engine's lifecycle — `usePath` will not call `start()` or `cancel()` on it automatically.
 
 **`onEvent`** — Called for every engine event: `stateChanged`, `completed`, `cancelled`, `resumed`, `suspended`. Useful for analytics, side-effects, or driving other parts of your application in response to path lifecycle changes. The callback identity can change between renders without causing a re-subscribe — adapters keep it current via a ref internally.
 
@@ -267,10 +267,10 @@ function EmailStep() {
 `PathShell` renders a predictable class hierarchy that you can target with CSS. Import the default stylesheet and override what you need:
 
 ```css
-@import "@daltonr/pathwrite-react/index.css";
+@import "@daltonr/pathwrite-react/styles.css";
 
-/* Override the active step indicator colour */
-.pw-shell__step--active .pw-shell__step-dot {
+/* Override the current step indicator colour */
+.pw-shell__step--current .pw-shell__step-dot {
   background: var(--brand-color);
 }
 
@@ -293,7 +293,7 @@ Key class names:
 | `.pw-shell` | Root container |
 | `.pw-shell__header` | Progress indicator |
 | `.pw-shell__steps` | Step dot row |
-| `.pw-shell__step--pending` / `--active` / `--completed` | Individual step states |
+| `.pw-shell__step--upcoming` / `--current` / `--completed` | Individual step states (mirrors `snapshot.steps[i].status`) |
 | `.pw-shell__step-dot` | Numbered circle |
 | `.pw-shell__step-label` | Step title |
 | `.pw-shell__track` | Progress track bar |

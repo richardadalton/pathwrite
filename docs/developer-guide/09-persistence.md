@@ -1,6 +1,6 @@
 # Chapter 9: Persistence
 
-Most multi-step flows are not completed in a single sitting. A loan application interrupted by a phone call, an onboarding wizard closed on a laptop and resumed on a phone, a configuration flow where the user needs to fetch information before answering step four — all of these require the engine to remember where the user was and what they had entered. Pathwrite handles this through a persistence layer that is deliberately decoupled from the engine itself. The engine knows how to run a path; persistence is a separate concern, wired in by the application.
+Most multi-step flows are not completed in a single sitting. A loan application interrupted by a phone call, an onboarding flow closed on a laptop and resumed on a phone, a configuration flow where the user needs to fetch information before answering step four — all of these require the engine to remember where the user was and what they had entered. Pathwrite handles this through a persistence layer that is deliberately decoupled from the engine itself. The engine knows how to run a path; persistence is a separate concern, wired in by the application.
 
 ---
 
@@ -33,7 +33,7 @@ Multiple observers are supported and run independently. Each receives the same e
 const engine = new PathEngine({
   observers: [
     persistence({ store, key: "user:123:onboarding" }),
-    (event) => analytics.track(`wizard.${event.type}`),
+    (event) => analytics.track(`path.${event.type}`),
   ],
 });
 ```
@@ -47,7 +47,7 @@ The `strategy` option answers the question: "on which event should I write to th
 ### `"onNext"` — the default
 
 ```typescript
-persistence({ store, key: "user:123:wizard" })
+persistence({ store, key: "user:123:onboarding" })
 // strategy defaults to "onNext"
 ```
 
@@ -58,7 +58,7 @@ Saves once, after `next()` has successfully navigated to a new step, and wheneve
 ```typescript
 persistence({
   store,
-  key: "user:123:wizard",
+  key: "user:123:onboarding",
   strategy: "onEveryChange",
   debounceMs: 500,
 })
@@ -69,15 +69,15 @@ Saves on every `setData` call and on every navigation. Without `debounceMs`, fiv
 ### `"onSubPathComplete"`
 
 ```typescript
-persistence({ store, key: "user:123:wizard", strategy: "onSubPathComplete" })
+persistence({ store, key: "user:123:onboarding", strategy: "onSubPathComplete" })
 ```
 
-Saves when a sub-path finishes and the parent path resumes. This is the natural checkpoint for wizards structured as a series of sub-flows: save at the end of each sub-flow rather than on every step. It produces fewer saves than `"onNext"` and maps cleanly to the meaningful milestones in the workflow.
+Saves when a sub-path finishes and the parent path resumes. This is the natural checkpoint for paths structured as a series of sub-flows: save at the end of each sub-flow rather than on every step. It produces fewer saves than `"onNext"` and maps cleanly to the meaningful milestones in the workflow.
 
 ### `"onComplete"`
 
 ```typescript
-persistence({ store, key: "user:123:wizard", strategy: "onComplete" })
+persistence({ store, key: "user:123:onboarding", strategy: "onComplete" })
 ```
 
 Saves a single record when the path completes — nothing mid-flow. Use this when you only want to capture the final submitted state for audit purposes, not to enable resumption. Unlike every other strategy, `"onComplete"` does *not* delete the record after saving, since the record is the point. The record is a normal `SerializedPathState` with `_status: "completed"` and the final `data`; `restoreOrStart` recognises it and starts fresh rather than resuming a finished path.
@@ -85,7 +85,7 @@ Saves a single record when the path completes — nothing mid-flow. Use this whe
 ### `"manual"`
 
 ```typescript
-persistence({ store, key: "user:123:wizard", strategy: "manual" })
+persistence({ store, key: "user:123:onboarding", strategy: "manual" })
 
 // Later, when the user clicks "Save draft":
 await store.save(key, engine.exportState()!);
@@ -107,7 +107,7 @@ interface PathStore {
 }
 ```
 
-`save` receives the full serialised engine state as a plain JSON object. `load` returns the saved state or `null` when nothing is stored under that key. `delete` is called automatically when a path completes, so that a returning user starts fresh rather than restoring a finished wizard.
+`save` receives the full serialised engine state as a plain JSON object. `load` returns the saved state or `null` when nothing is stored under that key. `delete` is called automatically when a path completes, so that a returning user starts fresh rather than restoring a finished path.
 
 The `SerializedPathState` that flows through these methods looks like this:
 
@@ -146,7 +146,7 @@ It is plain JSON with no functions, no class instances, and no Pathwrite-specifi
 import { HttpStore } from "@daltonr/pathwrite-store";
 
 const store = new HttpStore({
-  baseUrl: "/api/wizard",
+  baseUrl: "/api/paths",
   headers: { Authorization: `Bearer ${token}` },
 });
 ```
@@ -162,18 +162,18 @@ DELETE {baseUrl}/state/{key}   — delete
 The server does not need any Pathwrite-specific logic. Any backend that stores a JSON document and returns it on request is sufficient. A minimal Express handler:
 
 ```typescript
-app.put("/api/wizard/state/:key",    (req, res) => { db.save(req.params.key, req.body); res.json({ ok: true }); });
-app.get("/api/wizard/state/:key",    (req, res) => { const s = db.load(req.params.key); s ? res.json(s) : res.status(404).end(); });
-app.delete("/api/wizard/state/:key", (req, res) => { db.delete(req.params.key); res.json({ ok: true }); });
+app.put("/api/paths/state/:key",    (req, res) => { db.save(req.params.key, req.body); res.json({ ok: true }); });
+app.get("/api/paths/state/:key",    (req, res) => { const s = db.load(req.params.key); s ? res.json(s) : res.status(404).end(); });
+app.delete("/api/paths/state/:key", (req, res) => { db.delete(req.params.key); res.json({ ok: true }); });
 ```
 
 When your API uses a different URL shape, pass custom builder functions:
 
 ```typescript
 new HttpStore({
-  saveUrl:   (key) => `/v2/sessions/${userId}/wizard/${encodeURIComponent(key)}`,
-  loadUrl:   (key) => `/v2/sessions/${userId}/wizard/${encodeURIComponent(key)}`,
-  deleteUrl: (key) => `/v2/sessions/${userId}/wizard/${encodeURIComponent(key)}`,
+  saveUrl:   (key) => `/v2/sessions/${userId}/paths/${encodeURIComponent(key)}`,
+  loadUrl:   (key) => `/v2/sessions/${userId}/paths/${encodeURIComponent(key)}`,
+  deleteUrl: (key) => `/v2/sessions/${userId}/paths/${encodeURIComponent(key)}`,
 });
 ```
 
@@ -181,7 +181,7 @@ When your access tokens rotate during a long session, pass a function for `heade
 
 ```typescript
 new HttpStore({
-  baseUrl: "/api/wizard",
+  baseUrl: "/api/paths",
   headers: async () => ({
     Authorization: `Bearer ${await getAccessToken()}`,
   }),
@@ -192,7 +192,7 @@ Use `onError` to capture failures without letting them surface as unhandled reje
 
 ```typescript
 new HttpStore({
-  baseUrl: "/api/wizard",
+  baseUrl: "/api/paths",
   onError: (error, operation, key) => {
     Sentry.captureException(error, { extra: { operation, key } });
   },
@@ -208,7 +208,7 @@ import { LocalStorageStore } from "@daltonr/pathwrite-store";
 
 const store = new LocalStorageStore();                          // default localStorage
 const store = new LocalStorageStore({ storage: sessionStorage }); // sessionStorage
-const store = new LocalStorageStore({ prefix: "myapp:wizard:" }); // custom key prefix
+const store = new LocalStorageStore({ prefix: "myapp:paths:" }); // custom key prefix
 const store = new LocalStorageStore({ storage: null });          // in-memory (tests)
 ```
 
@@ -224,7 +224,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const store = new AsyncStorageStore({
   storage: AsyncStorage,
-  prefix: "myapp:wizard:",
+  prefix: "myapp:paths:",
 });
 ```
 
@@ -268,7 +268,7 @@ Saved state that cannot be used never blocks the app. If `store.load` fails (cor
 
 ### Completion cleanup
 
-When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the wizard starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place — `restoreOrStart` treats any record with `_status: "completed"` as finished and starts fresh, so a leftover completed record never resumes.
+When a path completes, the `persistence` observer automatically calls `store.delete(key)`. A user who returns after finishing the path starts fresh. The sole exception is the `"onComplete"` strategy, which saves a final record and deliberately leaves it in place — `restoreOrStart` treats any record with `_status: "completed"` as finished and starts fresh, so a leftover completed record never resumes.
 
 ---
 
@@ -282,7 +282,7 @@ Reference data is information the workflow needs to display its UI: role lists, 
 
 ### Captured data — local write, sync on reconnect
 
-Captured data is what the user enters as they progress through the wizard. The engine collects it; persistence saves it. Offline captured data requires writing locally without a network and syncing to the backend when connectivity returns.
+Captured data is what the user enters as they progress through the path. The engine collects it; persistence saves it. Offline captured data requires writing locally without a network and syncing to the backend when connectivity returns.
 
 Wire `LocalStorageStore` as the primary store and use `HttpStore` as a secondary sync target. The local store never requires connectivity; the HTTP store gets a chance to save whenever the network is available:
 
@@ -291,7 +291,7 @@ import { LocalStorageStore, HttpStore, persistence } from "@daltonr/pathwrite-st
 
 const localStore  = new LocalStorageStore({ prefix: "myapp:" });
 const remoteStore = new HttpStore({
-  baseUrl: "/api/wizard",
+  baseUrl: "/api/paths",
   onError: (err, operation, key) => {
     if (operation === "save") queueForSync(key, engine.exportState()!);
   },
@@ -378,7 +378,7 @@ Pass it to `persistence()` exactly as you would a built-in store:
 ```typescript
 const engine = new PathEngine({
   observers: [
-    persistence({ store: new IndexedDbStore(), key: "user:123:wizard" }),
+    persistence({ store: new IndexedDbStore(), key: "user:123:onboarding" }),
   ],
 });
 ```

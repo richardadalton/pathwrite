@@ -99,7 +99,7 @@ npm install @daltonr/pathwrite-store
 | | |
 |---|---|
 | [Getting started](docs/getting-started/installation.md) | Installation, core concepts, your first path |
-| [Developer Guide](docs/developer-guide/README.md) | 11-chapter narrative guide from engine model to testing |
+| [Developer Guide](docs/developer-guide/README.md) | 12-chapter narrative guide from engine model to testing and beyond |
 | [Core API reference](docs/reference/core-api.md) | Full `PathEngine`, `PathSnapshot`, and `PathStore` API |
 | [Shell CSS reference](docs/reference/shell-css.md) | CSS custom properties for theming `PathShell` |
 | [Contributing](docs/contributing/development-setup.md) | Build, test, run demos |

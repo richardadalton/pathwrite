@@ -67,16 +67,20 @@ You do not need to call any methods — the import alone confirms the package is
 
 The repository includes working demo applications for every adapter. Running one is the fastest way to see Pathwrite in action before writing any code.
 
-From the monorepo root:
+The demos live under `apps/<framework>-demos/` and each one has a `demo:<framework>:<name>` script in the root `package.json`. From the monorepo root:
 
 ```bash
 npm install
-npm run demo:react         # React wizard demo  (localhost:5173)
-npm run demo:vue           # Vue wizard demo    (localhost:5173)
-npm run demo:angular       # Angular demo       (localhost:4200)
-npm run demo:svelte        # Svelte demo        (localhost:5174)
-npm run demo               # Console demo (no browser needed)
+npm run build              # demos consume the workspace packages, so build first
+npm run demo:react:wizard  # React multi-step demo (Vite dev server)
+npm run demo:vue:wizard    # Vue
+npm run demo:angular:form  # Angular
+npm run demo:svelte:wizard # Svelte
+npm run demo:solid:wizard  # SolidJS
+npm run demo:rn            # React Native showcase (Expo)
 ```
+
+Run `npm run | grep demo:` to list every demo script, or `cd` into a demo directory and `npm start` there. `npm run smoke:demos` starts every demo in turn and checks that each one boots.
 
 Each demo app is a self-contained example that covers path definition, step navigation, validation, and completion handling.
 

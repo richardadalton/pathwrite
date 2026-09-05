@@ -52,7 +52,7 @@ npm run changeset
 
 The CLI will ask you to:
 
-1. **Select packages** — because all seven packages are in a fixed group, selecting any one bumps all of them.
+1. **Select packages** — because all eight packages are in a fixed group, selecting any one bumps all of them.
 2. **Choose a bump type** — `patch` for bug fixes, `minor` for new features, `major` for breaking changes.
 3. **Write a summary** — one sentence that will appear in each package's `CHANGELOG.md`.
 
@@ -129,16 +129,7 @@ git push --follow-tags
 
 Confirm the new version number appears and the `dist/` files are present in the file explorer.
 
-**Update demo apps.** Demo apps under `apps/` install published packages from npm independently. After a release, reinstall each one so they get the new version with built assets:
-
-```bash
-cd apps/angular-demos/demo-angular-form && npm install && cd -
-cd apps/react-demos/demo-react-form && npm install && cd -
-cd apps/vue-demos/demo-vue-form && npm install && cd -
-cd apps/svelte-demos/demo-svelte-form && npm install && cd -
-```
-
-This matters for Angular in particular — `angular.json` resolves CSS assets relative to the project's own `node_modules/`, so a stale install will fail to find the new shell stylesheet.
+**Demo apps need nothing.** Demo apps under `apps/` are npm workspaces that depend on the adapters with `"*"`, which resolves to the workspace symlinks in the root `node_modules/@daltonr/`. They never install from npm, so there is nothing to reinstall after a release — `npm run build` at the root is all they need (the Angular demos load the shell stylesheet from the root `node_modules/@daltonr/pathwrite-angular/dist/index.css`). Do **not** run `npm install` inside a demo directory: it creates a demo-local `node_modules/@daltonr/` populated from npm that shadows the workspace link. See [Development setup](development-setup.md#run-a-demo-app) for how to clear one.
 
 ---
 

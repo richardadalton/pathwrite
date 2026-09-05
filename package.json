@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Headless path engine with Angular, React, and Vue adapters",
+  "description": "Headless path/wizard/stepper engine with adapters for React, React Native, Vue, Angular, Svelte and SolidJS, plus a persistence store",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git"

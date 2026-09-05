@@ -280,9 +280,15 @@ const path = createOnboardingPath(services);
 
 export function OnboardingFlow() {
   return (
-    <PathShell path={path} initialData={INITIAL_DATA}>
-      {/* step components */}
-    </PathShell>
+    <PathShell
+      path={path}
+      initialData={INITIAL_DATA}
+      steps={{
+        profile: <ProfileStep />,
+        preferences: <PreferencesStep />,
+        // ...one entry per step ID
+      }}
+    />
   );
 }
 ```
@@ -345,7 +351,7 @@ The workflow package is the single source of truth for the business process. Ver
 
 When a consuming app updates to a new major version, TypeScript catches every mismatch at compile time. If you renamed a step from `"cover-letter"` to `"coverLetter"`, every component that renders that step by ID will emit a type error. If you added a required method to the service interface, every service implementation will fail to compile until it implements the new method. The compiler is the upgrade guide.
 
-> **Step ID naming.** Use camelCase step IDs. The Svelte adapter maps step IDs to component prop names, which must be valid JavaScript identifiers. Hyphens are forbidden. `"coverLetter"` works everywhere; `"cover-letter"` breaks Svelte.
+> **Step ID naming.** Any string works as a step ID in every adapter. The one thing to know: the Svelte shell exposes step snippets as props named after step IDs, and a hyphenated ID such as `"cover-letter"` is not a valid identifier, so the Svelte adapter also accepts the camelCase form (`coverLetter`) as a fallback prop name — see `stepIdToCamelCase` and the Svelte guide. Whatever convention you choose, treat renaming a step ID as a breaking change.
 
 ---
 

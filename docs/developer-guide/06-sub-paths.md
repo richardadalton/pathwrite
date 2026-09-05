@@ -45,15 +45,19 @@ When sub-path B completes, sub-path A becomes active again. When sub-path A comp
 engine.startSubPath(subPathDefinition, initialData?, meta?)
 ```
 
-Call `startSubPath()` on the engine when you want to enter a nested flow. It requires an active path — calling it before `start()` throws. You can call it:
+Call `startSubPath()` on the engine when you want to enter a nested flow. It requires an active path — calling it before `start()` throws. Call it from a **user action** — a button handler in the parent step's component, via the adapter context (`usePathContext().startSubPath` in React/Vue/Svelte/Solid, `facade.startSubPath` in Angular) — or, when driving the engine headlessly, after the parent step has settled (`snapshot.status === "idle"`).
 
-- Inside an `onEnter` hook on the parent step, to immediately launch the sub-path as soon as the step is entered.
-- Inside a button handler in your step component, to launch it on a user action.
+> **Hooks cannot navigate.** `startSubPath()`, like every navigation method (`next`, `previous`, `goToStep`, `cancel`, …), only acts when the engine is idle. While a hook or guard is running the status is `"entering"`, `"validating"`, `"leaving"` or `"completing"`, so a `startSubPath()` call from inside `onEnter` — or a `next()` call from inside `onSubPathComplete` — is silently dropped. Hooks compute data; components (or your headless driver) decide when to move.
 
-Here is a complete example. A course wizard has a "subjects" step that launches a 3-step subject-creation sub-path from its `onEnter` hook:
+Here is a complete example. A course path has a "subjects" step whose component launches a 3-step subject-creation sub-path each time the user clicks "Add subject":
 
 ```ts
-import { PathDefinition, PathData } from "@daltonr/pathwrite-core";
+import { PathDefinition } from "@daltonr/pathwrite-core";
+
+interface CourseData {
+  courseName: string;
+  subjects: { name: string; teacher: string }[];
+}
 
 // The sub-path runs 3 steps to collect a single subject's details.
 const addSubjectPath: PathDefinition = {
@@ -65,20 +69,13 @@ const addSubjectPath: PathDefinition = {
   ],
 };
 
-const coursePath: PathDefinition = {
+const coursePath: PathDefinition<CourseData> = {
   id: "course",
   steps: [
     { id: "course-name" },
     {
       id: "subjects",
-      // As soon as "subjects" is entered, push the sub-path.
-      onEnter: async (ctx) => {
-        // engine is in scope here via closure or service injection.
-        await engine.startSubPath(addSubjectPath, {
-          subjectName: "",
-          subjectTeacher: "",
-        });
-      },
+      // Merge each finished sub-path's data back into the parent.
       onSubPathComplete: (subPathId, subData, ctx) => ({
         subjects: [
           ...ctx.data.subjects,
@@ -91,9 +88,29 @@ const coursePath: PathDefinition = {
 };
 ```
 
-When the sub-path's last step calls `next()`, the sub-path completes, `onSubPathComplete` fires on the parent "subjects" step, and the parent path resumes on that same step.
+```tsx
+// The "subjects" step component (React shown; the other adapters are equivalent).
+function SubjectsStep() {
+  const { snapshot, startSubPath } = usePathContext<CourseData>();
+  const subjects = snapshot?.data.subjects ?? [];
 
-> **Angular:** Call `this.facade.startSubPath(...)` inside an `onEnter` hook or a method called from a template button. The `PathFacade` is available via `inject(PathFacade)` in the component that owns the wizard.
+  return (
+    <div>
+      <ul>{subjects.map((s) => <li key={s.name}>{s.name} — {s.teacher}</li>)}</ul>
+      <button
+        type="button"
+        onClick={() => startSubPath(addSubjectPath, { subjectName: "", subjectTeacher: "" })}
+      >
+        Add subject
+      </button>
+    </div>
+  );
+}
+```
+
+When the sub-path's last step calls `next()`, the sub-path completes, `onSubPathComplete` fires on the parent "subjects" step, and the parent path resumes on that same step — where the user can add another subject or press Next to continue. The `demo-*-subwizard` apps under `apps/` all follow this shape.
+
+> **Angular:** Call `this.facade.startSubPath(...)` from a method bound to a template button. The `PathFacade` is available via `inject(PathFacade)` in the step component.
 
 ---
 
@@ -168,16 +185,17 @@ Graceful cancel handling is important when the sub-path is optional. If the user
 Use `meta` to correlate a sub-path launch with its triggering context without polluting the sub-path's own data. The canonical example is a collection index:
 
 ```ts
-// Launch one approval sub-path per reviewer.
-for (let i = 0; i < reviewers.length; i++) {
-  await engine.startSubPath(
+// In the parent step's component: launch one approval sub-path for the
+// reviewer the user picked (one at a time — each returns to this step).
+onClick={() =>
+  startSubPath(
     approvalSubPath,
     { reviewerName: reviewers[i].name },
     { index: i }  // ← meta: which reviewer this is
-  );
+  )
 }
 
-// In the parent step:
+// In the parent step definition:
 onSubPathComplete: (subPathId, subData, ctx, meta) => {
   const approvals = [...ctx.data.approvals];
   approvals[meta!.index as number] = subData.decision;
@@ -189,31 +207,31 @@ The sub-path itself knows nothing about its position in the collection. The pare
 
 ---
 
-## Auto-advancing after sub-path completion
+## Advancing after sub-path completion
 
-When a sub-path finishes, the parent step is the active step again. By default, the engine stays there — it does not automatically advance. This is often what you want when the parent step needs to decide whether to launch another sub-path or wait for user input.
+When a sub-path finishes, the parent step is the active step again. The engine stays there — it never advances on its own — so the parent step can offer another sub-path, show what was collected, or wait for the user to press Next.
 
-But a common pattern is to advance the parent immediately after all sub-paths in a collection are complete. Do this by calling `engine.next()` inside `onSubPathComplete`:
+Do **not** try to advance from inside `onSubPathComplete`. The hook runs while the engine's status is `"completing"`, and `next()` (like every navigation method) is a silent no-op unless the engine is idle — the call is dropped and the patch you return is still applied, so nothing visibly breaks, but the parent never moves. The hook's job is to return the merged data; the decision to move on belongs to the user.
+
+The idiomatic pattern is to let the parent step's `canMoveNext` guard express "all collected", and let the user click Next once it is satisfied:
 
 ```ts
 {
   id: "run-approvals",
-  onSubPathComplete: async (subPathId, subData, ctx, meta) => {
+  onSubPathComplete: (subPathId, subData, ctx, meta) => {
     const approvals = [...ctx.data.approvals];
     approvals[meta!.index as number] = subData.decision;
-
-    const allDone = approvals.every((a) => a !== undefined);
-    if (allDone) {
-      // All approvals collected — advance the parent past this step.
-      await engine.next();
-    }
-
     return { approvals };
   },
+  // Next stays disabled until every reviewer has a decision.
+  canMoveNext: ({ data }) => ({
+    allowed: data.approvals.every((a) => a !== undefined),
+    reason: "Collect every reviewer's decision before continuing.",
+  }),
 }
 ```
 
-Return the data patch after calling `next()` — the engine applies the patch before processing the navigation.
+If you genuinely want to move on without a click, do it from outside the hook, once the engine has settled: the parent's resumption is signalled by the `resumed` event (whose `snapshot` already carries the merged data), so an `onEvent` handler on `usePath` / an `engine.subscribe()` listener can inspect it and call `next()` then.
 
 ---
 

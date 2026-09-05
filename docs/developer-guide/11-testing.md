@@ -28,7 +28,7 @@ The contrast is most visible when a test suite has no imports from `@testing-lib
 
 ## The basic pattern
 
-Every test follows the same structure: start an engine, drive navigation with `next()` and `previous()`, assert on `snapshot()`. The snapshot is `null` after the path completes.
+Every test follows the same structure: start an engine, drive navigation with `next()` and `previous()`, assert on `snapshot()`. After the path completes the engine stays on the final step (the default `completionBehaviour: "stayOnFinal"`) and the snapshot reports `status: "completed"`.
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -61,11 +61,16 @@ it("advances through all steps to completion", async () => {
   expect(engine.snapshot()?.stepId).toBe("confirmation");
 
   await engine.next(); // completes
-  expect(engine.snapshot()).toBeNull();
+  const done = engine.snapshot()!;
+  expect(done.status).toBe("completed");
+  expect(done.stepId).toBe("confirmation");
+  expect(done.progress).toBe(1);
+  expect(done.isLastStep).toBe(true);
+  expect(done.canMoveNext).toBe(false);
 });
 ```
 
-Note the `?.` on every `snapshot()` access. The snapshot returns `null` once the path completes. If your test drives the path to completion, check `snapshot()` before asserting on its properties.
+Note the `?.` on every `snapshot()` access. `snapshot()` returns `null` before `start()` and after `cancel()`, and — only if the definition sets `completionBehaviour: "dismiss"` — after completion. With the default `"stayOnFinal"` the completed snapshot is non-null, so assert on `status === "completed"` rather than on `null`; with `"reset"` the engine has already restarted on step 1 by the time `next()` resolves.
 
 ---
 

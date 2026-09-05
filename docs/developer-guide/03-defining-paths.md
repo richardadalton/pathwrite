@@ -35,7 +35,7 @@ The type parameter `<OnboardingData>` is the shape of the data object the engine
 
 **`onComplete`** fires when the user reaches the end of the last step and calls `next()`. It receives the final accumulated data object. This is where you would call an API, navigate the router, or dispatch to your application's state manager. It can be async; the engine sets `snapshot.status` to `"completing"` while it runs.
 
-**`onCancel`** fires when the path is cancelled — either programmatically via `engine.cancel()` or by the user pressing Back on the first step. It receives the data as it stood at the moment of cancellation.
+**`onCancel`** fires when the path is cancelled via `engine.cancel()` (the shell's Cancel button calls this). It receives the data as it stood at the moment of cancellation. Pressing Back on the first step of a top-level path does *not* cancel it — `previous()` is a no-op there. (Back on the first step of a *sub-path* does cancel the sub-path and return to the parent, but that fires the parent step's `onSubPathCancel`, not this callback.)
 
 Both callbacks are called only for top-level paths. If this path is started as a sub-path inside another flow, completion and cancellation are handled by the parent step's `onSubPathComplete` and `onSubPathCancel` hooks instead.
 
@@ -322,7 +322,7 @@ const surveyPath: PathDefinition<SurveyData> = {
 
 `fieldErrors` is evaluated on every snapshot — including the very first one, before the user has typed anything. If you render error messages unconditionally, the user sees a wall of errors before they have had a chance to fill in the form. That is not good UX.
 
-The engine tracks this with `snapshot.hasAttemptedNext`: it starts as `false` when a step is entered and flips to `true` the first time the user calls `next()` on that step, regardless of whether navigation succeeded. It resets to `false` when the engine moves to a new step.
+The engine tracks this with `snapshot.hasAttemptedNext`. It is `false` for a step the user has never tried to leave and flips to `true` the first time `next()` is called on that step (or `goToStep`/`goToStepChecked` with `{ validateOnLeave: true }`), regardless of whether navigation succeeded. The flag is tracked per step id and persists: if the user attempts step A, goes back to step B, then returns to A, `hasAttemptedNext` is still `true` on A. It is scoped to the path instance — a freshly launched sub-path starts clean — and the whole set is cleared only by `start()` / `restart()`.
 
 Use it to gate error display:
 
