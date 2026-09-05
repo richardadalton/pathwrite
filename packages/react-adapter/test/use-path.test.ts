@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
-import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
@@ -116,9 +115,7 @@ describe("usePath — events", () => {
     await act(() => result.current.next());
     await act(() => result.current.next());
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completed", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "completed", pathId: "main" }));
   });
 
   it("calls onEvent with cancelled when cancel is called", async () => {
@@ -128,9 +125,7 @@ describe("usePath — events", () => {
     await act(() => result.current.start(twoStepPath()));
     await act(() => result.current.cancel());
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "cancelled", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "cancelled", pathId: "main" }));
   });
 
   it("calls onEvent with resumed when a sub-path completes", async () => {
@@ -146,7 +141,7 @@ describe("usePath — events", () => {
       expect.objectContaining({
         type: "resumed",
         resumedPathId: "parent",
-        fromSubPathId: "sub"
+        fromSubPathId: "sub",
       })
     );
   });
@@ -154,10 +149,9 @@ describe("usePath — events", () => {
   it("uses the latest onEvent callback without re-subscribing", async () => {
     const firstCallback = vi.fn();
     const secondCallback = vi.fn();
-    const { result, rerender } = renderHook(
-      (props: UsePathOptions) => usePath(props),
-      { initialProps: { onEvent: firstCallback } }
-    );
+    const { result, rerender } = renderHook((props: UsePathOptions) => usePath(props), {
+      initialProps: { onEvent: firstCallback },
+    });
 
     await act(() => result.current.start(twoStepPath()));
     expect(firstCallback).toHaveBeenCalled();
@@ -207,7 +201,10 @@ describe("usePath — navigation", () => {
   });
 
   it("setData() is type-safe when TData generic is provided", async () => {
-    interface StepData extends PathData { label: string; count: number; }
+    interface StepData extends PathData {
+      label: string;
+      count: number;
+    }
     const { result } = renderHook(() => usePath<StepData>());
     await act(() => result.current.start(twoStepPath(), { label: "old", count: 0 }));
     await act(() => result.current.setData("label", "new"));
@@ -283,10 +280,12 @@ describe("usePath — goToStepChecked", () => {
 
   it("blocks navigation when canMoveNext returns false", async () => {
     const { result } = renderHook(() => usePath());
-    await act(() => result.current.start({
-      id: "w",
-      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
-    }));
+    await act(() =>
+      result.current.start({
+        id: "w",
+        steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }],
+      })
+    );
     await act(() => result.current.goToStepChecked("b"));
     expect(result.current.snapshot?.stepId).toBe("a");
   });
@@ -306,7 +305,9 @@ describe("usePath — goToStepChecked", () => {
 describe("PathProvider + usePathContext", () => {
   function Probe() {
     const { snapshot, next, cancel } = usePathContext();
-    return createElement("div", null,
+    return createElement(
+      "div",
+      null,
       createElement("p", { "data-testid": "step" }, snapshot.stepId),
       createElement("button", { onClick: () => next() }, "next"),
       createElement("button", { onClick: () => cancel() }, "cancel")
@@ -314,9 +315,16 @@ describe("PathProvider + usePathContext", () => {
   }
 
   it("renders the fallback until the path has started, then the children with a non-null snapshot", async () => {
-    const { container } = render(createElement(PathProvider, {
-      path: twoStepPath(), fallback: createElement("p", null, "loading")
-    }, createElement(Probe)));
+    const { container } = render(
+      createElement(
+        PathProvider,
+        {
+          path: twoStepPath(),
+          fallback: createElement("p", null, "loading"),
+        },
+        createElement(Probe)
+      )
+    );
     // start() runs in an effect; before it resolves only the fallback is rendered
     expect(container.textContent).toContain("loading");
     await act(async () => {});
@@ -327,27 +335,47 @@ describe("PathProvider + usePathContext", () => {
   it("children navigate through the context", async () => {
     render(createElement(PathProvider, { path: twoStepPath() }, createElement(Probe)));
     await act(async () => {});
-    await act(async () => { screen.getByText("next").click(); });
+    await act(async () => {
+      screen.getByText("next").click();
+    });
     expect(screen.getByTestId("step").textContent).toBe("step2");
   });
 
   it("shows the fallback again once the path is cancelled", async () => {
-    const { container } = render(createElement(PathProvider, {
-      path: twoStepPath(), fallback: createElement("p", null, "nothing active")
-    }, createElement(Probe)));
+    const { container } = render(
+      createElement(
+        PathProvider,
+        {
+          path: twoStepPath(),
+          fallback: createElement("p", null, "nothing active"),
+        },
+        createElement(Probe)
+      )
+    );
     await act(async () => {});
-    await act(async () => { screen.getByText("cancel").click(); });
+    await act(async () => {
+      screen.getByText("cancel").click();
+    });
     expect(container.textContent).toContain("nothing active");
     expect(screen.queryByTestId("step")).toBeNull();
   });
 
   it("adopts an engine the parent owns, never starts it, and gates children on its snapshot", async () => {
     const engine = new PathEngine();
-    const { container } = render(createElement(PathProvider, {
-      engine, fallback: createElement("p", null, "not started")
-    }, createElement(Probe)));
+    const { container } = render(
+      createElement(
+        PathProvider,
+        {
+          engine,
+          fallback: createElement("p", null, "not started"),
+        },
+        createElement(Probe)
+      )
+    );
     expect(container.textContent).toContain("not started");
-    await act(async () => { await engine.start(twoStepPath(), { name: "Ada" }); });
+    await act(async () => {
+      await engine.start(twoStepPath(), { name: "Ada" });
+    });
     expect(screen.getByTestId("step").textContent).toBe("step1");
   });
 
@@ -463,7 +491,7 @@ describe("usePath — external engine", () => {
     await engine.start(twoStepPath());
 
     const events: PathEvent[] = [];
-    const { result } = renderHook(() => usePath({ engine, onEvent: (e) => events.push(e) }));
+    renderHook(() => usePath({ engine, onEvent: (e) => events.push(e) }));
     await act(() => engine.next());
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);
   });
@@ -503,7 +531,9 @@ describe("usePath — late / swapped engine", () => {
     await late.start(twoStepPath(), { name: "late" });
     await late.next();
 
-    const { result, rerender } = renderHook((props: { engine?: PathEngine }) => usePath(props), { initialProps: {} });
+    const { result, rerender } = renderHook((props: { engine?: PathEngine }) => usePath(props), {
+      initialProps: {},
+    });
     expect(result.current.snapshot).toBeNull();
 
     rerender({ engine: late });
@@ -511,17 +541,23 @@ describe("usePath — late / swapped engine", () => {
     expect(result.current.snapshot?.data.name).toBe("late");
 
     await act(() => result.current.previous());
-    expect(late.snapshot()?.stepId).toBe("step1");   // actions go to the adopted engine
+    expect(late.snapshot()?.stepId).toBe("step1"); // actions go to the adopted engine
     expect(result.current.snapshot?.stepId).toBe("step1");
   });
 
   it("stops listening to the previous engine after a swap", async () => {
-    const a = new PathEngine(); await a.start(twoStepPath());
-    const b = new PathEngine(); await b.start(threeStepPath());
-    const { result, rerender } = renderHook((props: { engine: PathEngine }) => usePath(props), { initialProps: { engine: a } });
+    const a = new PathEngine();
+    await a.start(twoStepPath());
+    const b = new PathEngine();
+    await b.start(threeStepPath());
+    const { result, rerender } = renderHook((props: { engine: PathEngine }) => usePath(props), {
+      initialProps: { engine: a },
+    });
     rerender({ engine: b });
     expect(result.current.snapshot?.stepCount).toBe(3);
-    await act(async () => { await a.next(); });        // the old engine moves on…
+    await act(async () => {
+      await a.next();
+    }); // the old engine moves on…
     expect(result.current.snapshot?.stepId).toBe("step1"); // …the hook does not follow it
   });
 });
@@ -531,11 +567,18 @@ describe("PathShell — late engine prop", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath(), { name: "restored" });
 
-    const steps = { step1: createElement("div", null, "Content 1"), step2: createElement("div", null, "Content 2") };
-    const { rerender } = render(createElement(PathShell, { path: twoStepPath(), autoStart: false, steps } as any));
+    const steps = {
+      step1: createElement("div", null, "Content 1"),
+      step2: createElement("div", null, "Content 2"),
+    };
+    const { rerender } = render(
+      createElement(PathShell, { path: twoStepPath(), autoStart: false, steps } as any)
+    );
     expect(screen.getByText("No active path.")).toBeTruthy();
 
-    await act(async () => { rerender(createElement(PathShell, { path: twoStepPath(), autoStart: false, engine, steps } as any)); });
+    await act(async () => {
+      rerender(createElement(PathShell, { path: twoStepPath(), autoStart: false, engine, steps } as any));
+    });
     expect(screen.getByText("Content 1")).toBeTruthy();
 
     await act(async () => screen.getByText("Next").click());

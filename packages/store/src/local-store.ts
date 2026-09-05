@@ -42,7 +42,9 @@ function localStorageIsUsable(): boolean {
   try {
     return typeof localStorage !== "undefined" && localStorage !== null;
   } catch {
-    console.warn("[pathwrite] localStorage is not accessible here (sandboxed frame or blocked storage); LocalStorageStore is using in-memory storage for this session.");
+    console.warn(
+      "[pathwrite] localStorage is not accessible here (sandboxed frame or blocked storage); LocalStorageStore is using in-memory storage for this session."
+    );
     return false;
   }
 }

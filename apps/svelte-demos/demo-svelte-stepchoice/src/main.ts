@@ -1,4 +1,3 @@
-
 import { mount } from "svelte";
 import App from "./App.svelte";
 import "@daltonr/pathwrite-svelte/styles.css";

@@ -5,7 +5,7 @@ import type { EmployeeDetails } from "./employee-details";
 import { LAPTOP_TYPES } from "./employee-details";
 
 function laptopLabel(val: string) {
-  return LAPTOP_TYPES.find(l => l.value === val)?.label ?? val;
+  return LAPTOP_TYPES.find((l) => l.value === val)?.label ?? val;
 }
 
 function yesNo(val: string | undefined) {
@@ -18,18 +18,19 @@ export default function ConfirmStep() {
   const data = () => ctx.snapshot()!.data;
   const d = () => (data().details?.data ?? {}) as EmployeeDetails;
 
-  const activePerms = () => [
-    d().permAdmin   === "yes" && "Admin",
-    d().permDev     === "yes" && "Developer",
-    d().permHR      === "yes" && "HR",
-    d().permFinance === "yes" && "Finance",
-  ].filter(Boolean) as string[];
+  const activePerms = () =>
+    [
+      d().permAdmin === "yes" && "Admin",
+      d().permDev === "yes" && "Developer",
+      d().permHR === "yes" && "HR",
+      d().permFinance === "yes" && "Finance",
+    ].filter(Boolean) as string[];
 
   return (
     <div class="form-body">
       <p class="step-intro">
-        Review the details below. Click <strong>Complete Onboarding</strong> to submit,
-        or use <strong>Previous</strong> to go back and make changes.
+        Review the details below. Click <strong>Complete Onboarding</strong> to submit, or use{" "}
+        <strong>Previous</strong> to go back and make changes.
       </p>
 
       <div class="review-section">
@@ -132,12 +133,13 @@ export default function ConfirmStep() {
           <div class="review-row">
             <span class="review-key">Permissions</span>
             <span>
-              <Show
-                when={activePerms().length > 0}
-                fallback={<span class="badge badge--off">None</span>}
-              >
+              <Show when={activePerms().length > 0} fallback={<span class="badge badge--off">None</span>}>
                 <For each={activePerms()}>
-                  {(p) => <span class="badge badge--on" style="margin-right: 4px">{p}</span>}
+                  {(p) => (
+                    <span class="badge badge--on" style="margin-right: 4px">
+                      {p}
+                    </span>
+                  )}
                 </For>
               </Show>
             </span>

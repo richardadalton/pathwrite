@@ -1,5 +1,4 @@
 <main class="page">
-
   <div class="page-header">
     <h1>Address Form</h1>
     <p class="subtitle">StepChoice demo — the address step adapts based on your selected country.</p>
@@ -17,16 +16,19 @@
           <p class="summary-section__title">Country</p>
           <div class="summary-row">
             <span class="summary-key">Country</span>
-            <span>{{ completedData.country === 'US' ? '🇺🇸 United States' : '🇮🇪 Ireland' }}</span>
+            <span>{{ completedData.country === "US" ? "🇺🇸 United States" : "🇮🇪 Ireland" }}</span>
           </div>
         </div>
 
-        @if (completedData.country === 'US') {
+        @if (completedData.country === "US") {
           <div class="summary-section">
             <p class="summary-section__title">US Address</p>
             <div class="summary-row">
               <span class="summary-key">Street</span>
-              <span>{{ completedData.streetAddress }}{{ completedData.aptUnit ? ', ' + completedData.aptUnit : '' }}</span>
+              <span
+                >{{ completedData.streetAddress
+                }}{{ completedData.aptUnit ? ", " + completedData.aptUnit : "" }}</span
+              >
             </div>
             <div class="summary-row">
               <span class="summary-key">City</span>
@@ -114,5 +116,4 @@
       </ng-template>
     </pw-shell>
   }
-
 </main>

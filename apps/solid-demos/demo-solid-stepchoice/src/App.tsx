@@ -34,8 +34,7 @@ export default function App() {
       <div class="page-header">
         <h1>Address Form</h1>
         <p class="subtitle">
-          StepChoice demo — the address step selects US or Irish fields based on your country
-          selection.
+          StepChoice demo — the address step selects US or Irish fields based on your country selection.
         </p>
       </div>
 
@@ -113,7 +112,9 @@ export default function App() {
                   </div>
                 </div>
               </Show>
-              <button class="btn-primary" onClick={startOver}>Start Over</button>
+              <button class="btn-primary" onClick={startOver}>
+                Start Over
+              </button>
             </section>
           );
         }}
@@ -124,7 +125,9 @@ export default function App() {
           <div class="result-icon">✕</div>
           <h2>Cancelled</h2>
           <p>The address form was cancelled.</p>
-          <button class="btn-secondary" onClick={startOver}>Start Over</button>
+          <button class="btn-secondary" onClick={startOver}>
+            Start Over
+          </button>
         </section>
       </Show>
 
@@ -135,10 +138,10 @@ export default function App() {
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{
-            "country": (snap) => <CountryStep snapshot={snap} />,
+            country: (snap) => <CountryStep snapshot={snap} />,
             "address-us": (snap) => <USAddressForm snapshot={snap} />,
             "address-ie": (snap) => <IrishAddressForm snapshot={snap} />,
-            "confirm": (snap) => <ConfirmStep snapshot={snap} />,
+            confirm: (snap) => <ConfirmStep snapshot={snap} />,
           }}
         />
       </Show>

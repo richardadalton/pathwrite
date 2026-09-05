@@ -6,7 +6,7 @@ export function ConfirmStep() {
   const data = snapshot!.data;
 
   const isUS = data.country === "US";
-  const stateName = US_STATES.find(s => s.code === data.state)?.name ?? data.state;
+  const stateName = US_STATES.find((s) => s.code === data.state)?.name ?? data.state;
 
   return (
     <div className="form-body">
@@ -24,8 +24,13 @@ export function ConfirmStep() {
           <p className="confirm-label">Address</p>
           {isUS ? (
             <div className="confirm-address">
-              <p>{data.streetAddress}{data.aptUnit ? `, ${data.aptUnit}` : ""}</p>
-              <p>{data.city}, {data.state} {data.zipCode}</p>
+              <p>
+                {data.streetAddress}
+                {data.aptUnit ? `, ${data.aptUnit}` : ""}
+              </p>
+              <p>
+                {data.city}, {data.state} {data.zipCode}
+              </p>
               <p>United States</p>
             </div>
           ) : (
@@ -33,7 +38,10 @@ export function ConfirmStep() {
               <p>{data.addressLine1}</p>
               {data.addressLine2 && <p>{data.addressLine2}</p>}
               <p>{data.town}</p>
-              <p>Co. {data.county}{data.eircode ? `, ${data.eircode}` : ""}</p>
+              <p>
+                Co. {data.county}
+                {data.eircode ? `, ${data.eircode}` : ""}
+              </p>
               <p>Ireland</p>
             </div>
           )}

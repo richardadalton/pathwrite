@@ -1,41 +1,41 @@
-import { readFile } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_TIMEOUT_MS = 14000;
 const INTER_RUN_DELAY_MS = 250;
 
-const stripAnsi = (text) => text.replace(/\u001b\[[0-9;]*m/g, '');
+const stripAnsi = (text) => text.replace(/\u001b\[[0-9;]*m/g, "");
 const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 
 const isReady = (output) =>
-  /Compiled successfully\.|Angular Live Development Server is listening|VITE v\d|ready in \d+ ms|Local:\s+http:\/\//i.test(output);
+  /Compiled successfully\.|Angular Live Development Server is listening|VITE v\d|ready in \d+ ms|Local:\s+http:\/\//i.test(
+    output
+  );
 
 const isFailure = (output) =>
   /Failed to compile|Error: Unknown argument|ERR_MODULE_NOT_FOUND|could not resolve/i.test(output);
 
 async function getDemoScripts(rootDir) {
-  const packageJsonPath = resolve(rootDir, 'package.json');
-  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
+  const packageJsonPath = resolve(rootDir, "package.json");
+  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
   const allScripts = Object.keys(packageJson.scripts ?? {});
-  return allScripts
-    .filter((name) => name.startsWith('demo:'))
-    .sort((a, b) => a.localeCompare(b));
+  return allScripts.filter((name) => name.startsWith("demo:")).sort((a, b) => a.localeCompare(b));
 }
 
 function runScript(rootDir, script, timeoutMs) {
   return new Promise((resolveRun) => {
-    const child = spawn('npm', ['run', script], {
+    const child = spawn("npm", ["run", script], {
       cwd: rootDir,
-      env: { ...process.env, CI: '1' },
+      env: { ...process.env, CI: "1" },
       detached: true,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
-    let output = '';
-    let clean = '';
-    let url = '-';
+    let output = "";
+    let clean = "";
+    let url = "-";
     let finished = false;
 
     const finish = (status, note) => {
@@ -43,15 +43,15 @@ function runScript(rootDir, script, timeoutMs) {
       finished = true;
       clearTimeout(timer);
       try {
-        process.kill(-child.pid, 'SIGTERM');
+        process.kill(-child.pid, "SIGTERM");
       } catch {}
       setTimeout(() => {
         try {
-          process.kill(-child.pid, 'SIGKILL');
+          process.kill(-child.pid, "SIGKILL");
         } catch {}
       }, 600);
 
-      const tail = clean.split(/\r?\n/).filter(Boolean).slice(-5).join(' | ');
+      const tail = clean.split(/\r?\n/).filter(Boolean).slice(-5).join(" | ");
       resolveRun({ script, status, url, note, tail });
     };
 
@@ -64,20 +64,20 @@ function runScript(rootDir, script, timeoutMs) {
       }
 
       if (!finished && isReady(clean)) {
-        finish('PASS', 'ready');
+        finish("PASS", "ready");
       }
       if (!finished && isFailure(clean)) {
-        finish('FAIL', 'startup error');
+        finish("FAIL", "startup error");
       }
     };
 
-    child.stdout.on('data', onData);
-    child.stderr.on('data', onData);
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
 
-    const timer = setTimeout(() => finish('FAIL', 'timeout'), timeoutMs);
-    child.on('exit', (code) => {
+    const timer = setTimeout(() => finish("FAIL", "timeout"), timeoutMs);
+    child.on("exit", (code) => {
       if (!finished) {
-        finish(code === 0 ? 'PASS' : 'FAIL', `exited ${code}`);
+        finish(code === 0 ? "PASS" : "FAIL", `exited ${code}`);
       }
     });
   });
@@ -85,12 +85,12 @@ function runScript(rootDir, script, timeoutMs) {
 
 async function main() {
   const currentFile = fileURLToPath(import.meta.url);
-  const rootDir = resolve(dirname(currentFile), '..');
+  const rootDir = resolve(dirname(currentFile), "..");
   const timeoutMs = Number(process.env.SMOKE_DEMOS_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS);
 
   const scripts = await getDemoScripts(rootDir);
   if (scripts.length === 0) {
-    console.error('No demo scripts found in package.json.');
+    console.error("No demo scripts found in package.json.");
     process.exitCode = 1;
     return;
   }
@@ -105,11 +105,11 @@ async function main() {
     await sleep(INTER_RUN_DELAY_MS);
   }
 
-  const passed = results.filter((result) => result.status === 'PASS').length;
+  const passed = results.filter((result) => result.status === "PASS").length;
   console.log(`Passed ${passed}/${results.length}`);
-  console.log('RESULTS_JSON_START');
+  console.log("RESULTS_JSON_START");
   console.log(JSON.stringify(results, null, 2));
-  console.log('RESULTS_JSON_END');
+  console.log("RESULTS_JSON_END");
 
   if (passed !== results.length) {
     process.exitCode = 1;
@@ -120,4 +120,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

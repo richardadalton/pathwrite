@@ -7,16 +7,9 @@
     "jsxImportSource": "solid-js",
     "baseUrl": "../..",
     "paths": {
-      "@daltonr/pathwrite-core": [
-        "packages/core/src/index.ts"
-      ],
-      "@daltonr/pathwrite-solid": [
-        "packages/solid-adapter/src/index.tsx"
-      ]
+      "@daltonr/pathwrite-core": ["packages/core/src/index.ts"],
+      "@daltonr/pathwrite-solid": ["packages/solid-adapter/src/index.tsx"]
     }
   },
-  "include": [
-    "test/**/*.ts",
-    "test/**/*.tsx"
-  ]
+  "include": ["test/**/*.ts", "test/**/*.tsx"]
 }

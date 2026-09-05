@@ -36,7 +36,10 @@ function tryAgain() {
     <section v-if="isSubmitted && submittedData" class="result-panel success-panel">
       <div class="result-icon">✅</div>
       <h2>Message Sent!</h2>
-      <p>Thanks <strong>{{ submittedData.name }}</strong>, we've received your message.</p>
+      <p>
+        Thanks <strong>{{ submittedData.name }}</strong
+        >, we've received your message.
+      </p>
       <div class="submitted-summary">
         <div class="summary-row">
           <span class="summary-label">Email</span>
@@ -51,9 +54,7 @@ function tryAgain() {
           <span>{{ submittedData.message }}</span>
         </div>
       </div>
-      <button class="btn-primary" @click="tryAgain">
-        Send Another Message
-      </button>
+      <button class="btn-primary" @click="tryAgain">Send Another Message</button>
     </section>
 
     <!-- ── Cancelled ────────────────────────────────────────────────────── -->
@@ -61,9 +62,7 @@ function tryAgain() {
       <div class="result-icon">✖</div>
       <h2>Message Discarded</h2>
       <p>Your message was not sent.</p>
-      <button class="btn-secondary" @click="tryAgain">
-        Try Again
-      </button>
+      <button class="btn-secondary" @click="tryAgain">Try Again</button>
     </section>
 
     <!-- ── Active form ───────────────────────────────────────────────────── -->
@@ -84,4 +83,3 @@ function tryAgain() {
     </PathShell>
   </main>
 </template>
-

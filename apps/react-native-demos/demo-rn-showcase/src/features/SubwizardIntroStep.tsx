@@ -11,8 +11,8 @@ export function SubwizardIntroStep() {
     <View style={styles.container}>
       <Text style={styles.label}>Sub-Wizard</Text>
       <Text style={styles.body}>
-        Tap the button to launch a nested sub-wizard. The parent path pauses
-        and resumes automatically when the sub-wizard completes or is cancelled.
+        Tap the button to launch a nested sub-wizard. The parent path pauses and resumes automatically when
+        the sub-wizard completes or is cancelled.
       </Text>
       <TouchableOpacity
         style={[styles.btn, snapshot.isNavigating && styles.btnDisabled]}
@@ -29,7 +29,7 @@ export function SubwizardIntroStep() {
 const styles = StyleSheet.create({
   container: { gap: 16 },
   label: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  body:  { fontSize: 14, color: "#6b7280", lineHeight: 22 },
+  body: { fontSize: 14, color: "#6b7280", lineHeight: 22 },
   btn: {
     backgroundColor: "#6366f1",
     paddingVertical: 14,

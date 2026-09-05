@@ -27,4 +27,3 @@ const data = computed(() => snapshot.value?.data);
     </ul>
   </div>
 </template>
-

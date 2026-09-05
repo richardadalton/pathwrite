@@ -10,26 +10,29 @@ const { snapshot } = usePathContext<OnboardingData>();
 const d = computed(() => (snapshot.value.data.details?.data ?? {}) as EmployeeDetails);
 
 function laptopLabel(val: string) {
-  return LAPTOP_TYPES.find(l => l.value === val)?.label ?? val;
+  return LAPTOP_TYPES.find((l) => l.value === val)?.label ?? val;
 }
 
 function yesNo(val: string | undefined) {
   return val === "yes" ? "Yes" : "No";
 }
 
-const activePerms = computed(() => [
-  d.value.permAdmin   === "yes" && "Admin",
-  d.value.permDev     === "yes" && "Developer",
-  d.value.permHR      === "yes" && "HR",
-  d.value.permFinance === "yes" && "Finance",
-].filter(Boolean) as string[]);
+const activePerms = computed(
+  () =>
+    [
+      d.value.permAdmin === "yes" && "Admin",
+      d.value.permDev === "yes" && "Developer",
+      d.value.permHR === "yes" && "HR",
+      d.value.permFinance === "yes" && "Finance",
+    ].filter(Boolean) as string[]
+);
 </script>
 
 <template>
   <div v-if="snapshot" class="form-body">
     <p class="step-intro">
-      Review the details below. Click <strong>Complete Onboarding</strong> to submit,
-      or use <strong>Previous</strong> to go back and make changes.
+      Review the details below. Click <strong>Complete Onboarding</strong> to submit, or use
+      <strong>Previous</strong> to go back and make changes.
     </p>
 
     <div class="review-section">
@@ -47,7 +50,7 @@ const activePerms = computed(() => [
       <div class="review-card">
         <div class="review-row">
           <span class="review-key">Full Name</span>
-          <span>{{ [d.firstName, d.lastName].filter(Boolean).join(' ') || '—' }}</span>
+          <span>{{ [d.firstName, d.lastName].filter(Boolean).join(" ") || "—" }}</span>
         </div>
         <div v-if="d.dateOfBirth" class="review-row">
           <span class="review-key">Date of Birth</span>
@@ -69,7 +72,7 @@ const activePerms = computed(() => [
       <div class="review-card">
         <div class="review-row">
           <span class="review-key">Department</span>
-          <span>{{ d.department || '—' }}</span>
+          <span>{{ d.department || "—" }}</span>
         </div>
         <div v-if="d.manager" class="review-row">
           <span class="review-key">Manager</span>
@@ -91,7 +94,7 @@ const activePerms = computed(() => [
       <div class="review-card">
         <div class="review-row">
           <span class="review-key">Laptop</span>
-          <span>{{ laptopLabel(d.laptopType ?? 'macbook-pro') }}</span>
+          <span>{{ laptopLabel(d.laptopType ?? "macbook-pro") }}</span>
         </div>
         <div class="review-row">
           <span class="review-key">Mobile Phone</span>
@@ -113,18 +116,15 @@ const activePerms = computed(() => [
       <div class="review-card">
         <div class="review-row">
           <span class="review-key">Job Title</span>
-          <span>{{ d.jobTitle || '—' }}</span>
+          <span>{{ d.jobTitle || "—" }}</span>
         </div>
         <div class="review-row">
           <span class="review-key">Permissions</span>
           <span>
             <template v-if="activePerms.length > 0">
-              <span
-                v-for="p in activePerms"
-                :key="p"
-                class="badge badge--on"
-                style="margin-right: 4px"
-              >{{ p }}</span>
+              <span v-for="p in activePerms" :key="p" class="badge badge--on" style="margin-right: 4px">{{
+                p
+              }}</span>
             </template>
             <span v-else class="badge badge--off">None</span>
           </span>

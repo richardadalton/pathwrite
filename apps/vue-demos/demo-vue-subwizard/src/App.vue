@@ -4,30 +4,32 @@ import { PathShell } from "@daltonr/pathwrite-vue";
 import type { PathData } from "@daltonr/pathwrite-vue";
 import { approvalWorkflowPath, INITIAL_DATA, AVAILABLE_APPROVERS } from "./approval";
 import type { DocumentData, ApproverResult } from "./types";
-import CreateDocumentStep  from "./CreateDocumentStep.vue";
+import CreateDocumentStep from "./CreateDocumentStep.vue";
 import SelectApproversStep from "./SelectApproversStep.vue";
-import ApprovalReviewStep  from "./ApprovalReviewStep.vue";
-import SummaryStep         from "./SummaryStep.vue";
-import ViewDocumentStep    from "./ViewDocumentStep.vue";
-import DecisionStep        from "./DecisionStep.vue";
+import ApprovalReviewStep from "./ApprovalReviewStep.vue";
+import SummaryStep from "./SummaryStep.vue";
+import ViewDocumentStep from "./ViewDocumentStep.vue";
+import DecisionStep from "./DecisionStep.vue";
 
-const isCompleted    = ref(false);
-const isCancelled    = ref(false);
-const completedData  = ref<DocumentData | null>(null);
+const isCompleted = ref(false);
+const isCancelled = ref(false);
+const completedData = ref<DocumentData | null>(null);
 
 function handleComplete(data: PathData) {
   completedData.value = data as DocumentData;
-  isCompleted.value   = true;
+  isCompleted.value = true;
 }
-function handleCancel() { isCancelled.value = true; }
+function handleCancel() {
+  isCancelled.value = true;
+}
 function startOver() {
-  isCompleted.value  = false;
-  isCancelled.value  = false;
+  isCompleted.value = false;
+  isCancelled.value = false;
   completedData.value = null;
 }
 
 function getApproverName(id: string) {
-  return AVAILABLE_APPROVERS.find(a => a.id === id)?.name ?? id;
+  return AVAILABLE_APPROVERS.find((a) => a.id === id)?.name ?? id;
 }
 
 function getResult(data: DocumentData, id: string): ApproverResult | null {
@@ -36,8 +38,8 @@ function getResult(data: DocumentData, id: string): ApproverResult | null {
 
 const overallStatus = (data: DocumentData) => {
   const ids = data.approvers as string[];
-  if (ids.every(id => getResult(data, id)?.decision === "approved")) return "approved";
-  if (ids.some(id  => getResult(data, id)?.decision === "rejected"))  return "rejected";
+  if (ids.every((id) => getResult(data, id)?.decision === "approved")) return "approved";
+  if (ids.some((id) => getResult(data, id)?.decision === "rejected")) return "rejected";
   return "mixed";
 };
 </script>
@@ -46,30 +48,52 @@ const overallStatus = (data: DocumentData) => {
   <main class="page">
     <div class="page-header">
       <h1>Approval Workflow</h1>
-      <p class="subtitle">Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.</p>
+      <p class="subtitle">
+        Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.
+      </p>
     </div>
 
     <!-- Completed -->
-    <section v-if="isCompleted && completedData" class="result-panel" :class="overallStatus(completedData) === 'approved' ? 'success-panel' : 'reject-panel'">
-      <div class="result-icon">{{ overallStatus(completedData) === 'approved' ? '✅' : '❌' }}</div>
-      <h2>{{ overallStatus(completedData) === 'approved' ? 'Document Approved!' : 'Document Rejected' }}</h2>
+    <section
+      v-if="isCompleted && completedData"
+      class="result-panel"
+      :class="overallStatus(completedData) === 'approved' ? 'success-panel' : 'reject-panel'"
+    >
+      <div class="result-icon">{{ overallStatus(completedData) === "approved" ? "✅" : "❌" }}</div>
+      <h2>{{ overallStatus(completedData) === "approved" ? "Document Approved!" : "Document Rejected" }}</h2>
       <p>
-        <template v-if="overallStatus(completedData) === 'approved'">All approvers signed off on <strong>{{ completedData.title }}</strong>.</template>
-        <template v-else>One or more approvers rejected <strong>{{ completedData.title }}</strong>.</template>
+        <template v-if="overallStatus(completedData) === 'approved'"
+          >All approvers signed off on <strong>{{ completedData.title }}</strong
+          >.</template
+        >
+        <template v-else
+          >One or more approvers rejected <strong>{{ completedData.title }}</strong
+          >.</template
+        >
       </p>
       <div class="summary">
         <div class="summary-section">
           <p class="summary-section__title">Document</p>
-          <div class="summary-row"><span class="summary-key">Title</span><span>{{ completedData.title }}</span></div>
-          <div class="summary-row"><span class="summary-key">Description</span><span>{{ completedData.description }}</span></div>
+          <div class="summary-row">
+            <span class="summary-key">Title</span><span>{{ completedData.title }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Description</span><span>{{ completedData.description }}</span>
+          </div>
         </div>
         <div class="summary-section">
           <p class="summary-section__title">Decisions</p>
-          <div v-for="id in (completedData.approvers as string[])" :key="id" class="summary-row">
+          <div v-for="id in completedData.approvers as string[]" :key="id" class="summary-row">
             <span class="summary-key">{{ getApproverName(id) }}</span>
-            <span :class="getResult(completedData, id)?.decision === 'approved' ? 'text-approved' : 'text-rejected'">
-              {{ getResult(completedData, id)?.decision === 'approved' ? '✓ Approved' : '✗ Rejected' }}
-              <em v-if="getResult(completedData, id)?.comment"> — {{ getResult(completedData, id)?.comment }}</em>
+            <span
+              :class="
+                getResult(completedData, id)?.decision === 'approved' ? 'text-approved' : 'text-rejected'
+              "
+            >
+              {{ getResult(completedData, id)?.decision === "approved" ? "✓ Approved" : "✗ Rejected" }}
+              <em v-if="getResult(completedData, id)?.comment">
+                — {{ getResult(completedData, id)?.comment }}</em
+              >
             </span>
           </div>
         </div>
@@ -114,4 +138,3 @@ const overallStatus = (data: DocumentData) => {
     </PathShell>
   </main>
 </template>
-

@@ -23,10 +23,10 @@ export interface ApprovalData {
 
 export const AVAILABLE_APPROVERS = [
   { id: "alice", name: "Alice Johnson" },
-  { id: "bob",   name: "Bob Smith" },
+  { id: "bob", name: "Bob Smith" },
   { id: "carol", name: "Carol Williams" },
-  { id: "dave",  name: "Dave Brown" },
-  { id: "eve",   name: "Eve Davis" },
+  { id: "dave", name: "Dave Brown" },
+  { id: "eve", name: "Eve Davis" },
 ];
 
 export const INITIAL_DATA: DocumentData = {
@@ -35,4 +35,3 @@ export const INITIAL_DATA: DocumentData = {
   approvers: [],
   approvalResults: {},
 };
-

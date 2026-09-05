@@ -5,4 +5,12 @@
   import { innerPath } from "./nested-fixture";
 </script>
 
-<PathShell path={innerPath} restoreKey="inner" validationDisplay="summary" nextLabel="InnerNext" completeLabel="InnerComplete" innerA={StepA} innerB={StepB} />
+<PathShell
+  path={innerPath}
+  restoreKey="inner"
+  validationDisplay="summary"
+  nextLabel="InnerNext"
+  completeLabel="InnerComplete"
+  innerA={StepA}
+  innerB={StepB}
+/>

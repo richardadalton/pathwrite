@@ -46,10 +46,10 @@ export class MockApplicationServices implements ApplicationServices {
   async getRoles(): Promise<Role[]> {
     await delay(700); // simulate an API round-trip
     return [
-      { id: "eng",    label: "Software Engineer" },
-      { id: "pm",     label: "Product Manager" },
+      { id: "eng", label: "Software Engineer" },
+      { id: "pm", label: "Product Manager" },
       { id: "design", label: "Designer" },
-      { id: "data",   label: "Data Scientist" },
+      { id: "data", label: "Data Scientist" },
       { id: "devrel", label: "Developer Advocate" },
     ];
   }

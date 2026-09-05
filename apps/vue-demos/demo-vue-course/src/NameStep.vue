@@ -5,9 +5,7 @@ import type { CourseData } from "./course";
 
 const { snapshot, setData } = usePathContext<CourseData>();
 
-const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}
-);
+const errors = computed(() => (snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}));
 
 const fullName = computed(() => snapshot.value?.data.fullName ?? "");
 
@@ -23,9 +21,7 @@ function onNameInput(event: Event) {
 
 <template>
   <div class="form-body">
-    <p class="step-intro">
-      Welcome to Pathwrite Academy. Enter your full name to begin the course.
-    </p>
+    <p class="step-intro">Welcome to Pathwrite Academy. Enter your full name to begin the course.</p>
 
     <div class="field" :class="{ 'field--error': errors.fullName }">
       <label for="student-name">Full name</label>
@@ -41,5 +37,3 @@ function onNameInput(event: Event) {
     </div>
   </div>
 </template>
-
-

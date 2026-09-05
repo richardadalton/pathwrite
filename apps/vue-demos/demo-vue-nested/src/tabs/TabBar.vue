@@ -16,11 +16,15 @@ const { snapshot, goToStep } = usePathContext<EmployeeDetails>();
       v-for="step in snapshot.steps"
       :key="step.id"
       type="button"
-      :class="[
-        'tab-btn',
-        step.status === 'current'   ? 'tab-btn--active'    : '',
-        step.status === 'completed' ? 'tab-btn--completed' : '',
-      ].filter(Boolean).join(' ')"
+      :class="
+        [
+          'tab-btn',
+          step.status === 'current' ? 'tab-btn--active' : '',
+          step.status === 'completed' ? 'tab-btn--completed' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+      "
       @click="goToStep(step.id)"
     >
       {{ step.title }}

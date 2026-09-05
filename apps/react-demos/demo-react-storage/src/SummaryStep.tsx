@@ -16,8 +16,8 @@ function formatDate(d: string): string {
 
 export function SummaryStep() {
   const { snapshot } = usePathContext<WizardData>();
-  const data     = snapshot!.data;
-  const members  = (data.members ?? []) as Person[];
+  const data = snapshot!.data;
+  const members = (data.members ?? []) as Person[];
   const profiles = (data.profiles ?? {}) as Record<string, MemberProfile>;
 
   return (

@@ -3,16 +3,16 @@ import { PathShell } from "@daltonr/pathwrite-solid";
 import type { PathData } from "@daltonr/pathwrite-solid";
 import { approvalWorkflowPath, INITIAL_DATA, AVAILABLE_APPROVERS } from "./approval";
 import type { DocumentData, ApproverResult } from "./types";
-import CreateDocumentStep  from "./CreateDocumentStep";
+import CreateDocumentStep from "./CreateDocumentStep";
 import SelectApproversStep from "./SelectApproversStep";
-import ApprovalReviewStep  from "./ApprovalReviewStep";
-import SummaryStep         from "./SummaryStep";
-import ViewDocumentStep    from "./ViewDocumentStep";
-import DecisionStep        from "./DecisionStep";
+import ApprovalReviewStep from "./ApprovalReviewStep";
+import SummaryStep from "./SummaryStep";
+import ViewDocumentStep from "./ViewDocumentStep";
+import DecisionStep from "./DecisionStep";
 
 export default function App() {
-  const [isCompleted, setIsCompleted]     = createSignal(false);
-  const [isCancelled, setIsCancelled]     = createSignal(false);
+  const [isCompleted, setIsCompleted] = createSignal(false);
+  const [isCancelled, setIsCancelled] = createSignal(false);
   const [completedData, setCompletedData] = createSignal<DocumentData | null>(null);
 
   function handleComplete(data: PathData) {
@@ -35,13 +35,13 @@ export default function App() {
   }
 
   function getSelectedApprovers(d: DocumentData) {
-    return AVAILABLE_APPROVERS.filter(a => (d.approvers as string[]).includes(a.id));
+    return AVAILABLE_APPROVERS.filter((a) => (d.approvers as string[]).includes(a.id));
   }
 
   function getStatus(d: DocumentData): "approved" | "rejected" | "mixed" {
     const ids = d.approvers as string[];
-    if (ids.every(id => getResults(d)[id]?.decision === "approved")) return "approved";
-    if (ids.some(id  => getResults(d)[id]?.decision === "rejected"))  return "rejected";
+    if (ids.every((id) => getResults(d)[id]?.decision === "approved")) return "approved";
+    if (ids.some((id) => getResults(d)[id]?.decision === "rejected")) return "rejected";
     return "mixed";
   }
 
@@ -49,7 +49,10 @@ export default function App() {
     <main class="page">
       <div class="page-header">
         <h1>Approval Workflow</h1>
-        <p class="subtitle">Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.</p>
+        <p class="subtitle">
+          Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers
+          completing.
+        </p>
       </div>
 
       {/* Completed */}
@@ -57,7 +60,10 @@ export default function App() {
         {(data) => {
           const st = getStatus(data());
           return (
-            <section class="result-panel" classList={{ "success-panel": st === "approved", "cancel-panel": st !== "approved" }}>
+            <section
+              class="result-panel"
+              classList={{ "success-panel": st === "approved", "cancel-panel": st !== "approved" }}
+            >
               <div class="result-icon">{st === "approved" ? "✅" : "❌"}</div>
               <h2>{st === "approved" ? "Document Approved!" : "Document Rejected"}</h2>
               <p>
@@ -88,13 +94,18 @@ export default function App() {
                       {(approver) => (
                         <div class="review-row">
                           <span class="review-key">{approver.name}</span>
-                          <span classList={{
-                            "text-approved": getResults(data())[approver.id]?.decision === "approved",
-                            "text-rejected": getResults(data())[approver.id]?.decision === "rejected",
-                          }}>
-                            {getResults(data())[approver.id]?.decision === "approved" ? "✓ Approved" : "✗ Rejected"}
+                          <span
+                            classList={{
+                              "text-approved": getResults(data())[approver.id]?.decision === "approved",
+                              "text-rejected": getResults(data())[approver.id]?.decision === "rejected",
+                            }}
+                          >
+                            {getResults(data())[approver.id]?.decision === "approved"
+                              ? "✓ Approved"
+                              : "✗ Rejected"}
                             <Show when={getResults(data())[approver.id]?.comment}>
-                              {" — "}<em>{getResults(data())[approver.id].comment}</em>
+                              {" — "}
+                              <em>{getResults(data())[approver.id].comment}</em>
                             </Show>
                           </span>
                         </div>
@@ -104,7 +115,9 @@ export default function App() {
                 </div>
               </div>
 
-              <button class="btn-primary" onClick={startOver}>Start Over</button>
+              <button class="btn-primary" onClick={startOver}>
+                Start Over
+              </button>
             </section>
           );
         }}
@@ -116,7 +129,9 @@ export default function App() {
           <div class="result-icon">✖</div>
           <h2>Workflow Cancelled</h2>
           <p>No approvals were recorded.</p>
-          <button class="btn-secondary" onClick={startOver}>Try Again</button>
+          <button class="btn-secondary" onClick={startOver}>
+            Try Again
+          </button>
         </section>
       </Show>
 
@@ -131,12 +146,12 @@ export default function App() {
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{
-            createDocument:  () => <CreateDocumentStep />,
+            createDocument: () => <CreateDocumentStep />,
             selectApprovers: () => <SelectApproversStep />,
-            approvalReview:  () => <ApprovalReviewStep />,
-            summary:         () => <SummaryStep />,
-            viewDocument:    () => <ViewDocumentStep />,
-            decision:        () => <DecisionStep />,
+            approvalReview: () => <ApprovalReviewStep />,
+            summary: () => <SummaryStep />,
+            viewDocument: () => <ViewDocumentStep />,
+            decision: () => <DecisionStep />,
           }}
         />
       </Show>

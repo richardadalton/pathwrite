@@ -37,7 +37,9 @@ export default function App() {
           <section class="result-panel success-panel">
             <div class="result-icon">✅</div>
             <h2>Message Sent!</h2>
-            <p>Thanks <strong>{data().name}</strong>, we've received your message.</p>
+            <p>
+              Thanks <strong>{data().name}</strong>, we've received your message.
+            </p>
             <div class="submitted-summary">
               <div class="summary-row">
                 <span class="summary-label">Email</span>

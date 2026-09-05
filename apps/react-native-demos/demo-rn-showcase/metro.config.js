@@ -13,7 +13,10 @@ config.watchFolders = [workspaceRoot];
 config.resolver.extraNodeModules = {
   "@daltonr/pathwrite-core": path.resolve(workspaceRoot, "packages/core"),
   "@daltonr/pathwrite-react-native": path.resolve(workspaceRoot, "packages/react-native-adapter"),
-  "@daltonr/pathwrite-demo-workflow-job-application": path.resolve(workspaceRoot, "apps/shared-workflows/demo-workflow-job-application"),
+  "@daltonr/pathwrite-demo-workflow-job-application": path.resolve(
+    workspaceRoot,
+    "apps/shared-workflows/demo-workflow-job-application"
+  ),
 };
 
 // Only look in the app's own node_modules — not the monorepo root.
@@ -21,9 +24,7 @@ config.resolver.extraNodeModules = {
 // workspace install; including them in nodeModulesPaths causes Metro to
 // bundle the wrong (React-18-era) renderer, which crashes with
 // "ReactCurrentDispatcher of undefined" under React 19.
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, "node_modules"),
-];
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, "node_modules")];
 
 // Belt-and-suspenders: for react, react-dom, react-native, and scheduler
 // (plus any subpath imports) always resolve to the app's copy, never to
@@ -33,10 +34,14 @@ config.resolver.nodeModulesPaths = [
 // "ReactCurrentBatchConfig undefined" crash at runtime.
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
-    moduleName === "react"         || moduleName.startsWith("react/") ||
-    moduleName === "react-dom"     || moduleName.startsWith("react-dom/") ||
-    moduleName === "react-native"  || moduleName.startsWith("react-native/") ||
-    moduleName === "scheduler"     || moduleName.startsWith("scheduler/")
+    moduleName === "react" ||
+    moduleName.startsWith("react/") ||
+    moduleName === "react-dom" ||
+    moduleName.startsWith("react-dom/") ||
+    moduleName === "react-native" ||
+    moduleName.startsWith("react-native/") ||
+    moduleName === "scheduler" ||
+    moduleName.startsWith("scheduler/")
   ) {
     try {
       return {

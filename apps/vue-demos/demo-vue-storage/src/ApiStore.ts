@@ -81,4 +81,3 @@ export class ApiStore implements PathStore {
     await Promise.all(keys.map((key) => this.delete(key)));
   }
 }
-

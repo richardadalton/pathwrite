@@ -32,18 +32,30 @@ const billingLabel = computed(() => {
     <div class="review-section">
       <p class="section-title">Shipping Address</p>
       <div class="review-card">
-        <div class="review-row"><span class="review-key">Name</span><span>{{ data.shippingName }}</span></div>
-        <div class="review-row"><span class="review-key">Address</span><span>{{ data.shippingAddress }}</span></div>
-        <div class="review-row"><span class="review-key">City</span><span>{{ data.shippingCity }}</span></div>
-        <div class="review-row"><span class="review-key">Postcode</span><span>{{ data.shippingPostcode }}</span></div>
+        <div class="review-row">
+          <span class="review-key">Name</span><span>{{ data.shippingName }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-key">Address</span><span>{{ data.shippingAddress }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-key">City</span><span>{{ data.shippingCity }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-key">Postcode</span><span>{{ data.shippingPostcode }}</span>
+        </div>
       </div>
     </div>
 
     <div v-if="data.plan === 'paid'" class="review-section">
       <p class="section-title">Payment</p>
       <div class="review-card">
-        <div class="review-row"><span class="review-key">Card</span><span>•••• {{ (data.cardNumber as string).slice(-4) }}</span></div>
-        <div class="review-row"><span class="review-key">Expiry</span><span>{{ data.cardExpiry }}</span></div>
+        <div class="review-row">
+          <span class="review-key">Card</span><span>•••• {{ (data.cardNumber as string).slice(-4) }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-key">Expiry</span><span>{{ data.cardExpiry }}</span>
+        </div>
       </div>
     </div>
 
@@ -55,10 +67,18 @@ const billingLabel = computed(() => {
           <span>{{ billingLabel }}</span>
         </div>
         <template v-if="!data.billingSameAsShipping">
-          <div class="review-row"><span class="review-key">Name</span><span>{{ data.billingName }}</span></div>
-          <div class="review-row"><span class="review-key">Address</span><span>{{ data.billingAddress }}</span></div>
-          <div class="review-row"><span class="review-key">City</span><span>{{ data.billingCity }}</span></div>
-          <div class="review-row"><span class="review-key">Postcode</span><span>{{ data.billingPostcode }}</span></div>
+          <div class="review-row">
+            <span class="review-key">Name</span><span>{{ data.billingName }}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-key">Address</span><span>{{ data.billingAddress }}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-key">City</span><span>{{ data.billingCity }}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-key">Postcode</span><span>{{ data.billingPostcode }}</span>
+          </div>
         </template>
       </div>
     </div>
@@ -69,14 +89,19 @@ const billingLabel = computed(() => {
         <li>✓ Select Plan</li>
         <li>✓ Shipping Address</li>
         <li :class="data.plan === 'free' ? 'skip-summary__skipped' : ''">
-          {{ data.plan === 'free' ? '⏭ Payment Details (skipped)' : '✓ Payment Details' }}
+          {{ data.plan === "free" ? "⏭ Payment Details (skipped)" : "✓ Payment Details" }}
         </li>
         <li :class="data.plan === 'free' || data.billingSameAsShipping ? 'skip-summary__skipped' : ''">
-          {{ data.plan === 'free' ? '⏭ Billing Address (skipped — free plan)' : data.billingSameAsShipping ? '⏭ Billing Address (skipped — same as shipping)' : '✓ Billing Address' }}
+          {{
+            data.plan === "free"
+              ? "⏭ Billing Address (skipped — free plan)"
+              : data.billingSameAsShipping
+                ? "⏭ Billing Address (skipped — same as shipping)"
+                : "✓ Billing Address"
+          }}
         </li>
         <li class="skip-summary__current">● Review (you are here)</li>
       </ul>
     </div>
   </div>
 </template>
-

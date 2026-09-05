@@ -27,7 +27,9 @@ export default function BackgroundStep() {
 
         {/* Department */}
         <div class="field" classList={{ "field--error": !!errors().department }}>
-          <label for="department">Department <span class="required">*</span></label>
+          <label for="department">
+            Department <span class="required">*</span>
+          </label>
           <input
             id="department"
             type="text"
@@ -42,7 +44,9 @@ export default function BackgroundStep() {
 
         {/* Start date */}
         <div class="field" classList={{ "field--error": !!errors().startDate }}>
-          <label for="start-date">Start Date <span class="required">*</span></label>
+          <label for="start-date">
+            Start Date <span class="required">*</span>
+          </label>
           <input
             id="start-date"
             type="date"

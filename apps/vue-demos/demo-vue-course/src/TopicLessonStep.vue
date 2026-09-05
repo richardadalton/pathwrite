@@ -14,9 +14,7 @@ const topicId = computed<TopicId>(() => {
 });
 
 const topic = computed(() => TOPICS[topicId.value]);
-const hasDrilledDown = computed(
-  () => snapshot.value?.data.drilldownsCompleted[topicId.value] ?? false
-);
+const hasDrilledDown = computed(() => snapshot.value?.data.drilldownsCompleted[topicId.value] ?? false);
 
 async function openDrilldown() {
   const currentTopic = topic.value;
@@ -25,7 +23,7 @@ async function openDrilldown() {
     title: currentTopic.title,
     sourceDoc: currentTopic.sourceDoc,
     whyItMatters: currentTopic.drilldown.whyItMatters,
-    miniExample: currentTopic.drilldown.miniExample
+    miniExample: currentTopic.drilldown.miniExample,
   };
 
   await startSubPath(drilldownPath, initialData, { topicId: currentTopic.id });
@@ -51,12 +49,7 @@ async function openDrilldown() {
           Launch a short subpath for extra context. You can still continue without it.
         </p>
       </div>
-      <button
-        type="button"
-        class="btn-secondary"
-        :disabled="snapshot?.isNavigating"
-        @click="openDrilldown"
-      >
+      <button type="button" class="btn-secondary" :disabled="snapshot?.isNavigating" @click="openDrilldown">
         Open Drilldown
       </button>
     </div>
@@ -64,4 +57,3 @@ async function openDrilldown() {
     <p v-if="hasDrilledDown" class="status-pass">Subpath completed for this topic.</p>
   </div>
 </template>
-

@@ -6,8 +6,8 @@ import type { WizardData, Person } from "./wizard";
 const { snapshot, setData } = usePathContext<WizardData>();
 
 const teamName = computed(() => (snapshot.value?.data.teamName as string) ?? "");
-const members  = computed(() => (snapshot.value?.data.members  ?? []) as Person[]);
-const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
+const members = computed(() => (snapshot.value?.data.members ?? []) as Person[]);
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
 function updateTeamName(value: string) {
@@ -19,30 +19,37 @@ function addMember() {
 }
 
 function removeMember(index: number) {
-  setData("members", members.value.filter((_, i) => i !== index));
+  setData(
+    "members",
+    members.value.filter((_, i) => i !== index)
+  );
 }
 
 function updateMemberName(index: number, value: string) {
-  setData("members", members.value.map((m, i) => i === index ? { ...m, name: value } : m));
+  setData(
+    "members",
+    members.value.map((m, i) => (i === index ? { ...m, name: value } : m))
+  );
 }
 
 function updateMemberRole(index: number, value: string) {
-  setData("members", members.value.map((m, i) => i === index ? { ...m, role: value } : m));
+  setData(
+    "members",
+    members.value.map((m, i) => (i === index ? { ...m, role: value } : m))
+  );
 }
 </script>
 
 <template>
   <div class="form-body">
     <p class="step-intro">
-      Enter your team's name and add everyone you'll be onboarding. You'll fill in a detailed
-      profile for each person on the next step.
+      Enter your team's name and add everyone you'll be onboarding. You'll fill in a detailed profile for each
+      person on the next step.
     </p>
 
     <!-- Team name -->
     <div class="field" :class="{ 'field--error': attempted && errors.teamName }">
-      <label for="team-name">
-        Team Name <span class="required">*</span>
-      </label>
+      <label for="team-name"> Team Name <span class="required">*</span> </label>
       <input
         id="team-name"
         type="text"
@@ -85,12 +92,7 @@ function updateMemberRole(index: number, value: string) {
               class="member-role-input"
             />
           </div>
-          <button
-            type="button"
-            class="btn-remove"
-            @click="removeMember(i)"
-            title="Remove member"
-          >✕</button>
+          <button type="button" class="btn-remove" @click="removeMember(i)" title="Remove member">✕</button>
         </div>
       </div>
 
@@ -98,4 +100,3 @@ function updateMemberRole(index: number, value: string) {
     </div>
   </div>
 </template>
-

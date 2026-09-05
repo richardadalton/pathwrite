@@ -37,8 +37,14 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Loading state ────────────────────────────────────────────────────────── */
@@ -60,7 +66,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Sessions list ────────────────────────────────────────────────────────── */
@@ -86,11 +94,18 @@
   transition: border-color 0.15s;
 }
 
-.session-card:hover { border-color: #93c5fd; }
+.session-card:hover {
+  border-color: #93c5fd;
+}
 
-.session-card__icon { font-size: 24px; flex-shrink: 0; }
+.session-card__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
 
-.session-card__info { flex: 1; }
+.session-card__info {
+  flex: 1;
+}
 
 .session-card__team {
   margin: 0 0 3px;
@@ -136,7 +151,9 @@
   transition: background 0.15s;
 }
 
-.btn-resume:hover { background: #dbeafe; }
+.btn-resume:hover {
+  background: #dbeafe;
+}
 
 .btn-delete-session {
   width: 32px;
@@ -150,10 +167,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
-.btn-delete-session:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+.btn-delete-session:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
 
 /* ── Empty sessions ───────────────────────────────────────────────────────── */
 .empty-sessions {
@@ -165,10 +188,19 @@
   margin-bottom: 24px;
 }
 
-.empty-sessions__icon { font-size: 36px; margin-bottom: 8px; }
+.empty-sessions__icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
 
-.empty-sessions p { margin: 0 0 4px; font-size: 14px; }
-.empty-sessions__hint { font-size: 13px !important; color: #9ca3af; }
+.empty-sessions p {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.empty-sessions__hint {
+  font-size: 13px !important;
+  color: #9ca3af;
+}
 
 /* ── New session bar ──────────────────────────────────────────────────────── */
 .new-session-bar {
@@ -205,7 +237,9 @@
   transition: background 0.15s;
 }
 
-.btn-back-sessions:hover { background: #f3f4f6; }
+.btn-back-sessions:hover {
+  background: #f3f4f6;
+}
 
 .wizard-topbar__right {
   display: flex;
@@ -239,17 +273,40 @@
   text-align: center;
 }
 
-.result-icon { font-size: 40px; margin-bottom: 14px; }
-.result-panel h2 { margin: 0 0 8px; font-size: 22px; }
-.result-panel p  { margin: 0 0 24px; font-size: 15px; }
+.result-icon {
+  font-size: 40px;
+  margin-bottom: 14px;
+}
+.result-panel h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.result-panel p {
+  margin: 0 0 24px;
+  font-size: 15px;
+}
 
-.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
-.success-panel h2 { color: #15803d; }
-.success-panel p  { color: #166534; }
+.success-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.success-panel h2 {
+  color: #15803d;
+}
+.success-panel p {
+  color: #166534;
+}
 
-.cancel-panel { background: #fafafa; border: 1px solid #e5e7eb; }
-.cancel-panel h2 { color: #374151; }
-.cancel-panel p  { color: #6b7280; }
+.cancel-panel {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+.cancel-panel h2 {
+  color: #374151;
+}
+.cancel-panel p {
+  color: #6b7280;
+}
 
 /* ── Completion result summary ────────────────────────────────────────────── */
 .result-summary {
@@ -290,8 +347,17 @@
   flex-shrink: 0;
 }
 
-.result-member-name { margin: 0 0 1px; font-size: 14px; font-weight: 600; color: #1f2937; }
-.result-member-role { margin: 0; font-size: 12px; color: #6b7280; }
+.result-member-name {
+  margin: 0 0 1px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.result-member-role {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
 
 .result-detail-grid {
   display: grid;
@@ -300,8 +366,14 @@
   padding: 8px 14px;
 }
 
-.result-detail-grid span { padding: 3px 0; font-size: 13px; }
-.result-key { font-weight: 600; color: #374151; }
+.result-detail-grid span {
+  padding: 3px 0;
+  font-size: 13px;
+}
+.result-key {
+  font-weight: 600;
+  color: #374151;
+}
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
@@ -316,7 +388,9 @@
   transition: background 0.15s;
 }
 
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover {
+  background: #1d4ed8;
+}
 
 .btn-new-session {
   font-size: 15px;
@@ -335,4 +409,6 @@
   transition: background 0.15s;
 }
 
-.btn-secondary:hover { background: #f3f4f6; }
+.btn-secondary:hover {
+  background: #f3f4f6;
+}

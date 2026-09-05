@@ -1,12 +1,17 @@
 <script lang="ts">
   import { PathShell } from "@daltonr/pathwrite-svelte";
-  
-  import { services, createApplicationPath, INITIAL_DATA, type ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
-  import RoleStep        from "./RoleStep.svelte";
-  import ExperienceStep  from "./ExperienceStep.svelte";
+
+  import {
+    services,
+    createApplicationPath,
+    INITIAL_DATA,
+    type ApplicationData,
+  } from "@daltonr/pathwrite-demo-workflow-job-application";
+  import RoleStep from "./RoleStep.svelte";
+  import ExperienceStep from "./ExperienceStep.svelte";
   import EligibilityStep from "./EligibilityStep.svelte";
   import CoverLetterStep from "./CoverLetterStep.svelte";
-  import ReviewStep      from "./ReviewStep.svelte";
+  import ReviewStep from "./ReviewStep.svelte";
 
   // Path is created once — factory closes over the services singleton.
   const applicationPath = createApplicationPath(services);
@@ -44,7 +49,9 @@
       loadingLabel="Please wait…"
       hideCancel={true}
       validationDisplay="inline"
-      oncomplete={(data) => { completedData = data as ApplicationData; }}
+      oncomplete={(data) => {
+        completedData = data as ApplicationData;
+      }}
       role={RoleStep}
       experience={ExperienceStep}
       eligibility={EligibilityStep}

@@ -38,7 +38,8 @@ function resetCourse() {
       <div class="result-icon">Awarded</div>
       <h2>Certified Pathwriter</h2>
       <p>
-        Congratulations, <span class="signature">{{ graduateData.fullName }}</span>.
+        Congratulations, <span class="signature">{{ graduateData.fullName }}</span
+        >.
       </p>
       <ul class="topic-list topic-list--final">
         <li v-for="topicId in TOPIC_IDS" :key="topicId">
@@ -78,4 +79,3 @@ function resetCourse() {
     </PathShell>
   </main>
 </template>
-

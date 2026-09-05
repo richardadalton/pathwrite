@@ -41,9 +41,7 @@ export default function ShippingAddressStep(props: Props) {
           onInput={(e) => setData({ shippingAddress: e.currentTarget.value })}
           placeholder="123 Main St"
         />
-        {errors().shippingAddress && (
-          <span class="field-error">{errors().shippingAddress}</span>
-        )}
+        {errors().shippingAddress && <span class="field-error">{errors().shippingAddress}</span>}
       </div>
 
       <div class={`field${errors().shippingCity ? " field--error" : ""}`}>
@@ -71,9 +69,7 @@ export default function ShippingAddressStep(props: Props) {
           onInput={(e) => setData({ shippingPostcode: e.currentTarget.value })}
           placeholder="D01 F5P2"
         />
-        {errors().shippingPostcode && (
-          <span class="field-error">{errors().shippingPostcode}</span>
-        )}
+        {errors().shippingPostcode && <span class="field-error">{errors().shippingPostcode}</span>}
       </div>
 
       <div class="field">

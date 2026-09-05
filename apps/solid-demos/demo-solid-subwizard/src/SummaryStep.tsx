@@ -8,25 +8,25 @@ export default function SummaryStep() {
 
   const data = createMemo(() => ctx.snapshot()?.data);
 
-  const results = createMemo(() =>
-    (data()?.approvalResults ?? {}) as Record<string, ApproverResult>
-  );
+  const results = createMemo(() => (data()?.approvalResults ?? {}) as Record<string, ApproverResult>);
 
   const selectedApprovers = createMemo(() =>
-    AVAILABLE_APPROVERS.filter(a => ((data()?.approvers ?? []) as string[]).includes(a.id))
+    AVAILABLE_APPROVERS.filter((a) => ((data()?.approvers ?? []) as string[]).includes(a.id))
   );
 
   const status = createMemo((): "approved" | "rejected" | "mixed" => {
     const approvers = selectedApprovers();
-    if (approvers.every(a => results()[a.id]?.decision === "approved")) return "approved";
-    if (approvers.some(a  => results()[a.id]?.decision === "rejected"))  return "rejected";
+    if (approvers.every((a) => results()[a.id]?.decision === "approved")) return "approved";
+    if (approvers.some((a) => results()[a.id]?.decision === "rejected")) return "rejected";
     return "mixed";
   });
 
   const bannerStyle = createMemo(() => {
     const s = status();
-    if (s === "approved") return "background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #15803d;";
-    if (s === "rejected") return "background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #dc2626;";
+    if (s === "approved")
+      return "background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #15803d;";
+    if (s === "rejected")
+      return "background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #dc2626;";
     return "background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #92400e;";
   });
 
@@ -41,8 +41,8 @@ export default function SummaryStep() {
             {status() === "approved"
               ? "All approvers approved the document."
               : status() === "rejected"
-              ? "One or more approvers rejected the document."
-              : "Mixed results — review comments below."}
+                ? "One or more approvers rejected the document."
+                : "Mixed results — review comments below."}
           </span>
         </div>
 
@@ -66,14 +66,22 @@ export default function SummaryStep() {
             <For each={selectedApprovers()}>
               {(approver) => (
                 <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <div class="member-avatar" style="width: 28px; height: 28px; font-size: 12px; flex-shrink: 0;">{approver.name.charAt(0)}</div>
+                  <div
+                    class="member-avatar"
+                    style="width: 28px; height: 28px; font-size: 12px; flex-shrink: 0;"
+                  >
+                    {approver.name.charAt(0)}
+                  </div>
                   <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
                       <span style="font-size: 14px; font-weight: 500; color: #1f2937;">{approver.name}</span>
-                      <span classList={{
-                        "text-approved": results()[approver.id]?.decision === "approved",
-                        "text-rejected": results()[approver.id]?.decision === "rejected",
-                      }} style="font-size: 13px;">
+                      <span
+                        classList={{
+                          "text-approved": results()[approver.id]?.decision === "approved",
+                          "text-rejected": results()[approver.id]?.decision === "rejected",
+                        }}
+                        style="font-size: 13px;"
+                      >
                         {results()[approver.id]?.decision === "approved" ? "✓ Approved" : "✗ Rejected"}
                       </span>
                     </div>

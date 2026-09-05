@@ -12,19 +12,28 @@
 
     <div class="field" class:field--error={errors.title}>
       <label for="title">Title <span class="required">*</span></label>
-      <input id="title" type="text" value={ctx.snapshot.data.title ?? ""}
+      <input
+        id="title"
+        type="text"
+        value={ctx.snapshot.data.title ?? ""}
         oninput={(e) => ctx.setData("title", e.currentTarget.value)}
-        placeholder="e.g. Q1 Budget Report" autocomplete="off" autofocus />
+        placeholder="e.g. Q1 Budget Report"
+        autocomplete="off"
+        autofocus
+      />
       {#if errors.title}<span class="field-error">{errors.title}</span>{/if}
     </div>
 
     <div class="field" class:field--error={errors.description}>
       <label for="description">Description <span class="required">*</span></label>
-      <textarea id="description" value={ctx.snapshot.data.description ?? ""} rows={4}
+      <textarea
+        id="description"
+        value={ctx.snapshot.data.description ?? ""}
+        rows={4}
         oninput={(e) => ctx.setData("description", e.currentTarget.value)}
-        placeholder="Brief summary of the document and what needs to be approved..." />
+        placeholder="Brief summary of the document and what needs to be approved..."
+      />
       {#if errors.description}<span class="field-error">{errors.description}</span>{/if}
     </div>
   </div>
 {/if}
-

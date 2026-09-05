@@ -20,32 +20,23 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
       // fieldErrors without an explicit canMoveNext — the engine auto-derives
       // canMoveNext as true when all messages are undefined.
       fieldErrors: ({ data }) => ({
-        firstName: !(data.firstName as string)?.trim()
-          ? "First name is required."
-          : undefined,
-        lastName: !(data.lastName as string)?.trim()
-          ? "Last name is required."
-          : undefined,
+        firstName: !(data.firstName as string)?.trim() ? "First name is required." : undefined,
+        lastName: !(data.lastName as string)?.trim() ? "Last name is required." : undefined,
         email: !(data.email as string)?.trim()
           ? "Email address is required."
           : !isValidEmail(data.email as string)
-          ? "Enter a valid email address."
-          : undefined,
+            ? "Enter a valid email address."
+            : undefined,
       }),
     },
     {
       id: "about-you",
       title: "About You",
       // Explicit canMoveNext plus fieldErrors — demonstrates both together.
-      canMoveNext: ({ data }) =>
-        !!(data.jobTitle as string)?.trim() && !!(data.experience as string),
+      canMoveNext: ({ data }) => !!(data.jobTitle as string)?.trim() && !!(data.experience as string),
       fieldErrors: ({ data }) => ({
-        jobTitle: !(data.jobTitle as string)?.trim()
-          ? "Job title is required."
-          : undefined,
-        experience: !(data.experience as string)
-          ? "Please select your experience level."
-          : undefined,
+        jobTitle: !(data.jobTitle as string)?.trim() ? "Job title is required." : undefined,
+        experience: !(data.experience as string) ? "Please select your experience level." : undefined,
       }),
     },
     {
@@ -60,4 +51,3 @@ export const onboardingPath: PathDefinition<OnboardingData> = {
     },
   ],
 };
-

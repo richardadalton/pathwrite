@@ -7,9 +7,7 @@
   const ctx = usePathContext<EmployeeDetails>();
 
   let errors = $derived(
-    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated
-      ? ctx.snapshot?.fieldErrors ?? {}
-      : {}
+    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated ? (ctx.snapshot?.fieldErrors ?? {}) : {}
   );
 </script>
 

@@ -6,11 +6,11 @@ import { PathEngine } from "@daltonr/pathwrite-angular";
 import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
 import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
 import type { WizardData, Person, MemberProfile } from "./wizard";
-import { TeamSetupStepComponent }      from "./steps/team-setup-step.component";
+import { TeamSetupStepComponent } from "./steps/team-setup-step.component";
 import { MemberProfilesStepComponent } from "./steps/member-profiles-step.component";
-import { BackgroundStepComponent }     from "./steps/background-step.component";
-import { GoalsStepComponent }          from "./steps/goals-step.component";
-import { SummaryStepComponent }        from "./steps/summary-step.component";
+import { BackgroundStepComponent } from "./steps/background-step.component";
+import { GoalsStepComponent } from "./steps/goals-step.component";
+import { SummaryStepComponent } from "./steps/summary-step.component";
 
 interface SessionSummary {
   key: string;
@@ -21,9 +21,9 @@ interface SessionSummary {
 }
 
 const STEP_LABELS: Record<string, string> = {
-  "team-setup":      "Step 1 — Team Setup",
+  "team-setup": "Step 1 — Team Setup",
   "member-profiles": "Step 2 — Member Profiles",
-  "summary":         "Step 3 — Summary",
+  summary: "Step 3 — Summary",
 };
 
 @Component({
@@ -43,7 +43,6 @@ const STEP_LABELS: Record<string, string> = {
   styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnInit {
-
   protected readonly teamOnboardingPath = teamOnboardingPath;
 
   // ── View state ─────────────────────────────────────────────────────────────
@@ -89,9 +88,8 @@ export class AppComponent implements OnInit {
         const profiles = (data.profiles ?? {}) as Record<string, MemberProfile>;
         const profilesDone = members.filter((_, i) => !!profiles[String(i)]?.department).length;
 
-        const topLevelStepId = state.pathStack.length > 0
-          ? null
-          : teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null;
+        const topLevelStepId =
+          state.pathStack.length > 0 ? null : (teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null);
 
         summaries.push({
           key,
@@ -115,7 +113,7 @@ export class AppComponent implements OnInit {
 
   async deleteSession(key: string): Promise<void> {
     await this.store.delete(key);
-    this.sessions = this.sessions.filter(s => s.key !== key);
+    this.sessions = this.sessions.filter((s) => s.key !== key);
   }
 
   async startNew(): Promise<void> {
@@ -165,7 +163,7 @@ export class AppComponent implements OnInit {
     this.view = "completed";
     // persistence auto-deletes the snapshot on completion; sync the list
     if (this.activeSessionKey) {
-      this.sessions = this.sessions.filter(s => s.key !== this.activeSessionKey);
+      this.sessions = this.sessions.filter((s) => s.key !== this.activeSessionKey);
     }
   }
 
@@ -186,7 +184,9 @@ export class AppComponent implements OnInit {
   private showSaveIndicator(): void {
     this.saveIndicator = true;
     if (this.saveIndicatorTimer) clearTimeout(this.saveIndicatorTimer);
-    this.saveIndicatorTimer = setTimeout(() => { this.saveIndicator = false; }, 2500);
+    this.saveIndicatorTimer = setTimeout(() => {
+      this.saveIndicator = false;
+    }, 2500);
   }
 
   // ── Completion screen helpers ──────────────────────────────────────────────
@@ -203,6 +203,8 @@ export class AppComponent implements OnInit {
     if (!d) return "—";
     try {
       return new Date(d).toLocaleDateString("en-IE", { year: "numeric", month: "long", day: "numeric" });
-    } catch { return d; }
+    } catch {
+      return d;
+    }
   }
 }

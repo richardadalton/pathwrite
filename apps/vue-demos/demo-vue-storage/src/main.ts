@@ -4,4 +4,3 @@ import "@daltonr/pathwrite-vue/styles.css";
 import "./style.css";
 
 createApp(App).mount("#app");
-

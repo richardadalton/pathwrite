@@ -9,7 +9,7 @@ export default function DepartmentTab() {
 
   const errors = createMemo(() => {
     const snap = ctx.snapshot();
-    return (snap?.hasAttemptedNext || snap?.hasValidated) ? (snap?.fieldErrors ?? {}) : {};
+    return snap?.hasAttemptedNext || snap?.hasValidated ? (snap?.fieldErrors ?? {}) : {};
   });
 
   return (
@@ -17,16 +17,16 @@ export default function DepartmentTab() {
       <TabBar />
       <div class="form-body">
         <div class="field" classList={{ "field--error": !!errors().department }}>
-          <label for="department">Department <span class="required">*</span></label>
+          <label for="department">
+            Department <span class="required">*</span>
+          </label>
           <select
             id="department"
             value={ctx.snapshot()?.data.department ?? ""}
             onChange={(e) => ctx.setData("department", e.currentTarget.value)}
           >
             <option value="">Select a department…</option>
-            <For each={DEPARTMENTS}>
-              {(d) => <option value={d}>{d}</option>}
-            </For>
+            <For each={DEPARTMENTS}>{(d) => <option value={d}>{d}</option>}</For>
           </select>
           <Show when={errors().department}>
             <span class="field-error">{errors().department}</span>
@@ -34,7 +34,9 @@ export default function DepartmentTab() {
         </div>
 
         <div class="field">
-          <label for="manager">Reporting Manager <span class="optional">(optional)</span></label>
+          <label for="manager">
+            Reporting Manager <span class="optional">(optional)</span>
+          </label>
           <input
             id="manager"
             type="text"
@@ -45,21 +47,23 @@ export default function DepartmentTab() {
         </div>
 
         <div class="field">
-          <label for="office">Office Location <span class="optional">(optional)</span></label>
+          <label for="office">
+            Office Location <span class="optional">(optional)</span>
+          </label>
           <select
             id="office"
             value={ctx.snapshot()?.data.office ?? ""}
             onChange={(e) => ctx.setData("office", e.currentTarget.value)}
           >
             <option value="">Select an office…</option>
-            <For each={OFFICES}>
-              {(o) => <option value={o}>{o}</option>}
-            </For>
+            <For each={OFFICES}>{(o) => <option value={o}>{o}</option>}</For>
           </select>
         </div>
 
         <div class="field">
-          <label for="startDate">Start Date <span class="optional">(optional)</span></label>
+          <label for="startDate">
+            Start Date <span class="optional">(optional)</span>
+          </label>
           <input
             id="startDate"
             type="date"

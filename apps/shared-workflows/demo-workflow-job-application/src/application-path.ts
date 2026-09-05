@@ -14,10 +14,10 @@ export interface ApplicationData {
 }
 
 export const INITIAL_DATA: ApplicationData = {
-  roleId:          "",
+  roleId: "",
   yearsExperience: "",
-  skills:          "",
-  coverLetter:     "",
+  skills: "",
+  coverLetter: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -32,9 +32,7 @@ export const INITIAL_DATA: ApplicationData = {
 // services instance, keeping async calls out of the path definition itself.
 // ---------------------------------------------------------------------------
 
-export function createApplicationPath(
-  svc: ApplicationServices
-): PathDefinition<ApplicationData> {
+export function createApplicationPath(svc: ApplicationServices): PathDefinition<ApplicationData> {
   return {
     id: "job-application",
     steps: [

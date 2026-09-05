@@ -109,7 +109,9 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
-.summary-row:last-child { border-bottom: none; }
+.summary-row:last-child {
+  border-bottom: none;
+}
 
 .summary-key {
   color: #6b7280;
@@ -117,7 +119,8 @@
 }
 
 /* ── Buttons ── */
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
   padding: 10px 24px;
   border-radius: 6px;
   font-size: 14px;
@@ -133,7 +136,9 @@
   color: #fff;
 }
 
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover {
+  background: #1d4ed8;
+}
 
 .btn-secondary {
   background: #fff;
@@ -141,4 +146,6 @@
   border: 1px solid #d1d5db;
 }
 
-.btn-secondary:hover { background: #f9fafb; }
+.btn-secondary:hover {
+  background: #f9fafb;
+}

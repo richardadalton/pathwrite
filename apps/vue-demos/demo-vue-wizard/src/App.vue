@@ -2,15 +2,17 @@
 import { ref } from "vue";
 import { PathShell } from "@daltonr/pathwrite-vue";
 import { onboardingPath, INITIAL_DATA } from "./onboarding";
-import PersonalInfoStep  from "./PersonalInfoStep.vue";
-import AboutYouStep      from "./AboutYouStep.vue";
-import PreferencesStep   from "./PreferencesStep.vue";
-import ReviewStep        from "./ReviewStep.vue";
-import CompletionPanel   from "./CompletionPanel.vue";
+import PersonalInfoStep from "./PersonalInfoStep.vue";
+import AboutYouStep from "./AboutYouStep.vue";
+import PreferencesStep from "./PreferencesStep.vue";
+import ReviewStep from "./ReviewStep.vue";
+import CompletionPanel from "./CompletionPanel.vue";
 
 const isCancelled = ref(false);
 
-function handleCancel() { isCancelled.value = true; }
+function handleCancel() {
+  isCancelled.value = true;
+}
 </script>
 
 <template>

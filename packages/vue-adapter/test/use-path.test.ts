@@ -113,9 +113,7 @@ describe("usePath — events", () => {
     await path.next();
     await path.next();
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completed", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "completed", pathId: "main" }));
   });
 
   it("calls onEvent with cancelled when cancel is called", async () => {
@@ -125,9 +123,7 @@ describe("usePath — events", () => {
     await path.start(twoStepPath());
     await path.cancel();
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "cancelled", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "cancelled", pathId: "main" }));
   });
 
   it("calls onEvent with resumed when a sub-path completes", async () => {
@@ -143,7 +139,7 @@ describe("usePath — events", () => {
       expect.objectContaining({
         type: "resumed",
         resumedPathId: "parent",
-        fromSubPathId: "sub"
+        fromSubPathId: "sub",
       })
     );
   });
@@ -184,10 +180,15 @@ describe("usePath — navigation", () => {
   });
 
   it("setData() is type-safe when TData generic is provided", async () => {
-    interface StepData extends PathData { label: string; count: number; }
+    interface StepData extends PathData {
+      label: string;
+      count: number;
+    }
     const scope = effectScope();
     let path!: ReturnType<typeof usePath<StepData>>;
-    scope.run(() => { path = usePath<StepData>(); });
+    scope.run(() => {
+      path = usePath<StepData>();
+    });
     await path.start(twoStepPath(), { label: "old", count: 0 });
     await path.setData("label", "new");
     await path.setData("count", 99);
@@ -244,7 +245,7 @@ describe("usePath — goToStepChecked", () => {
     const { path } = createPath();
     await path.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }],
     });
     await path.goToStepChecked("b");
     expect(path.snapshot.value?.stepId).toBe("a");
@@ -349,7 +350,7 @@ describe("usePath — external engine", () => {
     await engine.start(twoStepPath());
 
     const events: PathEvent[] = [];
-    const { path } = createPath({ engine, onEvent: (e) => events.push(e) });
+    createPath({ engine, onEvent: (e) => events.push(e) });
 
     await engine.next();
     expect(events.some((e) => e.type === "stateChanged")).toBe(true);

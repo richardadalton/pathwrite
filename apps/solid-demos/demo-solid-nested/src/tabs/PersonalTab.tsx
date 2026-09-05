@@ -8,7 +8,7 @@ export default function PersonalTab() {
 
   const errors = createMemo(() => {
     const snap = ctx.snapshot();
-    return (snap?.hasAttemptedNext || snap?.hasValidated) ? (snap?.fieldErrors ?? {}) : {};
+    return snap?.hasAttemptedNext || snap?.hasValidated ? (snap?.fieldErrors ?? {}) : {};
   });
 
   return (
@@ -17,7 +17,9 @@ export default function PersonalTab() {
       <div class="form-body">
         <div class="row">
           <div class="field" classList={{ "field--error": !!errors().firstName }}>
-            <label for="firstName">First Name <span class="required">*</span></label>
+            <label for="firstName">
+              First Name <span class="required">*</span>
+            </label>
             <input
               id="firstName"
               type="text"
@@ -32,7 +34,9 @@ export default function PersonalTab() {
           </div>
 
           <div class="field" classList={{ "field--error": !!errors().lastName }}>
-            <label for="lastName">Last Name <span class="required">*</span></label>
+            <label for="lastName">
+              Last Name <span class="required">*</span>
+            </label>
             <input
               id="lastName"
               type="text"
@@ -48,7 +52,9 @@ export default function PersonalTab() {
         </div>
 
         <div class="field">
-          <label for="dateOfBirth">Date of Birth <span class="optional">(optional)</span></label>
+          <label for="dateOfBirth">
+            Date of Birth <span class="optional">(optional)</span>
+          </label>
           <input
             id="dateOfBirth"
             type="date"
@@ -58,7 +64,9 @@ export default function PersonalTab() {
         </div>
 
         <div class="field">
-          <label for="phone">Phone Number <span class="optional">(optional)</span></label>
+          <label for="phone">
+            Phone Number <span class="optional">(optional)</span>
+          </label>
           <input
             id="phone"
             type="tel"
@@ -70,7 +78,9 @@ export default function PersonalTab() {
         </div>
 
         <div class="field">
-          <label for="personalEmail">Personal Email <span class="optional">(optional)</span></label>
+          <label for="personalEmail">
+            Personal Email <span class="optional">(optional)</span>
+          </label>
           <input
             id="personalEmail"
             type="email"

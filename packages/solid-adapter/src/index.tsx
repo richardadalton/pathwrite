@@ -62,7 +62,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
+  startSubPath: (
+    path: PathDefinition<any>,
+    initialData?: PathData,
+    meta?: Record<string, unknown>
+  ) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
@@ -121,27 +125,38 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   let unsubscribe = engine.subscribe(onEngineEvent);
 
   // Adopt a late or swapped engine: re-subscribe and re-seed the snapshot.
-  createEffect(on(resolveEngine, (next) => {
-    if (next === engine) return;
-    unsubscribe();
-    engine = next;
-    setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
-    unsubscribe = engine.subscribe(onEngineEvent);
-  }, { defer: true }));
+  createEffect(
+    on(
+      resolveEngine,
+      (next) => {
+        if (next === engine) return;
+        unsubscribe();
+        engine = next;
+        setSnapshot(engine.snapshot() as PathSnapshot<TData> | null);
+        unsubscribe = engine.subscribe(onEngineEvent);
+      },
+      { defer: true }
+    )
+  );
 
   onCleanup(() => unsubscribe());
 
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
 
-  const startSubPath = (path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> =>
-    engine.startSubPath(path, initialData, meta);
+  const startSubPath = (
+    path: PathDefinition<any>,
+    initialData: PathData = {},
+    meta?: Record<string, unknown>
+  ): Promise<void> => engine.startSubPath(path, initialData, meta);
 
   const next = (): Promise<void> => engine.next();
   const previous = (): Promise<void> => engine.previous();
   const cancel = (): Promise<void> => engine.cancel();
-  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStep(stepId, options);
-  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStepChecked(stepId, options);
+  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStep(stepId, options);
+  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStepChecked(stepId, options);
 
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
@@ -152,7 +167,22 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const suspend = (): Promise<void> => engine.suspend();
   const validate = (): void => engine.validate();
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
+  return {
+    snapshot,
+    start,
+    startSubPath,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    resetStep,
+    restart,
+    retry,
+    suspend,
+    validate,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -174,13 +204,18 @@ const PathContext = createContext<PathContextValue | undefined>(undefined);
  * - `TData` narrows `snapshot().data`
  * - `TServices` types the `services` value — must match what was passed to `PathShell`
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: Accessor<PathSnapshot<TData>>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<
+  UsePathReturn<TData>,
+  "snapshot"
+> & { snapshot: Accessor<PathSnapshot<TData>>; services: TServices } {
   const ctx = useContext(PathContext);
   if (!ctx) {
     throw new Error("usePathContext must be used within a PathShell component.");
   }
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: Accessor<PathSnapshot<TData>> }),
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & {
+      snapshot: Accessor<PathSnapshot<TData>>;
+    }),
     services: ctx.services as TServices,
   };
 }
@@ -294,7 +329,8 @@ export const PathShell: Component<PathShellProps> = (props) => {
   // step (which re-ran onEnter/onLeave and lost attempted / visited state).
   const restoredEngine: PathEngine | null = (() => {
     if (props.engine || !props.restoreKey || !outerCtx) return null;
-    const stored = outerCtx.path.snapshot()?.data[props.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    const stored = outerCtx.path.snapshot()?.data[props.restoreKey] as
+      { serializedState?: SerializedPathState } | undefined;
     if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
     try {
       return PathEngine.fromState(stored.serializedState, { [props.path.id]: props.path });
@@ -314,14 +350,28 @@ export const PathShell: Component<PathShellProps> = (props) => {
       if (event.type === "completed") props.onComplete?.(event.data as PathData);
       if (event.type === "cancelled") props.onCancel?.(event.data as PathData);
       if (props.restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          props.restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
-        );
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(props.restoreKey, {
+          ...event.snapshot,
+          serializedState: currentEngine().exportState(),
+        });
       }
     },
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+  const {
+    snapshot,
+    start,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    restart,
+    retry,
+    suspend,
+    validate,
+  } = pathReturn;
 
   onMount(() => {
     if (props.autoStart !== false && !props.engine && !restoredEngine) {
@@ -348,7 +398,11 @@ export const PathShell: Component<PathShellProps> = (props) => {
   const contextValue: PathContextValue = { path: pathReturn, services: props.services ?? null };
 
   const actions: PathShellActions = {
-    next, previous, cancel, goToStep, goToStepChecked,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
     setData: (key, value) => setData(key as any, value as any),
     restart: () => restart(),
     retry: () => retry(),
@@ -367,13 +421,16 @@ export const PathShell: Component<PathShellProps> = (props) => {
 
   const effectiveHideProgress = () => props.hideProgress || props.layout === "tabs";
   const effectiveHideFooter = () => props.hideFooter || props.layout === "tabs";
-  const showRoot = () => !effectiveHideProgress() && !!snap().rootProgress && props.progressLayout !== "activeOnly";
+  const showRoot = () =>
+    !effectiveHideProgress() && !!snap().rootProgress && props.progressLayout !== "activeOnly";
   // A custom header is the consumer's decision: show it whenever progress is
   // not hidden, even for a single-step path. Only the *default* header hides
   // for one step (same rule as the React / Vue shells).
-  const showActive = () => !effectiveHideProgress() && (props.renderHeader
-    ? true
-    : (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly");
+  const showActive = () =>
+    !effectiveHideProgress() &&
+    (props.renderHeader
+      ? true
+      : (snap().stepCount > 1 || snap().nestingLevel > 0) && props.progressLayout !== "rootOnly");
 
   // The step render function must only run when the *step* changes. The
   // snapshot signal is `{ equals: false }` (a new object on every engine
@@ -401,8 +458,14 @@ export const PathShell: Component<PathShellProps> = (props) => {
   // current values reactively even though the step itself is created once.
   const liveSnapshot = new Proxy({} as PathSnapshot, {
     get: (_target, key) => (snapshot() as unknown as Record<PropertyKey, unknown> | null)?.[key],
-    has: (_target, key) => { const s = snapshot(); return s ? key in s : false; },
-    ownKeys: () => { const s = snapshot(); return s ? Reflect.ownKeys(s) : []; },
+    has: (_target, key) => {
+      const s = snapshot();
+      return s ? key in s : false;
+    },
+    ownKeys: () => {
+      const s = snapshot();
+      return s ? Reflect.ownKeys(s) : [];
+    },
     getOwnPropertyDescriptor: (_target, key) => {
       const s = snapshot();
       const d = s ? Object.getOwnPropertyDescriptor(s, key) : undefined;
@@ -427,8 +490,7 @@ export const PathShell: Component<PathShellProps> = (props) => {
     Object.keys(snap().fieldErrors).length > 0;
 
   const showWarnings = () =>
-    props.validationDisplay !== "inline" &&
-    Object.keys(snap().fieldWarnings).length > 0;
+    props.validationDisplay !== "inline" && Object.keys(snap().fieldWarnings).length > 0;
 
   const showBlockingError = () =>
     props.validationDisplay !== "inline" &&
@@ -469,75 +531,71 @@ export const PathShell: Component<PathShellProps> = (props) => {
           </Show>
           {/* Header — progress (active path) */}
           <Show when={showActive()}>
-            {props.renderHeader
-              ? props.renderHeader(snap())
-              : <SolidHeader snapshot={snap()} />}
+            {props.renderHeader ? props.renderHeader(snap()) : <SolidHeader snapshot={snap()} />}
           </Show>
           {/* Completion panel — shown when path finishes with stayOnFinal */}
           <Show when={snap().status === "completed"}>
             <div class="pw-shell__body">
-              {props.completionContent
-                ? props.completionContent(snap())
-                : (
-                  <div class="pw-shell__completion">
-                    <p class="pw-shell__completion-message">All done.</p>
-                    <button
-                      type="button"
-                      class="pw-shell__completion-restart"
-                      onClick={() => restart()}
-                    >
-                      Start over
-                    </button>
-                  </div>
-                )
-              }
+              {props.completionContent ? (
+                props.completionContent(snap())
+              ) : (
+                <div class="pw-shell__completion">
+                  <p class="pw-shell__completion-message">All done.</p>
+                  <button type="button" class="pw-shell__completion-restart" onClick={() => restart()}>
+                    Start over
+                  </button>
+                </div>
+              )}
             </div>
           </Show>
           {/* Body — step content (hidden when completed) */}
           <Show when={snap().status !== "completed"}>
-          <div class="pw-shell__body"><StepContent /></div>
-          {/* Validation messages */}
-          <Show when={showValidation()}>
-            <ul class="pw-shell__validation">
-              <For each={Object.entries(snap().fieldErrors)}>
-                {([key, msg]) => (
-                  <li class="pw-shell__validation-item">
-                    <Show when={key !== "_"}>
-                      <span class="pw-shell__validation-label">{formatFieldKey(key)}</span>
-                    </Show>
-                    {msg}
-                  </li>
-                )}
-              </For>
-            </ul>
-          </Show>
-          {/* Warning messages — non-blocking, shown immediately */}
-          <Show when={showWarnings()}>
-            <ul class="pw-shell__warnings">
-              <For each={Object.entries(snap().fieldWarnings)}>
-                {([key, msg]) => (
-                  <li class="pw-shell__warnings-item">
-                    <Show when={key !== "_"}>
-                      <span class="pw-shell__warnings-label">{formatFieldKey(key)}</span>
-                    </Show>
-                    {msg}
-                  </li>
-                )}
-              </For>
-            </ul>
-          </Show>
-          {/* Blocking error */}
-          <Show when={showBlockingError()}>
-            <p class="pw-shell__blocking-error">{snap().blockingError}</p>
-          </Show>
-          {/* Error panel or footer */}
-          <Show
-            when={snap().status === "error" && snap().error}
-            fallback={
-              <Show when={!effectiveHideFooter()}>
-                {props.renderFooter
-                  ? props.renderFooter(snap(), actions)
-                  : <SolidFooter
+            <div class="pw-shell__body">
+              <StepContent />
+            </div>
+            {/* Validation messages */}
+            <Show when={showValidation()}>
+              <ul class="pw-shell__validation">
+                <For each={Object.entries(snap().fieldErrors)}>
+                  {([key, msg]) => (
+                    <li class="pw-shell__validation-item">
+                      <Show when={key !== "_"}>
+                        <span class="pw-shell__validation-label">{formatFieldKey(key)}</span>
+                      </Show>
+                      {msg}
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
+            {/* Warning messages — non-blocking, shown immediately */}
+            <Show when={showWarnings()}>
+              <ul class="pw-shell__warnings">
+                <For each={Object.entries(snap().fieldWarnings)}>
+                  {([key, msg]) => (
+                    <li class="pw-shell__warnings-item">
+                      <Show when={key !== "_"}>
+                        <span class="pw-shell__warnings-label">{formatFieldKey(key)}</span>
+                      </Show>
+                      {msg}
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
+            {/* Blocking error */}
+            <Show when={showBlockingError()}>
+              <p class="pw-shell__blocking-error">{snap().blockingError}</p>
+            </Show>
+            {/* Error panel or footer */}
+            <Show
+              when={snap().status === "error" && snap().error}
+              fallback={
+                <Show when={!effectiveHideFooter()}>
+                  {props.renderFooter ? (
+                    props.renderFooter(snap(), actions)
+                  ) : (
+                    <SolidFooter
                       snapshot={snap()}
                       actions={actions}
                       backLabel={props.backLabel ?? "Previous"}
@@ -548,13 +606,14 @@ export const PathShell: Component<PathShellProps> = (props) => {
                       hideCancel={props.hideCancel ?? false}
                       layout={resolvedFooterLayout()}
                     />
-                }
-              </Show>
-            }
-          >
-            <SolidErrorPanel snapshot={snap()} actions={actions} />
+                  )}
+                </Show>
+              }
+            >
+              <SolidErrorPanel snapshot={snap()} actions={actions} />
+            </Show>
           </Show>
-          </Show>{/* end status !== completed */}
+          {/* end status !== completed */}
         </div>
       </Show>
     </PathContext.Provider>
@@ -572,9 +631,7 @@ function SolidRootProgress(props: { root: RootProgress }) {
         <For each={props.root.steps}>
           {(step, i) => (
             <div class={`pw-shell__step pw-shell__step--${step.status}`}>
-              <span class="pw-shell__step-dot">
-                {step.status === "completed" ? "✓" : String(i() + 1)}
-              </span>
+              <span class="pw-shell__step-dot">{step.status === "completed" ? "✓" : String(i() + 1)}</span>
               <span class="pw-shell__step-label">{step.title ?? step.id}</span>
             </div>
           )}
@@ -598,9 +655,7 @@ function SolidHeader(props: { snapshot: PathSnapshot }) {
         <For each={props.snapshot.steps}>
           {(step, i) => (
             <div class={`pw-shell__step pw-shell__step--${step.status}`}>
-              <span class="pw-shell__step-dot">
-                {step.status === "completed" ? "✓" : String(i() + 1)}
-              </span>
+              <span class="pw-shell__step-dot">{step.status === "completed" ? "✓" : String(i() + 1)}</span>
               <span class="pw-shell__step-label">{step.title ?? step.id}</span>
             </div>
           )}
@@ -620,14 +675,15 @@ function SolidHeader(props: { snapshot: PathSnapshot }) {
 function SolidErrorPanel(props: { snapshot: PathSnapshot; actions: PathShellActions }) {
   const error = () => props.snapshot.error!;
   const escalated = () => error().retryCount >= 2;
-  const title = () => escalated() ? "Still having trouble." : "Something went wrong.";
+  const title = () => (escalated() ? "Still having trouble." : "Something went wrong.");
   const phaseMsg = () => errorPhaseMessage(error().phase);
 
   return (
     <div class="pw-shell__error">
       <div class="pw-shell__error-title">{title()}</div>
       <div class="pw-shell__error-message">
-        {phaseMsg()}{error().message ? ` ${error().message}` : ""}
+        {phaseMsg()}
+        {error().message ? ` ${error().message}` : ""}
       </div>
       <div class="pw-shell__error-actions">
         <Show when={!escalated()}>

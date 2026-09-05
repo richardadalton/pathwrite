@@ -16,7 +16,9 @@ export default function PersonalInfoStep() {
 
         <div class="row">
           <div class="field" classList={{ "field--error": !!errors().firstName }}>
-            <label for="firstName">First Name <span class="required">*</span></label>
+            <label for="firstName">
+              First Name <span class="required">*</span>
+            </label>
             <input
               id="firstName"
               type="text"
@@ -32,7 +34,9 @@ export default function PersonalInfoStep() {
           </div>
 
           <div class="field" classList={{ "field--error": !!errors().lastName }}>
-            <label for="lastName">Last Name <span class="required">*</span></label>
+            <label for="lastName">
+              Last Name <span class="required">*</span>
+            </label>
             <input
               id="lastName"
               type="text"
@@ -48,7 +52,9 @@ export default function PersonalInfoStep() {
         </div>
 
         <div class="field" classList={{ "field--error": !!errors().email }}>
-          <label for="email">Email Address <span class="required">*</span></label>
+          <label for="email">
+            Email Address <span class="required">*</span>
+          </label>
           <input
             id="email"
             type="email"

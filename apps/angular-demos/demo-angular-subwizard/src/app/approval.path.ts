@@ -22,8 +22,8 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       id: "create-document",
       title: "Create Document",
       fieldErrors: ({ data }) => ({
-        title:       !(data.title as string)?.trim()       ? "Document title is required." : undefined,
-        description: !(data.description as string)?.trim() ? "Description is required."   : undefined,
+        title: !(data.title as string)?.trim() ? "Document title is required." : undefined,
+        description: !(data.description as string)?.trim() ? "Description is required." : undefined,
       }),
     },
     {
@@ -38,11 +38,12 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       title: "Awaiting Approvals",
       fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
-        const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
+        const pending = (data.approvers as string[]).filter((id) => !results[id]?.decision);
         return {
-          _: pending.length > 0
-            ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
-            : undefined,
+          _:
+            pending.length > 0
+              ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
+              : undefined,
         };
       },
       onSubPathComplete(_subPathId, subPathData, ctx, meta) {
@@ -53,7 +54,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
             ...existing,
             [approverId]: {
               decision: subPathData.decision as "approved" | "rejected",
-              comment:  (subPathData.comment as string) ?? "",
+              comment: (subPathData.comment as string) ?? "",
             },
           },
         };
@@ -62,4 +63,3 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     { id: "summary", title: "Summary" },
   ],
 };
-

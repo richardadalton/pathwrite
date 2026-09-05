@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { PathShell } from "@daltonr/pathwrite-react";
-import { services, createApplicationPath, INITIAL_DATA, type ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
-import { RoleStep }         from "./RoleStep";
-import { ExperienceStep }   from "./ExperienceStep";
-import { EligibilityStep }  from "./EligibilityStep";
-import { CoverLetterStep }  from "./CoverLetterStep";
-import { ReviewStep }       from "./ReviewStep";
+import {
+  services,
+  createApplicationPath,
+  INITIAL_DATA,
+  type ApplicationData,
+} from "@daltonr/pathwrite-demo-workflow-job-application";
+import { RoleStep } from "./RoleStep";
+import { ExperienceStep } from "./ExperienceStep";
+import { EligibilityStep } from "./EligibilityStep";
+import { CoverLetterStep } from "./CoverLetterStep";
+import { ReviewStep } from "./ReviewStep";
 
 // Path is created once — the factory closes over the services singleton.
 const applicationPath = createApplicationPath(services);
@@ -39,8 +44,8 @@ export default function App() {
       <div className="page-header">
         <h1>Job Application</h1>
         <p className="subtitle">
-          Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code>{" "}
-          with accurate progress, <code>loadingLabel</code>, and service injection via{" "}
+          Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code> with accurate
+          progress, <code>loadingLabel</code>, and service injection via{" "}
           <code>usePathContext&lt;TData, TServices&gt;</code>.
         </p>
       </div>
@@ -55,11 +60,11 @@ export default function App() {
         validationDisplay="inline"
         onComplete={(data) => setCompletedData(data as ApplicationData)}
         steps={{
-          "role":         <RoleStep />,
-          "experience":   <ExperienceStep />,
-          "eligibility":  <EligibilityStep />,
+          role: <RoleStep />,
+          experience: <ExperienceStep />,
+          eligibility: <EligibilityStep />,
           "cover-letter": <CoverLetterStep />,
-          "review":       <ReviewStep />,
+          review: <ReviewStep />,
         }}
       />
     </main>

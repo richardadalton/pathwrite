@@ -100,14 +100,15 @@ async function loadSessionList() {
       const profiles = (data.profiles ?? {}) as Record<string, MemberProfile>;
       const profilesDone = members.filter((_, i) => !!profiles[String(i)]?.department).length;
 
-      const topLevelStepId = state.pathStack.length > 0
-        ? null   // mid-subwizard — report as "Sub-wizard in progress"
-        : teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null;
+      const topLevelStepId =
+        state.pathStack.length > 0
+          ? null // mid-subwizard — report as "Sub-wizard in progress"
+          : (teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null);
 
       const STEP_LABELS: Record<string, string> = {
-        "team-setup":      "Step 1 — Team Setup",
+        "team-setup": "Step 1 — Team Setup",
         "member-profiles": "Step 2 — Member Profiles",
-        "summary":         "Step 3 — Summary",
+        summary: "Step 3 — Summary",
       };
 
       summaries.push({
@@ -115,9 +116,7 @@ async function loadSessionList() {
         teamName: (data.teamName as string) || "(unnamed)",
         memberCount: members.length,
         profilesDone,
-        stepLabel: topLevelStepId
-          ? (STEP_LABELS[topLevelStepId] ?? "In progress")
-          : "Sub-wizard in progress",
+        stepLabel: topLevelStepId ? (STEP_LABELS[topLevelStepId] ?? "In progress") : "Sub-wizard in progress",
       });
     }
 
@@ -137,7 +136,7 @@ onMounted(async () => {
 
 async function deleteSession(key: string) {
   await store.value.delete(key);
-  sessions.value = sessions.value.filter(s => s.key !== key);
+  sessions.value = sessions.value.filter((s) => s.key !== key);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +158,9 @@ let saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 function onSaveSuccess() {
   saveIndicator.value = true;
   if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
-  saveIndicatorTimer = setTimeout(() => { saveIndicator.value = false; }, 2500);
+  saveIndicatorTimer = setTimeout(() => {
+    saveIndicator.value = false;
+  }, 2500);
 }
 
 function makeObservers(key: string) {
@@ -205,7 +206,7 @@ async function openSession(key: string) {
   });
 
   engine.value = result.engine;
-  engineKey.value++;       // force PathShell to remount with the new engine
+  engineKey.value++; // force PathShell to remount with the new engine
   isRestored.value = result.restored;
   wizardLoading.value = false;
   view.value = "wizard";
@@ -220,7 +221,7 @@ function handleComplete(data: PathData) {
   view.value = "completed";
   // persistence auto-deletes the snapshot on completion; sync the list
   if (activeSessionKey.value) {
-    sessions.value = sessions.value.filter(s => s.key !== activeSessionKey.value);
+    sessions.value = sessions.value.filter((s) => s.key !== activeSessionKey.value);
   }
 }
 
@@ -249,18 +250,19 @@ function formatDate(d: string): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-IE", { year: "numeric", month: "long", day: "numeric" });
-  } catch { return d; }
+  } catch {
+    return d;
+  }
 }
 </script>
 
 <template>
   <main class="page">
-
     <div class="page-header">
       <h1>Team Onboarding</h1>
       <p class="subtitle">
-        Multi-session demo with switchable storage backends.
-        Start several sessions, close the tab, come back and resume any of them.
+        Multi-session demo with switchable storage backends. Start several sessions, close the tab, come back
+        and resume any of them.
       </p>
 
       <!-- Storage mode toggle -->
@@ -278,7 +280,7 @@ function formatDate(d: string): string {
           class="storage-toggle__btn"
           :class="{
             'storage-toggle__btn--active': storageMode === 'api',
-            'storage-toggle__btn--disabled': !apiAvailable && !checkingApi
+            'storage-toggle__btn--disabled': !apiAvailable && !checkingApi,
           }"
           @click="switchStorageMode('api')"
           :disabled="view !== 'sessions' || !apiAvailable"
@@ -294,7 +296,10 @@ function formatDate(d: string): string {
       <transition name="banner-fade">
         <div v-if="apiConnectionError" class="api-error-banner">
           <span class="api-error-banner__icon">⚠️</span>
-          <span>Cannot connect to API server at http://localhost:3001. Run <code>npm run server</code> in a separate terminal.</span>
+          <span
+            >Cannot connect to API server at http://localhost:3001. Run <code>npm run server</code> in a
+            separate terminal.</span
+          >
         </div>
       </transition>
     </div>
@@ -324,7 +329,9 @@ function formatDate(d: string): string {
                 </template>
                 · {{ session.stepLabel }}
               </p>
-              <p class="session-card__key">key: <code>{{ session.key }}</code></p>
+              <p class="session-card__key">
+                key: <code>{{ session.key }}</code>
+              </p>
             </div>
             <div class="session-card__actions">
               <button class="btn-resume" @click="resumeSession(session.key)">Resume →</button>
@@ -341,7 +348,9 @@ function formatDate(d: string): string {
 
         <div class="new-session-bar">
           <button class="btn-primary btn-new-session" @click="startNew">+ Start New Onboarding</button>
-          <p class="new-session-hint">Each session gets its own localStorage key and can be resumed independently.</p>
+          <p class="new-session-hint">
+            Each session gets its own localStorage key and can be resumed independently.
+          </p>
         </div>
       </template>
     </section>
@@ -385,7 +394,12 @@ function formatDate(d: string): string {
     <section v-else-if="view === 'completed' && completedData" class="result-panel success-panel">
       <div class="result-icon">🎉</div>
       <h2>Onboarding Complete!</h2>
-      <p><strong>{{ completedData.teamName }}</strong> — {{ members().length }} member{{ members().length !== 1 ? "s" : "" }} onboarded.</p>
+      <p>
+        <strong>{{ completedData.teamName }}</strong> — {{ members().length }} member{{
+          members().length !== 1 ? "s" : ""
+        }}
+        onboarded.
+      </p>
       <div class="result-summary">
         <div v-for="(member, i) in members()" :key="i" class="result-member-card">
           <div class="result-member-header">
@@ -411,7 +425,5 @@ function formatDate(d: string): string {
       <p>Your saved progress is still available to resume.</p>
       <button class="btn-secondary" @click="exitToSessions">← Back to Sessions</button>
     </section>
-
   </main>
 </template>
-

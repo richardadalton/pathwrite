@@ -4,14 +4,8 @@
     "slug": "pathwrite-demo-rn-showcase",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
-    "plugins": [
-      "expo-asset"
-    ],
+    "platforms": ["ios", "android", "web"],
+    "plugins": ["expo-asset"],
     "experiments": {
       "baseUrl": "/apps/react-native-demos/demo-rn-showcase/dist"
     }

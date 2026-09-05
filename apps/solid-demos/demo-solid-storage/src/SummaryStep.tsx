@@ -6,7 +6,9 @@ function formatDate(d: string): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-IE", {
-      year: "numeric", month: "long", day: "numeric",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   } catch {
     return d;
@@ -16,13 +18,9 @@ function formatDate(d: string): string {
 export default function SummaryStep() {
   const ctx = usePathContext<WizardData>();
 
-  const members = createMemo(() =>
-    (ctx.snapshot()?.data.members ?? []) as Person[]
-  );
+  const members = createMemo(() => (ctx.snapshot()?.data.members ?? []) as Person[]);
 
-  const profiles = createMemo(() =>
-    (ctx.snapshot()?.data.profiles ?? {}) as Record<string, MemberProfile>
-  );
+  const profiles = createMemo(() => (ctx.snapshot()?.data.profiles ?? {}) as Record<string, MemberProfile>);
 
   function getProfile(index: number): MemberProfile | null {
     return profiles()[String(index)] ?? null;

@@ -4,9 +4,9 @@ import type { OnboardingData } from "./onboarding";
 
 const EXPERIENCE_OPTIONS = [
   { value: "junior", label: "Junior (0–2 years)" },
-  { value: "mid",    label: "Mid-level (3–5 years)" },
+  { value: "mid", label: "Mid-level (3–5 years)" },
   { value: "senior", label: "Senior (6–10 years)" },
-  { value: "lead",   label: "Lead / Principal (10+ years)" },
+  { value: "lead", label: "Lead / Principal (10+ years)" },
 ];
 
 export default function AboutYouStep() {
@@ -22,7 +22,9 @@ export default function AboutYouStep() {
         <p class="step-intro">Tell us a bit about your professional background.</p>
 
         <div class="field" classList={{ "field--error": !!errors().jobTitle }}>
-          <label for="jobTitle">Job Title <span class="required">*</span></label>
+          <label for="jobTitle">
+            Job Title <span class="required">*</span>
+          </label>
           <input
             id="jobTitle"
             type="text"
@@ -38,7 +40,9 @@ export default function AboutYouStep() {
         </div>
 
         <div class="field">
-          <label for="company">Company <span class="optional">(optional)</span></label>
+          <label for="company">
+            Company <span class="optional">(optional)</span>
+          </label>
           <input
             id="company"
             type="text"
@@ -50,16 +54,18 @@ export default function AboutYouStep() {
         </div>
 
         <div class="field" classList={{ "field--error": !!errors().experience }}>
-          <label for="experience">Experience Level <span class="required">*</span></label>
+          <label for="experience">
+            Experience Level <span class="required">*</span>
+          </label>
           <select
             id="experience"
             value={ctx.snapshot()?.data.experience ?? ""}
             onChange={(e) => ctx.setData("experience", e.currentTarget.value)}
           >
-            <option value="" disabled>Select your level…</option>
-            <For each={EXPERIENCE_OPTIONS}>
-              {(o) => <option value={o.value}>{o.label}</option>}
-            </For>
+            <option value="" disabled>
+              Select your level…
+            </option>
+            <For each={EXPERIENCE_OPTIONS}>{(o) => <option value={o.value}>{o.label}</option>}</For>
           </select>
           <Show when={errors().experience}>
             <span class="field-error">{errors().experience}</span>

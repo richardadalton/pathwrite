@@ -4,7 +4,9 @@
   import StepB from "./StepB.svelte";
   import type { PathEngine } from "@daltonr/pathwrite-core";
   let engine = $state<PathEngine | undefined>(undefined);
-  export function setEngine(e: PathEngine): void { engine = e; }
+  export function setEngine(e: PathEngine): void {
+    engine = e;
+  }
   const path = { id: "late", steps: [{ id: "step-a" }, { id: "step-b" }] };
 </script>
 

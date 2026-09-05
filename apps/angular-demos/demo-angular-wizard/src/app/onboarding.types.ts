@@ -37,4 +37,3 @@ export const THEME_LABELS: Record<string, string> = {
   dark: "Dark",
   system: "System Default",
 };
-

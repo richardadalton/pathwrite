@@ -17,21 +17,21 @@ function threeStepPath(id = "test"): PathDefinition {
     steps: [
       { id: "step-a", title: "Step A" },
       { id: "step-b", title: "Step B" },
-      { id: "step-c", title: "Step C" }
-    ]
+      { id: "step-c", title: "Step C" },
+    ],
   };
 }
 
 const defaultSteps = {
   "step-a": createElement("div", null, "Content A"),
   "step-b": createElement("div", null, "Content B"),
-  "step-c": createElement("div", null, "Content C")
+  "step-c": createElement("div", null, "Content C"),
 };
 
 function renderShell(props: Partial<Parameters<typeof PathShell>[0]> = {}) {
   const defaults = {
     path: threeStepPath(),
-    steps: defaultSteps
+    steps: defaultSteps,
   };
   return render(createElement(PathShell, { ...defaults, ...props } as any));
 }
@@ -81,10 +81,12 @@ describe("PathShell — rendering", () => {
   it("hides progress automatically for a single-step path", async () => {
     const singleStepPath: PathDefinition = { id: "single", steps: [{ id: "only" }] };
     const { container } = await act(async () =>
-      render(createElement(PathShell, {
-        path: singleStepPath,
-        steps: { only: createElement("div", null, "Only step") }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path: singleStepPath,
+          steps: { only: createElement("div", null, "Only step") },
+        } as any)
+      )
     );
     expect(container.querySelector(".pw-shell__header")).toBeNull();
   });
@@ -99,18 +101,20 @@ describe("PathShell — rendering", () => {
     const subPath: PathDefinition = { id: "sub", steps: [{ id: "sub-only", title: "Sub Step" }] };
     const parentPath: PathDefinition = {
       id: "parent",
-      steps: [{ id: "parent-step", title: "Parent Step" }]
+      steps: [{ id: "parent-step", title: "Parent Step" }],
     };
     const engine = new PathEngine();
     await engine.start(parentPath, {});
     await engine.startSubPath(subPath, {});
 
     const { container } = await act(async () =>
-      render(createElement(PathShell, {
-        engine,
-        path: subPath,
-        steps: { "sub-only": createElement("div", null, "Sub content") }
-      } as any))
+      render(
+        createElement(PathShell, {
+          engine,
+          path: subPath,
+          steps: { "sub-only": createElement("div", null, "Sub content") },
+        } as any)
+      )
     );
     expect(container.querySelector(".pw-shell__header")).toBeTruthy();
   });
@@ -119,25 +123,33 @@ describe("PathShell — rendering", () => {
     const { PathEngine } = await import("@daltonr/pathwrite-core");
     const parentPath: PathDefinition = {
       id: "parent",
-      steps: [{ id: "p1", title: "Parent 1" }, { id: "p2", title: "Parent 2" }]
+      steps: [
+        { id: "p1", title: "Parent 1" },
+        { id: "p2", title: "Parent 2" },
+      ],
     };
     const subPath: PathDefinition = {
       id: "sub",
-      steps: [{ id: "s1", title: "Sub 1" }, { id: "s2", title: "Sub 2" }]
+      steps: [
+        { id: "s1", title: "Sub 1" },
+        { id: "s2", title: "Sub 2" },
+      ],
     };
     const engine = new PathEngine();
     await engine.start(parentPath, {});
     await engine.startSubPath(subPath, {});
 
     const { container } = await act(async () =>
-      render(createElement(PathShell, {
-        engine,
-        path: subPath,
-        steps: {
-          s1: createElement("div", null, "Sub step 1"),
-          s2: createElement("div", null, "Sub step 2")
-        }
-      } as any))
+      render(
+        createElement(PathShell, {
+          engine,
+          path: subPath,
+          steps: {
+            s1: createElement("div", null, "Sub step 1"),
+            s2: createElement("div", null, "Sub step 2"),
+          },
+        } as any)
+      )
     );
 
     // Root progress bar should be present
@@ -218,10 +230,12 @@ describe("PathShell — restart via actions", () => {
     await act(async () =>
       renderShell({
         renderFooter: (_snap, actions) =>
-          createElement("div", null,
+          createElement(
+            "div",
+            null,
             createElement("button", { onClick: actions.next }, "Next"),
             createElement("button", { onClick: actions.restart }, "Restart")
-          )
+          ),
       })
     );
     // Advance to step 2
@@ -237,10 +251,12 @@ describe("PathShell — restart via actions", () => {
     await act(async () =>
       renderShell({
         renderFooter: (_snap, actions) =>
-          createElement("div", null,
+          createElement(
+            "div",
+            null,
             createElement("button", { onClick: actions.next }, "Next"),
             createElement("button", { onClick: actions.restart }, "Restart")
-          )
+          ),
       })
     );
     // Advance to last step
@@ -264,7 +280,7 @@ describe("PathShell — custom labels", () => {
       renderShell({
         backLabel: "Prev",
         nextLabel: "Forward",
-        cancelLabel: "Abort"
+        cancelLabel: "Abort",
       })
     );
     expect(screen.getByText("Forward")).toBeTruthy();
@@ -326,7 +342,9 @@ describe("PathShell — render props", () => {
 
   it("uses renderFooter to replace the default footer", async () => {
     const renderFooter = (_snap: PathSnapshot, actions: PathShellActions) =>
-      createElement("div", { "data-testid": "custom-footer" },
+      createElement(
+        "div",
+        { "data-testid": "custom-footer" },
         createElement("button", { onClick: actions.next }, "Go!")
       );
     await act(async () => renderShell({ renderFooter }));
@@ -372,8 +390,8 @@ describe("PathShell — context sharing", () => {
           steps: {
             "step-a": createElement(StepChild),
             "step-b": createElement("div", null, "B"),
-            "step-c": createElement("div", null, "C")
-          }
+            "step-c": createElement("div", null, "C"),
+          },
         })
       )
     );
@@ -393,8 +411,8 @@ describe("PathShell — context sharing", () => {
           steps: {
             "step-a": createElement(StepChild),
             "step-b": createElement("div", null, "Content B"),
-            "step-c": createElement("div", null, "C")
-          }
+            "step-c": createElement("div", null, "C"),
+          },
         })
       )
     );
@@ -412,15 +430,21 @@ describe("PathShell — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ name: "Required", email: "Invalid email address" }),
+        },
+        { id: "step-b", title: "Step B" },
+      ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     // Errors must be hidden on initial render — "punish late, reward early"
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
@@ -430,16 +454,22 @@ describe("PathShell — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ name: "Required", email: "Invalid email address" }),
+        },
+        { id: "step-b", title: "Step B" },
+      ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     // Next button is always enabled — clicking it sets hasAttemptedNext; navigation is blocked
     await act(async () => screen.getByText("Next").click());
@@ -457,10 +487,10 @@ describe("PathShell — fieldErrors", () => {
           id: "step-a",
           title: "Step A",
           fieldErrors: (ctx) => ({
-            name: (ctx.data as { name: string }).name ? undefined : "Required"
-          })
-        }
-      ]
+            name: (ctx.data as { name: string }).name ? undefined : "Required",
+          }),
+        },
+      ],
     };
     let setDataFn: ((key: string, value: unknown) => void) | undefined;
     function StepA() {
@@ -469,7 +499,13 @@ describe("PathShell — fieldErrors", () => {
       return createElement("div", null, "A");
     }
     await act(async () =>
-      render(createElement(PathShell, { path, validationDisplay: "summary", steps: { "step-a": createElement(StepA) } }))
+      render(
+        createElement(PathShell, {
+          path,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement(StepA) },
+        })
+      )
     );
     await act(async () => screen.getByText("Complete").click()); // trigger attempt (single-step uses "Complete")
     expect(screen.getByText("Required")).toBeTruthy();
@@ -481,13 +517,15 @@ describe("PathShell — fieldErrors", () => {
   it("does not render the validation list when fieldErrors is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        steps: { "step-a": createElement("div", null, "A") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          steps: { "step-a": createElement("div", null, "A") },
+        })
+      )
     );
     await act(async () => screen.getByText("Complete").click()); // attempt with no messages (single-step uses "Complete")
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
@@ -497,15 +535,22 @@ describe("PathShell — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ field: "Fill this in" }),
+          canMoveNext: () => true,
+        },
+        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) },
+      ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     // Navigate to step B (canMoveNext: () => true lets navigation succeed)
     await act(async () => screen.getByText("Next").click());
@@ -517,14 +562,16 @@ describe("PathShell — fieldErrors", () => {
   it("does not render label span for the _ key", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A") },
+        })
+      )
     );
     // Trigger hasAttemptedNext — navigation blocked (canMoveNext=false from fieldErrors)
     await act(async () => screen.getByText("Complete").click()); // single-step uses "Complete"
@@ -551,13 +598,15 @@ describe("PathShell — layout", () => {
   it("auto mode uses form layout for single-step top-level paths", async () => {
     const singleStepPath: PathDefinition = {
       id: "form",
-      steps: [{ id: "contact", title: "Contact Form" }]
+      steps: [{ id: "contact", title: "Contact Form" }],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path: singleStepPath,
-        steps: { contact: createElement("div", null, "Form Content") }
-      }))
+      render(
+        createElement(PathShell, {
+          path: singleStepPath,
+          steps: { contact: createElement("div", null, "Form Content") },
+        })
+      )
     );
     const footer = document.querySelector(".pw-shell__footer")!;
     const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
@@ -571,14 +620,16 @@ describe("PathShell — layout", () => {
   it("explicit wizard mode overrides auto-detection", async () => {
     const singleStepPath: PathDefinition = {
       id: "form",
-      steps: [{ id: "contact", title: "Contact Form" }]
+      steps: [{ id: "contact", title: "Contact Form" }],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path: singleStepPath,
-        steps: { contact: createElement("div", null, "Form Content") },
-        layout: "wizard"
-      }))
+      render(
+        createElement(PathShell, {
+          path: singleStepPath,
+          steps: { contact: createElement("div", null, "Form Content") },
+          layout: "wizard",
+        })
+      )
     );
     const footer = document.querySelector(".pw-shell__footer")!;
     const leftButtons = footer.querySelector(".pw-shell__footer-left")!.querySelectorAll("button");
@@ -599,13 +650,15 @@ describe("PathShell — layout", () => {
       ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        steps: {
-          "type-a": createElement("div", null, "Form A"),
-          "type-b": createElement("div", null, "Form B"),
-        }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path,
+          steps: {
+            "type-a": createElement("div", null, "Form A"),
+            "type-b": createElement("div", null, "Form B"),
+          },
+        } as any)
+      )
     );
     expect(screen.getByText("Form B")).toBeTruthy();
     expect(screen.queryByText("Form A")).toBeNull();
@@ -634,16 +687,18 @@ describe("PathShell — validateWhen", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        validateWhen: false,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          validateWhen: false,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
   });
@@ -653,25 +708,29 @@ describe("PathShell — validateWhen", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
     const { rerender } = await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        validateWhen: false,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          validateWhen: false,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     expect(document.querySelector(".pw-shell__validation")).toBeNull();
     await act(async () =>
-      rerender(createElement(PathShell, {
-        path,
-        validateWhen: true,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      rerender(
+        createElement(PathShell, {
+          path,
+          validateWhen: true,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     expect(screen.getByText("Required")).toBeTruthy();
   });
@@ -688,14 +747,14 @@ describe("PathShell — restoreKey", () => {
       steps: [
         { id: "inner-a", title: "Tab A" },
         { id: "inner-b", title: "Tab B" },
-      ]
+      ],
     };
   }
 
   function outerSingleStepPath(): PathDefinition {
     return {
       id: "outer",
-      steps: [{ id: "outer-step", title: "Outer Step" }]
+      steps: [{ id: "outer-step", title: "Outer Step" }],
     };
   }
 
@@ -711,16 +770,18 @@ describe("PathShell — restoreKey", () => {
         steps: {
           "inner-a": createElement("div", null, "Inner Content A"),
           "inner-b": createElement("div", null, "Inner Content B"),
-        }
+        },
       } as any);
     }
 
     await act(async () =>
-      render(createElement(PathShell, {
-        path: outerSingleStepPath(),
-        hideFooter: true,
-        steps: { "outer-step": createElement(OuterStep) }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path: outerSingleStepPath(),
+          hideFooter: true,
+          steps: { "outer-step": createElement(OuterStep) },
+        } as any)
+      )
     );
 
     // Navigate inner shell to step-b
@@ -748,17 +809,19 @@ describe("PathShell — restoreKey", () => {
         steps: {
           "inner-a": createElement("div", null, "Inner Content A"),
           "inner-b": createElement("div", null, "Inner Content B"),
-        }
+        },
       } as any);
     }
 
     await act(async () =>
-      render(createElement(PathShell, {
-        path: outerSingleStepPath(),
-        hideFooter: true,
-        initialData: { inner: storedSnapshot },
-        steps: { "outer-step": createElement(OuterStep) }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path: outerSingleStepPath(),
+          hideFooter: true,
+          initialData: { inner: storedSnapshot },
+          steps: { "outer-step": createElement(OuterStep) },
+        } as any)
+      )
     );
 
     // Inner shell should have restored to inner-b, not started at inner-a
@@ -769,14 +832,16 @@ describe("PathShell — restoreKey", () => {
   it("restoreKey is a no-op when there is no outer PathShell ancestor", async () => {
     // Top-level shell with restoreKey — should start normally at step 0
     await act(async () =>
-      render(createElement(PathShell, {
-        path: innerTwoStepPath(),
-        restoreKey: "orphan",
-        steps: {
-          "inner-a": createElement("div", null, "Inner Content A"),
-          "inner-b": createElement("div", null, "Inner Content B"),
-        }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path: innerTwoStepPath(),
+          restoreKey: "orphan",
+          steps: {
+            "inner-a": createElement("div", null, "Inner Content A"),
+            "inner-b": createElement("div", null, "Inner Content B"),
+          },
+        } as any)
+      )
     );
 
     expect(screen.getByText("Inner Content A")).toBeTruthy();
@@ -794,16 +859,18 @@ describe("PathShell — validateWhen true at mount", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
     await act(async () =>
-      render(createElement(PathShell, {
-        path,
-        validateWhen: true,
-        validationDisplay: "summary",
-        steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") }
-      }))
+      render(
+        createElement(PathShell, {
+          path,
+          validateWhen: true,
+          validationDisplay: "summary",
+          steps: { "step-a": createElement("div", null, "A"), "step-b": createElement("div", null, "B") },
+        })
+      )
     );
     expect(document.querySelector(".pw-shell__validation")).not.toBeNull();
     expect(screen.getByText("Required")).toBeTruthy();
@@ -823,8 +890,13 @@ describe("PathShell — restoreKey remount fidelity", () => {
       id: "inner",
       steps: [
         { id: "inner-a", title: "Tab A", onLeave: leaveA, onEnter: enterA },
-        { id: "inner-b", title: "Tab B", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
-      ]
+        {
+          id: "inner-b",
+          title: "Tab B",
+          onEnter: enterB,
+          fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }),
+        },
+      ],
     };
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
 
@@ -833,17 +905,22 @@ describe("PathShell — restoreKey remount fidelity", () => {
         path: inner,
         restoreKey: "inner",
         validationDisplay: "summary",
-        steps: { "inner-a": createElement("div", null, "Inner Content A"), "inner-b": createElement("div", null, "Inner Content B") }
+        steps: {
+          "inner-a": createElement("div", null, "Inner Content A"),
+          "inner-b": createElement("div", null, "Inner Content B"),
+        },
       } as any);
     }
 
     await act(async () =>
-      render(createElement(PathShell, {
-        path: outer,
-        nextLabel: "Outer Next",
-        backLabel: "Outer Back",
-        steps: { host: createElement(Host), after: createElement("div", null, "After") }
-      } as any))
+      render(
+        createElement(PathShell, {
+          path: outer,
+          nextLabel: "Outer Next",
+          backLabel: "Outer Back",
+          steps: { host: createElement(Host), after: createElement("div", null, "After") },
+        } as any)
+      )
     );
     expect(enterA).toHaveBeenCalledTimes(1);
 

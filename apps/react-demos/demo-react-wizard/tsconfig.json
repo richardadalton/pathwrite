@@ -12,4 +12,3 @@
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }
-

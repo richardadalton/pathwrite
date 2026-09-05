@@ -4,10 +4,10 @@ import { PathShellComponent, PathStepDirective } from "@daltonr/pathwrite-angula
 import { employeeDetailsPath } from "../employee-details.path";
 import { DETAILS_INITIAL } from "../employee-details.types";
 import type { OnboardingData } from "../onboarding.types";
-import { PersonalTabComponent }    from "../tabs/personal-tab.component";
-import { DepartmentTabComponent }  from "../tabs/department-tab.component";
-import { EquipmentTabComponent }   from "../tabs/equipment-tab.component";
-import { RolesTabComponent }       from "../tabs/roles-tab.component";
+import { PersonalTabComponent } from "../tabs/personal-tab.component";
+import { DepartmentTabComponent } from "../tabs/department-tab.component";
+import { EquipmentTabComponent } from "../tabs/equipment-tab.component";
+import { RolesTabComponent } from "../tabs/roles-tab.component";
 
 @Component({
   selector: "app-details-step",
@@ -20,23 +20,31 @@ import { RolesTabComponent }       from "../tabs/roles-tab.component";
     EquipmentTabComponent,
     RolesTabComponent,
   ],
-  styles: [`
-    .nested-shell-wrapper { display: flex; flex-direction: column; gap: 0; }
-    .step-intro {
-      margin: 0 0 20px;
-      font-size: 14px;
-      color: #5b677a;
-      line-height: 1.6;
-    }
-    .step-intro strong { color: #1f2937; }
-  `],
+  styles: [
+    `
+      .nested-shell-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .step-intro {
+        margin: 0 0 20px;
+        font-size: 14px;
+        color: #5b677a;
+        line-height: 1.6;
+      }
+      .step-intro strong {
+        color: #1f2937;
+      }
+    `,
+  ],
   template: `
     @if (outerSnapshot(); as outerSnap) {
       <div class="nested-shell-wrapper">
         <p class="step-intro">
-          Fill in details for <strong>{{ outerSnap.data.employeeName }}</strong> using the tabs below.
-          Switch between tabs freely — data is saved as you type.
-          First name, last name, department, and job title are required before proceeding.
+          Fill in details for <strong>{{ outerSnap.data.employeeName }}</strong> using the tabs below. Switch
+          between tabs freely — data is saved as you type. First name, last name, department, and job title
+          are required before proceeding.
         </p>
 
         <pw-shell

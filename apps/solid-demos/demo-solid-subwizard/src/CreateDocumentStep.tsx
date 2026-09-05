@@ -15,7 +15,9 @@ export default function CreateDocumentStep() {
         <p class="step-intro">Enter the details of the document you want to send for approval.</p>
 
         <div class="field" classList={{ "field--error": !!errors().title }}>
-          <label for="title">Title <span class="required">*</span></label>
+          <label for="title">
+            Title <span class="required">*</span>
+          </label>
           <input
             id="title"
             type="text"
@@ -31,7 +33,9 @@ export default function CreateDocumentStep() {
         </div>
 
         <div class="field" classList={{ "field--error": !!errors().description }}>
-          <label for="description">Description <span class="required">*</span></label>
+          <label for="description">
+            Description <span class="required">*</span>
+          </label>
           <textarea
             id="description"
             rows={4}

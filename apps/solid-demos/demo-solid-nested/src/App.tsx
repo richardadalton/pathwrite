@@ -14,8 +14,8 @@ function yesNo(val: string | undefined) {
 }
 
 export default function App() {
-  const [isCompleted, setIsCompleted]     = createSignal(false);
-  const [isCancelled, setIsCancelled]     = createSignal(false);
+  const [isCompleted, setIsCompleted] = createSignal(false);
+  const [isCancelled, setIsCancelled] = createSignal(false);
   const [completedData, setCompletedData] = createSignal<OnboardingData | null>(null);
 
   function handleComplete(data: PathData) {
@@ -38,9 +38,9 @@ export default function App() {
       <div class="page-header">
         <h1>Employee Onboarding</h1>
         <p class="subtitle">
-          Nested PathShell — an independent Employee Details path runs inside Step 2.
-          Data syncs to the parent via <code>onEvent</code>; the parent's{" "}
-          <code>fieldErrors</code> guard validates the inner data before proceeding.
+          Nested PathShell — an independent Employee Details path runs inside Step 2. Data syncs to the parent
+          via <code>onEvent</code>; the parent's <code>fieldErrors</code> guard validates the inner data
+          before proceeding.
         </p>
       </div>
 
@@ -48,11 +48,11 @@ export default function App() {
       <Show when={isCompleted() && completedData()}>
         {(data) => {
           const d = (data().details ?? {}) as EmployeeDetails;
-          const laptopLabel = LAPTOP_TYPES.find(l => l.value === d.laptopType)?.label ?? d.laptopType;
+          const laptopLabel = LAPTOP_TYPES.find((l) => l.value === d.laptopType)?.label ?? d.laptopType;
           const activePerms = [
-            d.permAdmin   === "yes" && "Admin",
-            d.permDev     === "yes" && "Developer",
-            d.permHR      === "yes" && "HR",
+            d.permAdmin === "yes" && "Admin",
+            d.permDev === "yes" && "Developer",
+            d.permHR === "yes" && "HR",
             d.permFinance === "yes" && "Finance",
           ].filter(Boolean) as string[];
 
@@ -67,26 +67,58 @@ export default function App() {
               <div class="review-section">
                 <p class="section-title">Personal</p>
                 <div class="review-card">
-                  <div class="review-row"><span class="review-key">Name</span><span>{d.firstName} {d.lastName}</span></div>
-                  <Show when={d.phone}><div class="review-row"><span class="review-key">Phone</span><span>{d.phone}</span></div></Show>
+                  <div class="review-row">
+                    <span class="review-key">Name</span>
+                    <span>
+                      {d.firstName} {d.lastName}
+                    </span>
+                  </div>
+                  <Show when={d.phone}>
+                    <div class="review-row">
+                      <span class="review-key">Phone</span>
+                      <span>{d.phone}</span>
+                    </div>
+                  </Show>
                 </div>
               </div>
 
               <div class="review-section">
                 <p class="section-title">Department</p>
                 <div class="review-card">
-                  <div class="review-row"><span class="review-key">Department</span><span>{d.department}</span></div>
-                  <Show when={d.manager}><div class="review-row"><span class="review-key">Manager</span><span>{d.manager}</span></div></Show>
-                  <Show when={d.office}><div class="review-row"><span class="review-key">Office</span><span>{d.office}</span></div></Show>
+                  <div class="review-row">
+                    <span class="review-key">Department</span>
+                    <span>{d.department}</span>
+                  </div>
+                  <Show when={d.manager}>
+                    <div class="review-row">
+                      <span class="review-key">Manager</span>
+                      <span>{d.manager}</span>
+                    </div>
+                  </Show>
+                  <Show when={d.office}>
+                    <div class="review-row">
+                      <span class="review-key">Office</span>
+                      <span>{d.office}</span>
+                    </div>
+                  </Show>
                 </div>
               </div>
 
               <div class="review-section">
                 <p class="section-title">Equipment &amp; Roles</p>
                 <div class="review-card">
-                  <div class="review-row"><span class="review-key">Laptop</span><span>{laptopLabel}</span></div>
-                  <div class="review-row"><span class="review-key">Phone</span><span>{yesNo(d.needsPhone)}</span></div>
-                  <div class="review-row"><span class="review-key">Job Title</span><span>{d.jobTitle}</span></div>
+                  <div class="review-row">
+                    <span class="review-key">Laptop</span>
+                    <span>{laptopLabel}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">Phone</span>
+                    <span>{yesNo(d.needsPhone)}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">Job Title</span>
+                    <span>{d.jobTitle}</span>
+                  </div>
                   <div class="review-row">
                     <span class="review-key">Permissions</span>
                     <span>{activePerms.length > 0 ? activePerms.join(", ") : "None"}</span>
@@ -94,7 +126,9 @@ export default function App() {
                 </div>
               </div>
 
-              <button class="btn-primary" onClick={startOver}>Onboard Another</button>
+              <button class="btn-primary" onClick={startOver}>
+                Onboard Another
+              </button>
             </section>
           );
         }}
@@ -106,7 +140,9 @@ export default function App() {
           <div class="result-icon">✖</div>
           <h2>Onboarding Cancelled</h2>
           <p>No record was created.</p>
-          <button class="btn-secondary" onClick={startOver}>Try Again</button>
+          <button class="btn-secondary" onClick={startOver}>
+            Try Again
+          </button>
         </section>
       </Show>
 
@@ -121,9 +157,9 @@ export default function App() {
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{
-            "enter-name":       () => <EnterNameStep />,
+            "enter-name": () => <EnterNameStep />,
             "employee-details": () => <EmployeeDetailsStep />,
-            "confirm":          () => <ConfirmStep />,
+            confirm: () => <ConfirmStep />,
           }}
         />
       </Show>

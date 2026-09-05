@@ -1,11 +1,17 @@
 import { createSignal, Show } from "solid-js";
 import { PathShell, usePathContext } from "@daltonr/pathwrite-solid";
 import type { PathSnapshot } from "@daltonr/pathwrite-solid";
-import { onboardingPath, INITIAL_DATA, EXPERIENCE_LABELS, THEME_LABELS, type OnboardingData } from "./onboarding";
+import {
+  onboardingPath,
+  INITIAL_DATA,
+  EXPERIENCE_LABELS,
+  THEME_LABELS,
+  type OnboardingData,
+} from "./onboarding";
 import PersonalInfoStep from "./PersonalInfoStep";
-import AboutYouStep     from "./AboutYouStep";
-import PreferencesStep  from "./PreferencesStep";
-import ReviewStep       from "./ReviewStep";
+import AboutYouStep from "./AboutYouStep";
+import PreferencesStep from "./PreferencesStep";
+import ReviewStep from "./ReviewStep";
 
 // Rendered by PathShell when snapshot().status === "completed".
 // usePathContext() gives us restart() from the shell's provided context.
@@ -17,7 +23,9 @@ function CompletionPanel(props: { snapshot: PathSnapshot<OnboardingData> }) {
     <section class="result-panel success-panel">
       <div class="result-icon">🎉</div>
       <h2>Welcome aboard!</h2>
-      <p>Your profile has been set up, <strong>{data.firstName}</strong>.</p>
+      <p>
+        Your profile has been set up, <strong>{data.firstName}</strong>.
+      </p>
 
       <div class="submitted-summary" style="max-width: 480px;">
         <div class="review-section">
@@ -25,7 +33,9 @@ function CompletionPanel(props: { snapshot: PathSnapshot<OnboardingData> }) {
           <div class="review-card">
             <div class="review-row">
               <span class="review-key">Name</span>
-              <span>{data.firstName} {data.lastName}</span>
+              <span>
+                {data.firstName} {data.lastName}
+              </span>
             </div>
             <div class="review-row">
               <span class="review-key">Email</span>
@@ -71,7 +81,9 @@ function CompletionPanel(props: { snapshot: PathSnapshot<OnboardingData> }) {
         </div>
       </div>
 
-      <button class="btn-primary" onClick={() => restart()}>Start Over</button>
+      <button class="btn-primary" onClick={() => restart()}>
+        Start Over
+      </button>
     </section>
   );
 }
@@ -92,7 +104,9 @@ export default function App() {
           <div class="result-icon">✖</div>
           <h2>Onboarding Cancelled</h2>
           <p>Your profile was not saved.</p>
-          <button class="btn-secondary" onClick={() => setIsCancelled(false)}>Try Again</button>
+          <button class="btn-secondary" onClick={() => setIsCancelled(false)}>
+            Try Again
+          </button>
         </section>
       </Show>
 
@@ -108,9 +122,9 @@ export default function App() {
           completionContent={(snap) => <CompletionPanel snapshot={snap as PathSnapshot<OnboardingData>} />}
           steps={{
             personalInfo: () => <PersonalInfoStep />,
-            aboutYou:     () => <AboutYouStep />,
-            preferences:  () => <PreferencesStep />,
-            review:       () => <ReviewStep />,
+            aboutYou: () => <AboutYouStep />,
+            preferences: () => <PreferencesStep />,
+            review: () => <ReviewStep />,
           }}
         />
       </Show>

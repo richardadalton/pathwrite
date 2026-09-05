@@ -58,27 +58,17 @@ export const memberProfileSubPath: PathDefinition<ProfileSubData> = {
       id: "background",
       title: "Background",
       fieldErrors: ({ data }) => ({
-        department: !data.department?.toString().trim()
-          ? "Department is required."
-          : undefined,
-        startDate: !data.startDate?.toString().trim()
-          ? "Start date is required."
-          : undefined,
-        bio: !data.bio?.toString().trim()
-          ? "A short bio is required."
-          : undefined,
+        department: !data.department?.toString().trim() ? "Department is required." : undefined,
+        startDate: !data.startDate?.toString().trim() ? "Start date is required." : undefined,
+        bio: !data.bio?.toString().trim() ? "A short bio is required." : undefined,
       }),
     },
     {
       id: "goals",
       title: "Goals",
       fieldErrors: ({ data }) => ({
-        goals30: !data.goals30?.toString().trim()
-          ? "30-day goals are required."
-          : undefined,
-        goals90: !data.goals90?.toString().trim()
-          ? "90-day goals are required."
-          : undefined,
+        goals30: !data.goals30?.toString().trim() ? "30-day goals are required." : undefined,
+        goals90: !data.goals90?.toString().trim() ? "90-day goals are required." : undefined,
       }),
     },
   ],
@@ -98,15 +88,13 @@ export const teamOnboardingPath: PathDefinition<WizardData> = {
       fieldErrors: ({ data }) => {
         const members = (data.members ?? []) as Person[];
         return {
-          teamName: !data.teamName?.toString().trim()
-            ? "Team name is required."
-            : undefined,
+          teamName: !data.teamName?.toString().trim() ? "Team name is required." : undefined,
           members:
             members.length === 0
               ? "Add at least one team member."
               : members.some((m) => !m.name?.toString().trim())
-              ? "All members need a name."
-              : undefined,
+                ? "All members need a name."
+                : undefined,
         };
       },
     },
@@ -135,10 +123,10 @@ export const teamOnboardingPath: PathDefinition<WizardData> = {
             ...existing,
             [idx]: {
               department: (subPathData.department as string) ?? "",
-              startDate:  (subPathData.startDate  as string) ?? "",
-              bio:        (subPathData.bio         as string) ?? "",
-              goals30:    (subPathData.goals30     as string) ?? "",
-              goals90:    (subPathData.goals90     as string) ?? "",
+              startDate: (subPathData.startDate as string) ?? "",
+              bio: (subPathData.bio as string) ?? "",
+              goals30: (subPathData.goals30 as string) ?? "",
+              goals90: (subPathData.goals90 as string) ?? "",
             },
           },
         };

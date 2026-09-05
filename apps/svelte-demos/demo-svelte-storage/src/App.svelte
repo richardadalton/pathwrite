@@ -5,11 +5,11 @@
   import { LocalStorageStore, persistence, restoreOrStart } from "@daltonr/pathwrite-store";
   import { teamOnboardingPath, memberProfileSubPath, INITIAL_DATA } from "./wizard";
   import type { WizardData, Person, MemberProfile } from "./wizard";
-  import TeamSetupStep      from "./TeamSetupStep.svelte";
+  import TeamSetupStep from "./TeamSetupStep.svelte";
   import MemberProfilesStep from "./MemberProfilesStep.svelte";
-  import BackgroundStep     from "./BackgroundStep.svelte";
-  import GoalsStep          from "./GoalsStep.svelte";
-  import SummaryStep        from "./SummaryStep.svelte";
+  import BackgroundStep from "./BackgroundStep.svelte";
+  import GoalsStep from "./GoalsStep.svelte";
+  import SummaryStep from "./SummaryStep.svelte";
 
   // ---------------------------------------------------------------------------
   // Store
@@ -31,14 +31,14 @@
 
   type View = "sessions" | "wizard" | "completed" | "cancelled";
 
-  let view             = $state<View>("sessions");
-  let sessions         = $state<SessionSummary[]>([]);
-  let sessionsLoading  = $state(true);
+  let view = $state<View>("sessions");
+  let sessions = $state<SessionSummary[]>([]);
+  let sessionsLoading = $state(true);
 
   const STEP_LABELS: Record<string, string> = {
-    teamSetup:      "Step 1 — Team Setup",
+    teamSetup: "Step 1 — Team Setup",
     memberProfiles: "Step 2 — Member Profiles",
-    summary:        "Step 3 — Summary",
+    summary: "Step 3 — Summary",
   };
 
   async function loadSessionList() {
@@ -51,18 +51,17 @@
         const state = await store.load(key);
         if (!state) continue;
         const data = state.data as WizardData;
-        const members  = (data.members ?? []) as Person[];
+        const members = (data.members ?? []) as Person[];
         const profiles = (data.profiles ?? {}) as Record<string, MemberProfile>;
         const profilesDone = members.filter((_, i) => !!profiles[String(i)]?.department).length;
 
-        const topLevelStepId = state.pathStack.length > 0
-          ? null
-          : teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null;
+        const topLevelStepId =
+          state.pathStack.length > 0 ? null : (teamOnboardingPath.steps[state.currentStepIndex]?.id ?? null);
 
         summaries.push({
           key,
-          teamName:     (data.teamName as string) || "(unnamed)",
-          memberCount:  members.length,
+          teamName: (data.teamName as string) || "(unnamed)",
+          memberCount: members.length,
           profilesDone,
           stepLabel: topLevelStepId
             ? (STEP_LABELS[topLevelStepId] ?? "In progress")
@@ -79,31 +78,35 @@
     }
   }
 
-  onMount(() => { loadSessionList(); });
+  onMount(() => {
+    loadSessionList();
+  });
 
   async function deleteSession(key: string) {
     await store.delete(key);
-    sessions = sessions.filter(s => s.key !== key);
+    sessions = sessions.filter((s) => s.key !== key);
   }
 
   // ---------------------------------------------------------------------------
   // Active wizard state
   // ---------------------------------------------------------------------------
 
-  let engine:           PathEngine | null = $state(null);
-  let engineKey:        number            = $state(0);
-  let activeSessionKey: string | null     = $state(null);
-  let isRestored:       boolean           = $state(false);
-  let wizardLoading:    boolean           = $state(false);
-  let completedData:    WizardData | null = $state(null);
+  let engine: PathEngine | null = $state(null);
+  let engineKey: number = $state(0);
+  let activeSessionKey: string | null = $state(null);
+  let isRestored: boolean = $state(false);
+  let wizardLoading: boolean = $state(false);
+  let completedData: WizardData | null = $state(null);
 
-  let saveIndicator       = $state(false);
+  let saveIndicator = $state(false);
   let saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
   function onSaveSuccess() {
     saveIndicator = true;
     if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
-    saveIndicatorTimer = setTimeout(() => { saveIndicator = false; }, 2500);
+    saveIndicatorTimer = setTimeout(() => {
+      saveIndicator = false;
+    }, 2500);
   }
 
   // ---------------------------------------------------------------------------
@@ -120,7 +123,7 @@
   }
 
   async function openSession(key: string) {
-    wizardLoading    = true;
+    wizardLoading = true;
     activeSessionKey = key;
 
     const result = await restoreOrStart({
@@ -143,11 +146,11 @@
       ],
     });
 
-    engine       = result.engine;
-    engineKey   += 1;
-    isRestored   = result.restored;
+    engine = result.engine;
+    engineKey += 1;
+    isRestored = result.restored;
     wizardLoading = false;
-    view         = "wizard";
+    view = "wizard";
   }
 
   // ---------------------------------------------------------------------------
@@ -159,7 +162,7 @@
     view = "completed";
     // persistence auto-deletes the snapshot on completion; sync the list
     if (activeSessionKey) {
-      sessions = sessions.filter(s => s.key !== activeSessionKey);
+      sessions = sessions.filter((s) => s.key !== activeSessionKey);
     }
   }
 
@@ -168,9 +171,9 @@
   }
 
   async function exitToSessions() {
-    engine           = null;
+    engine = null;
     activeSessionKey = null;
-    view             = "sessions";
+    view = "sessions";
     await loadSessionList();
   }
 
@@ -190,7 +193,9 @@
     if (!d) return "—";
     try {
       return new Date(d).toLocaleDateString("en-IE", { year: "numeric", month: "long", day: "numeric" });
-    } catch { return d; }
+    } catch {
+      return d;
+    }
   }
 </script>
 
@@ -198,7 +203,8 @@
   <div class="page-header">
     <h1>Team Onboarding</h1>
     <p class="subtitle">
-      Multi-session localStorage demo. Start several sessions, close the tab, come back and resume any of them.
+      Multi-session localStorage demo. Start several sessions, close the tab, come back and resume any of
+      them.
     </p>
   </div>
 
@@ -234,7 +240,9 @@
               </div>
               <div class="session-card__actions">
                 <button class="btn-resume" onclick={() => resumeSession(session.key)}>Resume →</button>
-                <button class="btn-delete-session" onclick={() => deleteSession(session.key)} title="Delete">🗑</button>
+                <button class="btn-delete-session" onclick={() => deleteSession(session.key)} title="Delete"
+                  >🗑</button
+                >
               </div>
             </div>
           {/each}
@@ -249,7 +257,9 @@
 
       <div class="new-session-bar">
         <button class="btn-primary btn-new-session" onclick={startNew}>+ Start New Onboarding</button>
-        <p class="new-session-hint">Each session gets its own localStorage key and can be resumed independently.</p>
+        <p class="new-session-hint">
+          Each session gets its own localStorage key and can be resumed independently.
+        </p>
       </div>
     {/if}
   {/if}
@@ -297,7 +307,11 @@
     <section class="result-panel success-panel">
       <div class="result-icon">🎉</div>
       <h2>Onboarding Complete!</h2>
-      <p><strong>{completedData.teamName}</strong> — {getMembers().length} member{getMembers().length !== 1 ? "s" : ""} onboarded.</p>
+      <p>
+        <strong>{completedData.teamName}</strong> — {getMembers().length} member{getMembers().length !== 1
+          ? "s"
+          : ""} onboarded.
+      </p>
       <div class="result-summary">
         {#each getMembers() as member, i}
           <div class="result-member-card">

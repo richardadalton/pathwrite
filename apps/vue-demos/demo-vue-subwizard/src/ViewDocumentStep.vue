@@ -11,7 +11,8 @@ const data = computed(() => snapshot.value?.data);
 <template>
   <div class="form-body">
     <p class="step-intro">
-      Reviewing as <strong>{{ data?.approverName }}</strong>. Please read the document carefully before making your decision.
+      Reviewing as <strong>{{ data?.approverName }}</strong
+      >. Please read the document carefully before making your decision.
     </p>
 
     <div class="document-preview">
@@ -20,7 +21,9 @@ const data = computed(() => snapshot.value?.data);
       <p class="document-preview__body">{{ data?.documentDescription }}</p>
     </div>
 
-    <p class="step-note">Click <strong>Next</strong> to record your decision, or <strong>Previous</strong> to return to the approvals list.</p>
+    <p class="step-note">
+      Click <strong>Next</strong> to record your decision, or <strong>Previous</strong> to return to the
+      approvals list.
+    </p>
   </div>
 </template>
-

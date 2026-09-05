@@ -17,15 +17,12 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [],
-            "styles": [
-              "../../../node_modules/@daltonr/pathwrite-angular/dist/index.css",
-              "src/styles.css"
-            ],
+            "styles": ["../../../node_modules/@daltonr/pathwrite-angular/dist/index.css", "src/styles.css"],
             "scripts": []
           },
           "configurations": {
             "development": { "optimization": false, "sourceMap": true, "extractLicenses": false },
-            "production":  { "optimization": true, "sourceMap": false, "extractLicenses": true }
+            "production": { "optimization": true, "sourceMap": false, "extractLicenses": true }
           },
           "defaultConfiguration": "production"
         },
@@ -33,7 +30,7 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "development": { "buildTarget": "demo-angular-skip:build:development" },
-            "production":  { "buildTarget": "demo-angular-skip:build:production" }
+            "production": { "buildTarget": "demo-angular-skip:build:production" }
           },
           "defaultConfiguration": "development"
         }
@@ -41,4 +38,3 @@
     }
   }
 }
-

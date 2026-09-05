@@ -63,9 +63,7 @@ export default function PaymentStep(props: Props) {
         </div>
       </div>
 
-      <p class="hint">
-        This is a demo — use any values. Real payment processing is not performed.
-      </p>
+      <p class="hint">This is a demo — use any values. Real payment processing is not performed.</p>
     </div>
   );
 }

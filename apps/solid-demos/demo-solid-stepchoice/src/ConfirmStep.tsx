@@ -15,8 +15,8 @@ export default function ConfirmStep(props: Props) {
   return (
     <div class="form-body">
       <p class="step-intro">
-        Please review your address before confirming. The form used the{" "}
-        <code>select</code> field to show the correct address variant for your country.
+        Please review your address before confirming. The form used the <code>select</code> field to show the
+        correct address variant for your country.
       </p>
 
       <div class="review-section">
@@ -89,9 +89,9 @@ export default function ConfirmStep(props: Props) {
       </Show>
 
       <p class="hint">
-        Clicking <strong>Finish</strong> will complete the path. The <code>address</code> step
-        used <code>select</code> to route to <code>{isUS() ? "address-us" : "address-ie"}</code>{" "}
-        based on your country choice.
+        Clicking <strong>Finish</strong> will complete the path. The <code>address</code> step used{" "}
+        <code>select</code> to route to <code>{isUS() ? "address-us" : "address-ie"}</code> based on your
+        country choice.
       </p>
     </div>
   );

@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 type Screen = "form" | "features" | "async";
 

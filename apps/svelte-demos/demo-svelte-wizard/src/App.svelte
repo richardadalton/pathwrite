@@ -2,10 +2,10 @@
   import { PathShell } from "@daltonr/pathwrite-svelte";
   import { INITIAL_DATA, type OnboardingData } from "./onboarding";
   import PersonalInfoStep from "./PersonalInfoStep.svelte";
-  import AboutYouStep     from "./AboutYouStep.svelte";
-  import PreferencesStep  from "./PreferencesStep.svelte";
-  import ReviewStep       from "./ReviewStep.svelte";
-  import CompletionPanel  from "./CompletionPanel.svelte";
+  import AboutYouStep from "./AboutYouStep.svelte";
+  import PreferencesStep from "./PreferencesStep.svelte";
+  import ReviewStep from "./ReviewStep.svelte";
+  import CompletionPanel from "./CompletionPanel.svelte";
 
   let isCancelled = $state(false);
 
@@ -18,10 +18,13 @@
         id: "personal-info",
         title: "Personal Info",
         fieldErrors: ({ data }: any) => ({
-          firstName: !data.firstName?.trim() ? "First name is required."    : undefined,
-          lastName:  !data.lastName?.trim()  ? "Last name is required."     : undefined,
-          email:     !data.email?.trim()     ? "Email address is required."
-                   : !(data.email.includes("@") && data.email.includes(".")) ? "Enter a valid email address." : undefined,
+          firstName: !data.firstName?.trim() ? "First name is required." : undefined,
+          lastName: !data.lastName?.trim() ? "Last name is required." : undefined,
+          email: !data.email?.trim()
+            ? "Email address is required."
+            : !(data.email.includes("@") && data.email.includes("."))
+              ? "Enter a valid email address."
+              : undefined,
         }),
       },
       {
@@ -29,14 +32,16 @@
         title: "About You",
         canMoveNext: ({ data }: any) => !!data.jobTitle?.trim() && !!data.experience,
         fieldErrors: ({ data }: any) => ({
-          jobTitle:   !data.jobTitle?.trim() ? "Job title is required."               : undefined,
-          experience: !data.experience       ? "Please select your experience level." : undefined,
+          jobTitle: !data.jobTitle?.trim() ? "Job title is required." : undefined,
+          experience: !data.experience ? "Please select your experience level." : undefined,
         }),
       },
       { id: "preferences", title: "Preferences" },
-      { id: "review",      title: "Review" },
+      { id: "review", title: "Review" },
     ],
-    onCancel: () => { isCancelled = true; },
+    onCancel: () => {
+      isCancelled = true;
+    },
   };
 </script>
 
@@ -52,7 +57,12 @@
       <div class="result-icon">✖</div>
       <h2>Onboarding Cancelled</h2>
       <p>Your profile was not saved.</p>
-      <button class="btn-secondary" onclick={() => { isCancelled = false; }}>Try Again</button>
+      <button
+        class="btn-secondary"
+        onclick={() => {
+          isCancelled = false;
+        }}>Try Again</button
+      >
     </section>
   {/if}
 

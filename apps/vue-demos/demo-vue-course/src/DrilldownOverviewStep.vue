@@ -15,4 +15,3 @@ const data = computed(() => snapshot.value?.data);
     <p class="step-intro">{{ data?.whyItMatters }}</p>
   </div>
 </template>
-

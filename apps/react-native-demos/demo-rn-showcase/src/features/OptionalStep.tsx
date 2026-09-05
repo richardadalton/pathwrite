@@ -10,13 +10,13 @@ export function OptionalStep() {
         <Text style={styles.code}>false</Text> and this step remained in the flow.
       </Text>
       <Text style={styles.body}>
-        Go back, turn the toggle on, and click Next — this step will disappear
-        entirely. The step count in the progress indicator will drop by one.
+        Go back, turn the toggle on, and click Next — this step will disappear entirely. The step count in the
+        progress indicator will drop by one.
       </Text>
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>
-          💡 <Text style={styles.infoLabel}>shouldSkip</Text> is evaluated every time the
-          engine approaches this step, so it always reflects the current data.
+          💡 <Text style={styles.infoLabel}>shouldSkip</Text> is evaluated every time the engine approaches
+          this step, so it always reflects the current data.
         </Text>
       </View>
     </View>

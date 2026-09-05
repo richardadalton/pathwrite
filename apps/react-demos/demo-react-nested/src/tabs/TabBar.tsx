@@ -11,15 +11,17 @@ export function TabBar() {
 
   return (
     <div className="tab-bar">
-      {snapshot.steps.map(step => (
+      {snapshot.steps.map((step) => (
         <button
           key={step.id}
           type="button"
           className={[
             "tab-btn",
-            step.status === "current"   ? "tab-btn--active"    : "",
+            step.status === "current" ? "tab-btn--active" : "",
             step.status === "completed" ? "tab-btn--completed" : "",
-          ].join(" ").trim()}
+          ]
+            .join(" ")
+            .trim()}
           onClick={() => goToStep(step.id)}
         >
           {step.title}

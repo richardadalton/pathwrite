@@ -17,7 +17,9 @@ afterEach(() => cleanup());
 // ---------------------------------------------------------------------------
 
 function renderShell(path: PathDefinition, props: Record<string, unknown> = {}) {
-  const steps = Object.fromEntries(path.steps.map((s) => [s.id, createElement("span", null, `Content ${s.id}`)]));
+  const steps = Object.fromEntries(
+    path.steps.map((s) => [s.id, createElement("span", null, `Content ${s.id}`)])
+  );
   return act(async () => render(createElement(PathShell, { path, steps, ...props } as any)));
 }
 
@@ -35,8 +37,8 @@ describe("PathShell (React Native) — Next is pressable when the step is invali
     id: "p",
     steps: [
       { id: "details", title: "Details", fieldErrors: ({ data }) => (data.name ? {} : { name: "Required" }) },
-      { id: "done", title: "Done" }
-    ]
+      { id: "done", title: "Done" },
+    ],
   };
 
   it("does not disable Next because canMoveNext is false", async () => {
@@ -50,7 +52,9 @@ describe("PathShell (React Native) — Next is pressable when the step is invali
     await renderShell(fieldErrorsPath, { validationDisplay: "summary" });
     expect(screen.queryByText("Required")).toBeNull(); // punished late: nothing until an attempt
 
-    await act(async () => { nextButton().click(); });
+    await act(async () => {
+      nextButton().click();
+    });
 
     expect(screen.getByText("Required")).not.toBeNull();
     expect(screen.getByText("Content details")).not.toBeNull(); // still on the step
@@ -60,15 +64,22 @@ describe("PathShell (React Native) — Next is pressable when the step is invali
     const guarded: PathDefinition = {
       id: "g",
       steps: [
-        { id: "terms", title: "Terms", canMoveNext: ({ data }) => (data.accepted ? true : { allowed: false, reason: "Accept the terms first" }) },
-        { id: "done", title: "Done" }
-      ]
+        {
+          id: "terms",
+          title: "Terms",
+          canMoveNext: ({ data }) =>
+            data.accepted ? true : { allowed: false, reason: "Accept the terms first" },
+        },
+        { id: "done", title: "Done" },
+      ],
     };
     await renderShell(guarded);
     expect(screen.queryByText("Accept the terms first")).toBeNull();
     expect(nextButton().disabled).toBe(false);
 
-    await act(async () => { nextButton().click(); });
+    await act(async () => {
+      nextButton().click();
+    });
 
     expect(screen.getByText("Accept the terms first")).not.toBeNull();
     expect(screen.getByText("Content terms")).not.toBeNull();
@@ -79,19 +90,30 @@ describe("PathShell (React Native) — Next is pressable when the step is invali
     const slow: PathDefinition = {
       id: "s",
       steps: [
-        { id: "a", title: "A", onLeave: () => new Promise<void>((r) => { release = r; }) },
-        { id: "b", title: "B" }
-      ]
+        {
+          id: "a",
+          title: "A",
+          onLeave: () =>
+            new Promise<void>((r) => {
+              release = r;
+            }),
+        },
+        { id: "b", title: "B" },
+      ],
     };
     await renderShell(slow);
     expect(nextButton().disabled).toBe(false);
 
-    await act(async () => { nextButton().click(); });
+    await act(async () => {
+      nextButton().click();
+    });
     // The "Next →" label is replaced by the spinner while busy; find the button by its footer position.
     const busy = document.querySelector("button[disabled]") as HTMLButtonElement | null;
     expect(busy).not.toBeNull();
 
-    await act(async () => { release(); });
+    await act(async () => {
+      release();
+    });
     expect(nextButton().disabled).toBe(false);
     expect(screen.getByText("Content b")).not.toBeNull();
   });
@@ -107,8 +129,8 @@ describe("PathShell (React Native) — validateWhen true at mount", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
     await renderShell(path, { validateWhen: true, validationDisplay: "summary" });
     expect(screen.getByText("Required")).not.toBeNull();
@@ -120,7 +142,8 @@ describe("PathShell (React Native) — validateWhen true at mount", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathShell (React Native) — custom header visibility", () => {
-  const renderHeader = (s: { stepIndex: number }) => createElement("span", { "data-testid": "custom-header" }, `Step ${s.stepIndex + 1}`);
+  const renderHeader = (s: { stepIndex: number }) =>
+    createElement("span", { "data-testid": "custom-header" }, `Step ${s.stepIndex + 1}`);
 
   it("renders a custom header for a single-step path", async () => {
     await renderShell({ id: "s", steps: [{ id: "only" }] }, { renderHeader });
@@ -146,23 +169,41 @@ describe("PathShell (React Native) — restoreKey remount fidelity", () => {
       id: "inner",
       steps: [
         { id: "inner-a", onLeave: leaveA, onEnter: enterA },
-        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
-      ]
+        {
+          id: "inner-b",
+          onEnter: enterB,
+          fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }),
+        },
+      ],
     };
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
     function Host() {
       return createElement(PathShell, {
-        path: inner, restoreKey: "inner", validationDisplay: "summary",
-        steps: { "inner-a": createElement("span", null, "Inner Content A"), "inner-b": createElement("span", null, "Inner Content B") }
+        path: inner,
+        restoreKey: "inner",
+        validationDisplay: "summary",
+        steps: {
+          "inner-a": createElement("span", null, "Inner Content A"),
+          "inner-b": createElement("span", null, "Inner Content B"),
+        },
       } as any);
     }
-    await act(async () => render(createElement(PathShell, {
-      path: outer, nextLabel: "OuterNext", backLabel: "OuterBack",
-      steps: { host: createElement(Host), after: createElement("span", null, "After") }
-    } as any)));
+    await act(async () =>
+      render(
+        createElement(PathShell, {
+          path: outer,
+          nextLabel: "OuterNext",
+          backLabel: "OuterBack",
+          steps: { host: createElement(Host), after: createElement("span", null, "After") },
+        } as any)
+      )
+    );
     expect(enterA).toHaveBeenCalledTimes(1);
 
-    const press = (re: RegExp) => act(async () => { (screen.getByText(re).closest("button") as HTMLButtonElement).click(); });
+    const press = (re: RegExp) =>
+      act(async () => {
+        (screen.getByText(re).closest("button") as HTMLButtonElement).click();
+      });
     await press(/^Next →$/);
     expect(screen.getByText("Inner Content B")).not.toBeNull();
     await press(/^Complete$/);
@@ -191,11 +232,18 @@ describe("PathShell (React Native) — sub-path progress layout", () => {
     return createElement("button", { onClick: () => startSubPath(child) }, "launch");
   }
   const parent: PathDefinition = { id: "parent", steps: [{ id: "p1" }, { id: "p2" }] };
-  const steps = { p1: createElement(Launcher), p2: createElement("span", null, "P2"), c1: createElement("span", null, "C1"), c2: createElement("span", null, "C2") };
+  const steps = {
+    p1: createElement(Launcher),
+    p2: createElement("span", null, "P2"),
+    c1: createElement("span", null, "C1"),
+    c2: createElement("span", null, "C2"),
+  };
 
   async function mountAndLaunch(props: Record<string, unknown> = {}) {
     await act(async () => render(createElement(PathShell, { path: parent, steps, ...props } as any)));
-    await act(async () => { screen.getByText("launch").click(); });
+    await act(async () => {
+      screen.getByText("launch").click();
+    });
     expect(screen.getByText("C1")).not.toBeNull();
   }
 
@@ -219,7 +267,10 @@ describe("PathShell (React Native) — sub-path progress layout", () => {
 });
 
 describe("PathShell (React Native) — warnings follow validationDisplay", () => {
-  const path: PathDefinition = { id: "w", steps: [{ id: "a", fieldWarnings: () => ({ email: "Looks like a typo" }) }, { id: "b" }] };
+  const path: PathDefinition = {
+    id: "w",
+    steps: [{ id: "a", fieldWarnings: () => ({ email: "Looks like a typo" }) }, { id: "b" }],
+  };
   it("shows warnings in the summary by default", async () => {
     await renderShell(path);
     expect(screen.queryByText("Looks like a typo")).not.toBeNull();
@@ -234,15 +285,23 @@ describe("PathShell (React Native) — completion panel", () => {
   const two: PathDefinition = { id: "c", steps: [{ id: "a" }, { id: "b" }] };
   it("keeps the progress header above the completion panel", async () => {
     await renderShell(two);
-    await act(async () => { nextButton().click(); });
-    await act(async () => { nextButton().click(); });
+    await act(async () => {
+      nextButton().click();
+    });
+    await act(async () => {
+      nextButton().click();
+    });
     expect(screen.getByText("All done.")).not.toBeNull();
     expect(screen.queryByTestId("pw-progress")).not.toBeNull();
   });
   it("hides it under hideProgress", async () => {
     await renderShell(two, { hideProgress: true });
-    await act(async () => { nextButton().click(); });
-    await act(async () => { nextButton().click(); });
+    await act(async () => {
+      nextButton().click();
+    });
+    await act(async () => {
+      nextButton().click();
+    });
     expect(screen.getByText("All done.")).not.toBeNull();
     expect(screen.queryByTestId("pw-progress")).toBeNull();
   });

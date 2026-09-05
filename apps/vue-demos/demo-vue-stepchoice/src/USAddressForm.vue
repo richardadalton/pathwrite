@@ -4,9 +4,7 @@ import { usePathContext } from "@daltonr/pathwrite-vue";
 import { US_STATES, type AddressData } from "./address-path";
 
 const { snapshot, setData } = usePathContext<AddressData>();
-const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}
-);
+const errors = computed(() => (snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}));
 </script>
 
 <template>

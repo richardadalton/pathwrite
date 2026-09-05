@@ -44,8 +44,8 @@ describe("PathShell (Svelte) — validateWhen true at mount", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
     render({ path, validateWhen: true, validationDisplay: "summary", stepA: StepA, stepB: StepB });
     await tick();
@@ -98,7 +98,13 @@ describe("PathShell (Svelte) — restoreKey remount fidelity", () => {
   it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
     resetCalls();
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
-    render({ path: outer, nextLabel: "OuterNext", backLabel: "OuterBack", host: InnerHost, after: AfterStep });
+    render({
+      path: outer,
+      nextLabel: "OuterNext",
+      backLabel: "OuterBack",
+      host: InnerHost,
+      after: AfterStep,
+    });
     await tick();
     expect(calls.enterA).toBe(1);
 

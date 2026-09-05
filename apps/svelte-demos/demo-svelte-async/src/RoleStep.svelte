@@ -8,12 +8,12 @@
   const ctx = usePathContext<ApplicationData, ApplicationServices>();
   let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 
-  let roles: Role[]   = $state([]);
+  let roles: Role[] = $state([]);
   let loading: boolean = $state(true);
 
   onMount(() => {
-    ctx.services.getRoles().then(r => {
-      roles   = r;
+    ctx.services.getRoles().then((r) => {
+      roles = r;
       loading = false;
     });
   });

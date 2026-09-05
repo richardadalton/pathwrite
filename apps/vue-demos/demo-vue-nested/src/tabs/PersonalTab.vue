@@ -7,7 +7,7 @@ import TabBar from "./TabBar.vue";
 const { snapshot, setData } = usePathContext<EmployeeDetails>();
 
 const showErrors = computed(() => snapshot.value.hasAttemptedNext || snapshot.value.hasValidated);
-const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {});
+const errors = computed(() => (showErrors.value ? snapshot.value.fieldErrors : {}));
 </script>
 
 <template>
@@ -18,7 +18,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
         <div class="field" :class="{ 'field--error': errors.firstName }">
           <label for="firstName">First Name <span class="required">*</span></label>
           <input
-            id="firstName" type="text"
+            id="firstName"
+            type="text"
             :value="snapshot.data.firstName ?? ''"
             @input="setData('firstName', ($event.target as HTMLInputElement).value)"
             placeholder="Jane"
@@ -29,7 +30,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
         <div class="field" :class="{ 'field--error': errors.lastName }">
           <label for="lastName">Last Name <span class="required">*</span></label>
           <input
-            id="lastName" type="text"
+            id="lastName"
+            type="text"
             :value="snapshot.data.lastName ?? ''"
             @input="setData('lastName', ($event.target as HTMLInputElement).value)"
             placeholder="Smith"
@@ -42,7 +44,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field">
         <label for="dateOfBirth">Date of Birth <span class="optional">(optional)</span></label>
         <input
-          id="dateOfBirth" type="date"
+          id="dateOfBirth"
+          type="date"
           :value="snapshot.data.dateOfBirth ?? ''"
           @input="setData('dateOfBirth', ($event.target as HTMLInputElement).value)"
         />
@@ -51,7 +54,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field">
         <label for="phone">Phone Number <span class="optional">(optional)</span></label>
         <input
-          id="phone" type="tel"
+          id="phone"
+          type="tel"
           :value="snapshot.data.phone ?? ''"
           @input="setData('phone', ($event.target as HTMLInputElement).value)"
           placeholder="+353 86 123 4567"
@@ -62,7 +66,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field">
         <label for="personalEmail">Personal Email <span class="optional">(optional)</span></label>
         <input
-          id="personalEmail" type="email"
+          id="personalEmail"
+          type="email"
           :value="snapshot.data.personalEmail ?? ''"
           @input="setData('personalEmail', ($event.target as HTMLInputElement).value)"
           placeholder="jane@personal.com"

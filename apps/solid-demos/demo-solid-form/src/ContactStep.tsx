@@ -2,12 +2,7 @@ import { createMemo, Show, For } from "solid-js";
 import { usePathContext } from "@daltonr/pathwrite-solid";
 import type { ContactData } from "./path";
 
-const SUBJECTS = [
-  "General Enquiry",
-  "Bug Report",
-  "Feature Request",
-  "Other",
-];
+const SUBJECTS = ["General Enquiry", "Bug Report", "Feature Request", "Other"];
 
 export default function ContactStep() {
   const ctx = usePathContext<ContactData>();
@@ -16,14 +11,11 @@ export default function ContactStep() {
     ctx.snapshot()?.hasAttemptedNext ? (ctx.snapshot()?.fieldErrors ?? {}) : {}
   );
 
-  const messageLen = createMemo(() =>
-    ((ctx.snapshot()?.data.message as string) ?? "").length
-  );
+  const messageLen = createMemo(() => ((ctx.snapshot()?.data.message as string) ?? "").length);
 
   return (
     <Show when={ctx.snapshot()}>
       <div class="form-body">
-
         {/* Name */}
         <div class="field" classList={{ "field--error": !!errors().name }}>
           <label for="name">
@@ -71,10 +63,10 @@ export default function ContactStep() {
             value={ctx.snapshot()?.data.subject ?? ""}
             onChange={(e) => ctx.setData("subject", e.currentTarget.value)}
           >
-            <option value="" disabled>Select a subject…</option>
-            <For each={SUBJECTS}>
-              {(s) => <option value={s}>{s}</option>}
-            </For>
+            <option value="" disabled>
+              Select a subject…
+            </option>
+            <For each={SUBJECTS}>{(s) => <option value={s}>{s}</option>}</For>
           </select>
           <Show when={errors().subject}>
             <span class="field-error">{errors().subject}</span>
@@ -99,7 +91,6 @@ export default function ContactStep() {
             <span class="field-error">{errors().message}</span>
           </Show>
         </div>
-
       </div>
     </Show>
   );

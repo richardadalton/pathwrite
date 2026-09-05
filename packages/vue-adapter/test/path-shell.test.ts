@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { defineComponent, h, nextTick, shallowRef } from "vue";
 import { mount, flushPromises, VueWrapper } from "@vue/test-utils";
 import { PathDefinition, PathEngine, PathSnapshot } from "@daltonr/pathwrite-core";
-import { PathShell, PathShellActions, usePathContext, usePath } from "../src/index";
+import { PathShell, PathShellActions, usePathContext } from "../src/index";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -15,8 +15,8 @@ function threeStepPath(id = "test"): PathDefinition {
     steps: [
       { id: "step-a", title: "Step A" },
       { id: "step-b", title: "Step B" },
-      { id: "step-c", title: "Step C" }
-    ]
+      { id: "step-c", title: "Step C" },
+    ],
   };
 }
 
@@ -30,15 +30,15 @@ function mountShell(props: Record<string, unknown> = {}) {
           {
             "step-a": () => h("div", "Content A"),
             "step-b": () => h("div", "Content B"),
-            "step-c": () => h("div", "Content C")
+            "step-c": () => h("div", "Content C"),
           }
         );
-    }
+    },
   });
   return mount(TestHost, { attachTo: document.body });
 }
 
-async function settled(wrapper?: VueWrapper) {
+async function settled(_wrapper?: VueWrapper) {
   await flushPromises();
   await nextTick();
   await flushPromises();
@@ -106,7 +106,7 @@ describe("PathShell (Vue) — rendering", () => {
     const TestHost = defineComponent({
       setup() {
         return () => h(PathShell, { path: singleStepPath }, { only: () => h("div", "Only step") });
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -131,9 +131,8 @@ describe("PathShell (Vue) — rendering", () => {
 
     const TestHost = defineComponent({
       setup() {
-        return () =>
-          h(PathShell, { path: subPath, engine }, { "sub-only": () => h("div", "Sub content") });
-      }
+        return () => h(PathShell, { path: subPath, engine }, { "sub-only": () => h("div", "Sub content") });
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -145,11 +144,17 @@ describe("PathShell (Vue) — rendering", () => {
     const { PathEngine } = await import("@daltonr/pathwrite-core");
     const parentPath: PathDefinition = {
       id: "parent",
-      steps: [{ id: "p1", title: "Parent 1" }, { id: "p2", title: "Parent 2" }]
+      steps: [
+        { id: "p1", title: "Parent 1" },
+        { id: "p2", title: "Parent 2" },
+      ],
     };
     const subPath: PathDefinition = {
       id: "sub",
-      steps: [{ id: "s1", title: "Sub 1" }, { id: "s2", title: "Sub 2" }]
+      steps: [
+        { id: "s1", title: "Sub 1" },
+        { id: "s2", title: "Sub 2" },
+      ],
     };
     const engine = new PathEngine();
     await engine.start(parentPath, {});
@@ -157,11 +162,16 @@ describe("PathShell (Vue) — rendering", () => {
 
     const TestHost = defineComponent({
       setup() {
-        return () => h(PathShell, { path: subPath, engine }, {
-          s1: () => h("div", "Sub step 1"),
-          s2: () => h("div", "Sub step 2")
-        });
-      }
+        return () =>
+          h(
+            PathShell,
+            { path: subPath, engine },
+            {
+              s1: () => h("div", "Sub step 1"),
+              s2: () => h("div", "Sub step 2"),
+            }
+          );
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -191,7 +201,7 @@ describe("PathShell (Vue) — restart via component ref", () => {
         "step-a": () => h("div", "Content A"),
         "step-b": () => h("div", "Content B"),
         "step-c": () => h("div", "Content C"),
-      }
+      },
     });
     await settled();
     expect(typeof (wrapper.vm as any).restart).toBe("function");
@@ -206,7 +216,7 @@ describe("PathShell (Vue) — restart via component ref", () => {
         "step-a": () => h("div", "Content A"),
         "step-b": () => h("div", "Content B"),
         "step-c": () => h("div", "Content C"),
-      }
+      },
     });
     await settled();
 
@@ -318,11 +328,11 @@ describe("PathShell (Vue) — restart via actions", () => {
               footer: ({ actions }: { snapshot: PathSnapshot; actions: PathShellActions }) =>
                 h("div", [
                   h("button", { "data-testid": "footer-next", onClick: actions.next }, "Next"),
-                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart")
-                ])
+                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart"),
+                ]),
             }
           );
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -352,11 +362,11 @@ describe("PathShell (Vue) — restart via actions", () => {
               footer: ({ actions }: { snapshot: PathSnapshot; actions: PathShellActions }) =>
                 h("div", [
                   h("button", { "data-testid": "footer-next", onClick: actions.next }, "Next"),
-                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart")
-                ])
+                  h("button", { "data-testid": "footer-restart", onClick: actions.restart }, "Restart"),
+                ]),
             }
           );
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -385,7 +395,7 @@ describe("PathShell (Vue) — custom labels", () => {
     const wrapper = mountShell({
       backLabel: "Prev",
       nextLabel: "Forward",
-      cancelLabel: "Abort"
+      cancelLabel: "Abort",
     });
     await settled();
     expect(wrapper.find(".pw-shell__btn--next").text()).toBe("Forward");
@@ -477,7 +487,7 @@ describe("PathShell (Vue) — context sharing", () => {
       setup() {
         const { snapshot } = usePathContext();
         return () => h("span", { "data-testid": "ctx-step" }, snapshot.value?.stepId ?? "none");
-      }
+      },
     });
 
     const TestHost = defineComponent({
@@ -489,10 +499,10 @@ describe("PathShell (Vue) — context sharing", () => {
             {
               "step-a": () => h(StepChild),
               "step-b": () => h("div", "B"),
-              "step-c": () => h("div", "C")
+              "step-c": () => h("div", "C"),
             }
           );
-      }
+      },
     });
 
     const wrapper = mount(TestHost, { attachTo: document.body });
@@ -506,7 +516,7 @@ describe("PathShell (Vue) — context sharing", () => {
       setup() {
         const { next } = usePathContext();
         return () => h("button", { "data-testid": "inner-next", onClick: next }, "Inner Next");
-      }
+      },
     });
 
     const TestHost = defineComponent({
@@ -518,10 +528,10 @@ describe("PathShell (Vue) — context sharing", () => {
             {
               "step-a": () => h(StepChild),
               "step-b": () => h("div", "Content B"),
-              "step-c": () => h("div", "C")
+              "step-c": () => h("div", "C"),
             }
           );
-      }
+      },
     });
 
     const wrapper = mount(TestHost, { attachTo: document.body });
@@ -542,14 +552,18 @@ describe("PathShell (Vue) — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ name: "Required", email: "Invalid email address" }),
+        },
+        { id: "step-b", title: "Step B" },
+      ],
     };
     const TestHost = defineComponent({
       setup() {
         return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -561,14 +575,23 @@ describe("PathShell (Vue) — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required", email: "Invalid email address" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ name: "Required", email: "Invalid email address" }),
+        },
+        { id: "step-b", title: "Step B" },
+      ],
     };
     const TestHost = defineComponent({
       setup() {
-        return () => h(PathShell, { path, validationDisplay: "summary" }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
-      }
+        return () =>
+          h(
+            PathShell,
+            { path, validationDisplay: "summary" },
+            { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") }
+          );
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -584,12 +607,12 @@ describe("PathShell (Vue) — fieldErrors", () => {
   it("does not render the validation list when fieldErrors is empty", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({}) }],
     };
     const TestHost = defineComponent({
       setup() {
         return () => h(PathShell, { path }, { "step-a": () => h("div", "A") });
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -603,14 +626,19 @@ describe("PathShell (Vue) — fieldErrors", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "step-a", title: "Step A", fieldErrors: () => ({ field: "Fill this in" }), canMoveNext: () => true },
-        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) }
-      ]
+        {
+          id: "step-a",
+          title: "Step A",
+          fieldErrors: () => ({ field: "Fill this in" }),
+          canMoveNext: () => true,
+        },
+        { id: "step-b", title: "Step B", fieldErrors: () => ({ other: "Also required" }) },
+      ],
     };
     const TestHost = defineComponent({
       setup() {
         return () => h(PathShell, { path }, { "step-a": () => h("div", "A"), "step-b": () => h("div", "B") });
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -624,12 +652,12 @@ describe("PathShell (Vue) — fieldErrors", () => {
   it("does not render a label span for the _ key", async () => {
     const path: PathDefinition = {
       id: "p",
-      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }]
+      steps: [{ id: "step-a", title: "Step A", fieldErrors: () => ({ _: "Form-level error" }) }],
     };
     const TestHost = defineComponent({
       setup() {
         return () => h(PathShell, { path, validationDisplay: "summary" }, { "step-a": () => h("div", "A") });
-      }
+      },
     });
     const wrapper = mount(TestHost, { attachTo: document.body });
     await settled();
@@ -641,7 +669,6 @@ describe("PathShell (Vue) — fieldErrors", () => {
   });
 });
 
-
 // ---------------------------------------------------------------------------
 // validateWhen already true at mount (review finding A3)
 // ---------------------------------------------------------------------------
@@ -651,19 +678,27 @@ describe("PathShell (Vue) — validateWhen true at mount", () => {
     id: "p",
     steps: [
       { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-      { id: "step-b", title: "Step B" }
-    ]
+      { id: "step-b", title: "Step B" },
+    ],
   };
 
   it("shows the validation summary straight after mounting", async () => {
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h(PathShell, { path, validateWhen: true, validationDisplay: "summary" }, {
-          "step-a": () => h("div", "A"),
-          "step-b": () => h("div", "B")
-        });
-      }
-    }), { attachTo: document.body });
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              PathShell,
+              { path, validateWhen: true, validationDisplay: "summary" },
+              {
+                "step-a": () => h("div", "A"),
+                "step-b": () => h("div", "B"),
+              }
+            );
+        },
+      }),
+      { attachTo: document.body }
+    );
     await settled(wrapper);
     expect(wrapper.find(".pw-shell__validation").exists()).toBe(true);
     expect(wrapper.text()).toContain("Required");
@@ -677,31 +712,56 @@ describe("PathShell (Vue) — validateWhen true at mount", () => {
 
 describe("PathShell (Vue) — restoreKey remount fidelity", () => {
   it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
-    const leaveA = vi.fn(); const enterA = vi.fn(); const enterB = vi.fn();
+    const leaveA = vi.fn();
+    const enterA = vi.fn();
+    const enterB = vi.fn();
     const inner: PathDefinition = {
       id: "inner",
       steps: [
         { id: "inner-a", onLeave: leaveA, onEnter: enterA },
-        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) }
-      ]
+        {
+          id: "inner-b",
+          onEnter: enterB,
+          fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }),
+        },
+      ],
     };
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
     const InnerHost = defineComponent({
       setup() {
-        return () => h(PathShell, { path: inner, restoreKey: "inner", validationDisplay: "summary", nextLabel: "InnerNext", completeLabel: "InnerComplete" }, {
-          "inner-a": () => h("div", "Inner Content A"),
-          "inner-b": () => h("div", "Inner Content B")
-        });
-      }
+        return () =>
+          h(
+            PathShell,
+            {
+              path: inner,
+              restoreKey: "inner",
+              validationDisplay: "summary",
+              nextLabel: "InnerNext",
+              completeLabel: "InnerComplete",
+            },
+            {
+              "inner-a": () => h("div", "Inner Content A"),
+              "inner-b": () => h("div", "Inner Content B"),
+            }
+          );
+      },
     });
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h(PathShell, { path: outer, nextLabel: "OuterNext", backLabel: "OuterBack" }, {
-          host: () => h(InnerHost),
-          after: () => h("div", "After")
-        });
-      }
-    }), { attachTo: document.body });
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              PathShell,
+              { path: outer, nextLabel: "OuterNext", backLabel: "OuterBack" },
+              {
+                host: () => h(InnerHost),
+                after: () => h("div", "After"),
+              }
+            );
+        },
+      }),
+      { attachTo: document.body }
+    );
     await settled(wrapper);
     const click = async (label: string) => {
       const btn = wrapper.findAll("button").find((b) => b.text() === label);
@@ -739,13 +799,27 @@ describe("PathShell (Vue) — late engine prop", () => {
     const started = new PathEngine();
     await started.start(threeStepPath(), { name: "restored" });
     const engineRef = shallowRef<PathEngine | undefined>(undefined);
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h(PathShell, { path: threeStepPath(), autoStart: false, ...(engineRef.value ? { engine: engineRef.value } : {}) }, {
-          "step-a": () => h("div", "Content A"), "step-b": () => h("div", "Content B"), "step-c": () => h("div", "Content C")
-        });
-      }
-    }), { attachTo: document.body });
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              PathShell,
+              {
+                path: threeStepPath(),
+                autoStart: false,
+                ...(engineRef.value ? { engine: engineRef.value } : {}),
+              },
+              {
+                "step-a": () => h("div", "Content A"),
+                "step-b": () => h("div", "Content B"),
+                "step-c": () => h("div", "Content C"),
+              }
+            );
+        },
+      }),
+      { attachTo: document.body }
+    );
     await settled(wrapper);
     expect(wrapper.text()).toContain("No active path");
 

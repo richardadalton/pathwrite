@@ -15,7 +15,8 @@ const mockState: SerializedPathState = {
   currentStepIndex: 1,
   data: { name: "Alice", email: "alice@example.com" },
   visitedStepIds: ["step1", "step2"],
-  pathStack: [], _status: "idle",
+  pathStack: [],
+  _status: "idle",
 };
 
 const simplePath: PathDefinition = {
@@ -33,9 +34,13 @@ function makeStorageSpy(): StorageAdapter & {
   const _data = new Map<string, string>();
   return {
     _data,
-    getItem: vi.fn((k: string) => _data.has(k) ? _data.get(k)! : null),
-    setItem: vi.fn((k: string, v: string) => { _data.set(k, v); }),
-    removeItem: vi.fn((k: string) => { _data.delete(k); }),
+    getItem: vi.fn((k: string) => (_data.has(k) ? _data.get(k)! : null)),
+    setItem: vi.fn((k: string, v: string) => {
+      _data.set(k, v);
+    }),
+    removeItem: vi.fn((k: string) => {
+      _data.delete(k);
+    }),
     getAllKeys: vi.fn(() => Array.from(_data.keys())),
   };
 }
@@ -185,14 +190,18 @@ describe("LocalStorageStore — storage injection", () => {
 describe("LocalStorageStore — error propagation", () => {
   it("save() rejects when setItem throws", async () => {
     const spy = makeStorageSpy();
-    spy.setItem.mockImplementation(() => { throw new DOMException("QuotaExceededError"); });
+    spy.setItem.mockImplementation(() => {
+      throw new DOMException("QuotaExceededError");
+    });
     const store = new LocalStorageStore({ storage: spy });
     await expect(store.save("k", mockState)).rejects.toThrow("QuotaExceededError");
   });
 
   it("load() rejects when getItem throws", async () => {
     const spy = makeStorageSpy();
-    spy.getItem.mockImplementation(() => { throw new Error("storage read error"); });
+    spy.getItem.mockImplementation(() => {
+      throw new Error("storage read error");
+    });
     const store = new LocalStorageStore({ storage: spy });
     await expect(store.load("k")).rejects.toThrow("storage read error");
   });
@@ -206,14 +215,18 @@ describe("LocalStorageStore — error propagation", () => {
 
   it("delete() rejects when removeItem throws", async () => {
     const spy = makeStorageSpy();
-    spy.removeItem.mockImplementation(() => { throw new Error("storage delete error"); });
+    spy.removeItem.mockImplementation(() => {
+      throw new Error("storage delete error");
+    });
     const store = new LocalStorageStore({ storage: spy });
     await expect(store.delete("k")).rejects.toThrow("storage delete error");
   });
 
   it("wraps non-Error throws in an Error", async () => {
     const spy = makeStorageSpy();
-    spy.setItem.mockImplementation(() => { throw "raw string error"; });
+    spy.setItem.mockImplementation(() => {
+      throw "raw string error";
+    });
     const store = new LocalStorageStore({ storage: spy });
     await expect(store.save("k", mockState)).rejects.toBeInstanceOf(Error);
   });
@@ -244,7 +257,9 @@ describe("LocalStorageStore — default constructor in Node environment", () => 
 // ---------------------------------------------------------------------------
 
 describe("LocalStorageStore — integration with persistence and restoreOrStart", () => {
-  beforeEach(() => { vi.useFakeTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
 
   it("persistence saves to LocalStorageStore on next", async () => {
     const store = new LocalStorageStore();
@@ -284,13 +299,19 @@ describe("LocalStorageStore — integration with persistence and restoreOrStart"
   it("restoreOrStart — restores from LocalStorageStore when state exists", async () => {
     const store = new LocalStorageStore();
     const savedState: SerializedPathState = {
-      version: 1, pathId: "simple", currentStepIndex: 1,
-      data: { name: "Restored" }, visitedStepIds: ["step1", "step2"],
-      pathStack: [], _status: "idle",
+      version: 1,
+      pathId: "simple",
+      currentStepIndex: 1,
+      data: { name: "Restored" },
+      visitedStepIds: ["step1", "step2"],
+      pathStack: [],
+      _status: "idle",
     };
     await store.save("rw", savedState);
     const { engine, restored } = await restoreOrStart({
-      store, key: "rw", path: simplePath,
+      store,
+      key: "rw",
+      path: simplePath,
       pathDefinitions: { simple: simplePath },
     });
     expect(restored).toBe(true);
@@ -310,7 +331,9 @@ describe("LocalStorageStore — integration with persistence and restoreOrStart"
       await vi.runAllTimersAsync();
     }
     const { engine, restored } = await restoreOrStart({
-      store, key, path: simplePath,
+      store,
+      key,
+      path: simplePath,
       pathDefinitions: { simple: simplePath },
       observers: [persistence({ store, key, strategy: "onNext" })],
     });
@@ -410,7 +433,9 @@ describe("LocalStorageStore — inaccessible localStorage", () => {
   beforeEach(() => {
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
-      get() { throw new Error("SecurityError: The operation is insecure."); }
+      get() {
+        throw new Error("SecurityError: The operation is insecure.");
+      },
     });
   });
   afterEach(() => {

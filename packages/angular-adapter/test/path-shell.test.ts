@@ -5,7 +5,10 @@ import "@angular/compiler";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { Component, TemplateRef } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from "@angular/platform-browser-dynamic/testing";
+import {
+  BrowserDynamicTestingModule,
+  platformBrowserDynamicTesting,
+} from "@angular/platform-browser-dynamic/testing";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
 import { PathEngine } from "@daltonr/pathwrite-core";
 import { PathShellComponent, PathStepDirective, PathShellHeaderDirective } from "../src/shell";
@@ -18,7 +21,9 @@ beforeAll(() => {
   // same ctorParameters hint the AOT compiler would have written.
   (PathStepDirective as any).ctorParameters = () => [{ type: TemplateRef }];
   (PathShellHeaderDirective as any).ctorParameters = () => [{ type: TemplateRef }];
-  TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting(), { teardown: { destroyAfterEach: true } });
+  TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting(), {
+    teardown: { destroyAfterEach: true },
+  });
 });
 afterEach(() => TestBed.resetTestingModule());
 
@@ -34,8 +39,8 @@ describe("PathShell (Angular) — validateWhen true at mount", () => {
       id: "p",
       steps: [
         { id: "step-a", title: "Step A", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step-b", title: "Step B" }
-      ]
+        { id: "step-b", title: "Step B" },
+      ],
     };
 
     @Component({
@@ -46,7 +51,7 @@ describe("PathShell (Angular) — validateWhen true at mount", () => {
           <ng-template pwStep="step-a"><div class="step-a">A</div></ng-template>
           <ng-template pwStep="step-b"><div class="step-b">B</div></ng-template>
         </pw-shell>
-      `
+      `,
     })
     class Host {
       path = path;
@@ -76,10 +81,10 @@ describe("PathShell (Angular) — StepChoice content lookup", () => {
       {
         id: "type",
         select: () => "type-b",
-        steps: [{ id: "type-a" }, { id: "type-b" }]
+        steps: [{ id: "type-a" }, { id: "type-b" }],
       },
-      { id: "done" }
-    ]
+      { id: "done" },
+    ],
   };
 
   async function mount(template: string): Promise<HTMLElement> {
@@ -132,13 +137,15 @@ describe("PathShell (Angular) — custom header visibility", () => {
       imports: [PathShellComponent, PathStepDirective, PathShellHeaderDirective],
       template: `
         <pw-shell [path]="path" ${shellAttrs}>
-          <ng-template pwShellHeader let-s><div class="custom-header">Step {{ s.stepIndex + 1 }}</div></ng-template>
+          <ng-template pwShellHeader let-s
+            ><div class="custom-header">Step {{ s.stepIndex + 1 }}</div></ng-template
+          >
           <ng-template pwStep="a"><div>A</div></ng-template>
           <ng-template pwStep="b"><div>B</div></ng-template>
           <ng-template pwStep="c"><div>C</div></ng-template>
           <ng-template pwStep="only"><div>Only</div></ng-template>
         </pw-shell>
-      `
+      `,
     })
     class Host {
       path = path;
@@ -156,7 +163,7 @@ describe("PathShell (Angular) — custom header visibility", () => {
     expect(el.querySelector(".custom-header")).toBeNull();
   });
 
-  it("hides a custom header under layout=\"tabs\"", async () => {
+  it('hides a custom header under layout="tabs"', async () => {
     const el = await mount(multi, `layout="tabs"`);
     expect(el.querySelector(".custom-header")).toBeNull();
   });
@@ -177,9 +184,23 @@ describe("PathShell (Angular) — restoreKey remount fidelity", () => {
     const inner: PathDefinition = {
       id: "inner",
       steps: [
-        { id: "inner-a", onEnter: () => { calls.enterA++; }, onLeave: () => { calls.leaveA++; } },
-        { id: "inner-b", onEnter: () => { calls.enterB++; }, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) }
-      ]
+        {
+          id: "inner-a",
+          onEnter: () => {
+            calls.enterA++;
+          },
+          onLeave: () => {
+            calls.leaveA++;
+          },
+        },
+        {
+          id: "inner-b",
+          onEnter: () => {
+            calls.enterB++;
+          },
+          fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }),
+        },
+      ],
     };
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
 
@@ -189,14 +210,20 @@ describe("PathShell (Angular) — restoreKey remount fidelity", () => {
       template: `
         <pw-shell [path]="outer" nextLabel="OuterNext" backLabel="OuterBack">
           <ng-template pwStep="host">
-            <pw-shell [path]="inner" restoreKey="inner" validationDisplay="summary" nextLabel="InnerNext" completeLabel="InnerComplete">
+            <pw-shell
+              [path]="inner"
+              restoreKey="inner"
+              validationDisplay="summary"
+              nextLabel="InnerNext"
+              completeLabel="InnerComplete"
+            >
               <ng-template pwStep="inner-a"><div class="inner-a">Inner Content A</div></ng-template>
               <ng-template pwStep="inner-b"><div class="inner-b">Inner Content B</div></ng-template>
             </pw-shell>
           </ng-template>
           <ng-template pwStep="after"><div class="after">After</div></ng-template>
         </pw-shell>
-      `
+      `,
     })
     class Host {
       outer = outer;
@@ -207,7 +234,10 @@ describe("PathShell (Angular) — restoreKey remount fidelity", () => {
     // Nested shells start asynchronously one inside the other: give the inner
     // start a few turns and re-run change detection between them.
     const settle = async () => {
-      for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); }
+      for (let i = 0; i < 4; i++) {
+        fixture.detectChanges();
+        await tick();
+      }
       fixture.detectChanges();
     };
     await settle();
@@ -253,14 +283,20 @@ describe("PathShell (Angular) — late engine input", () => {
           <ng-template pwStep="a"><div class="a">Content A</div></ng-template>
           <ng-template pwStep="b"><div class="b">Content B</div></ng-template>
         </pw-shell>
-      `
+      `,
     })
     class Host {
       path: PathDefinition = { id: "late", steps: [{ id: "a" }, { id: "b" }] };
       engine?: PathEngine;
     }
     const fixture = TestBed.createComponent(Host);
-    const settle = async () => { for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); } fixture.detectChanges(); };
+    const settle = async () => {
+      for (let i = 0; i < 4; i++) {
+        fixture.detectChanges();
+        await tick();
+      }
+      fixture.detectChanges();
+    };
     await settle();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector(".a")).toBeNull();
@@ -290,11 +326,19 @@ describe("PathShell (Angular) — empty state and completion markup", () => {
           <ng-template pwStep="a"><div class="a">A</div></ng-template>
           <ng-template pwStep="b"><div class="b">B</div></ng-template>
         </pw-shell>
-      `
+      `,
     })
-    class Host { path: PathDefinition = { id: "m", steps: [{ id: "a" }, { id: "b" }] }; }
+    class Host {
+      path: PathDefinition = { id: "m", steps: [{ id: "a" }, { id: "b" }] };
+    }
     const fixture = TestBed.createComponent(Host);
-    const settle = async () => { for (let i = 0; i < 4; i++) { fixture.detectChanges(); await tick(); } fixture.detectChanges(); };
+    const settle = async () => {
+      for (let i = 0; i < 4; i++) {
+        fixture.detectChanges();
+        await tick();
+      }
+      fixture.detectChanges();
+    };
     await settle();
     return { el: fixture.nativeElement as HTMLElement, settle };
   }

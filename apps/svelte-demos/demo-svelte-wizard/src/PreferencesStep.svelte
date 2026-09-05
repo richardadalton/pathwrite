@@ -5,8 +5,8 @@
   const ctx = usePathContext<OnboardingData>();
 
   const THEME_OPTIONS = [
-    { value: "light",  label: "Light",         desc: "Always bright" },
-    { value: "dark",   label: "Dark",           desc: "Easy on the eyes" },
+    { value: "light", label: "Light", desc: "Always bright" },
+    { value: "dark", label: "Dark", desc: "Easy on the eyes" },
     { value: "system", label: "System Default", desc: "Follows your OS setting" },
   ];
 </script>
@@ -20,9 +20,13 @@
       <div class="radio-group">
         {#each THEME_OPTIONS as opt}
           <label class="radio-option">
-            <input type="radio" name="theme" value={opt.value}
+            <input
+              type="radio"
+              name="theme"
+              value={opt.value}
               checked={ctx.snapshot.data.theme === opt.value}
-              onchange={() => ctx.setData("theme", opt.value)} />
+              onchange={() => ctx.setData("theme", opt.value)}
+            />
             <span class="radio-option-label">{opt.label}</span>
             <span class="radio-option-desc">{opt.desc}</span>
           </label>
@@ -38,9 +42,11 @@
           <span>Receive updates, tips, and product announcements</span>
         </div>
         <label class="toggle">
-          <input type="checkbox"
+          <input
+            type="checkbox"
             checked={ctx.snapshot.data.notifications}
-            onchange={(e) => ctx.setData("notifications", e.currentTarget.checked)} />
+            onchange={(e) => ctx.setData("notifications", e.currentTarget.checked)}
+          />
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>
         </label>
@@ -48,4 +54,3 @@
     </div>
   </div>
 {/if}
-

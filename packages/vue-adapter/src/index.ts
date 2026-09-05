@@ -16,7 +16,7 @@ import {
   type MaybeRefOrGetter,
   type PropType,
   type InjectionKey,
-  type VNode
+  type VNode,
 } from "vue";
 import {
   PathData,
@@ -63,7 +63,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
+  startSubPath: (
+    path: PathDefinition<any>,
+    initialData?: PathData,
+    meta?: Record<string, unknown>
+  ) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
@@ -110,9 +114,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   // Seed immediately from existing engine state — essential when restoring a
   // persisted path (the engine is already started before usePath is called).
-  const _snapshot = shallowRef<PathSnapshot<TData> | null>(
-    engine.snapshot() as PathSnapshot<TData> | null
-  );
+  const _snapshot = shallowRef<PathSnapshot<TData> | null>(engine.snapshot() as PathSnapshot<TData> | null);
 
   const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
@@ -140,15 +142,20 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
 
-  const startSubPath = (path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> =>
-    engine.startSubPath(path, initialData, meta);
+  const startSubPath = (
+    path: PathDefinition<any>,
+    initialData: PathData = {},
+    meta?: Record<string, unknown>
+  ): Promise<void> => engine.startSubPath(path, initialData, meta);
 
   const next = (): Promise<void> => engine.next();
   const previous = (): Promise<void> => engine.previous();
   const cancel = (): Promise<void> => engine.cancel();
 
-  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStep(stepId, options);
-  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStepChecked(stepId, options);
+  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStep(stepId, options);
+  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStepChecked(stepId, options);
 
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
@@ -160,13 +167,27 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const suspend = (): Promise<void> => engine.suspend();
   const validate = (): void => engine.validate();
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
+  return {
+    snapshot,
+    start,
+    startSubPath,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    resetStep,
+    restart,
+    retry,
+    suspend,
+    validate,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Context — provide / inject
@@ -188,14 +209,19 @@ const PathInjectionKey: InjectionKey<PathContextValue> = Symbol("PathContext");
  * - `TData` narrows `snapshot.data`
  * - `TServices` types the `services` value — must match what was passed to `PathShell`
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<
+  UsePathReturn<TData>,
+  "snapshot"
+> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>>; services: TServices } {
   const ctx = inject(PathInjectionKey, null);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a PathShell component.");
   }
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: DeepReadonly<Ref<PathSnapshot<TData>>> }),
-    services: ctx.services as TServices
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & {
+      snapshot: DeepReadonly<Ref<PathSnapshot<TData>>>;
+    }),
+    services: ctx.services as TServices,
   };
 }
 
@@ -298,7 +324,8 @@ export const PathShell = defineComponent({
     // step (which re-ran onEnter/onLeave and lost attempted / visited state).
     const restoredEngine: PathEngine | null = (() => {
       if (props.engine || !props.restoreKey || !outerCtx) return null;
-      const stored = outerCtx.path.snapshot.value?.data[props.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+      const stored = outerCtx.path.snapshot.value?.data[props.restoreKey] as
+        { serializedState?: SerializedPathState } | undefined;
       if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
       try {
         return PathEngine.fromState(stored.serializedState, { [props.path.id]: props.path });
@@ -318,14 +345,28 @@ export const PathShell = defineComponent({
         if (event.type === "completed") emit("complete", event.data);
         if (event.type === "cancelled") emit("cancel", event.data);
         if (props.restoreKey && outerCtx && event.type === "stateChanged") {
-          (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-            props.restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
-          );
+          (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(props.restoreKey, {
+            ...event.snapshot,
+            serializedState: currentEngine().exportState(),
+          });
         }
-      }
+      },
     });
 
-    const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+    const {
+      snapshot,
+      start,
+      next,
+      previous,
+      cancel,
+      goToStep,
+      goToStepChecked,
+      setData,
+      restart,
+      retry,
+      suspend,
+      validate,
+    } = pathReturn;
 
     // Provide context so child components can use usePathContext()
     provide(PathInjectionKey, { path: pathReturn, services: props.services ?? null });
@@ -350,14 +391,27 @@ export const PathShell = defineComponent({
         // restore jump) has settled.
         start(props.path, startData)
           .then(() => (restoreStepId ? goToStep(restoreStepId) : undefined))
-          .then(() => { if (props.validateWhen) validate(); });
+          .then(() => {
+            if (props.validateWhen) validate();
+          });
       }
     });
 
-    watch(() => props.validateWhen, (val) => { if (val) validate(); }, { immediate: true });
+    watch(
+      () => props.validateWhen,
+      (val) => {
+        if (val) validate();
+      },
+      { immediate: true }
+    );
 
     const actions: PathShellActions = {
-      next, previous, cancel, goToStep, goToStepChecked, setData,
+      next,
+      previous,
+      cancel,
+      goToStep,
+      goToStepChecked,
+      setData,
       restart: () => restart(),
       retry: () => retry(),
       suspend: () => suspend(),
@@ -371,16 +425,22 @@ export const PathShell = defineComponent({
       const snap = snapshot.value as PathSnapshot | null;
 
       if (!snap) {
-        return h("div", { class: "pw-shell" },
+        return h(
+          "div",
+          { class: "pw-shell" },
           h("div", { class: "pw-shell__empty" }, [
             h("p", "No active path."),
             !props.autoStart
-              ? h("button", {
-                  type: "button",
-                  class: "pw-shell__start-btn",
-                  onClick: () => start(props.path, props.initialData)
-                }, "Start")
-              : null
+              ? h(
+                  "button",
+                  {
+                    type: "button",
+                    class: "pw-shell__start-btn",
+                    onClick: () => start(props.path, props.initialData),
+                  },
+                  "Start"
+                )
+              : null,
           ])
         );
       }
@@ -392,18 +452,24 @@ export const PathShell = defineComponent({
         const showCompletionProgress = !effectiveHideProgress && snap.stepCount > 1;
         return h("div", { class: "pw-shell" }, [
           showCompletionProgress && renderVueHeader(snap),
-          h("div", { class: "pw-shell__body" },
+          h(
+            "div",
+            { class: "pw-shell__body" },
             slots.completion
               ? slots.completion({ snapshot: snap })
               : h("div", { class: "pw-shell__completion" }, [
                   h("p", { class: "pw-shell__completion-message" }, "All done."),
-                  h("button", {
-                    type: "button",
-                    class: "pw-shell__completion-restart",
-                    onClick: () => restart()
-                  }, "Start over")
+                  h(
+                    "button",
+                    {
+                      type: "button",
+                      class: "pw-shell__completion-restart",
+                      onClick: () => restart(),
+                    },
+                    "Start over"
+                  ),
                 ])
-          )
+          ),
         ]);
       }
 
@@ -413,63 +479,74 @@ export const PathShell = defineComponent({
       const stepContent = stepSlot ? stepSlot({ snapshot: snap }) : null;
 
       const showRoot = !effectiveHideProgress && !!snap.rootProgress && props.progressLayout !== "activeOnly";
-      const showActive = !effectiveHideProgress && (
-        slots.header
+      const showActive =
+        !effectiveHideProgress &&
+        (slots.header
           ? true
           : (snap.stepCount > 1 || snap.nestingLevel > 0) && props.progressLayout !== "rootOnly");
-      const shellClass = props.progressLayout !== "merged"
-        ? ["pw-shell", `pw-shell--progress-${props.progressLayout}`]
-        : "pw-shell";
+      const shellClass =
+        props.progressLayout !== "merged"
+          ? ["pw-shell", `pw-shell--progress-${props.progressLayout}`]
+          : "pw-shell";
 
       return h("div", { class: shellClass }, [
         // Root progress — persistent top-level bar visible during sub-paths
         showRoot && renderVueRootProgress(snap.rootProgress!),
         // Header — progress (active path)
-        showActive && (
-          slots.header
+        showActive &&
+          (slots.header
             ? slots.header({ snapshot: snap })
-            : (snap.stepCount > 1 || snap.nestingLevel > 0) && renderVueHeader(snap)
-        ),
+            : (snap.stepCount > 1 || snap.nestingLevel > 0) && renderVueHeader(snap)),
         // Body — step content
         h("div", { class: "pw-shell__body" }, stepContent ?? []),
         // Validation messages — suppressed when validationDisplay="inline"
-        props.validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && Object.keys(snap.fieldErrors).length > 0
-          ? h("ul", { class: "pw-shell__validation" },
+        props.validationDisplay !== "inline" &&
+        (snap.hasAttemptedNext || snap.hasValidated) &&
+        Object.keys(snap.fieldErrors).length > 0
+          ? h(
+              "ul",
+              { class: "pw-shell__validation" },
               Object.entries(snap.fieldErrors).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__validation-item" }, [
-                  key !== "_" ? h("span", { class: "pw-shell__validation-label" }, formatFieldKey(key)) : null,
-                  msg
+                  key !== "_"
+                    ? h("span", { class: "pw-shell__validation-label" }, formatFieldKey(key))
+                    : null,
+                  msg,
                 ])
               )
             )
           : null,
         // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
         props.validationDisplay !== "inline" && Object.keys(snap.fieldWarnings).length > 0
-          ? h("ul", { class: "pw-shell__warnings" },
+          ? h(
+              "ul",
+              { class: "pw-shell__warnings" },
               Object.entries(snap.fieldWarnings).map(([key, msg]) =>
                 h("li", { key, class: "pw-shell__warnings-item" }, [
                   key !== "_" ? h("span", { class: "pw-shell__warnings-label" }, formatFieldKey(key)) : null,
-                  msg
+                  msg,
                 ])
               )
             )
           : null,
         // Blocking error — guard returned { allowed: false, reason }
-        props.validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && snap.blockingError
+        props.validationDisplay !== "inline" &&
+        (snap.hasAttemptedNext || snap.hasValidated) &&
+        snap.blockingError
           ? h("p", { class: "pw-shell__blocking-error" }, snap.blockingError)
           : null,
         // Error panel — replaces footer when an async operation has failed
         snap.status === "error" && snap.error
           ? renderVueErrorPanel(snap, actions)
-          // Footer — navigation
-          : !effectiveHideFooter
+          : // Footer — navigation
+            !effectiveHideFooter
             ? slots.footer
               ? slots.footer({ snapshot: snap, actions })
               : renderVueFooter(snap, actions, props)
-            : null
+            : null,
       ]);
     };
-  }
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -478,27 +555,31 @@ export const PathShell = defineComponent({
 
 function renderVueRootProgress(root: RootProgress): VNode {
   return h("div", { class: "pw-shell__root-progress" }, [
-    h("div", { class: "pw-shell__steps" },
+    h(
+      "div",
+      { class: "pw-shell__steps" },
       root.steps.map((step, i) =>
-        h("div", {
-          key: step.id,
-          class: ["pw-shell__step", `pw-shell__step--${step.status}`]
-        }, [
-          h("span", { class: "pw-shell__step-dot" },
-            step.status === "completed" ? "✓" : String(i + 1)
-          ),
-          h("span", { class: "pw-shell__step-label" },
-            step.title ?? step.id
-          )
-        ])
+        h(
+          "div",
+          {
+            key: step.id,
+            class: ["pw-shell__step", `pw-shell__step--${step.status}`],
+          },
+          [
+            h("span", { class: "pw-shell__step-dot" }, step.status === "completed" ? "✓" : String(i + 1)),
+            h("span", { class: "pw-shell__step-label" }, step.title ?? step.id),
+          ]
+        )
       )
     ),
-    h("div", { class: "pw-shell__track" },
+    h(
+      "div",
+      { class: "pw-shell__track" },
       h("div", {
         class: "pw-shell__track-fill",
-        style: { width: `${root.progress * 100}%` }
+        style: { width: `${root.progress * 100}%` },
       })
-    )
+    ),
   ]);
 }
 
@@ -508,35 +589,37 @@ function renderVueRootProgress(root: RootProgress): VNode {
 
 function renderVueHeader(snapshot: PathSnapshot): VNode {
   return h("div", { class: "pw-shell__header" }, [
-    h("div", { class: "pw-shell__steps" },
+    h(
+      "div",
+      { class: "pw-shell__steps" },
       snapshot.steps.map((step, i) =>
-        h("div", {
-          key: step.id,
-          class: ["pw-shell__step", `pw-shell__step--${step.status}`]
-        }, [
-          h("span", { class: "pw-shell__step-dot" },
-            step.status === "completed" ? "✓" : String(i + 1)
-          ),
-          h("span", { class: "pw-shell__step-label" },
-            step.title ?? step.id
-          )
-        ])
+        h(
+          "div",
+          {
+            key: step.id,
+            class: ["pw-shell__step", `pw-shell__step--${step.status}`],
+          },
+          [
+            h("span", { class: "pw-shell__step-dot" }, step.status === "completed" ? "✓" : String(i + 1)),
+            h("span", { class: "pw-shell__step-label" }, step.title ?? step.id),
+          ]
+        )
       )
     ),
-    h("div", { class: "pw-shell__track" },
+    h(
+      "div",
+      { class: "pw-shell__track" },
       h("div", {
         class: "pw-shell__track-fill",
-        style: { width: `${snapshot.progress * 100}%` }
+        style: { width: `${snapshot.progress * 100}%` },
       })
-    )
+    ),
   ]);
 }
 
 // ---------------------------------------------------------------------------
 // Error panel
 // ---------------------------------------------------------------------------
-
-
 
 function renderVueErrorPanel(snapshot: PathSnapshot, actions: PathShellActions): VNode {
   const { error, hasPersistence } = snapshot;
@@ -547,32 +630,42 @@ function renderVueErrorPanel(snapshot: PathSnapshot, actions: PathShellActions):
 
   return h("div", { class: "pw-shell__error" }, [
     h("div", { class: "pw-shell__error-title" }, title),
-    h("div", { class: "pw-shell__error-message" },
-      phaseMsg + (error.message ? ` ${error.message}` : "")
-    ),
+    h("div", { class: "pw-shell__error-message" }, phaseMsg + (error.message ? ` ${error.message}` : "")),
     h("div", { class: "pw-shell__error-actions" }, [
       !escalated
-        ? h("button", {
-            type: "button",
-            class: "pw-shell__btn pw-shell__btn--retry",
-            onClick: actions.retry
-          }, "Try again")
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: "pw-shell__btn pw-shell__btn--retry",
+              onClick: actions.retry,
+            },
+            "Try again"
+          )
         : null,
       hasPersistence
-        ? h("button", {
-            type: "button",
-            class: `pw-shell__btn ${escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"}`,
-            onClick: actions.suspend
-          }, "Save and come back later")
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: `pw-shell__btn ${escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"}`,
+              onClick: actions.suspend,
+            },
+            "Save and come back later"
+          )
         : null,
       escalated && !hasPersistence
-        ? h("button", {
-            type: "button",
-            class: "pw-shell__btn pw-shell__btn--retry",
-            onClick: actions.retry
-          }, "Try again")
-        : null
-    ])
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: "pw-shell__btn pw-shell__btn--retry",
+              onClick: actions.retry,
+            },
+            "Try again"
+          )
+        : null,
+    ]),
   ]);
 }
 
@@ -583,56 +676,87 @@ function renderVueErrorPanel(snapshot: PathSnapshot, actions: PathShellActions):
 function renderVueFooter(
   snapshot: PathSnapshot,
   actions: PathShellActions,
-  props: { backLabel: string; nextLabel: string; completeLabel: string; loadingLabel?: string; cancelLabel: string; hideCancel: boolean; layout: "wizard" | "form" | "auto" | "tabs" }
+  props: {
+    backLabel: string;
+    nextLabel: string;
+    completeLabel: string;
+    loadingLabel?: string;
+    cancelLabel: string;
+    hideCancel: boolean;
+    layout: "wizard" | "form" | "auto" | "tabs";
+  }
 ): VNode {
   // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
-  const resolvedLayout = props.layout === "auto" || props.layout === "tabs"
-    ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
-    : props.layout;
-  
+  const resolvedLayout =
+    props.layout === "auto" || props.layout === "tabs"
+      ? snapshot.stepCount === 1 && snapshot.nestingLevel === 0
+        ? "form"
+        : "wizard"
+      : props.layout;
+
   const isFormMode = resolvedLayout === "form";
-  
+
   return h("div", { class: "pw-shell__footer" }, [
     h("div", { class: "pw-shell__footer-left" }, [
       // Form mode: Cancel on the left
       isFormMode && !props.hideCancel
-        ? h("button", {
-            type: "button",
-            class: "pw-shell__btn pw-shell__btn--cancel",
-            disabled: snapshot.status !== "idle",
-            onClick: actions.cancel
-          }, props.cancelLabel)
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: "pw-shell__btn pw-shell__btn--cancel",
+              disabled: snapshot.status !== "idle",
+              onClick: actions.cancel,
+            },
+            props.cancelLabel
+          )
         : null,
       // Wizard mode: Back on the left
       !isFormMode && !snapshot.isFirstStep
-        ? h("button", {
-            type: "button",
-            class: "pw-shell__btn pw-shell__btn--back",
-            disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
-            onClick: actions.previous
-          }, props.backLabel)
-        : null
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: "pw-shell__btn pw-shell__btn--back",
+              disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
+              onClick: actions.previous,
+            },
+            props.backLabel
+          )
+        : null,
     ]),
     h("div", { class: "pw-shell__footer-right" }, [
       // Wizard mode: Cancel on the right
       !isFormMode && !props.hideCancel
-        ? h("button", {
-            type: "button",
-            class: "pw-shell__btn pw-shell__btn--cancel",
-            disabled: snapshot.status !== "idle",
-            onClick: actions.cancel
-          }, props.cancelLabel)
+        ? h(
+            "button",
+            {
+              type: "button",
+              class: "pw-shell__btn pw-shell__btn--cancel",
+              disabled: snapshot.status !== "idle",
+              onClick: actions.cancel,
+            },
+            props.cancelLabel
+          )
         : null,
       // Both modes: Submit on the right
-      h("button", {
-        type: "button",
-        class: ["pw-shell__btn pw-shell__btn--next", snapshot.status !== "idle" && "pw-shell__btn--loading"].filter(Boolean).join(" "),
-        disabled: snapshot.status !== "idle",
-        onClick: actions.next
-      }, snapshot.status !== "idle" && props.loadingLabel
+      h(
+        "button",
+        {
+          type: "button",
+          class: ["pw-shell__btn pw-shell__btn--next", snapshot.status !== "idle" && "pw-shell__btn--loading"]
+            .filter(Boolean)
+            .join(" "),
+          disabled: snapshot.status !== "idle",
+          onClick: actions.next,
+        },
+        snapshot.status !== "idle" && props.loadingLabel
           ? props.loadingLabel
-          : snapshot.isLastStep ? props.completeLabel : props.nextLabel)
-    ])
+          : snapshot.isLastStep
+            ? props.completeLabel
+            : props.nextLabel
+      ),
+    ]),
   ]);
 }
 
@@ -650,8 +774,7 @@ export type {
   PathStepContext,
   ProgressLayout,
   RootProgress,
-  SerializedPathState
+  SerializedPathState,
 } from "@daltonr/pathwrite-core";
 
 export { PathEngine } from "@daltonr/pathwrite-core";
-

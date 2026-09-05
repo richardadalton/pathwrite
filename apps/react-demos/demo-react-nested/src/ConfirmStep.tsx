@@ -4,7 +4,7 @@ import type { EmployeeDetails } from "./employee-details";
 import { LAPTOP_TYPES } from "./employee-details";
 
 function laptopLabel(val: string) {
-  return LAPTOP_TYPES.find(l => l.value === val)?.label ?? val;
+  return LAPTOP_TYPES.find((l) => l.value === val)?.label ?? val;
 }
 
 function yesNo(val: string | undefined) {
@@ -17,17 +17,17 @@ export function ConfirmStep() {
   const d = (data.details?.data ?? {}) as EmployeeDetails;
 
   const activePerms = [
-    d.permAdmin   === "yes" && "Admin",
-    d.permDev     === "yes" && "Developer",
-    d.permHR      === "yes" && "HR",
+    d.permAdmin === "yes" && "Admin",
+    d.permDev === "yes" && "Developer",
+    d.permHR === "yes" && "HR",
     d.permFinance === "yes" && "Finance",
   ].filter(Boolean) as string[];
 
   return (
     <div className="form-body">
       <p className="step-intro">
-        Review the details below. Click <strong>Complete Onboarding</strong> to submit,
-        or use <strong>Previous</strong> to go back and make changes.
+        Review the details below. Click <strong>Complete Onboarding</strong> to submit, or use{" "}
+        <strong>Previous</strong> to go back and make changes.
       </p>
 
       <div className="review-section">
@@ -130,12 +130,15 @@ export function ConfirmStep() {
           <div className="review-row">
             <span className="review-key">Permissions</span>
             <span>
-              {activePerms.length > 0
-                ? activePerms.map(p => (
-                    <span key={p} className="badge badge--on" style={{ marginRight: 4 }}>{p}</span>
-                  ))
-                : <span className="badge badge--off">None</span>
-              }
+              {activePerms.length > 0 ? (
+                activePerms.map((p) => (
+                  <span key={p} className="badge badge--on" style={{ marginRight: 4 }}>
+                    {p}
+                  </span>
+                ))
+              ) : (
+                <span className="badge badge--off">None</span>
+              )}
             </span>
           </div>
         </div>

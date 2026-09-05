@@ -17,20 +17,18 @@ export function CountryStep() {
     <View style={styles.container}>
       <Text style={styles.label}>Country</Text>
       <Text style={styles.hint}>
-        Select your country — the next step will show the matching address form
-        via <Text style={styles.code}>StepChoice</Text>.
+        Select your country — the next step will show the matching address form via{" "}
+        <Text style={styles.code}>StepChoice</Text>.
       </Text>
       <View style={styles.options}>
-        {COUNTRIES.map(c => (
+        {COUNTRIES.map((c) => (
           <TouchableOpacity
             key={c.id}
             style={[styles.option, country === c.id && styles.optionSelected]}
             onPress={() => setData("country", c.id)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.optionText, country === c.id && styles.optionTextSelected]}>
-              {c.label}
-            </Text>
+            <Text style={[styles.optionText, country === c.id && styles.optionTextSelected]}>{c.label}</Text>
             {country === c.id && <Text style={styles.check}>✓</Text>}
           </TouchableOpacity>
         ))}
@@ -41,8 +39,8 @@ export function CountryStep() {
 
 const styles = StyleSheet.create({
   container: { gap: 16 },
-  label:  { fontSize: 20, fontWeight: "700", color: "#111827" },
-  hint:   { fontSize: 14, color: "#6b7280", lineHeight: 20 },
+  label: { fontSize: 20, fontWeight: "700", color: "#111827" },
+  hint: { fontSize: 14, color: "#6b7280", lineHeight: 20 },
   code: {
     fontFamily: "monospace",
     backgroundColor: "#f3f4f6",

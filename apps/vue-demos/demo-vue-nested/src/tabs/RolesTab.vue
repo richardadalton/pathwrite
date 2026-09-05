@@ -5,16 +5,16 @@ import type { EmployeeDetails } from "../employee-details";
 import TabBar from "./TabBar.vue";
 
 const PERMISSIONS = [
-  { key: "permAdmin",   label: "Admin Access",    desc: "Full system administration" },
-  { key: "permDev",     label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
-  { key: "permHR",      label: "HR Access",        desc: "Personnel records & payroll" },
-  { key: "permFinance", label: "Finance Access",   desc: "Accounting & expense systems" },
+  { key: "permAdmin", label: "Admin Access", desc: "Full system administration" },
+  { key: "permDev", label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
+  { key: "permHR", label: "HR Access", desc: "Personnel records & payroll" },
+  { key: "permFinance", label: "Finance Access", desc: "Accounting & expense systems" },
 ] as const;
 
 const { snapshot, setData } = usePathContext<EmployeeDetails>();
 
 const showErrors = computed(() => snapshot.value.hasAttemptedNext || snapshot.value.hasValidated);
-const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {});
+const errors = computed(() => (showErrors.value ? snapshot.value.fieldErrors : {}));
 </script>
 
 <template>
@@ -24,7 +24,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field" :class="{ 'field--error': errors.jobTitle }">
         <label for="jobTitle">Job Title <span class="required">*</span></label>
         <input
-          id="jobTitle" type="text"
+          id="jobTitle"
+          type="text"
           :value="snapshot.data.jobTitle ?? ''"
           @input="setData('jobTitle', ($event.target as HTMLInputElement).value)"
           placeholder="e.g. Senior Software Engineer"

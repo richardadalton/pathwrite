@@ -5,30 +5,27 @@
 
   const ctx = usePathContext<WizardData>();
 
-  let members  = $derived((ctx.snapshot?.data.members  ?? []) as Person[]);
+  let members = $derived((ctx.snapshot?.data.members ?? []) as Person[]);
   let profiles = $derived((ctx.snapshot?.data.profiles ?? {}) as Record<string, MemberProfile>);
-  let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 
   function getProfile(index: number): MemberProfile | null {
     return profiles[String(index)] ?? null;
   }
 
-  let allDone = $derived(
-    members.length > 0 &&
-    members.every((_, i) => !!getProfile(i)?.department)
-  );
+  let allDone = $derived(members.length > 0 && members.every((_, i) => !!getProfile(i)?.department));
 
   async function openProfile(member: Person, index: number) {
     const existing = getProfile(index);
     const initialData: ProfileSubData = {
-      memberName:  member.name,
-      memberRole:  member.role,
+      memberName: member.name,
+      memberRole: member.role,
       memberIndex: index,
       department: existing?.department ?? "",
-      startDate:  existing?.startDate  ?? "",
-      bio:        existing?.bio        ?? "",
-      goals30:    existing?.goals30    ?? "",
-      goals90:    existing?.goals90    ?? "",
+      startDate: existing?.startDate ?? "",
+      bio: existing?.bio ?? "",
+      goals30: existing?.goals30 ?? "",
+      goals90: existing?.goals90 ?? "",
     };
     await ctx.startSubPath(memberProfileSubPath, initialData, { memberIndex: index });
   }
@@ -37,8 +34,8 @@
 {#if ctx.snapshot}
   <div class="form-body">
     <p class="step-intro">
-      Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a
-      short two-step wizard, then return here when done. You can edit any profile before moving on.
+      Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a short two-step wizard,
+      then return here when done. You can edit any profile before moving on.
     </p>
 
     <div class="profile-list">
@@ -60,15 +57,15 @@
               type="button"
               class="btn-edit"
               disabled={ctx.snapshot?.isNavigating}
-              onclick={() => openProfile(member, i)}
-            >Edit</button>
+              onclick={() => openProfile(member, i)}>Edit</button
+            >
           {:else}
             <button
               type="button"
               class="btn-fill"
               disabled={ctx.snapshot?.isNavigating}
-              onclick={() => openProfile(member, i)}
-            >Fill in Profile →</button>
+              onclick={() => openProfile(member, i)}>Fill in Profile →</button
+            >
           {/if}
         </div>
       {/each}

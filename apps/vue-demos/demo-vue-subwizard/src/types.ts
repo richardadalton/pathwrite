@@ -20,4 +20,3 @@ export interface ApprovalData {
   comment: string;
   [key: string]: unknown;
 }
-

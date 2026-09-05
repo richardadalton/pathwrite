@@ -16,7 +16,9 @@ export default function SelectPlanStep(props: Props) {
     <div class="form-body">
       <p class="step-intro">Choose the plan that suits you. Free plan skips payment and billing steps.</p>
       <div class="field">
-        <label>Plan <span class="required">*</span></label>
+        <label>
+          Plan <span class="required">*</span>
+        </label>
         <div class="radio-group">
           <label class="radio-option">
             <input

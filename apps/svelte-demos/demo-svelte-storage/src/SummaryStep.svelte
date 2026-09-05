@@ -4,7 +4,7 @@
 
   const ctx = usePathContext<WizardData>();
 
-  let members  = $derived((ctx.snapshot?.data.members  ?? []) as Person[]);
+  let members = $derived((ctx.snapshot?.data.members ?? []) as Person[]);
   let profiles = $derived((ctx.snapshot?.data.profiles ?? {}) as Record<string, MemberProfile>);
 
   function getProfile(index: number): MemberProfile | null {
@@ -15,7 +15,9 @@
     if (!d) return "—";
     try {
       return new Date(d).toLocaleDateString("en-IE", {
-        year: "numeric", month: "long", day: "numeric",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch {
       return d;

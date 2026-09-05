@@ -9,9 +9,7 @@ const COUNTRIES = [
 ];
 
 const { snapshot, setData } = usePathContext<AddressData>();
-const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}
-);
+const errors = computed(() => (snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {}));
 </script>
 
 <template>
@@ -56,7 +54,9 @@ const errors = computed(() =>
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   user-select: none;
 }
 .country-card input[type="radio"] {

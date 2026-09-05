@@ -54,8 +54,7 @@
         rows="6"
         placeholder="Describe their background, previous experience, what drew them to this role, and what they'll bring to the team."
         value={d.bio ?? ""}
-        oninput={(e) => ctx.setData("bio", e.currentTarget.value)}
-      ></textarea>
+        oninput={(e) => ctx.setData("bio", e.currentTarget.value)}></textarea>
       {#if errors.bio}<p class="field-error">{errors.bio}</p>{/if}
     </div>
   </div>

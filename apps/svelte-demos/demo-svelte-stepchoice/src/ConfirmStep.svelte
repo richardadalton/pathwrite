@@ -11,8 +11,8 @@
   {@const d = ctx.snapshot.data}
   <div class="form-body">
     <p class="step-intro">
-      Review your address below. Click <strong>Save Address</strong> to confirm,
-      or use <strong>Previous</strong> to make changes.
+      Review your address below. Click <strong>Save Address</strong> to confirm, or use
+      <strong>Previous</strong> to make changes.
     </p>
 
     <div>

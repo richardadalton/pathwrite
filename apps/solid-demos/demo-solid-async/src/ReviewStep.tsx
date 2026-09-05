@@ -10,9 +10,7 @@ export default function ReviewStep() {
   return (
     <Show when={ctx.snapshot()}>
       <div class="form-body">
-        <p class="step-intro">
-          All async checks passed. Review your application before submitting.
-        </p>
+        <p class="step-intro">All async checks passed. Review your application before submitting.</p>
 
         <div class="eligibility-summary">
           <div class="summary-row">

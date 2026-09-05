@@ -4,15 +4,16 @@ import { usePathContext } from "@daltonr/pathwrite-vue";
 import type { ApprovalData } from "./types";
 
 const { snapshot, setData } = usePathContext<ApprovalData>();
-const data      = computed(() => snapshot.value?.data);
-const errors    = computed(() => snapshot.value?.fieldErrors ?? {});
-const attempted  = computed(() => snapshot.value?.hasAttemptedNext ?? false);
+const data = computed(() => snapshot.value?.data);
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
+const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 </script>
 
 <template>
   <div class="form-body">
     <p class="step-intro">
-      You are reviewing <strong>{{ data?.documentTitle }}</strong> as <strong>{{ data?.approverName }}</strong>.
+      You are reviewing <strong>{{ data?.documentTitle }}</strong> as <strong>{{ data?.approverName }}</strong
+      >.
     </p>
 
     <!-- Approve / Reject -->
@@ -58,4 +59,3 @@ const attempted  = computed(() => snapshot.value?.hasAttemptedNext ?? false);
     </div>
   </div>
 </template>
-

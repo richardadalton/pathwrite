@@ -1,10 +1,9 @@
 <main class="page">
-
   <div class="page-header">
     <h1>Team Onboarding</h1>
     <p class="subtitle">
-      Multi-session localStorage demo.
-      Start several sessions, close the tab, come back and resume any of them.
+      Multi-session localStorage demo. Start several sessions, close the tab, come back and resume any of
+      them.
     </p>
   </div>
 
@@ -14,7 +13,7 @@
   }
 
   <!-- ── Sessions list ──────────────────────────────────────────────────────── -->
-  @if (view === 'sessions') {
+  @if (view === "sessions") {
     <section>
       @if (sessionsLoading) {
         <div class="loading-state">
@@ -31,17 +30,21 @@
                 <div class="session-card__info">
                   <p class="session-card__team">{{ session.teamName }}</p>
                   <p class="session-card__meta">
-                    {{ session.memberCount }} member{{ session.memberCount !== 1 ? 's' : '' }}
+                    {{ session.memberCount }} member{{ session.memberCount !== 1 ? "s" : "" }}
                     @if (session.memberCount > 0) {
                       · {{ session.profilesDone }}/{{ session.memberCount }} profiles done
                     }
                     · {{ session.stepLabel }}
                   </p>
-                  <p class="session-card__key">key: <code>{{ session.key }}</code></p>
+                  <p class="session-card__key">
+                    key: <code>{{ session.key }}</code>
+                  </p>
                 </div>
                 <div class="session-card__actions">
                   <button class="btn-resume" (click)="resumeSession(session.key)">Resume →</button>
-                  <button class="btn-delete-session" (click)="deleteSession(session.key)" title="Delete">🗑</button>
+                  <button class="btn-delete-session" (click)="deleteSession(session.key)" title="Delete">
+                    🗑
+                  </button>
                 </div>
               </div>
             }
@@ -56,14 +59,16 @@
 
         <div class="new-session-bar">
           <button class="btn-primary btn-new-session" (click)="startNew()">+ Start New Onboarding</button>
-          <p class="new-session-hint">Each session gets its own localStorage key and can be resumed independently.</p>
+          <p class="new-session-hint">
+            Each session gets its own localStorage key and can be resumed independently.
+          </p>
         </div>
       }
     </section>
   }
 
   <!-- ── Active wizard ──────────────────────────────────────────────────────── -->
-  @if (view === 'wizard') {
+  @if (view === "wizard") {
     <section>
       <div class="wizard-topbar">
         <button class="btn-back-sessions" (click)="exitToSessions()">← All Sessions</button>
@@ -115,13 +120,15 @@
   }
 
   <!-- ── Completed ──────────────────────────────────────────────────────────── -->
-  @if (view === 'completed' && completedData) {
+  @if (view === "completed" && completedData) {
     <section class="result-panel success-panel">
       <div class="result-icon">🎉</div>
       <h2>Onboarding Complete!</h2>
       <p>
-        <strong>{{ completedData.teamName }}</strong> —
-        {{ completedMembers().length }} member{{ completedMembers().length !== 1 ? 's' : '' }} onboarded.
+        <strong>{{ completedData.teamName }}</strong> — {{ completedMembers().length }} member{{
+          completedMembers().length !== 1 ? "s" : ""
+        }}
+        onboarded.
       </p>
 
       <div class="result-summary">
@@ -131,7 +138,9 @@
               <span class="member-avatar">{{ member.name.charAt(0).toUpperCase() }}</span>
               <div>
                 <p class="result-member-name">{{ member.name }}</p>
-                @if (member.role) { <p class="result-member-role">{{ member.role }}</p> }
+                @if (member.role) {
+                  <p class="result-member-role">{{ member.role }}</p>
+                }
               </div>
             </div>
             @if (completedProfile($index); as prof) {
@@ -151,7 +160,7 @@
   }
 
   <!-- ── Cancelled ──────────────────────────────────────────────────────────── -->
-  @if (view === 'cancelled') {
+  @if (view === "cancelled") {
     <section class="result-panel cancel-panel">
       <div class="result-icon">✖</div>
       <h2>Onboarding Cancelled</h2>
@@ -159,5 +168,4 @@
       <button class="btn-secondary" (click)="exitToSessions()">← Back to Sessions</button>
     </section>
   }
-
 </main>

@@ -12,17 +12,14 @@ export default function ApprovalReviewStep() {
 
   const data = createMemo(() => ctx.snapshot()?.data);
 
-  const results = createMemo(() =>
-    (data()?.approvalResults ?? {}) as Record<string, ApproverResult>
-  );
+  const results = createMemo(() => (data()?.approvalResults ?? {}) as Record<string, ApproverResult>);
 
   const selectedApprovers = createMemo(() =>
-    AVAILABLE_APPROVERS.filter(a => ((data()?.approvers ?? []) as string[]).includes(a.id))
+    AVAILABLE_APPROVERS.filter((a) => ((data()?.approvers ?? []) as string[]).includes(a.id))
   );
 
-  const allDone = createMemo(() =>
-    selectedApprovers().length > 0 &&
-    selectedApprovers().every(a => !!results()[a.id]?.decision)
+  const allDone = createMemo(
+    () => selectedApprovers().length > 0 && selectedApprovers().every((a) => !!results()[a.id]?.decision)
   );
 
   function launchReview(approverId: string, approverName: string) {
@@ -30,10 +27,10 @@ export default function ApprovalReviewStep() {
     const initialData: ApprovalData = {
       approverId,
       approverName,
-      documentTitle:       d?.title       ?? "",
+      documentTitle: d?.title ?? "",
       documentDescription: d?.description ?? "",
       decision: "",
-      comment:  "",
+      comment: "",
     };
     ctx.startSubPath(approvalSubPath, initialData, { approverId });
   }
@@ -42,7 +39,9 @@ export default function ApprovalReviewStep() {
     <Show when={ctx.snapshot()}>
       <div class="form-body">
         <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px;">
-          <p style="margin: 0 0 2px; font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Document</p>
+          <p style="margin: 0 0 2px; font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">
+            Document
+          </p>
           <p style="margin: 0 0 2px; font-size: 15px; font-weight: 600; color: #1f2937;">{data()?.title}</p>
           <p style="margin: 0; font-size: 13px; color: #6b7280;">{data()?.description}</p>
         </div>
@@ -52,7 +51,10 @@ export default function ApprovalReviewStep() {
           <div class="profile-list">
             <For each={selectedApprovers()}>
               {(approver) => (
-                <div class="profile-item" classList={{ "profile-item--done": !!results()[approver.id]?.decision }}>
+                <div
+                  class="profile-item"
+                  classList={{ "profile-item--done": !!results()[approver.id]?.decision }}
+                >
                   <div class="member-avatar">{approver.name.charAt(0)}</div>
                   <div class="profile-item-info">
                     <p class="profile-item-name">{approver.name}</p>
@@ -60,10 +62,13 @@ export default function ApprovalReviewStep() {
 
                   <Show when={results()[approver.id]?.decision}>
                     <div class="profile-done-meta">
-                      <span classList={{
-                        "text-approved": results()[approver.id]?.decision === "approved",
-                        "text-rejected": results()[approver.id]?.decision === "rejected",
-                      }} style="font-size: 13px; font-weight: 500;">
+                      <span
+                        classList={{
+                          "text-approved": results()[approver.id]?.decision === "approved",
+                          "text-rejected": results()[approver.id]?.decision === "rejected",
+                        }}
+                        style="font-size: 13px; font-weight: 500;"
+                      >
                         {results()[approver.id]?.decision === "approved" ? "✓ Approved" : "✗ Rejected"}
                       </span>
                     </div>

@@ -14,15 +14,19 @@ vi.mock("../src/PathShell.svelte", () => ({ default: {} }));
 // ---------------------------------------------------------------------------
 
 let destroyCallbacks: Array<() => void> = [];
-let contextStore = new Map<unknown, unknown>();
+const contextStore = new Map<unknown, unknown>();
 
 vi.mock("svelte", async () => {
   const actual = await vi.importActual<typeof import("svelte")>("svelte");
   return {
     ...actual,
-    onDestroy: (fn: () => void) => { destroyCallbacks.push(fn); },
+    onDestroy: (fn: () => void) => {
+      destroyCallbacks.push(fn);
+    },
     getContext: (key: unknown) => contextStore.get(key),
-    setContext: (key: unknown, value: unknown) => { contextStore.set(key, value); }
+    setContext: (key: unknown, value: unknown) => {
+      contextStore.set(key, value);
+    },
   };
 });
 
@@ -185,9 +189,7 @@ describe("usePath — events", () => {
     await path.next();
     await path.next();
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completed", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "completed", pathId: "main" }));
   });
 
   it("calls onEvent with cancelled when cancel is called", async () => {
@@ -197,9 +199,7 @@ describe("usePath — events", () => {
     await path.start(twoStepPath());
     await path.cancel();
 
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "cancelled", pathId: "main" })
-    );
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "cancelled", pathId: "main" }));
   });
 
   it("calls onEvent with resumed when a sub-path completes", async () => {
@@ -215,7 +215,7 @@ describe("usePath — events", () => {
       expect.objectContaining({
         type: "resumed",
         resumedPathId: "parent",
-        fromSubPathId: "sub"
+        fromSubPathId: "sub",
       })
     );
   });
@@ -256,7 +256,10 @@ describe("usePath — navigation", () => {
   });
 
   it("setData() is type-safe when TData generic is provided", async () => {
-    interface StepData extends PathData { label: string; count: number; }
+    interface StepData extends PathData {
+      label: string;
+      count: number;
+    }
     const path = usePath<StepData>();
     await path.start(twoStepPath(), { label: "old", count: 0 });
     await path.setData("label", "new");
@@ -313,7 +316,7 @@ describe("usePath — goToStepChecked", () => {
     const path = createPath();
     await path.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }],
     });
     await path.goToStepChecked("b");
     expect(snap(path)?.stepId).toBe("a");
@@ -475,7 +478,9 @@ describe("usePathContext / setPathContext", () => {
     await path.start(twoStepPath());
 
     const ctx: PathContext = {
-      get snapshot() { return path.snapshot; },
+      get snapshot() {
+        return path.snapshot;
+      },
       start: path.start,
       startSubPath: path.startSubPath,
       validate: path.validate,
@@ -489,7 +494,7 @@ describe("usePathContext / setPathContext", () => {
       restart: async () => {},
       retry: async () => {},
       suspend: async () => {},
-      services: null
+      services: null,
     };
 
     setPathContext(ctx);
@@ -502,7 +507,9 @@ describe("usePathContext / setPathContext", () => {
     await path.start(twoStepPath());
 
     setPathContext({
-      get snapshot() { return path.snapshot; },
+      get snapshot() {
+        return path.snapshot;
+      },
       start: path.start,
       startSubPath: path.startSubPath,
       validate: path.validate,
@@ -516,7 +523,7 @@ describe("usePathContext / setPathContext", () => {
       restart: async () => {},
       retry: async () => {},
       suspend: async () => {},
-      services: null
+      services: null,
     });
 
     const ctx = usePathContext();
@@ -587,13 +594,13 @@ describe("bindData", () => {
 describe("usePath — guards and validation", () => {
   it("canMoveNext reflects guard result in snapshot", async () => {
     const path = createPath();
-    await path.start({
-      id: "w",
-      steps: [
-        { id: "s1", canMoveNext: ({ data }) => !!data.name },
-        { id: "s2" }
-      ]
-    }, { name: "" });
+    await path.start(
+      {
+        id: "w",
+        steps: [{ id: "s1", canMoveNext: ({ data }) => !!data.name }, { id: "s2" }],
+      },
+      { name: "" }
+    );
 
     expect(snap(path)?.canMoveNext).toBe(false);
 
@@ -603,18 +610,21 @@ describe("usePath — guards and validation", () => {
 
   it("fieldErrors appear in snapshot", async () => {
     const path = createPath();
-    await path.start({
-      id: "w",
-      steps: [
-        {
-          id: "s1",
-          fieldErrors: ({ data }) => ({
-            name: data.name ? undefined : "Name is required"
-          })
-        },
-        { id: "s2" }
-      ]
-    }, { name: "" });
+    await path.start(
+      {
+        id: "w",
+        steps: [
+          {
+            id: "s1",
+            fieldErrors: ({ data }) => ({
+              name: data.name ? undefined : "Name is required",
+            }),
+          },
+          { id: "s2" },
+        ],
+      },
+      { name: "" }
+    );
 
     expect(snap(path)?.fieldErrors).toMatchObject({ name: "Name is required" });
 
@@ -624,18 +634,21 @@ describe("usePath — guards and validation", () => {
 
   it("fieldErrors auto-derives canMoveNext", async () => {
     const path = createPath();
-    await path.start({
-      id: "w",
-      steps: [
-        {
-          id: "s1",
-          fieldErrors: ({ data }) => ({
-            name: data.name ? undefined : "Required"
-          })
-        },
-        { id: "s2" }
-      ]
-    }, { name: "" });
+    await path.start(
+      {
+        id: "w",
+        steps: [
+          {
+            id: "s1",
+            fieldErrors: ({ data }) => ({
+              name: data.name ? undefined : "Required",
+            }),
+          },
+          { id: "s2" },
+        ],
+      },
+      { name: "" }
+    );
 
     expect(snap(path)?.canMoveNext).toBe(false);
     await path.setData("name", "Alice");
@@ -646,10 +659,7 @@ describe("usePath — guards and validation", () => {
     const path = createPath();
     await path.start({
       id: "w",
-      steps: [
-        { id: "s1", canMoveNext: () => ({ allowed: false }) },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", canMoveNext: () => ({ allowed: false }) }, { id: "s2" }],
     });
 
     await path.next();
@@ -660,11 +670,7 @@ describe("usePath — guards and validation", () => {
     const path = createPath();
     await path.start({
       id: "w",
-      steps: [
-        { id: "s1" },
-        { id: "s2", shouldSkip: () => true },
-        { id: "s3" }
-      ]
+      steps: [{ id: "s1" }, { id: "s2", shouldSkip: () => true }, { id: "s3" }],
     });
 
     await path.next();

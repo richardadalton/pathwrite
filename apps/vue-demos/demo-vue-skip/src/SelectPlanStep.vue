@@ -4,8 +4,8 @@ import { usePathContext } from "@daltonr/pathwrite-vue";
 import type { SubscriptionData } from "./subscription";
 
 const { snapshot, setData } = usePathContext<SubscriptionData>();
-const data     = computed(() => snapshot.value?.data);
-const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
+const data = computed(() => snapshot.value?.data);
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 </script>
 
@@ -15,9 +15,13 @@ const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
     <div class="plan-options">
       <label :class="['plan-card', data?.plan === 'free' ? 'plan-card--selected' : '']">
-        <input type="radio" name="plan" value="free"
+        <input
+          type="radio"
+          name="plan"
+          value="free"
           :checked="data?.plan === 'free'"
-          @change="setData('plan', 'free')" />
+          @change="setData('plan', 'free')"
+        />
         <div class="plan-card__body">
           <span class="plan-card__name">Free</span>
           <span class="plan-card__price">$0 / month</span>
@@ -30,9 +34,13 @@ const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
       </label>
 
       <label :class="['plan-card', data?.plan === 'paid' ? 'plan-card--selected' : '']">
-        <input type="radio" name="plan" value="paid"
+        <input
+          type="radio"
+          name="plan"
+          value="paid"
           :checked="data?.plan === 'paid'"
-          @change="setData('plan', 'paid')" />
+          @change="setData('plan', 'paid')"
+        />
         <div class="plan-card__body">
           <span class="plan-card__name">Pro</span>
           <span class="plan-card__price">$29 / month</span>
@@ -53,4 +61,3 @@ const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
     </p>
   </div>
 </template>
-

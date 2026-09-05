@@ -65,7 +65,9 @@
   font-family: inherit;
   color: #1f2937;
   background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   width: 100%;
   box-sizing: border-box;
 }
@@ -125,16 +127,24 @@
   border: 1px solid #bbf7d0;
 }
 
-.success-panel h2 { color: #15803d; }
-.success-panel p  { color: #166534; }
+.success-panel h2 {
+  color: #15803d;
+}
+.success-panel p {
+  color: #166534;
+}
 
 .cancel-panel {
   background: #fafafa;
   border: 1px solid #e5e7eb;
 }
 
-.cancel-panel h2 { color: #374151; }
-.cancel-panel p  { color: #6b7280; }
+.cancel-panel h2 {
+  color: #374151;
+}
+.cancel-panel p {
+  color: #6b7280;
+}
 
 /* ── Submitted summary ────────────────────────────────────────────────────── */
 .submitted-summary {
@@ -156,7 +166,9 @@
   align-items: start;
 }
 
-.summary-row:last-child { margin-bottom: 0; }
+.summary-row:last-child {
+  margin-bottom: 0;
+}
 
 .summary-label {
   font-weight: 600;
@@ -175,7 +187,9 @@
   transition: background 0.15s ease;
 }
 
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover {
+  background: #1d4ed8;
+}
 
 .btn-secondary {
   background: #fff;
@@ -188,5 +202,6 @@
   transition: background 0.15s ease;
 }
 
-.btn-secondary:hover { background: #f3f4f6; }
-
+.btn-secondary:hover {
+  background: #f3f4f6;
+}

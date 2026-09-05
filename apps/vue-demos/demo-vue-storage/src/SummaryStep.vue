@@ -5,8 +5,8 @@ import type { WizardData, Person, MemberProfile } from "./wizard";
 
 const { snapshot } = usePathContext<WizardData>();
 
-const data     = computed(() => snapshot.value?.data);
-const members  = computed(() => (data.value?.members  ?? []) as Person[]);
+const data = computed(() => snapshot.value?.data);
+const members = computed(() => (data.value?.members ?? []) as Person[]);
 const profiles = computed(() => (data.value?.profiles ?? {}) as Record<string, MemberProfile>);
 
 function getProfile(index: number): MemberProfile | null {
@@ -17,7 +17,9 @@ function formatDate(d: string): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-IE", {
-      year: "numeric", month: "long", day: "numeric",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   } catch {
     return d;
@@ -36,15 +38,12 @@ function formatDate(d: string): string {
       <span class="summary-team-icon">🏢</span>
       <div>
         <p class="summary-team-name">{{ data?.teamName }}</p>
-        <p class="summary-team-meta">
-          {{ members.length }} member{{ members.length !== 1 ? "s" : "" }}
-        </p>
+        <p class="summary-team-meta">{{ members.length }} member{{ members.length !== 1 ? "s" : "" }}</p>
       </div>
     </div>
 
     <!-- Per-member cards -->
     <div v-for="(member, i) in members" :key="i" class="summary-member-card">
-
       <div class="summary-member-header">
         <span class="member-avatar member-avatar--lg">{{ member.name.charAt(0).toUpperCase() }}</span>
         <div>
@@ -78,7 +77,5 @@ function formatDate(d: string): string {
         </div>
       </template>
     </div>
-
   </div>
 </template>
-

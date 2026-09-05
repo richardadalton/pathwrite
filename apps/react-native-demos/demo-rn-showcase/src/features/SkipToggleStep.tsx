@@ -12,10 +12,9 @@ export function SkipToggleStep() {
     <View style={styles.container}>
       <Text style={styles.label}>Conditional Steps</Text>
       <Text style={styles.body}>
-        The next step has a <Text style={styles.code}>shouldSkip</Text> guard
-        that reads from your data. Toggle the switch below and click Next —
-        the engine will silently remove that step from the flow. The progress
-        indicator updates automatically.
+        The next step has a <Text style={styles.code}>shouldSkip</Text> guard that reads from your data.
+        Toggle the switch below and click Next — the engine will silently remove that step from the flow. The
+        progress indicator updates automatically.
       </Text>
 
       <View style={styles.toggle}>

@@ -7,7 +7,7 @@
   const ctx = usePathContext<OnboardingData>();
 
   function laptopLabel(val: string) {
-    return LAPTOP_TYPES.find(l => l.value === val)?.label ?? val;
+    return LAPTOP_TYPES.find((l) => l.value === val)?.label ?? val;
   }
 
   function yesNo(val: string | undefined) {
@@ -16,18 +16,20 @@
 
   let d = $derived((ctx.snapshot.data.details?.data ?? {}) as EmployeeDetails);
 
-  let activePerms = $derived([
-    d.permAdmin   === "yes" && "Admin",
-    d.permDev     === "yes" && "Developer",
-    d.permHR      === "yes" && "HR",
-    d.permFinance === "yes" && "Finance",
-  ].filter(Boolean) as string[]);
+  let activePerms = $derived(
+    [
+      d.permAdmin === "yes" && "Admin",
+      d.permDev === "yes" && "Developer",
+      d.permHR === "yes" && "HR",
+      d.permFinance === "yes" && "Finance",
+    ].filter(Boolean) as string[]
+  );
 </script>
 
 <div class="form-body">
   <p class="step-intro">
-    Review the details below. Click <strong>Complete Onboarding</strong> to submit,
-    or use <strong>Previous</strong> to go back and make changes.
+    Review the details below. Click <strong>Complete Onboarding</strong> to submit, or use
+    <strong>Previous</strong> to go back and make changes.
   </p>
 
   <div class="review-section">

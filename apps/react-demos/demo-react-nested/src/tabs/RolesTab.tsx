@@ -3,10 +3,10 @@ import type { EmployeeDetails } from "../employee-details";
 import { TabBar } from "./TabBar";
 
 const PERMISSIONS = [
-  { key: "permAdmin",   label: "Admin Access",   desc: "Full system administration" },
-  { key: "permDev",     label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
-  { key: "permHR",      label: "HR Access",       desc: "Personnel records & payroll" },
-  { key: "permFinance", label: "Finance Access",  desc: "Accounting & expense systems" },
+  { key: "permAdmin", label: "Admin Access", desc: "Full system administration" },
+  { key: "permDev", label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
+  { key: "permHR", label: "HR Access", desc: "Personnel records & payroll" },
+  { key: "permFinance", label: "Finance Access", desc: "Accounting & expense systems" },
 ] as const;
 
 export function RolesTab() {
@@ -21,11 +21,14 @@ export function RolesTab() {
       <TabBar />
       <div className="form-body">
         <div className={`field ${errors.jobTitle ? "field--error" : ""}`}>
-          <label htmlFor="jobTitle">Job Title <span className="required">*</span></label>
+          <label htmlFor="jobTitle">
+            Job Title <span className="required">*</span>
+          </label>
           <input
-            id="jobTitle" type="text"
+            id="jobTitle"
+            type="text"
             value={data.jobTitle ?? ""}
-            onChange={e => setData("jobTitle", e.target.value)}
+            onChange={(e) => setData("jobTitle", e.target.value)}
             placeholder="e.g. Senior Software Engineer"
           />
           {errors.jobTitle && <span className="field-error">{errors.jobTitle}</span>}
@@ -44,7 +47,7 @@ export function RolesTab() {
                   <input
                     type="checkbox"
                     checked={(data[key] ?? "no") === "yes"}
-                    onChange={e => setData(key, e.target.checked ? "yes" : "no")}
+                    onChange={(e) => setData(key, e.target.checked ? "yes" : "no")}
                   />
                   <span className="toggle-track" />
                   <span className="toggle-thumb" />

@@ -6,8 +6,8 @@ import { US_STATES, type AddressData } from "./address-path";
 const { snapshot } = usePathContext<AddressData>();
 const data = computed(() => snapshot.value!.data);
 const isUS = computed(() => data.value.country === "US");
-const stateName = computed(() =>
-  US_STATES.find(s => s.code === data.value.state)?.name ?? data.value.state
+const stateName = computed(
+  () => US_STATES.find((s) => s.code === data.value.state)?.name ?? data.value.state
 );
 </script>
 

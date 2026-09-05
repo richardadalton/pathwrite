@@ -33,7 +33,9 @@ const { snapshot, setData } = usePathContext<EmployeeDetails>();
               :checked="(snapshot.data.needsPhone ?? 'no') === val"
               @change="setData('needsPhone', val)"
             />
-            <span class="radio-option-label">{{ val === 'yes' ? 'Provide a company phone' : 'No phone needed' }}</span>
+            <span class="radio-option-label">{{
+              val === "yes" ? "Provide a company phone" : "No phone needed"
+            }}</span>
           </label>
         </div>
       </div>
@@ -49,7 +51,9 @@ const { snapshot, setData } = usePathContext<EmployeeDetails>();
               :checked="(snapshot.data.needsAccessCard ?? 'yes') === val"
               @change="setData('needsAccessCard', val)"
             />
-            <span class="radio-option-label">{{ val === 'yes' ? 'Issue an access card' : 'No access card' }}</span>
+            <span class="radio-option-label">{{
+              val === "yes" ? "Issue an access card" : "No access card"
+            }}</span>
           </label>
         </div>
       </div>
@@ -57,7 +61,8 @@ const { snapshot, setData } = usePathContext<EmployeeDetails>();
       <div class="field">
         <label for="otherEquipment">Other Equipment <span class="optional">(optional)</span></label>
         <input
-          id="otherEquipment" type="text"
+          id="otherEquipment"
+          type="text"
           :value="snapshot.data.otherEquipment ?? ''"
           @input="setData('otherEquipment', ($event.target as HTMLInputElement).value)"
           placeholder="e.g. standing desk, external monitor…"

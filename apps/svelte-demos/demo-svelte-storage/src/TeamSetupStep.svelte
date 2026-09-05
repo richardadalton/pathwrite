@@ -4,31 +4,40 @@
 
   const ctx = usePathContext<WizardData>();
 
-  let members  = $derived((ctx.snapshot?.data.members  ?? []) as Person[]);
-  let errors   = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
+  let members = $derived((ctx.snapshot?.data.members ?? []) as Person[]);
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
 
   function addMember() {
     ctx.setData("members", [...members, { name: "", role: "" }]);
   }
 
   function removeMember(index: number) {
-    ctx.setData("members", members.filter((_, i) => i !== index));
+    ctx.setData(
+      "members",
+      members.filter((_, i) => i !== index)
+    );
   }
 
   function updateMemberName(index: number, value: string) {
-    ctx.setData("members", members.map((m, i) => i === index ? { ...m, name: value } : m));
+    ctx.setData(
+      "members",
+      members.map((m, i) => (i === index ? { ...m, name: value } : m))
+    );
   }
 
   function updateMemberRole(index: number, value: string) {
-    ctx.setData("members", members.map((m, i) => i === index ? { ...m, role: value } : m));
+    ctx.setData(
+      "members",
+      members.map((m, i) => (i === index ? { ...m, role: value } : m))
+    );
   }
 </script>
 
 {#if ctx.snapshot}
   <div class="form-body">
     <p class="step-intro">
-      Enter your team's name and add everyone you'll be onboarding. You'll fill in a detailed
-      profile for each person on the next step.
+      Enter your team's name and add everyone you'll be onboarding. You'll fill in a detailed profile for each
+      person on the next step.
     </p>
 
     <!-- Team name -->
@@ -78,12 +87,9 @@
                   class="member-role-input"
                 />
               </div>
-              <button
-                type="button"
-                class="btn-remove"
-                onclick={() => removeMember(i)}
-                title="Remove member"
-              >✕</button>
+              <button type="button" class="btn-remove" onclick={() => removeMember(i)} title="Remove member"
+                >✕</button
+              >
             </div>
           {/each}
         </div>

@@ -5,15 +5,13 @@ import { AVAILABLE_APPROVERS } from "./approval";
 import type { DocumentData } from "./types";
 
 const { snapshot, setData } = usePathContext<DocumentData>();
-const data     = computed(() => snapshot.value?.data);
-const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
+const data = computed(() => snapshot.value?.data);
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
 function toggleApprover(id: string) {
   const current = (data.value?.approvers ?? []) as string[];
-  const updated  = current.includes(id)
-    ? current.filter(a => a !== id)
-    : [...current, id];
+  const updated = current.includes(id) ? current.filter((a) => a !== id) : [...current, id];
   setData("approvers", updated);
 }
 
@@ -24,7 +22,10 @@ function isSelected(id: string) {
 
 <template>
   <div class="form-body">
-    <p class="step-intro">Choose who needs to approve this document. All selected approvers must review before the workflow can proceed.</p>
+    <p class="step-intro">
+      Choose who needs to approve this document. All selected approvers must review before the workflow can
+      proceed.
+    </p>
 
     <div>
       <p class="pref-label">Available Approvers</p>
@@ -34,11 +35,7 @@ function isSelected(id: string) {
           :key="approver.id"
           :class="['approver-select-item', isSelected(approver.id) ? 'approver-select-item--selected' : '']"
         >
-          <input
-            type="checkbox"
-            :checked="isSelected(approver.id)"
-            @change="toggleApprover(approver.id)"
-          />
+          <input type="checkbox" :checked="isSelected(approver.id)" @change="toggleApprover(approver.id)" />
           <span class="approver-avatar">{{ approver.name.charAt(0) }}</span>
           <span class="approver-name">{{ approver.name }}</span>
         </label>
@@ -47,8 +44,10 @@ function isSelected(id: string) {
     </div>
 
     <p v-if="data?.approvers?.length" class="selection-count">
-      {{ (data.approvers as string[]).length }} approver{{ (data.approvers as string[]).length !== 1 ? 's' : '' }} selected
+      {{ (data.approvers as string[]).length }} approver{{
+        (data.approvers as string[]).length !== 1 ? "s" : ""
+      }}
+      selected
     </p>
   </div>
 </template>
-

@@ -53,7 +53,12 @@
   flex-direction: column;
   gap: var(--pw-shell-gap);
   padding: var(--pw-shell-padding);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   color: var(--pw-color-text);
 }
 
@@ -397,7 +402,9 @@
   border-radius: var(--pw-btn-radius);
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .pw-shell__btn:hover:not(:disabled) {
@@ -422,7 +429,9 @@
 }
 
 @keyframes pw-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pw-shell__btn--next.pw-shell__btn--loading {
@@ -515,4 +524,3 @@
 .pw-shell__btn--suspend:hover:not(:disabled) {
   background: var(--pw-color-primary-light);
 }
-

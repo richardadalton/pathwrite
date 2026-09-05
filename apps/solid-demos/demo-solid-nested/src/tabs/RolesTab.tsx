@@ -4,10 +4,10 @@ import type { EmployeeDetails } from "../employee-details";
 import TabBar from "./TabBar";
 
 const PERMISSIONS = [
-  { key: "permAdmin",   label: "Admin Access",     desc: "Full system administration" },
-  { key: "permDev",     label: "Developer Access",  desc: "Code repositories & CI/CD pipelines" },
-  { key: "permHR",      label: "HR Access",         desc: "Personnel records & payroll" },
-  { key: "permFinance", label: "Finance Access",    desc: "Accounting & expense systems" },
+  { key: "permAdmin", label: "Admin Access", desc: "Full system administration" },
+  { key: "permDev", label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
+  { key: "permHR", label: "HR Access", desc: "Personnel records & payroll" },
+  { key: "permFinance", label: "Finance Access", desc: "Accounting & expense systems" },
 ] as const;
 
 export default function RolesTab() {
@@ -15,7 +15,7 @@ export default function RolesTab() {
 
   const errors = createMemo(() => {
     const snap = ctx.snapshot();
-    return (snap?.hasAttemptedNext || snap?.hasValidated) ? (snap?.fieldErrors ?? {}) : {};
+    return snap?.hasAttemptedNext || snap?.hasValidated ? (snap?.fieldErrors ?? {}) : {};
   });
 
   return (
@@ -23,7 +23,9 @@ export default function RolesTab() {
       <TabBar />
       <div class="form-body">
         <div class="field" classList={{ "field--error": !!errors().jobTitle }}>
-          <label for="jobTitle">Job Title <span class="required">*</span></label>
+          <label for="jobTitle">
+            Job Title <span class="required">*</span>
+          </label>
           <input
             id="jobTitle"
             type="text"

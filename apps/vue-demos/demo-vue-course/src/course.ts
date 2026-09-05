@@ -20,13 +20,13 @@ export type DrilldownData = {
 const TOPIC_STEP_IDS: Record<TopicId, string> = {
   "core-concepts": "core-concepts-topic",
   subpaths: "subpaths-topic",
-  persistence: "persistence-topic"
+  persistence: "persistence-topic",
 };
 
 const QUIZ_STEP_IDS: Record<TopicId, string> = {
   "core-concepts": "core-concepts-quiz",
   subpaths: "subpaths-quiz",
-  persistence: "persistence-quiz"
+  persistence: "persistence-quiz",
 };
 
 export const TOPIC_STEP_TO_ID = Object.fromEntries(
@@ -38,10 +38,13 @@ export const QUIZ_STEP_TO_ID = Object.fromEntries(
 ) as Record<string, TopicId>;
 
 function makeTopicRecord<T>(factory: () => T): Record<TopicId, T> {
-  return TOPIC_IDS.reduce((acc, topicId) => {
-    acc[topicId] = factory();
-    return acc;
-  }, {} as Record<TopicId, T>);
+  return TOPIC_IDS.reduce(
+    (acc, topicId) => {
+      acc[topicId] = factory();
+      return acc;
+    },
+    {} as Record<TopicId, T>
+  );
 }
 
 export const INITIAL_DATA: CourseData = {
@@ -49,7 +52,7 @@ export const INITIAL_DATA: CourseData = {
   drilldownsCompleted: makeTopicRecord(() => false),
   quizAnswers: makeTopicRecord(() => ({})),
   quizScores: makeTopicRecord(() => 0),
-  completedTopics: []
+  completedTopics: [],
 };
 
 export function getQuizScore(topicId: TopicId, data: CourseData): number {
@@ -66,7 +69,10 @@ function hasPassedTopic(topicId: TopicId, data: CourseData): boolean {
   return getQuizScore(topicId, data) > 70;
 }
 
-function updateCompletedTopics(ctx: PathStepContext<CourseData>, topicId: TopicId): CourseData["completedTopics"] {
+function updateCompletedTopics(
+  ctx: PathStepContext<CourseData>,
+  topicId: TopicId
+): CourseData["completedTopics"] {
   const existing = ctx.data.completedTopics ?? [];
   if (hasPassedTopic(topicId, ctx.data)) {
     return Array.from(new Set([...existing, topicId]));
@@ -83,10 +89,10 @@ function makeTopicStep(topicId: TopicId): PathDefinition<CourseData>["steps"][nu
       return {
         drilldownsCompleted: {
           ...ctx.data.drilldownsCompleted,
-          [resolvedTopic]: true
-        }
+          [resolvedTopic]: true,
+        },
       };
-    }
+    },
   };
 }
 
@@ -98,18 +104,18 @@ function makeQuizStep(topicId: TopicId): PathDefinition<CourseData>["steps"][num
     fieldErrors: ({ data }) => {
       const score = getQuizScore(topicId, data);
       return {
-        _: score > 70 ? undefined : `Score ${score}%. You need more than 70% to continue.`
+        _: score > 70 ? undefined : `Score ${score}%. You need more than 70% to continue.`,
       };
     },
     onLeave(ctx) {
       return {
         quizScores: {
           ...ctx.data.quizScores,
-          [topicId]: getQuizScore(topicId, ctx.data)
+          [topicId]: getQuizScore(topicId, ctx.data),
         },
-        completedTopics: updateCompletedTopics(ctx, topicId)
+        completedTopics: updateCompletedTopics(ctx, topicId),
       };
-    }
+    },
   };
 }
 
@@ -119,13 +125,13 @@ export const drilldownPath: PathDefinition<DrilldownData> = {
   steps: [
     {
       id: "drill-overview",
-      title: "Why It Matters"
+      title: "Why It Matters",
     },
     {
       id: "drill-example",
-      title: "Implementation Sketch"
-    }
-  ]
+      title: "Implementation Sketch",
+    },
+  ],
 };
 
 export const coursePath: PathDefinition<CourseData> = {
@@ -138,16 +144,15 @@ export const coursePath: PathDefinition<CourseData> = {
       fieldErrors: ({ data }) => {
         const parts = data.fullName.trim().split(/\s+/).filter(Boolean);
         return {
-          fullName: parts.length < 2 ? "Please enter your full name (first and last name)." : undefined
+          fullName: parts.length < 2 ? "Please enter your full name (first and last name)." : undefined,
         };
-      }
+      },
     },
     ...TOPIC_IDS.flatMap((topicId) => [makeTopicStep(topicId), makeQuizStep(topicId)]),
     {
       id: "certificate",
       title: "Graduation Certificate",
-      canMoveNext: ({ data }) => TOPIC_IDS.every((topicId) => hasPassedTopic(topicId, data))
-    }
-  ]
+      canMoveNext: ({ data }) => TOPIC_IDS.every((topicId) => hasPassedTopic(topicId, data)),
+    },
+  ],
 };
-

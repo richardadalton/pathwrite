@@ -20,14 +20,12 @@ export const employeeOnboardingPath: PathDefinition<OnboardingData> = {
       fieldErrors: ({ data }) => {
         const d = data.details?.data;
         const missing: string[] = [];
-        if (!d?.firstName?.trim())  missing.push("First name (Personal tab)");
-        if (!d?.lastName?.trim())   missing.push("Last name (Personal tab)");
+        if (!d?.firstName?.trim()) missing.push("First name (Personal tab)");
+        if (!d?.lastName?.trim()) missing.push("Last name (Personal tab)");
         if (!d?.department?.trim()) missing.push("Department (Department tab)");
-        if (!d?.jobTitle?.trim())   missing.push("Job title (Roles tab)");
+        if (!d?.jobTitle?.trim()) missing.push("Job title (Roles tab)");
         return {
-          _: missing.length > 0
-            ? `Please complete the required fields: ${missing.join(", ")}.`
-            : undefined,
+          _: missing.length > 0 ? `Please complete the required fields: ${missing.join(", ")}.` : undefined,
         };
       },
     },

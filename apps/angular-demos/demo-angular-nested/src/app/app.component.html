@@ -1,11 +1,9 @@
 <main class="page">
-
   <div class="page-header">
     <h1>Employee Onboarding</h1>
     <p class="subtitle">
-      Nested PathShell demo — an independent Employee Details path runs inside Step 2.
-      Data syncs to the outer path via <code>(event)</code>;
-      the outer <code>fieldErrors</code> guard validates the inner data.
+      Nested PathShell demo — an independent Employee Details path runs inside Step 2. Data syncs to the outer
+      path via <code>(event)</code>; the outer <code>fieldErrors</code> guard validates the inner data.
     </p>
   </div>
 
@@ -37,7 +35,7 @@
           <p class="summary-section__title">Department</p>
           <div class="summary-row">
             <span class="summary-key">Department</span>
-            <span>{{ details().department || '—' }}</span>
+            <span>{{ details().department || "—" }}</span>
           </div>
           @if (details().manager) {
             <div class="summary-row">
@@ -65,11 +63,11 @@
           </div>
           <div class="summary-row">
             <span class="summary-key">Job Title</span>
-            <span>{{ details().jobTitle || '—' }}</span>
+            <span>{{ details().jobTitle || "—" }}</span>
           </div>
           <div class="summary-row">
             <span class="summary-key">Permissions</span>
-            <span>{{ activePerms(details()).length > 0 ? activePerms(details()).join(', ') : 'None' }}</span>
+            <span>{{ activePerms(details()).length > 0 ? activePerms(details()).join(", ") : "None" }}</span>
           </div>
         </div>
       </div>
@@ -112,5 +110,4 @@
       </ng-template>
     </pw-shell>
   }
-
 </main>

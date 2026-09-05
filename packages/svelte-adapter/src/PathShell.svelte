@@ -1,11 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { usePath, setPathContext, getPathContextOrNull, formatFieldKey, errorPhaseMessage, stepIdToCamelCase } from './index.svelte.js';
-  import type { PathDefinition, PathData, PathEngine, PathSnapshot, ProgressLayout, PathShellActions } from './index.svelte.js';
-  import { PathEngine as PathEngineClass } from '@daltonr/pathwrite-core';
-  import type { SerializedPathState } from '@daltonr/pathwrite-core';
-  import type { Snippet, Component } from 'svelte';
-
+  import { onMount } from "svelte";
+  import {
+    usePath,
+    setPathContext,
+    getPathContextOrNull,
+    formatFieldKey,
+    errorPhaseMessage,
+    stepIdToCamelCase,
+  } from "./index.svelte.js";
+  import type {
+    PathDefinition,
+    PathData,
+    PathEngine,
+    PathSnapshot,
+    ProgressLayout,
+    PathShellActions,
+  } from "./index.svelte.js";
+  import { PathEngine as PathEngineClass } from "@daltonr/pathwrite-core";
+  import type { SerializedPathState } from "@daltonr/pathwrite-core";
+  import type { Snippet, Component } from "svelte";
 
   interface Props {
     path?: PathDefinition<any>;
@@ -76,18 +89,18 @@
     initialData = {},
     restoreKey = undefined,
     autoStart = true,
-    backLabel = 'Previous',
-    nextLabel = 'Next',
-    completeLabel = 'Complete',
+    backLabel = "Previous",
+    nextLabel = "Next",
+    completeLabel = "Complete",
     loadingLabel = undefined,
-    cancelLabel = 'Cancel',
+    cancelLabel = "Cancel",
     hideCancel = false,
     hideProgress = false,
     hideFooter = false,
     validateWhen = false,
-    layout = 'auto',
-    validationDisplay = 'summary',
-    progressLayout = 'merged',
+    layout = "auto",
+    validationDisplay = "summary",
+    progressLayout = "merged",
     services = null,
     oncomplete,
     oncancel,
@@ -108,8 +121,9 @@
   // svelte-ignore state_referenced_locally — read once at init on purpose: restore happens at mount only
   const restoredEngine: PathEngine | null = (() => {
     if (engineProp || !restoreKey || !outerCtx || !path) return null;
-    const stored = outerCtx.snapshot?.data[restoreKey] as { serializedState?: SerializedPathState } | undefined;
-    if (!stored || typeof stored !== 'object' || !stored.serializedState) return null;
+    const stored = outerCtx.snapshot?.data[restoreKey] as
+      { serializedState?: SerializedPathState } | undefined;
+    if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
     try {
       return PathEngineClass.fromState(stored.serializedState, { [path.id]: path });
     } catch {
@@ -123,24 +137,43 @@
 
   // Initialize path engine
   const pathReturn = usePath({
-    get engine() { return currentEngine(); },
+    get engine() {
+      return currentEngine();
+    },
     onEvent: (event) => {
       onevent?.(event);
-      if (event.type === 'completed') oncomplete?.(event.data);
-      if (event.type === 'cancelled') oncancel?.(event.data);
-      if (restoreKey && outerCtx && event.type === 'stateChanged') {
-        (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(
-          restoreKey, { ...event.snapshot, serializedState: currentEngine().exportState() }
-        );
+      if (event.type === "completed") oncomplete?.(event.data);
+      if (event.type === "cancelled") oncancel?.(event.data);
+      if (restoreKey && outerCtx && event.type === "stateChanged") {
+        (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(restoreKey, {
+          ...event.snapshot,
+          serializedState: currentEngine().exportState(),
+        });
       }
-    }
+    },
   });
 
-  const { start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart: restartFn, retry, suspend, validate } = pathReturn;
+  const {
+    start,
+    startSubPath,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    resetStep,
+    restart: restartFn,
+    retry,
+    suspend,
+    validate,
+  } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
-    get snapshot() { return pathReturn.snapshot; },
+    get snapshot() {
+      return pathReturn.snapshot;
+    },
     start,
     startSubPath,
     validate,
@@ -154,7 +187,9 @@
     restart: () => restartFn(),
     retry,
     suspend,
-    get services() { return services; },
+    get services() {
+      return services;
+    },
   });
 
   // Dev-mode warning: camelCase callback props are silently ignored in Svelte.
@@ -166,7 +201,7 @@
   const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV !== false;
   onMount(() => {
     if (!isDev) return;
-    const camelCallbacks = ['onComplete', 'onCancel', 'onEvent'] as const;
+    const camelCallbacks = ["onComplete", "onCancel", "onEvent"] as const;
     for (const name of camelCallbacks) {
       if (name in stepSnippets) {
         console.warn(
@@ -186,7 +221,7 @@
       let restoreStepId: string | undefined;
       if (restoreKey && outerCtx) {
         const stored = outerCtx.snapshot?.data[restoreKey] as PathSnapshot<any> | undefined;
-        if (stored != null && typeof stored === 'object' && 'stepId' in stored) {
+        if (stored != null && typeof stored === "object" && "stepId" in stored) {
           startData = stored.data as PathData;
           if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
         }
@@ -204,27 +239,38 @@
 
   function warnMissingStep(stepId: string): void {
     const camel = stepIdToCamelCase(stepId);
-    const hint = camel !== stepId
-      ? ` No snippet found for "${stepId}" or its camelCase form "${camel}". If your step ID contains hyphens, pass the snippet as a camelCase prop: ${camel}={YourComponent}.`
-      : ` No snippet found for "${stepId}".`;
+    const hint =
+      camel !== stepId
+        ? ` No snippet found for "${stepId}" or its camelCase form "${camel}". If your step ID contains hyphens, pass the snippet as a camelCase prop: ${camel}={YourComponent}.`
+        : ` No snippet found for "${stepId}".`;
     console.warn(`[PathShell]${hint}`);
   }
 
   let snap = $derived(pathReturn.snapshot);
   let actions: PathShellActions = $derived({
-    next, previous, cancel, goToStep, goToStepChecked,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
     setData: (key, value) => setData(key as never, value as never),
-    restart: () => restartFn(), retry, suspend
+    restart: () => restartFn(),
+    retry,
+    suspend,
   });
 
-  let effectiveHideProgress = $derived(hideProgress || layout === 'tabs');
-  let effectiveHideFooter = $derived(hideFooter || layout === 'tabs');
+  let effectiveHideProgress = $derived(hideProgress || layout === "tabs");
+  let effectiveHideFooter = $derived(hideFooter || layout === "tabs");
 
   // Auto-detect footer layout: single-step top-level paths use "form", everything else uses "wizard"
   let resolvedFooterLayout = $derived(
-    (layout === 'auto' || layout === 'tabs') && snap
-      ? (snap.stepCount === 1 && snap.nestingLevel === 0 ? 'form' : 'wizard')
-      : (layout === 'auto' || layout === 'tabs' ? 'wizard' : layout)
+    (layout === "auto" || layout === "tabs") && snap
+      ? snap.stepCount === 1 && snap.nestingLevel === 0
+        ? "form"
+        : "wizard"
+      : layout === "auto" || layout === "tabs"
+        ? "wizard"
+        : layout
   );
 
   /**
@@ -251,7 +297,7 @@
         </button>
       {/if}
     </div>
-  {:else if snap.status === 'completed'}
+  {:else if snap.status === "completed"}
     <!-- Completion panel: shown after stayOnFinal completion -->
     {#if !effectiveHideProgress && snap.stepCount > 1}
       <div class="pw-shell__header">
@@ -282,13 +328,13 @@
     </div>
   {:else}
     <!-- Root progress: persistent top-level bar visible during sub-paths -->
-    {#if !effectiveHideProgress && snap.rootProgress && progressLayout !== 'activeOnly'}
+    {#if !effectiveHideProgress && snap.rootProgress && progressLayout !== "activeOnly"}
       <div class="pw-shell__root-progress">
         <div class="pw-shell__steps">
           {#each snap.rootProgress.steps as step, i}
             <div class="pw-shell__step pw-shell__step--{step.status}">
               <span class="pw-shell__step-dot">
-                {step.status === 'completed' ? '✓' : i + 1}
+                {step.status === "completed" ? "✓" : i + 1}
               </span>
               <span class="pw-shell__step-label">{step.title ?? step.id}</span>
             </div>
@@ -301,7 +347,7 @@
     {/if}
 
     <!-- Header: progress indicator (overridable via header snippet) -->
-    {#if !effectiveHideProgress && progressLayout !== 'rootOnly'}
+    {#if !effectiveHideProgress && progressLayout !== "rootOnly"}
       {#if header}
         {@render header(snap)}
       {:else if snap.stepCount > 1 || snap.nestingLevel > 0}
@@ -310,7 +356,7 @@
             {#each snap.steps as step, i}
               <div class="pw-shell__step pw-shell__step--{step.status}">
                 <span class="pw-shell__step-dot">
-                  {step.status === 'completed' ? '✓' : i + 1}
+                  {step.status === "completed" ? "✓" : i + 1}
                 </span>
                 <span class="pw-shell__step-label">{step.title ?? step.id}</span>
               </div>
@@ -346,29 +392,29 @@
     </div>
 
     <!-- Validation messages — suppressed when validationDisplay="inline" -->
-    {#if validationDisplay !== 'inline' && (snap.hasAttemptedNext || snap.hasValidated) && Object.keys(snap.fieldErrors).length > 0}
+    {#if validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && Object.keys(snap.fieldErrors).length > 0}
       <ul class="pw-shell__validation">
         {#each Object.entries(snap.fieldErrors) as [key, msg]}
           <li class="pw-shell__validation-item">
-            {#if key !== '_'}<span class="pw-shell__validation-label">{formatFieldKey(key)}</span>{/if}{msg}
+            {#if key !== "_"}<span class="pw-shell__validation-label">{formatFieldKey(key)}</span>{/if}{msg}
           </li>
         {/each}
       </ul>
     {/if}
 
     <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
-    {#if validationDisplay !== 'inline' && Object.keys(snap.fieldWarnings).length > 0}
+    {#if validationDisplay !== "inline" && Object.keys(snap.fieldWarnings).length > 0}
       <ul class="pw-shell__warnings">
         {#each Object.entries(snap.fieldWarnings) as [key, msg]}
           <li class="pw-shell__warnings-item">
-            {#if key !== '_'}<span class="pw-shell__warnings-label">{formatFieldKey(key)}</span>{/if}{msg}
+            {#if key !== "_"}<span class="pw-shell__warnings-label">{formatFieldKey(key)}</span>{/if}{msg}
           </li>
         {/each}
       </ul>
     {/if}
 
     <!-- Blocking error — guard returned { allowed: false, reason } -->
-    {#if validationDisplay !== 'inline' && (snap.hasAttemptedNext || snap.hasValidated) && snap.blockingError}
+    {#if validationDisplay !== "inline" && (snap.hasAttemptedNext || snap.hasValidated) && snap.blockingError}
       <p class="pw-shell__blocking-error">{snap.blockingError}</p>
     {/if}
 
@@ -377,31 +423,37 @@
       {@const err = snap.error}
       {@const escalated = err.retryCount >= 2}
       <div class="pw-shell__error">
-        <div class="pw-shell__error-title">{escalated ? "Still having trouble." : "Something went wrong."}</div>
-        <div class="pw-shell__error-message">{errorPhaseMessage(err.phase)}{err.message ? ` ${err.message}` : ""}</div>
+        <div class="pw-shell__error-title">
+          {escalated ? "Still having trouble." : "Something went wrong."}
+        </div>
+        <div class="pw-shell__error-message">
+          {errorPhaseMessage(err.phase)}{err.message ? ` ${err.message}` : ""}
+        </div>
         <div class="pw-shell__error-actions">
           {#if !escalated}
-            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button>
+            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button
+            >
           {/if}
           {#if snap.hasPersistence}
             <button
               type="button"
               class="pw-shell__btn {escalated ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend'}"
-              onclick={suspend}
-            >Save and come back later</button>
+              onclick={suspend}>Save and come back later</button
+            >
           {/if}
           {#if escalated && !snap.hasPersistence}
-            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button>
+            <button type="button" class="pw-shell__btn pw-shell__btn--retry" onclick={retry}>Try again</button
+            >
           {/if}
         </div>
       </div>
-    <!-- Footer: navigation buttons (overridable via footer snippet) -->
+      <!-- Footer: navigation buttons (overridable via footer snippet) -->
     {:else if !effectiveHideFooter && footer}
       {@render footer(snap, actions)}
     {:else if !effectiveHideFooter}
       <div class="pw-shell__footer">
         <div class="pw-shell__footer-left">
-          {#if resolvedFooterLayout === 'form' && !hideCancel}
+          {#if resolvedFooterLayout === "form" && !hideCancel}
             <!-- Form mode: Cancel on the left -->
             <button
               type="button"
@@ -411,7 +463,7 @@
             >
               {cancelLabel}
             </button>
-          {:else if resolvedFooterLayout === 'wizard' && !snap.isFirstStep}
+          {:else if resolvedFooterLayout === "wizard" && !snap.isFirstStep}
             <!-- Wizard mode: Back on the left -->
             <button
               type="button"
@@ -424,7 +476,7 @@
           {/if}
         </div>
         <div class="pw-shell__footer-right">
-          {#if resolvedFooterLayout === 'wizard' && !hideCancel}
+          {#if resolvedFooterLayout === "wizard" && !hideCancel}
             <!-- Wizard mode: Cancel on the right -->
             <button
               type="button"
@@ -443,7 +495,11 @@
             disabled={snap.status !== "idle"}
             onclick={next}
           >
-            {snap.status !== 'idle' && loadingLabel ? loadingLabel : snap.isLastStep ? completeLabel : nextLabel}
+            {snap.status !== "idle" && loadingLabel
+              ? loadingLabel
+              : snap.isLastStep
+                ? completeLabel
+                : nextLabel}
           </button>
         </div>
       </div>

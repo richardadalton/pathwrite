@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  defineServices,
-  ServiceUnavailableError,
-} from "@daltonr/pathwrite-core";
+import { defineServices, ServiceUnavailableError } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -18,8 +15,12 @@ function makeStorage(): {
   return {
     store,
     getItem: (k) => (k in store ? store[k] : null),
-    setItem: (k, v) => { store[k] = v; },
-    removeItem: (k) => { delete store[k]; },
+    setItem: (k, v) => {
+      store[k] = v;
+    },
+    removeItem: (k) => {
+      delete store[k];
+    },
   };
 }
 
@@ -33,8 +34,14 @@ function makeAsyncStorage(): {
   return {
     store,
     getItem: (k) => Promise.resolve(k in store ? store[k] : null),
-    setItem: (k, v) => { store[k] = v; return Promise.resolve(); },
-    removeItem: (k) => { delete store[k]; return Promise.resolve(); },
+    setItem: (k, v) => {
+      store[k] = v;
+      return Promise.resolve();
+    },
+    removeItem: (k) => {
+      delete store[k];
+      return Promise.resolve();
+    },
   };
 }
 
@@ -105,7 +112,12 @@ describe("defineServices — cache: 'auto' (in-memory)", () => {
 describe("defineServices — in-flight deduplication", () => {
   it("only makes one network request when called concurrently", async () => {
     let resolveFirst!: (v: string[]) => void;
-    const fn = vi.fn(() => new Promise<string[]>((res) => { resolveFirst = res; }));
+    const fn = vi.fn(
+      () =>
+        new Promise<string[]>((res) => {
+          resolveFirst = res;
+        })
+    );
     const svc = defineServices({ getRoles: { fn, cache: "auto" } });
 
     const p1 = svc.getRoles();
@@ -138,15 +150,20 @@ describe("defineServices — in-flight deduplication", () => {
 
 describe("defineServices — retry", () => {
   // The retry backoff waits on setTimeout; fake timers keep these tests instant.
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   /** Await a call while draining every backoff timer it schedules. */
   async function settle<T>(call: Promise<T>): Promise<T> {
     const guarded = call.catch((e: unknown) => ({ __rejected: e }));
     await vi.runAllTimersAsync();
     const r = await guarded;
-    if (r && typeof r === "object" && "__rejected" in (r as object)) throw (r as { __rejected: unknown }).__rejected;
+    if (r && typeof r === "object" && "__rejected" in (r as object))
+      throw (r as { __rejected: unknown }).__rejected;
     return r as T;
   }
 
@@ -182,9 +199,7 @@ describe("defineServices — retry", () => {
     let callCount = 0;
     const fn = vi.fn(() => {
       callCount++;
-      return callCount === 1
-        ? Promise.reject(new Error("first call fails"))
-        : Promise.resolve("second ok");
+      return callCount === 1 ? Promise.reject(new Error("first call fails")) : Promise.resolve("second ok");
     });
     const svc = defineServices({ get: { fn, cache: "auto" } });
 
@@ -203,10 +218,7 @@ describe("defineServices — sync storage", () => {
   it("persists a cached value to storage after first call", async () => {
     const storage = makeStorage();
     const fn = vi.fn().mockResolvedValue(["role-1"]);
-    const svc = defineServices(
-      { getRoles: { fn, cache: "auto" } },
-      { storage, keyPrefix: "test:" }
-    );
+    const svc = defineServices({ getRoles: { fn, cache: "auto" } }, { storage, keyPrefix: "test:" });
 
     await svc.getRoles();
     expect(storage.store["test:getRoles"]).toBe(JSON.stringify(["role-1"]));
@@ -245,10 +257,7 @@ describe("defineServices — async storage", () => {
   it("persists a cached value to async storage after first call", async () => {
     const storage = makeAsyncStorage();
     const fn = vi.fn().mockResolvedValue({ id: 1 });
-    const svc = defineServices(
-      { getProfile: { fn, cache: "auto" } },
-      { storage, keyPrefix: "rn:" }
-    );
+    const svc = defineServices({ getProfile: { fn, cache: "auto" } }, { storage, keyPrefix: "rn:" });
 
     await svc.getProfile();
     expect(storage.store["rn:getProfile"]).toBe(JSON.stringify({ id: 1 }));
@@ -277,9 +286,9 @@ describe("defineServices — prefetch()", () => {
     const fn2 = vi.fn().mockResolvedValue([]);
     const fn3 = vi.fn().mockResolvedValue([]);
     const svc = defineServices({
-      getRoles:   { fn: fn1, cache: "auto" },
+      getRoles: { fn: fn1, cache: "auto" },
       getCountry: { fn: fn2, cache: "auto" },
-      submit:     { fn: fn3, cache: "none" },
+      submit: { fn: fn3, cache: "none" },
     });
 
     await svc.prefetch();
@@ -326,7 +335,7 @@ describe("defineServices — type shape", () => {
   it("exposes all configured method names on the returned object", () => {
     const svc = defineServices({
       alpha: { fn: async () => 1, cache: "auto" },
-      beta:  { fn: async (_x: string) => "ok", cache: "none" },
+      beta: { fn: async (_x: string) => "ok", cache: "none" },
     });
     expect(typeof svc.alpha).toBe("function");
     expect(typeof svc.beta).toBe("function");
@@ -344,9 +353,16 @@ describe("defineServices — edge cases", () => {
     const store: Record<string, string> = { ...seed };
     return {
       store,
-      getItem: vi.fn(async (k: string) => { if (opts.failGet) throw new Error("storage down"); return k in store ? store[k] : null; }),
-      setItem: vi.fn(async (k: string, v: string) => { store[k] = v; }),
-      removeItem: vi.fn(async (k: string) => { delete store[k]; })
+      getItem: vi.fn(async (k: string) => {
+        if (opts.failGet) throw new Error("storage down");
+        return k in store ? store[k] : null;
+      }),
+      setItem: vi.fn(async (k: string, v: string) => {
+        store[k] = v;
+      }),
+      removeItem: vi.fn(async (k: string) => {
+        delete store[k];
+      }),
     };
   }
   const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -378,7 +394,9 @@ describe("defineServices — edge cases", () => {
   });
 
   it("rejects a method named prefetch at definition time", () => {
-    expect(() => defineServices({ prefetch: { fn: async () => 1, cache: "none" } } as any)).toThrow(/prefetch/);
+    expect(() => defineServices({ prefetch: { fn: async () => 1, cache: "none" } } as any)).toThrow(
+      /prefetch/
+    );
   });
 
   it("does not persist an undefined result as the string 'undefined'", async () => {
@@ -387,7 +405,7 @@ describe("defineServices — edge cases", () => {
     const svc = defineServices({ nothing: { fn, cache: "auto" } }, { storage });
     expect(await svc.nothing()).toBeUndefined();
     expect(await svc.nothing()).toBeUndefined();
-    expect(fn).toHaveBeenCalledTimes(1);           // in-memory cache still works
+    expect(fn).toHaveBeenCalledTimes(1); // in-memory cache still works
     expect(storage.setItem).not.toHaveBeenCalled(); // nothing written to storage
     expect(Object.values(storage.store)).not.toContain("undefined");
 
@@ -406,7 +424,7 @@ describe("defineServices — edge cases", () => {
       noArgs: { fn: noArgs, cache: "auto" },
       withDefault: { fn: withDefault, cache: "auto" },
       withRest: { fn: withRest, cache: "auto" },
-      required: { fn: required, cache: "auto" }
+      required: { fn: required, cache: "auto" },
     });
     await svc.prefetch();
     expect(noArgs).toHaveBeenCalledTimes(1);

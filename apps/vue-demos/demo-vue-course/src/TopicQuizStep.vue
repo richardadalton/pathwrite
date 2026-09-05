@@ -12,9 +12,7 @@ const topicId = computed<TopicId>(() => {
 });
 
 const topic = computed(() => TOPICS[topicId.value]);
-const score = computed(() =>
-  snapshot.value ? getQuizScore(topicId.value, snapshot.value.data) : 0
-);
+const score = computed(() => (snapshot.value ? getQuizScore(topicId.value, snapshot.value.data) : 0));
 
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
@@ -30,8 +28,8 @@ function answerQuestion(questionId: string, optionId: string) {
     ...currentAnswers,
     [topicId.value]: {
       ...(currentAnswers[topicId.value] ?? {}),
-      [questionId]: optionId
-    }
+      [questionId]: optionId,
+    },
   });
 }
 </script>
@@ -42,11 +40,7 @@ function answerQuestion(questionId: string, optionId: string) {
 
     <div v-for="question in topic.quizQuestions" :key="question.id" class="quiz-card">
       <p class="quiz-question">{{ question.prompt }}</p>
-      <label
-        v-for="option in question.options"
-        :key="option.id"
-        class="quiz-option"
-      >
+      <label v-for="option in question.options" :key="option.id" class="quiz-option">
         <input
           type="radio"
           :name="question.id"
@@ -55,10 +49,7 @@ function answerQuestion(questionId: string, optionId: string) {
         />
         <span>{{ option.label }}</span>
       </label>
-      <p
-        v-if="getAnswer(question.id) === question.correctOptionId"
-        class="status-pass"
-      >
+      <p v-if="getAnswer(question.id) === question.correctOptionId" class="status-pass">
         {{ question.explanation }}
       </p>
     </div>
@@ -72,5 +63,3 @@ function answerQuestion(questionId: string, optionId: string) {
     </p>
   </div>
 </template>
-
-

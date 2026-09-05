@@ -4,27 +4,26 @@
   import type { DocumentData, ApprovalData, ApproverResult } from "./types";
 
   const ctx = usePathContext<DocumentData>();
-  let errors  = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
-  let data    = $derived(ctx.snapshot?.data);
+  let errors = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.fieldErrors : {});
+  let data = $derived(ctx.snapshot?.data);
   let results = $derived((data?.approvalResults ?? {}) as Record<string, ApproverResult>);
 
   let selectedApprovers = $derived(
-    AVAILABLE_APPROVERS.filter(a => ((data?.approvers ?? []) as string[]).includes(a.id))
+    AVAILABLE_APPROVERS.filter((a) => ((data?.approvers ?? []) as string[]).includes(a.id))
   );
 
   let allDone = $derived(
-    selectedApprovers.length > 0 &&
-    selectedApprovers.every(a => !!results[a.id]?.decision)
+    selectedApprovers.length > 0 && selectedApprovers.every((a) => !!results[a.id]?.decision)
   );
 
   function launchReview(approverId: string, approverName: string) {
     const initialData: ApprovalData = {
       approverId,
       approverName,
-      documentTitle:       data?.title       ?? "",
+      documentTitle: data?.title ?? "",
       documentDescription: data?.description ?? "",
       decision: "",
-      comment:  "",
+      comment: "",
     };
     ctx.startSubPath(approvalSubPath, initialData, { approverId });
   }
@@ -46,13 +45,20 @@
             <span class="approver-avatar">{approver.name.charAt(0)}</span>
             <span class="approver-review-name">{approver.name}</span>
             {#if results[approver.id]}
-              <span class="decision-badge" class:decision-badge--approved={results[approver.id].decision === 'approved'} class:decision-badge--rejected={results[approver.id].decision === 'rejected'}>
-                {results[approver.id].decision === 'approved' ? '✓ Approved' : '✗ Rejected'}
+              <span
+                class="decision-badge"
+                class:decision-badge--approved={results[approver.id].decision === "approved"}
+                class:decision-badge--rejected={results[approver.id].decision === "rejected"}
+              >
+                {results[approver.id].decision === "approved" ? "✓ Approved" : "✗ Rejected"}
               </span>
             {:else}
-              <button type="button" class="btn-review"
+              <button
+                type="button"
+                class="btn-review"
                 disabled={ctx.snapshot.isNavigating}
-                onclick={() => launchReview(approver.id, approver.name)}>
+                onclick={() => launchReview(approver.id, approver.name)}
+              >
                 Review →
               </button>
             {/if}
@@ -69,4 +75,3 @@
     {/if}
   </div>
 {/if}
-

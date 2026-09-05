@@ -36,9 +36,7 @@ function makeOkFetch(body: unknown = null) {
 }
 
 function make404Fetch() {
-  return vi.fn(() =>
-    Promise.resolve({ ok: false, status: 404 } as Response)
-  );
+  return vi.fn(() => Promise.resolve({ ok: false, status: 404 } as Response));
 }
 
 // ---------------------------------------------------------------------------
@@ -50,7 +48,9 @@ describe("HttpStore", () => {
   function headersOf(mockFetch: { mock: { calls: unknown[][] } }, callIndex = 0): Record<string, string> {
     const init = mockFetch.mock.calls[callIndex][1] as RequestInit;
     const out: Record<string, string> = {};
-    new Headers(init.headers).forEach((v, k) => { out[k] = v; });
+    new Headers(init.headers).forEach((v, k) => {
+      out[k] = v;
+    });
     return out;
   }
 
@@ -58,10 +58,13 @@ describe("HttpStore", () => {
     const mockFetch = makeOkFetch();
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     await store.save("user:123", mockState);
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({
-      method: "PUT",
-      body: JSON.stringify(mockState),
-    }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/state/user%3A123",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify(mockState),
+      })
+    );
     expect(headersOf(mockFetch)).toEqual({ "content-type": "application/json" });
   });
 
@@ -69,7 +72,10 @@ describe("HttpStore", () => {
     const mockFetch = makeOkFetch(mockState);
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     const loaded = await store.load("user:123");
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({ method: "GET" }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/state/user%3A123",
+      expect.objectContaining({ method: "GET" })
+    );
     expect(headersOf(mockFetch)).toEqual({ "content-type": "application/json" });
     expect(loaded).toEqual(mockState);
   });
@@ -83,7 +89,10 @@ describe("HttpStore", () => {
     const mockFetch = makeOkFetch();
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     await store.delete("user:123");
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({ method: "DELETE" }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/state/user%3A123",
+      expect.objectContaining({ method: "DELETE" })
+    );
     expect(headersOf(mockFetch)).toEqual({});
   });
 
@@ -139,10 +148,7 @@ describe("HttpStore", () => {
     const mockFetch = makeOkFetch();
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     await store.save("doc:123/user:456", mockState);
-    expect(mockFetch).toHaveBeenCalledWith(
-      "/api/state/doc%3A123%2Fuser%3A456",
-      expect.any(Object)
-    );
+    expect(mockFetch).toHaveBeenCalledWith("/api/state/doc%3A123%2Fuser%3A456", expect.any(Object));
   });
 });
 
@@ -169,10 +175,15 @@ describe("persistence", () => {
     return { exportState: () => state } as unknown as PathEngine;
   }
 
-  type Cause = "start" | "next" | "previous" | "goToStep" | "goToStepChecked" | "setData" | "cancel" | "restart";
+  type Cause =
+    "start" | "next" | "previous" | "goToStep" | "goToStepChecked" | "setData" | "cancel" | "restart";
 
   function stateChanged(cause: Cause, busy = false) {
-    return { type: "stateChanged" as const, cause, snapshot: { status: busy ? "validating" : "idle" } as any };
+    return {
+      type: "stateChanged" as const,
+      cause,
+      snapshot: { status: busy ? "validating" : "idle" } as any,
+    };
   }
 
   const resumed = {
@@ -278,7 +289,9 @@ describe("persistence", () => {
   it("calls onSaveError when save fails", async () => {
     const failStore = new HttpStore({
       baseUrl: "/api",
-      fetch: vi.fn(() => Promise.resolve({ ok: false, status: 500, statusText: "Server Error" } as Response)) as any,
+      fetch: vi.fn(() =>
+        Promise.resolve({ ok: false, status: 500, statusText: "Server Error" } as Response)
+      ) as any,
     });
     const onSaveError = vi.fn();
     const obs = persistence({ store: failStore, key: "w", onSaveError });
@@ -293,8 +306,13 @@ describe("persistence", () => {
 // ---------------------------------------------------------------------------
 
 describe("restoreOrStart", () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
   it("starts fresh when no saved state exists", async () => {
     const store = new HttpStore({ baseUrl: "/api", fetch: make404Fetch() as any });
@@ -311,12 +329,19 @@ describe("restoreOrStart", () => {
 
   it("marks the engine as persisted on a restore", async () => {
     const savedState: SerializedPathState = {
-      version: 1, pathId: "simple", currentStepIndex: 0,
-      data: {}, visitedStepIds: ["step1"], pathStack: [], _status: "idle",
+      version: 1,
+      pathId: "simple",
+      currentStepIndex: 0,
+      data: {},
+      visitedStepIds: ["step1"],
+      pathStack: [],
+      _status: "idle",
     };
     const store = new HttpStore({
       baseUrl: "/api",
-      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
+      fetch: vi.fn(() =>
+        Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)
+      ) as any,
     });
     const { engine } = await restoreOrStart({ store, key: "test-wizard", path: simplePath, pathDefinitions });
     expect(engine.snapshot()?.hasPersistence).toBe(true);
@@ -324,15 +349,26 @@ describe("restoreOrStart", () => {
 
   it("restores from saved state when it exists", async () => {
     const savedState: SerializedPathState = {
-      version: 1, pathId: "simple", currentStepIndex: 1,
-      data: { name: "Restored" }, visitedStepIds: ["step1", "step2"],
-      pathStack: [], _status: "idle",
+      version: 1,
+      pathId: "simple",
+      currentStepIndex: 1,
+      data: { name: "Restored" },
+      visitedStepIds: ["step1", "step2"],
+      pathStack: [],
+      _status: "idle",
     };
     const store = new HttpStore({
       baseUrl: "/api",
-      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
+      fetch: vi.fn(() =>
+        Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)
+      ) as any,
     });
-    const { engine, restored } = await restoreOrStart({ store, key: "test-wizard", path: simplePath, pathDefinitions });
+    const { engine, restored } = await restoreOrStart({
+      store,
+      key: "test-wizard",
+      path: simplePath,
+      pathDefinitions,
+    });
     expect(restored).toBe(true);
     expect(engine.snapshot()?.stepId).toBe("step2");
     expect(engine.snapshot()?.data.name).toBe("Restored");
@@ -347,7 +383,9 @@ describe("restoreOrStart", () => {
     });
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     const { engine } = await restoreOrStart({
-      store, key: "test-wizard", path: simplePath,
+      store,
+      key: "test-wizard",
+      path: simplePath,
       observers: [persistence({ store, key: "test-wizard", strategy: "onNext" })],
     });
     mockFetch.mockClear();
@@ -358,12 +396,19 @@ describe("restoreOrStart", () => {
 
   it("defaults pathDefinitions to { [path.id]: path }", async () => {
     const savedState: SerializedPathState = {
-      version: 1, pathId: "simple", currentStepIndex: 1,
-      data: {}, visitedStepIds: ["step1", "step2"], pathStack: [], _status: "idle",
+      version: 1,
+      pathId: "simple",
+      currentStepIndex: 1,
+      data: {},
+      visitedStepIds: ["step1", "step2"],
+      pathStack: [],
+      _status: "idle",
     };
     const store = new HttpStore({
       baseUrl: "/api",
-      fetch: vi.fn(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)) as any,
+      fetch: vi.fn(() =>
+        Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(savedState) } as Response)
+      ) as any,
     });
     const { engine, restored } = await restoreOrStart({ store, key: "test-wizard", path: simplePath });
     expect(restored).toBe(true);
@@ -384,19 +429,31 @@ class SlowStore {
   save(_key: string, state: SerializedPathState): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.releases.push(() => {
-        if (this.failNext) { this.failNext = false; reject(new Error("save failed")); return; }
+        if (this.failNext) {
+          this.failNext = false;
+          reject(new Error("save failed"));
+          return;
+        }
         this.saved.push(JSON.parse(JSON.stringify(state)));
         resolve();
       });
     });
   }
-  load(): Promise<SerializedPathState | null> { return Promise.resolve(null); }
-  delete(): Promise<void> { return Promise.resolve(); }
+  load(): Promise<SerializedPathState | null> {
+    return Promise.resolve(null);
+  }
+  delete(): Promise<void> {
+    return Promise.resolve();
+  }
 
   /** Number of saves currently waiting on the "network". */
-  get inFlight(): number { return this.releases.length; }
+  get inFlight(): number {
+    return this.releases.length;
+  }
   /** Complete the oldest in-flight save. */
-  release(): void { this.releases.shift()?.(); }
+  release(): void {
+    this.releases.shift()?.();
+  }
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -409,12 +466,12 @@ describe("persistence — real engine, slow store (S1)", () => {
     const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onNext" })] });
     await engine.start(threeSteps);
 
-    await engine.next();            // → s2: save #1 starts and hangs
+    await engine.next(); // → s2: save #1 starts and hangs
     expect(store.inFlight).toBe(1);
-    await engine.next();            // → s3 while save #1 is still in flight
+    await engine.next(); // → s3 while save #1 is still in flight
     expect(engine.snapshot()?.stepIndex).toBe(2);
 
-    store.release();                // save #1 lands (state at s2)
+    store.release(); // save #1 lands (state at s2)
     await flush();
     expect(store.inFlight).toBe(1); // a follow-up save for the newer state must be in flight
     store.release();
@@ -426,7 +483,9 @@ describe("persistence — real engine, slow store (S1)", () => {
 
   it("several changes during one in-flight save collapse into a single follow-up save of the latest state", async () => {
     const store = new SlowStore();
-    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onEveryChange" })] });
+    const engine = new PathEngine({
+      observers: [persistence({ store, key: "k", strategy: "onEveryChange" })],
+    });
     await engine.start(threeSteps);
     // start() itself triggered a save under onEveryChange
     expect(store.inFlight).toBe(1);
@@ -450,14 +509,14 @@ describe("persistence — real engine, slow store (S1)", () => {
     const store = new SlowStore();
     const errors: Error[] = [];
     const engine = new PathEngine({
-      observers: [persistence({ store, key: "k", strategy: "onNext", onSaveError: (e) => errors.push(e) })]
+      observers: [persistence({ store, key: "k", strategy: "onNext", onSaveError: (e) => errors.push(e) })],
     });
     await engine.start(threeSteps);
 
     await engine.next();
     await engine.next();
     store.failNext = true;
-    store.release();                // save #1 fails
+    store.release(); // save #1 fails
     await flush();
     expect(errors).toHaveLength(1);
     expect(store.inFlight).toBe(1); // follow-up still attempted
@@ -476,9 +535,18 @@ describe("persistence — real engine, slow store (S1)", () => {
 class MemoryStore {
   public records = new Map<string, SerializedPathState>();
   public deletes = 0;
-  save(key: string, state: SerializedPathState): Promise<void> { this.records.set(key, JSON.parse(JSON.stringify(state))); return Promise.resolve(); }
-  load(key: string): Promise<SerializedPathState | null> { return Promise.resolve(this.records.get(key) ?? null); }
-  delete(key: string): Promise<void> { this.deletes++; this.records.delete(key); return Promise.resolve(); }
+  save(key: string, state: SerializedPathState): Promise<void> {
+    this.records.set(key, JSON.parse(JSON.stringify(state)));
+    return Promise.resolve();
+  }
+  load(key: string): Promise<SerializedPathState | null> {
+    return Promise.resolve(this.records.get(key) ?? null);
+  }
+  delete(key: string): Promise<void> {
+    this.deletes++;
+    this.records.delete(key);
+    return Promise.resolve();
+  }
 }
 
 describe("persistence onComplete + restoreOrStart (S2)", () => {
@@ -526,7 +594,12 @@ describe("persistence onComplete + restoreOrStart (S2)", () => {
     await engine.next();
     await flush();
 
-    const { engine: next, restored } = await restoreOrStart({ store, key: "k", path: twoSteps, initialData: { name: "" } });
+    const { engine: next, restored } = await restoreOrStart({
+      store,
+      key: "k",
+      path: twoSteps,
+      initialData: { name: "" },
+    });
     expect(restored).toBe(false);
     const s = next.snapshot()!;
     expect(s.status).toBe("idle");
@@ -536,8 +609,21 @@ describe("persistence onComplete + restoreOrStart (S2)", () => {
 
   it("restoreOrStart also starts fresh for a record written by an older version (currentStepIndex: -1)", async () => {
     const store = new MemoryStore();
-    store.records.set("k", { version: 1, pathId: "audit", currentStepIndex: -1, data: { name: "Ada" }, visitedStepIds: [], pathStack: [], _status: "idle" });
-    const { engine, restored } = await restoreOrStart({ store, key: "k", path: twoSteps, initialData: { name: "" } });
+    store.records.set("k", {
+      version: 1,
+      pathId: "audit",
+      currentStepIndex: -1,
+      data: { name: "Ada" },
+      visitedStepIds: [],
+      pathStack: [],
+      _status: "idle",
+    });
+    const { engine, restored } = await restoreOrStart({
+      store,
+      key: "k",
+      path: twoSteps,
+      initialData: { name: "" },
+    });
     expect(restored).toBe(false);
     expect(engine.snapshot()?.stepId).toBe("a");
     expect(engine.snapshot()?.data).toEqual({ name: "" });
@@ -550,11 +636,26 @@ describe("persistence onComplete + restoreOrStart (S2)", () => {
 
 describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
   const path: PathDefinition = { id: "p", steps: [{ id: "a" }, { id: "b" }] };
-  const good: SerializedPathState = { version: 1, pathId: "p", currentStepIndex: 1, data: { name: "Ada" }, visitedStepIds: ["a", "b"], pathStack: [], _status: "idle" };
+  const good: SerializedPathState = {
+    version: 1,
+    pathId: "p",
+    currentStepIndex: 1,
+    data: { name: "Ada" },
+    visitedStepIds: ["a", "b"],
+    pathStack: [],
+    _status: "idle",
+  };
 
   async function attempt(store: MemoryStore, extra: Record<string, unknown> = {}) {
     const errors: Error[] = [];
-    const result = await restoreOrStart({ store, key: "k", path, initialData: { name: "" }, onRestoreError: (e: Error) => errors.push(e), ...extra } as any);
+    const result = await restoreOrStart({
+      store,
+      key: "k",
+      path,
+      initialData: { name: "" },
+      onRestoreError: (e: Error) => errors.push(e),
+      ...extra,
+    } as any);
     return { ...result, errors };
   }
 
@@ -635,7 +736,14 @@ describe("HttpStore — HeadersInit forms (S4)", () => {
   }
 
   async function exercise(headers: HttpStoreOptions["headers"]) {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", json: () => Promise.resolve(null) } as Response));
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: () => Promise.resolve(null),
+      } as Response)
+    );
     const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any, headers });
     await store.save("k", mockState);
     await store.load("k");
@@ -680,10 +788,7 @@ describe("HttpStore — HeadersInit forms (S4)", () => {
 describe("persistence onNext — sub-path return (S5)", () => {
   const parent: PathDefinition = {
     id: "parent",
-    steps: [
-      { id: "p1", onSubPathComplete: (_id, data) => ({ child: data.answer }) },
-      { id: "p2" }
-    ]
+    steps: [{ id: "p1", onSubPathComplete: (_id, data) => ({ child: data.answer }) }, { id: "p2" }],
   };
   const child: PathDefinition = { id: "child", steps: [{ id: "c1" }, { id: "c2" }] };
   const defs = { parent, child };
@@ -693,7 +798,7 @@ describe("persistence onNext — sub-path return (S5)", () => {
     await engine.start(parent);
     await engine.startSubPath(child);
     await engine.setData("answer", 42);
-    await engine.next();          // c1 → c2: saved inside the sub-path
+    await engine.next(); // c1 → c2: saved inside the sub-path
     await flush();
     expect(store.records.get("k")?.pathId).toBe("child");
     expect(store.records.get("k")?.pathStack).toHaveLength(1);
@@ -704,7 +809,7 @@ describe("persistence onNext — sub-path return (S5)", () => {
     const store = new MemoryStore();
     const engine = await runToSubPathEnd(store);
 
-    await engine.next();          // c2 → completes the child, parent resumes on p1
+    await engine.next(); // c2 → completes the child, parent resumes on p1
     await flush();
     const rec = store.records.get("k")!;
     expect(rec.pathId).toBe("parent");
@@ -718,7 +823,12 @@ describe("persistence onNext — sub-path return (S5)", () => {
     await engine.next();
     await flush();
 
-    const { engine: restored, restored: wasRestored } = await restoreOrStart({ store, key: "k", path: parent, pathDefinitions: defs });
+    const { engine: restored, restored: wasRestored } = await restoreOrStart({
+      store,
+      key: "k",
+      path: parent,
+      pathDefinitions: defs,
+    });
     expect(wasRestored).toBe(true);
     const s = restored.snapshot()!;
     expect(s.pathId).toBe("parent");
@@ -731,7 +841,7 @@ describe("persistence onNext — sub-path return (S5)", () => {
     const store = new MemoryStore();
     const engine = await runToSubPathEnd(store);
 
-    await engine.cancel();        // back to the parent on p1
+    await engine.cancel(); // back to the parent on p1
     await flush();
     const rec = store.records.get("k")!;
     expect(rec.pathId).toBe("parent");
@@ -754,31 +864,49 @@ class SlowDeleteStore {
     this.completed.push("save");
     return Promise.resolve();
   }
-  load(key: string): Promise<SerializedPathState | null> { return Promise.resolve(this.records.get(key) ?? null); }
+  load(key: string): Promise<SerializedPathState | null> {
+    return Promise.resolve(this.records.get(key) ?? null);
+  }
   delete(key: string): Promise<void> {
     return new Promise<void>((resolve) => {
-      this.releaseDelete = () => { this.records.delete(key); this.completed.push("delete"); resolve(); };
+      this.releaseDelete = () => {
+        this.records.delete(key);
+        this.completed.push("delete");
+        resolve();
+      };
     });
   }
-  get deletePending(): boolean { return this.releaseDelete !== null; }
-  release(): void { const r = this.releaseDelete; this.releaseDelete = null; r?.(); }
+  get deletePending(): boolean {
+    return this.releaseDelete !== null;
+  }
+  release(): void {
+    const r = this.releaseDelete;
+    this.releaseDelete = null;
+    r?.();
+  }
 }
 
 describe("persistence — completion delete vs. reset save (S6)", () => {
-  const resetting: PathDefinition = { id: "kiosk", steps: [{ id: "a" }, { id: "b" }], completionBehaviour: "reset" };
+  const resetting: PathDefinition = {
+    id: "kiosk",
+    steps: [{ id: "a" }, { id: "b" }],
+    completionBehaviour: "reset",
+  };
 
   it("the fresh session's save lands after the completion delete, so the new session survives", async () => {
     const store = new SlowDeleteStore();
-    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onEveryChange" })] });
+    const engine = new PathEngine({
+      observers: [persistence({ store, key: "k", strategy: "onEveryChange" })],
+    });
     await engine.start(resetting);
-    await engine.next();          // → b
+    await engine.next(); // → b
     await flush();
     expect(store.records.get("k")?.currentStepIndex).toBe(1);
 
-    await engine.next();          // completes → delete (slow) → restart → fresh save
+    await engine.next(); // completes → delete (slow) → restart → fresh save
     await flush();
     expect(store.deletePending).toBe(true);
-    store.release();              // the DELETE finally lands
+    store.release(); // the DELETE finally lands
     await flush();
     await flush();
 
@@ -793,9 +921,9 @@ describe("persistence — completion delete vs. reset save (S6)", () => {
     const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onNext" })] });
     await engine.start(resetting);
     await engine.next();
-    await engine.next();          // completes; delete pending; engine restarted on a
+    await engine.next(); // completes; delete pending; engine restarted on a
     await flush();
-    await engine.next();          // new session → b: save requested while delete is pending
+    await engine.next(); // new session → b: save requested while delete is pending
     await flush();
     store.release();
     await flush();
@@ -812,20 +940,24 @@ describe("persistence — completion delete vs. reset save (S6)", () => {
 
 describe("persistence — flush() and dispose()", () => {
   const twoSteps: PathDefinition = { id: "p", steps: [{ id: "a" }, { id: "b" }] };
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("dispose() cancels a pending debounced save and ignores later events", async () => {
     const store = new MemoryStore();
     const obs = persistence({ store, key: "k", strategy: "onEveryChange", debounceMs: 500 });
     const engine = new PathEngine({ observers: [obs] });
     await engine.start(twoSteps);
-    await engine.setData("name", "Ada");           // schedules a save in 500 ms
+    await engine.setData("name", "Ada"); // schedules a save in 500 ms
     obs.dispose();
     await vi.advanceTimersByTimeAsync(1000);
     expect(store.records.has("k")).toBe(false);
 
-    await engine.setData("name", "Grace");         // after dispose: nothing scheduled
+    await engine.setData("name", "Grace"); // after dispose: nothing scheduled
     await vi.advanceTimersByTimeAsync(1000);
     expect(store.records.has("k")).toBe(false);
   });
@@ -836,11 +968,11 @@ describe("persistence — flush() and dispose()", () => {
     const engine = new PathEngine({ observers: [obs] });
     await engine.start(twoSteps);
     await engine.setData("name", "Ada");
-    await obs.flush();                             // e.g. on beforeunload / unmount
+    await obs.flush(); // e.g. on beforeunload / unmount
     expect(store.records.get("k")?.data).toEqual({ name: "Ada" });
 
     const before = store.records.get("k");
-    await vi.advanceTimersByTimeAsync(1000);       // the debounce timer must not fire a second save
+    await vi.advanceTimersByTimeAsync(1000); // the debounce timer must not fire a second save
     expect(store.records.get("k")).toBe(before);
   });
 
@@ -849,9 +981,11 @@ describe("persistence — flush() and dispose()", () => {
     const obs = persistence({ store, key: "k", strategy: "onNext" });
     const engine = new PathEngine({ observers: [obs] });
     await engine.start(twoSteps);
-    await engine.next();                           // save #1 in flight (slow)
+    await engine.next(); // save #1 in flight (slow)
     let flushed = false;
-    const p = obs.flush().then(() => { flushed = true; });
+    const p = obs.flush().then(() => {
+      flushed = true;
+    });
     await Promise.resolve();
     expect(flushed).toBe(false);
     store.release();
@@ -885,11 +1019,18 @@ describe("persistence — flush() and dispose()", () => {
 
 describe("HttpStore.load — response handling", () => {
   function fetchWith(status: number, body: string | null, ok = status >= 200 && status < 300) {
-    return vi.fn(() => Promise.resolve({
-      ok, status, statusText: "x",
-      text: () => Promise.resolve(body ?? ""),
-      json: () => (body ? Promise.resolve(JSON.parse(body)) : Promise.reject(new SyntaxError("Unexpected end of JSON input")))
-    } as unknown as Response));
+    return vi.fn(() =>
+      Promise.resolve({
+        ok,
+        status,
+        statusText: "x",
+        text: () => Promise.resolve(body ?? ""),
+        json: () =>
+          body
+            ? Promise.resolve(JSON.parse(body))
+            : Promise.reject(new SyntaxError("Unexpected end of JSON input")),
+      } as unknown as Response)
+    );
   }
 
   it("returns null for 204 No Content", async () => {
@@ -904,15 +1045,36 @@ describe("HttpStore.load — response handling", () => {
 
   it("rejects, via onError, when the body is not JSON", async () => {
     const onError = vi.fn();
-    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, "<html>oops</html>") as any, onError });
+    const store = new HttpStore({
+      baseUrl: "/api",
+      fetch: fetchWith(200, "<html>oops</html>") as any,
+      onError,
+    });
     await expect(store.load("k")).rejects.toThrow(/JSON/);
     expect(onError).toHaveBeenCalledWith(expect.any(Error), "load", "k");
   });
 
   it("rejects when the JSON is not a SerializedPathState", async () => {
-    const store = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, JSON.stringify({ hello: "world" })) as any });
+    const store = new HttpStore({
+      baseUrl: "/api",
+      fetch: fetchWith(200, JSON.stringify({ hello: "world" })) as any,
+    });
     await expect(store.load("k")).rejects.toThrow(/SerializedPathState/);
-    const bad = new HttpStore({ baseUrl: "/api", fetch: fetchWith(200, JSON.stringify({ version: 2, pathId: "p", currentStepIndex: 0, data: {}, visitedStepIds: [], pathStack: [], _status: "idle" })) as any });
+    const bad = new HttpStore({
+      baseUrl: "/api",
+      fetch: fetchWith(
+        200,
+        JSON.stringify({
+          version: 2,
+          pathId: "p",
+          currentStepIndex: 0,
+          data: {},
+          visitedStepIds: [],
+          pathStack: [],
+          _status: "idle",
+        })
+      ) as any,
+    });
     await expect(bad.load("k")).rejects.toThrow(/version/);
   });
 
@@ -924,7 +1086,15 @@ describe("HttpStore.load — response handling", () => {
 
 describe("HttpStore.load — JSON null body", () => {
   it("returns null for a JSON `null` body (nothing stored)", async () => {
-    const fetchNull = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null"), json: () => Promise.resolve(null) } as unknown as Response));
+    const fetchNull = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: () => Promise.resolve("null"),
+        json: () => Promise.resolve(null),
+      } as unknown as Response)
+    );
     const store = new HttpStore({ baseUrl: "/api", fetch: fetchNull as any });
     await expect(store.load("k")).resolves.toBeNull();
   });
@@ -937,17 +1107,33 @@ describe("HttpStore.load — JSON null body", () => {
 describe("HttpStore — credentials, signal and timeout", () => {
   /** A fetch that never resolves on its own but rejects when its signal aborts. */
   function hangingFetch() {
-    return vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      if (init?.signal?.aborted) { reject(init.signal.reason ?? new Error("aborted")); return; }
-      init?.signal?.addEventListener("abort", () => reject(init.signal!.reason ?? new Error("aborted")));
-    }));
+    return vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          if (init?.signal?.aborted) {
+            reject(init.signal.reason ?? new Error("aborted"));
+            return;
+          }
+          init?.signal?.addEventListener("abort", () => reject(init.signal!.reason ?? new Error("aborted")));
+        })
+    );
   }
 
   it("forwards credentials on every request", async () => {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null") } as unknown as Response));
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: () => Promise.resolve("null"),
+      } as unknown as Response)
+    );
     const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any, credentials: "include" });
-    await store.save("k", mockState); await store.load("k"); await store.delete("k");
-    for (const call of fetchMock.mock.calls as unknown as [string, RequestInit][]) expect(call[1].credentials).toBe("include");
+    await store.save("k", mockState);
+    await store.load("k");
+    await store.delete("k");
+    for (const call of fetchMock.mock.calls as unknown as [string, RequestInit][])
+      expect(call[1].credentials).toBe("include");
   });
 
   it("aborts a request that exceeds timeoutMs and reports it through onError", async () => {
@@ -956,7 +1142,10 @@ describe("HttpStore — credentials, signal and timeout", () => {
       const onError = vi.fn();
       const store = new HttpStore({ baseUrl: "/api", fetch: hangingFetch() as any, timeoutMs: 500, onError });
       const p = store.load("k");
-      const settled = p.then(() => "resolved", (e: Error) => e.message);
+      const settled = p.then(
+        () => "resolved",
+        (e: Error) => e.message
+      );
       await vi.advanceTimersByTimeAsync(600);
       expect(await settled).toMatch(/timed out after 500 ms/);
       expect(onError).toHaveBeenCalledWith(expect.any(Error), "load", "k");
@@ -969,13 +1158,23 @@ describe("HttpStore — credentials, signal and timeout", () => {
     const ac = new AbortController();
     const store = new HttpStore({ baseUrl: "/api", fetch: hangingFetch() as any, signal: ac.signal });
     const p = store.save("k", mockState);
-    const settled = p.then(() => "resolved", (e: Error) => e.message);
+    const settled = p.then(
+      () => "resolved",
+      (e: Error) => e.message
+    );
     ac.abort(new Error("leaving page"));
     expect(await settled).toBe("leaving page");
   });
 
   it("sends no signal or credentials when none are configured", async () => {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null") } as unknown as Response));
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: () => Promise.resolve("null"),
+      } as unknown as Response)
+    );
     const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any });
     await store.load("k");
     const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];

@@ -17,10 +17,7 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [],
-            "styles": [
-              "../../../node_modules/@daltonr/pathwrite-angular/dist/index.css",
-              "src/styles.css"
-            ],
+            "styles": ["../../../node_modules/@daltonr/pathwrite-angular/dist/index.css", "src/styles.css"],
             "scripts": []
           },
           "configurations": {
@@ -41,7 +38,7 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "development": { "buildTarget": "demo-angular-subwizard:build:development" },
-            "production":  { "buildTarget": "demo-angular-subwizard:build:production" }
+            "production": { "buildTarget": "demo-angular-subwizard:build:production" }
           },
           "defaultConfiguration": "development"
         }
@@ -49,4 +46,3 @@
     }
   }
 }
-

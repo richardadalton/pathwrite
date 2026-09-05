@@ -12,8 +12,8 @@ export default function ReviewStep() {
         return (
           <div class="form-body">
             <p class="step-intro">
-              Everything look right? Click <strong>Complete Onboarding</strong> to finish,
-              or use <strong>Previous</strong> to make changes.
+              Everything look right? Click <strong>Complete Onboarding</strong> to finish, or use{" "}
+              <strong>Previous</strong> to make changes.
             </p>
 
             <div class="review-section">
@@ -21,7 +21,9 @@ export default function ReviewStep() {
               <div class="review-card">
                 <div class="review-row">
                   <span class="review-key">Full Name</span>
-                  <span>{d().firstName} {d().lastName}</span>
+                  <span>
+                    {d().firstName} {d().lastName}
+                  </span>
                 </div>
                 <div class="review-row">
                   <span class="review-key">Email</span>

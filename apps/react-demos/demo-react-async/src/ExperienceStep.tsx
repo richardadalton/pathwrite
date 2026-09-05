@@ -3,16 +3,15 @@ import type { ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-appli
 
 export function ExperienceStep() {
   const { snapshot, setData } = usePathContext<ApplicationData>();
-  const snap   = snapshot!;
-  const data   = snap.data;
+  const snap = snapshot!;
+  const data = snap.data;
   const errors = snap.hasAttemptedNext ? snap.fieldErrors : {};
 
   return (
     <div className="form-body">
       <p className="step-intro">
-        Tell us about your background. The next step will run an async eligibility
-        check — try entering <strong>less than 2 years</strong> to see the guard
-        block navigation.
+        Tell us about your background. The next step will run an async eligibility check — try entering{" "}
+        <strong>less than 2 years</strong> to see the guard block navigation.
       </p>
 
       <div className={`field ${errors.yearsExperience ? "field--error" : ""}`}>
@@ -23,13 +22,11 @@ export function ExperienceStep() {
           min="0"
           step="1"
           value={data.yearsExperience}
-          onChange={e => setData("yearsExperience", e.target.value)}
+          onChange={(e) => setData("yearsExperience", e.target.value)}
           placeholder="e.g. 3"
           autoFocus
         />
-        {errors.yearsExperience && (
-          <span className="field-error">{errors.yearsExperience}</span>
-        )}
+        {errors.yearsExperience && <span className="field-error">{errors.yearsExperience}</span>}
       </div>
 
       <div className={`field ${errors.skills ? "field--error" : ""}`}>
@@ -38,12 +35,10 @@ export function ExperienceStep() {
           id="skills"
           type="text"
           value={data.skills}
-          onChange={e => setData("skills", e.target.value)}
+          onChange={(e) => setData("skills", e.target.value)}
           placeholder="e.g. TypeScript, React, Node.js"
         />
-        {errors.skills && (
-          <span className="field-error">{errors.skills}</span>
-        )}
+        {errors.skills && <span className="field-error">{errors.skills}</span>}
       </div>
     </div>
   );

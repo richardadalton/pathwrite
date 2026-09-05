@@ -9,7 +9,7 @@ export const employeeDetailsPath: PathDefinition<EmployeeDetails> = {
       title: "Personal",
       fieldErrors: ({ data }) => ({
         firstName: !data.firstName?.trim() ? "First name is required." : undefined,
-        lastName:  !data.lastName?.trim()  ? "Last name is required."  : undefined,
+        lastName: !data.lastName?.trim() ? "Last name is required." : undefined,
       }),
     },
     {

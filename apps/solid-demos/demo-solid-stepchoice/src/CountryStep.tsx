@@ -14,12 +14,12 @@ export default function CountryStep(props: Props) {
 
   return (
     <div class="form-body">
-      <p class="step-intro">
-        Select your country. The next step will show the appropriate address form.
-      </p>
+      <p class="step-intro">Select your country. The next step will show the appropriate address form.</p>
 
       <div class="field">
-        <label>Country <span class="required">*</span></label>
+        <label>
+          Country <span class="required">*</span>
+        </label>
         <div class="radio-group">
           <label class="radio-option">
             <input
@@ -46,8 +46,8 @@ export default function CountryStep(props: Props) {
       </div>
 
       <p class="hint">
-        The <code>address</code> step uses <code>select</code> to choose between{" "}
-        <code>address-us</code> and <code>address-ie</code> based on this selection.
+        The <code>address</code> step uses <code>select</code> to choose between <code>address-us</code> and{" "}
+        <code>address-ie</code> based on this selection.
       </p>
     </div>
   );

@@ -13,25 +13,43 @@
 
     <div class="field" class:field--error={errors.cardNumber}>
       <label for="cardNumber">Card Number <span class="required">*</span></label>
-      <input id="cardNumber" type="text" value={data.cardNumber ?? ""}
-        oninput={(e) => ctx.setData("cardNumber", e.currentTarget.value)} placeholder="4242 4242 4242 4242" autocomplete="cc-number" autofocus />
+      <input
+        id="cardNumber"
+        type="text"
+        value={data.cardNumber ?? ""}
+        oninput={(e) => ctx.setData("cardNumber", e.currentTarget.value)}
+        placeholder="4242 4242 4242 4242"
+        autocomplete="cc-number"
+        autofocus
+      />
       {#if errors.cardNumber}<span class="field-error">{errors.cardNumber}</span>{/if}
     </div>
 
     <div class="row">
       <div class="field" class:field--error={errors.cardExpiry}>
         <label for="cardExpiry">Expiry Date <span class="required">*</span></label>
-        <input id="cardExpiry" type="text" value={data.cardExpiry ?? ""}
-          oninput={(e) => ctx.setData("cardExpiry", e.currentTarget.value)} placeholder="MM/YY" autocomplete="cc-exp" />
+        <input
+          id="cardExpiry"
+          type="text"
+          value={data.cardExpiry ?? ""}
+          oninput={(e) => ctx.setData("cardExpiry", e.currentTarget.value)}
+          placeholder="MM/YY"
+          autocomplete="cc-exp"
+        />
         {#if errors.cardExpiry}<span class="field-error">{errors.cardExpiry}</span>{/if}
       </div>
       <div class="field" class:field--error={errors.cardCvc}>
         <label for="cardCvc">CVC <span class="required">*</span></label>
-        <input id="cardCvc" type="text" value={data.cardCvc ?? ""}
-          oninput={(e) => ctx.setData("cardCvc", e.currentTarget.value)} placeholder="123" autocomplete="cc-csc" />
+        <input
+          id="cardCvc"
+          type="text"
+          value={data.cardCvc ?? ""}
+          oninput={(e) => ctx.setData("cardCvc", e.currentTarget.value)}
+          placeholder="123"
+          autocomplete="cc-csc"
+        />
         {#if errors.cardCvc}<span class="field-error">{errors.cardCvc}</span>{/if}
       </div>
     </div>
   </div>
 {/if}
-

@@ -43,7 +43,7 @@ export const mainPath: PathDefinition<DemoData> = {
     {
       id: "address",
       title: "Address",
-      select: ({ data }) => data.country === "US" ? "address-us" : "address-ie",
+      select: ({ data }) => (data.country === "US" ? "address-us" : "address-ie"),
       steps: [
         {
           id: "address-us",

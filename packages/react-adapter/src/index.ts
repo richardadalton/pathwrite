@@ -9,7 +9,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore
+  useSyncExternalStore,
 } from "react";
 import type { ChangeEvent, PropsWithChildren, ReactElement, ReactNode } from "react";
 import {
@@ -51,7 +51,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
+  startSubPath: (
+    path: PathDefinition<any>,
+    initialData?: PathData,
+    meta?: Record<string, unknown>
+  ) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
@@ -173,8 +177,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   // Stable action callbacks
   const start = useCallback(
-    (path: PathDefinition<any>, initialData: PathData = {}) =>
-      engine.start(path, initialData),
+    (path: PathDefinition<any>, initialData: PathData = {}) => engine.start(path, initialData),
     [engine]
   );
 
@@ -213,7 +216,22 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const validate = useCallback(() => engine.validate(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
+  return {
+    snapshot,
+    start,
+    startSubPath,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    resetStep,
+    restart,
+    retry,
+    suspend,
+    validate,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -240,7 +258,15 @@ const PathContext = createContext<PathContextValue | null>(null);
  * </PathProvider>
  * ```
  */
-export function PathProvider({ children, path: pathDef, initialData = {}, engine: externalEngine, fallback = null, onEvent, services }: PathProviderProps): ReactElement {
+export function PathProvider({
+  children,
+  path: pathDef,
+  initialData = {},
+  engine: externalEngine,
+  fallback = null,
+  onEvent,
+  services,
+}: PathProviderProps): ReactElement {
   if (!pathDef && !externalEngine) {
     throw new Error("<PathProvider> needs a `path` to start or an `engine` to adopt.");
   }
@@ -252,7 +278,6 @@ export function PathProvider({ children, path: pathDef, initialData = {}, engine
       void path.start(pathDef, initialData);
     }
     // Mount-time start only, like PathShell.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return createElement(
     PathContext.Provider,
@@ -277,7 +302,10 @@ export function PathProvider({ children, path: pathDef, initialData = {}, engine
  * }
  * ```
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<
+  UsePathReturn<TData>,
+  "snapshot"
+> & { snapshot: PathSnapshot<TData>; services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
@@ -286,8 +314,11 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
   // <PathShell> and <PathProvider> — render their children only while a path
   // is active (and a fallback / empty state otherwise).
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices }),
-    services: ctx.services as TServices
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & {
+      snapshot: PathSnapshot<TData>;
+      services: TServices;
+    }),
+    services: ctx.services as TServices,
   };
 }
 
@@ -327,14 +358,18 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
  */
 export function useField<TData extends PathData, K extends string & keyof TData>(
   field: K
-): { value: string; onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void; error: string | undefined; warning: string | undefined } {
+): {
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  error: string | undefined;
+  warning: string | undefined;
+} {
   const { snapshot, setData } = usePathContext<TData>();
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       setData(field, e.target.value as TData[K]);
     },
     // field is a string literal at the call site and never changes; setData is stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, setData]
   );
   const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
@@ -399,7 +434,6 @@ const InlineFieldsContext = createContext<InlineFieldsContextValue | null>(null)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Default UI — PathShell
@@ -560,34 +594,37 @@ export interface PathShellActions {
  * />
  * ```
  */
-export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell({
-  path: pathDef,
-  engine: externalEngine,
-  steps,
-  initialData = {},
-  restoreKey,
-  autoStart = true,
-  onComplete,
-  onCancel,
-  onEvent,
-  backLabel = "Previous",
-  nextLabel = "Next",
-  completeLabel = "Complete",
-  loadingLabel,
-  cancelLabel = "Cancel",
-  hideCancel = false,
-  hideProgress = false,
-  hideFooter = false,
-  layout = "auto",
-  className,
-  renderHeader,
-  renderFooter,
-  validationDisplay = "summary",
-  progressLayout = "merged",
-  services,
-  validateWhen = false,
-  completionContent,
-}: PathShellProps, ref): ReactElement {
+export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell(
+  {
+    path: pathDef,
+    engine: externalEngine,
+    steps,
+    initialData = {},
+    restoreKey,
+    autoStart = true,
+    onComplete,
+    onCancel,
+    onEvent,
+    backLabel = "Previous",
+    nextLabel = "Next",
+    completeLabel = "Complete",
+    loadingLabel,
+    cancelLabel = "Cancel",
+    hideCancel = false,
+    hideProgress = false,
+    hideFooter = false,
+    layout = "auto",
+    className,
+    renderHeader,
+    renderFooter,
+    validationDisplay = "summary",
+    progressLayout = "merged",
+    services,
+    validateWhen = false,
+    completionContent,
+  }: PathShellProps,
+  ref
+): ReactElement {
   // Read the outer PathShell's context BEFORE providing our own. Used for
   // restoreKey: the outer context is null when this is a top-level shell.
   const outerCtx = useContext(PathContext);
@@ -597,7 +634,8 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // step (which re-ran onEnter/onLeave and lost attempted / visited state).
   const [restoredEngine] = useState<PathEngine | null>(() => {
     if (externalEngine || !restoreKey || !outerCtx) return null;
-    const stored = outerCtx.path.snapshot?.data[restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    const stored = outerCtx.path.snapshot?.data[restoreKey] as
+      { serializedState?: SerializedPathState } | undefined;
     if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
     try {
       return PathEngine.fromState(stored.serializedState, { [pathDef.id]: pathDef });
@@ -618,14 +656,28 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       if (event.type === "cancelled") onCancel?.(event.data);
       // Auto-sync inner snapshot to the parent shell's data under restoreKey.
       if (restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
-        );
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(restoreKey, {
+          ...event.snapshot,
+          serializedState: engine.exportState(),
+        });
       }
-    }
+    },
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+  const {
+    snapshot,
+    start,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    restart,
+    retry,
+    suspend,
+    validate,
+  } = pathReturn;
 
   useEffect(() => {
     if (validateWhen) validate();
@@ -659,9 +711,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       }
       Promise.resolve(start(pathDef, startData))
         .then(() => (restoreStepId ? goToStep(restoreStepId) : undefined))
-        .then(() => { if (validateWhenRef.current) validate(); });
+        .then(() => {
+          if (validateWhenRef.current) validate();
+        });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Look up step content from the steps map.
@@ -681,20 +734,36 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // they can be excluded from the summary box automatically.
   const [claimedFields, setClaimedFields] = useState<Set<string>>(() => new Set());
   const inlineFieldsCtx = useState<InlineFieldsContextValue>(() => ({
-    claim:   (field) => setClaimedFields(prev => new Set([...prev, field])),
-    unclaim: (field) => setClaimedFields(prev => { const n = new Set(prev); n.delete(field); return n; }),
+    claim: (field) => setClaimedFields((prev) => new Set([...prev, field])),
+    unclaim: (field) =>
+      setClaimedFields((prev) => {
+        const n = new Set(prev);
+        n.delete(field);
+        return n;
+      }),
   }))[0];
 
   if (!snapshot) {
-    return createElement(PathContext.Provider, { value: contextValue },
-      createElement("div", { className: cls("pw-shell", className) },
-        createElement("div", { className: "pw-shell__empty" },
+    return createElement(
+      PathContext.Provider,
+      { value: contextValue },
+      createElement(
+        "div",
+        { className: cls("pw-shell", className) },
+        createElement(
+          "div",
+          { className: "pw-shell__empty" },
           createElement("p", null, "No active path."),
-          !autoStart && createElement("button", {
-            type: "button",
-            className: "pw-shell__start-btn",
-            onClick: () => start(pathDef, initialData)
-          }, "Start")
+          !autoStart &&
+            createElement(
+              "button",
+              {
+                type: "button",
+                className: "pw-shell__start-btn",
+                onClick: () => start(pathDef, initialData),
+              },
+              "Start"
+            )
         )
       )
     );
@@ -702,80 +771,140 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 
   if (snapshot.status === "completed") {
     const showCompletionProgress = !effectiveHideProgress && snapshot.stepCount > 1;
-    return createElement(PathContext.Provider, { value: contextValue },
-      createElement("div", { className: cls("pw-shell", className) },
+    return createElement(
+      PathContext.Provider,
+      { value: contextValue },
+      createElement(
+        "div",
+        { className: cls("pw-shell", className) },
         showCompletionProgress && defaultHeader(snapshot),
-        createElement("div", { className: "pw-shell__body" },
-          completionContent ?? createElement("div", { className: "pw-shell__completion" },
-            createElement("p", { className: "pw-shell__completion-message" }, "All done."),
-            createElement("button", {
-              type: "button",
-              className: "pw-shell__completion-restart",
-              onClick: () => restart(),
-            }, "Start over")
-          )
+        createElement(
+          "div",
+          { className: "pw-shell__body" },
+          completionContent ??
+            createElement(
+              "div",
+              { className: "pw-shell__completion" },
+              createElement("p", { className: "pw-shell__completion-message" }, "All done."),
+              createElement(
+                "button",
+                {
+                  type: "button",
+                  className: "pw-shell__completion-restart",
+                  onClick: () => restart(),
+                },
+                "Start over"
+              )
+            )
         )
       )
     );
   }
 
   const actions: PathShellActions = {
-    next, previous, cancel, goToStep, goToStepChecked, setData,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
     restart: () => restart(),
     retry: () => retry(),
     suspend: () => suspend(),
   };
 
   const showRoot = !effectiveHideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
-  const showActive = !effectiveHideProgress && (renderHeader
-    ? true
-    : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
+  const showActive =
+    !effectiveHideProgress &&
+    (renderHeader
+      ? true
+      : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
   // Field errors/warnings not claimed by a <FieldError /> go into the summary box.
-  const summaryErrors   = Object.fromEntries(Object.entries(snapshot.fieldErrors).filter(([k]) => !claimedFields.has(k)));
-  const summaryWarnings = Object.fromEntries(Object.entries(snapshot.fieldWarnings).filter(([k]) => !claimedFields.has(k)));
+  const summaryErrors = Object.fromEntries(
+    Object.entries(snapshot.fieldErrors).filter(([k]) => !claimedFields.has(k))
+  );
+  const summaryWarnings = Object.fromEntries(
+    Object.entries(snapshot.fieldWarnings).filter(([k]) => !claimedFields.has(k))
+  );
 
-  return createElement(InlineFieldsContext.Provider, { value: inlineFieldsCtx },
-    createElement(PathContext.Provider, { value: contextValue },
-      createElement("div", { className: cls("pw-shell", progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`, className) },
+  return createElement(
+    InlineFieldsContext.Provider,
+    { value: inlineFieldsCtx },
+    createElement(
+      PathContext.Provider,
+      { value: contextValue },
+      createElement(
+        "div",
+        {
+          className: cls(
+            "pw-shell",
+            progressLayout !== "merged" && `pw-shell--progress-${progressLayout}`,
+            className
+          ),
+        },
         // Root progress — persistent top-level bar visible during sub-paths
         showRoot && defaultRootProgress(snapshot.rootProgress!),
         // Header — progress indicator (active path)
-        showActive && (renderHeader
-          ? renderHeader(snapshot)
-          : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
+        showActive &&
+          (renderHeader
+            ? renderHeader(snapshot)
+            : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && defaultHeader(snapshot)),
         // Body — step content
         createElement("div", { className: "pw-shell__body" }, stepContent),
         // Validation messages — suppressed when validationDisplay="inline", or when all fields are claimed inline
-        validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(summaryErrors).length > 0 && createElement("ul", { className: "pw-shell__validation" },
-          ...Object.entries(summaryErrors).map(([key, msg]) =>
-            createElement("li", { key, className: "pw-shell__validation-item" },
-              key !== "_" && createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
-              msg
+        validationDisplay !== "inline" &&
+          (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
+          Object.keys(summaryErrors).length > 0 &&
+          createElement(
+            "ul",
+            { className: "pw-shell__validation" },
+            ...Object.entries(summaryErrors).map(([key, msg]) =>
+              createElement(
+                "li",
+                { key, className: "pw-shell__validation-item" },
+                key !== "_" &&
+                  createElement("span", { className: "pw-shell__validation-label" }, formatFieldKey(key)),
+                msg
+              )
             )
-          )
-        ),
+          ),
         // Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate)
-        validationDisplay !== "inline" && Object.keys(summaryWarnings).length > 0 && createElement("ul", { className: "pw-shell__warnings" },
-          ...Object.entries(summaryWarnings).map(([key, msg]) =>
-            createElement("li", { key, className: "pw-shell__warnings-item" },
-              key !== "_" && createElement("span", { className: "pw-shell__warnings-label" }, formatFieldKey(key)),
-              msg
+        validationDisplay !== "inline" &&
+          Object.keys(summaryWarnings).length > 0 &&
+          createElement(
+            "ul",
+            { className: "pw-shell__warnings" },
+            ...Object.entries(summaryWarnings).map(([key, msg]) =>
+              createElement(
+                "li",
+                { key, className: "pw-shell__warnings-item" },
+                key !== "_" &&
+                  createElement("span", { className: "pw-shell__warnings-label" }, formatFieldKey(key)),
+                msg
+              )
             )
-          )
-        ),
+          ),
         // Blocking error — guard returned { allowed: false, reason }
-        validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError &&
+        validationDisplay !== "inline" &&
+          (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
+          snapshot.blockingError &&
           createElement("p", { className: "pw-shell__blocking-error" }, snapshot.blockingError),
         // Error panel — replaces footer when an async operation has failed
         snapshot.status === "error" && snapshot.error
           ? defaultErrorPanel(snapshot, actions)
-          // Footer — navigation buttons
-          : !effectiveHideFooter
+          : // Footer — navigation buttons
+            !effectiveHideFooter
             ? renderFooter
               ? renderFooter(snapshot, actions)
               : defaultFooter(snapshot, actions, {
-                  backLabel, nextLabel, completeLabel, loadingLabel, cancelLabel, hideCancel, layout
+                  backLabel,
+                  nextLabel,
+                  completeLabel,
+                  loadingLabel,
+                  cancelLabel,
+                  hideCancel,
+                  layout,
                 })
             : null
       )
@@ -788,26 +917,34 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 // ---------------------------------------------------------------------------
 
 function defaultRootProgress(root: RootProgress): ReactElement {
-  return createElement("div", { className: "pw-shell__root-progress" },
-    createElement("div", { className: "pw-shell__steps" },
+  return createElement(
+    "div",
+    { className: "pw-shell__root-progress" },
+    createElement(
+      "div",
+      { className: "pw-shell__steps" },
       ...root.steps.map((step, i) =>
-        createElement("div", {
-          key: step.id,
-          className: cls("pw-shell__step", `pw-shell__step--${step.status}`)
-        },
-          createElement("span", { className: "pw-shell__step-dot" },
+        createElement(
+          "div",
+          {
+            key: step.id,
+            className: cls("pw-shell__step", `pw-shell__step--${step.status}`),
+          },
+          createElement(
+            "span",
+            { className: "pw-shell__step-dot" },
             step.status === "completed" ? "✓" : String(i + 1)
           ),
-          createElement("span", { className: "pw-shell__step-label" },
-            step.title ?? step.id
-          )
+          createElement("span", { className: "pw-shell__step-label" }, step.title ?? step.id)
         )
       )
     ),
-    createElement("div", { className: "pw-shell__track" },
+    createElement(
+      "div",
+      { className: "pw-shell__track" },
       createElement("div", {
         className: "pw-shell__track-fill",
-        style: { width: `${root.progress * 100}%` }
+        style: { width: `${root.progress * 100}%` },
       })
     )
   );
@@ -818,26 +955,34 @@ function defaultRootProgress(root: RootProgress): ReactElement {
 // ---------------------------------------------------------------------------
 
 function defaultHeader(snapshot: PathSnapshot): ReactElement {
-  return createElement("div", { className: "pw-shell__header" },
-    createElement("div", { className: "pw-shell__steps" },
+  return createElement(
+    "div",
+    { className: "pw-shell__header" },
+    createElement(
+      "div",
+      { className: "pw-shell__steps" },
       ...snapshot.steps.map((step, i) =>
-        createElement("div", {
-          key: step.id,
-          className: cls("pw-shell__step", `pw-shell__step--${step.status}`)
-        },
-          createElement("span", { className: "pw-shell__step-dot" },
+        createElement(
+          "div",
+          {
+            key: step.id,
+            className: cls("pw-shell__step", `pw-shell__step--${step.status}`),
+          },
+          createElement(
+            "span",
+            { className: "pw-shell__step-dot" },
             step.status === "completed" ? "✓" : String(i + 1)
           ),
-          createElement("span", { className: "pw-shell__step-label" },
-            step.title ?? step.id
-          )
+          createElement("span", { className: "pw-shell__step-label" }, step.title ?? step.id)
         )
       )
     ),
-    createElement("div", { className: "pw-shell__track" },
+    createElement(
+      "div",
+      { className: "pw-shell__track" },
       createElement("div", {
         className: "pw-shell__track-fill",
-        style: { width: `${snapshot.progress * 100}%` }
+        style: { width: `${snapshot.progress * 100}%` },
       })
     )
   );
@@ -847,39 +992,57 @@ function defaultHeader(snapshot: PathSnapshot): ReactElement {
 // Default error panel
 // ---------------------------------------------------------------------------
 
-
-function defaultErrorPanel(
-  snapshot: PathSnapshot,
-  actions: PathShellActions
-): ReactElement {
+function defaultErrorPanel(snapshot: PathSnapshot, actions: PathShellActions): ReactElement {
   const { error, hasPersistence } = snapshot;
   if (!error) return createElement("div", null);
   const escalated = error.retryCount >= 2;
   const title = escalated ? "Still having trouble." : "Something went wrong.";
   const phaseMsg = errorPhaseMessage(error.phase);
 
-  return createElement("div", { className: "pw-shell__error" },
+  return createElement(
+    "div",
+    { className: "pw-shell__error" },
     createElement("div", { className: "pw-shell__error-title" }, title),
-    createElement("div", { className: "pw-shell__error-message" },
+    createElement(
+      "div",
+      { className: "pw-shell__error-message" },
       phaseMsg,
       error.message && ` ${error.message}`
     ),
-    createElement("div", { className: "pw-shell__error-actions" },
-      !escalated && createElement("button", {
-        type: "button",
-        className: "pw-shell__btn pw-shell__btn--retry",
-        onClick: actions.retry
-      }, "Try again"),
-      hasPersistence && createElement("button", {
-        type: "button",
-        className: cls("pw-shell__btn", escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"),
-        onClick: actions.suspend
-      }, "Save and come back later"),
-      escalated && !hasPersistence && createElement("button", {
-        type: "button",
-        className: "pw-shell__btn pw-shell__btn--retry",
-        onClick: actions.retry
-      }, "Try again")
+    createElement(
+      "div",
+      { className: "pw-shell__error-actions" },
+      !escalated &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: "pw-shell__btn pw-shell__btn--retry",
+            onClick: actions.retry,
+          },
+          "Try again"
+        ),
+      hasPersistence &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: cls("pw-shell__btn", escalated ? "pw-shell__btn--retry" : "pw-shell__btn--suspend"),
+            onClick: actions.suspend,
+          },
+          "Save and come back later"
+        ),
+      escalated &&
+        !hasPersistence &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: "pw-shell__btn pw-shell__btn--retry",
+            onClick: actions.retry,
+          },
+          "Try again"
+        )
     )
   );
 }
@@ -904,46 +1067,82 @@ function defaultFooter(
   labels: FooterLabels
 ): ReactElement {
   // Auto-detect layout: single-step top-level paths use "form", everything else uses "wizard"
-  const resolvedLayout = labels.layout === "auto" || labels.layout === "tabs"
-    ? (snapshot.stepCount === 1 && snapshot.nestingLevel === 0 ? "form" : "wizard")
-    : labels.layout;
-  
+  const resolvedLayout =
+    labels.layout === "auto" || labels.layout === "tabs"
+      ? snapshot.stepCount === 1 && snapshot.nestingLevel === 0
+        ? "form"
+        : "wizard"
+      : labels.layout;
+
   const isFormMode = resolvedLayout === "form";
-  
-  return createElement("div", { className: "pw-shell__footer" },
-    createElement("div", { className: "pw-shell__footer-left" },
+
+  return createElement(
+    "div",
+    { className: "pw-shell__footer" },
+    createElement(
+      "div",
+      { className: "pw-shell__footer-left" },
       // Form mode: Cancel on the left
-      isFormMode && !labels.hideCancel && createElement("button", {
-        type: "button",
-        className: "pw-shell__btn pw-shell__btn--cancel",
-        disabled: snapshot.status !== "idle",
-        onClick: actions.cancel
-      }, labels.cancelLabel),
+      isFormMode &&
+        !labels.hideCancel &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: "pw-shell__btn pw-shell__btn--cancel",
+            disabled: snapshot.status !== "idle",
+            onClick: actions.cancel,
+          },
+          labels.cancelLabel
+        ),
       // Wizard mode: Back on the left
-      !isFormMode && !snapshot.isFirstStep && createElement("button", {
-        type: "button",
-        className: "pw-shell__btn pw-shell__btn--back",
-        disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
-        onClick: actions.previous
-      }, labels.backLabel)
+      !isFormMode &&
+        !snapshot.isFirstStep &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: "pw-shell__btn pw-shell__btn--back",
+            disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
+            onClick: actions.previous,
+          },
+          labels.backLabel
+        )
     ),
-    createElement("div", { className: "pw-shell__footer-right" },
+    createElement(
+      "div",
+      { className: "pw-shell__footer-right" },
       // Wizard mode: Cancel on the right
-      !isFormMode && !labels.hideCancel && createElement("button", {
-        type: "button",
-        className: "pw-shell__btn pw-shell__btn--cancel",
-        disabled: snapshot.status !== "idle",
-        onClick: actions.cancel
-      }, labels.cancelLabel),
+      !isFormMode &&
+        !labels.hideCancel &&
+        createElement(
+          "button",
+          {
+            type: "button",
+            className: "pw-shell__btn pw-shell__btn--cancel",
+            disabled: snapshot.status !== "idle",
+            onClick: actions.cancel,
+          },
+          labels.cancelLabel
+        ),
       // Both modes: Submit on the right
-      createElement("button", {
-        type: "button",
-        className: cls("pw-shell__btn pw-shell__btn--next", snapshot.status !== "idle" && "pw-shell__btn--loading"),
-        disabled: snapshot.status !== "idle",
-        onClick: actions.next
-      }, snapshot.status !== "idle" && labels.loadingLabel
+      createElement(
+        "button",
+        {
+          type: "button",
+          className: cls(
+            "pw-shell__btn pw-shell__btn--next",
+            snapshot.status !== "idle" && "pw-shell__btn--loading"
+          ),
+          disabled: snapshot.status !== "idle",
+          onClick: actions.next,
+        },
+        snapshot.status !== "idle" && labels.loadingLabel
           ? labels.loadingLabel
-          : snapshot.isLastStep ? labels.completeLabel : labels.nextLabel)
+          : snapshot.isLastStep
+            ? labels.completeLabel
+            : labels.nextLabel
+      )
     )
   );
 }
@@ -975,4 +1174,3 @@ export type {
 } from "@daltonr/pathwrite-core";
 
 export { PathEngine } from "@daltonr/pathwrite-core";
-

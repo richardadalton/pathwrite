@@ -2,12 +2,17 @@ import React, { useState } from "react";
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { PathShell } from "@daltonr/pathwrite-react-native";
 
-import { services, createApplicationPath, INITIAL_DATA, type ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-application";
-import { RoleStep }        from "./RoleStep";
-import { ExperienceStep }  from "./ExperienceStep";
+import {
+  services,
+  createApplicationPath,
+  INITIAL_DATA,
+  type ApplicationData,
+} from "@daltonr/pathwrite-demo-workflow-job-application";
+import { RoleStep } from "./RoleStep";
+import { ExperienceStep } from "./ExperienceStep";
 import { EligibilityStep } from "./EligibilityStep";
 import { CoverLetterStep } from "./CoverLetterStep";
-import { ReviewStep }      from "./ReviewStep";
+import { ReviewStep } from "./ReviewStep";
 
 // Path created once — factory closes over the services singleton.
 const applicationPath = createApplicationPath(services);
@@ -28,9 +33,7 @@ export function AsyncDemo({ onBack }: Props) {
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Async Features</Text>
-            <Text style={styles.headerSub}>
-              async guards · async shouldSkip · loadingLabel · services
-            </Text>
+            <Text style={styles.headerSub}>async guards · async shouldSkip · loadingLabel · services</Text>
           </View>
         </View>
 
@@ -39,8 +42,8 @@ export function AsyncDemo({ onBack }: Props) {
             <Text style={styles.successIcon}>✓</Text>
             <Text style={styles.successTitle}>Application Submitted</Text>
             <Text style={styles.successSub}>
-              Your application for role{" "}
-              <Text style={styles.successBold}>{completedData.roleId}</Text> was received.
+              Your application for role <Text style={styles.successBold}>{completedData.roleId}</Text> was
+              received.
             </Text>
             <TouchableOpacity
               style={styles.submitBtn}
@@ -63,9 +66,7 @@ export function AsyncDemo({ onBack }: Props) {
         </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Async Features</Text>
-          <Text style={styles.headerSub}>
-            async guards · async shouldSkip · loadingLabel · services
-          </Text>
+          <Text style={styles.headerSub}>async guards · async shouldSkip · loadingLabel · services</Text>
         </View>
       </View>
 
@@ -80,11 +81,11 @@ export function AsyncDemo({ onBack }: Props) {
           hideCancel
           onComplete={(data) => setCompletedData(data as ApplicationData)}
           steps={{
-            "role":         <RoleStep />,
-            "experience":   <ExperienceStep />,
-            "eligibility":  <EligibilityStep />,
+            role: <RoleStep />,
+            experience: <ExperienceStep />,
+            eligibility: <EligibilityStep />,
             "cover-letter": <CoverLetterStep />,
-            "review":       <ReviewStep />,
+            review: <ReviewStep />,
           }}
         />
       </View>

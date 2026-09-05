@@ -14,9 +14,8 @@ export default function ExperienceStep() {
       {(snap) => (
         <div class="form-body">
           <p class="step-intro">
-            Tell us about your background. The next step will run an async eligibility
-            check — try entering <strong>less than 2 years</strong> to see the guard
-            block navigation.
+            Tell us about your background. The next step will run an async eligibility check — try entering{" "}
+            <strong>less than 2 years</strong> to see the guard block navigation.
           </p>
 
           <div class="field" classList={{ "field--error": !!errors().yearsExperience }}>

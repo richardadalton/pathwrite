@@ -6,7 +6,7 @@ import type { ApplicationServices, Role } from "@daltonr/pathwrite-demo-workflow
 export default function RoleStep() {
   const ctx = usePathContext<ApplicationData, ApplicationServices>();
 
-  const [roles, setRoles]     = createSignal<Role[]>([]);
+  const [roles, setRoles] = createSignal<Role[]>([]);
   const [loading, setLoading] = createSignal(true);
 
   onMount(() => {
@@ -24,27 +24,21 @@ export default function RoleStep() {
     <Show when={ctx.snapshot()}>
       <div class="form-body">
         <p class="step-intro">
-          Roles are loaded directly from the service inside the step component —
-          not via <code>onEnter</code>. Option lists are UI data; they shouldn't
-          live in the form payload.
+          Roles are loaded directly from the service inside the step component — not via <code>onEnter</code>.
+          Option lists are UI data; they shouldn't live in the form payload.
         </p>
 
         <div class="field" classList={{ "field--error": !!errors().roleId }}>
           <label for="roleId">Open Position</label>
 
-          <Show
-            when={!loading()}
-            fallback={<div class="skeleton-select">Loading roles…</div>}
-          >
+          <Show when={!loading()} fallback={<div class="skeleton-select">Loading roles…</div>}>
             <select
               id="roleId"
               value={ctx.snapshot()?.data.roleId ?? ""}
               onChange={(e) => ctx.setData("roleId", e.currentTarget.value)}
             >
               <option value="">— select a role —</option>
-              <For each={roles()}>
-                {(r) => <option value={r.id}>{r.label}</option>}
-              </For>
+              <For each={roles()}>{(r) => <option value={r.id}>{r.label}</option>}</For>
             </select>
           </Show>
 
@@ -55,10 +49,10 @@ export default function RoleStep() {
 
         <p class="hint">
           <strong>What's happening:</strong>{" "}
-          <code>usePathContext&lt;ApplicationData, ApplicationServices&gt;()</code>{" "}
-          returns <code>services</code> alongside <code>snapshot</code>. The component calls{" "}
-          <code>services.getRoles()</code> in <code>onMount</code> and manages its own loading
-          state — keeping option lists out of the submission payload.
+          <code>usePathContext&lt;ApplicationData, ApplicationServices&gt;()</code> returns{" "}
+          <code>services</code> alongside <code>snapshot</code>. The component calls{" "}
+          <code>services.getRoles()</code> in <code>onMount</code> and manages its own loading state — keeping
+          option lists out of the submission payload.
         </p>
       </div>
     </Show>

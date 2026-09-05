@@ -1,11 +1,12 @@
 <main class="page">
-
   <div class="page-header">
     <h1>Job Application</h1>
     <p class="subtitle">
-      Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code>
-      with accurate progress, <code>loadingLabel</code>, and service injection via
-      Angular DI (<code>inject(MockApplicationServices)</code> in step components).
+      Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code> with accurate
+      progress, <code>loadingLabel</code>, and service injection via Angular DI (<code
+        >inject(MockApplicationServices)</code
+      >
+      in step components).
     </p>
   </div>
 
@@ -14,7 +15,9 @@
     <section class="result-panel success-panel">
       <div class="result-icon">✓</div>
       <h2>Application Submitted</h2>
-      <p>Your application for role <strong>{{ completedData.roleId }}</strong> was received.</p>
+      <p>
+        Your application for role <strong>{{ completedData.roleId }}</strong> was received.
+      </p>
       <button type="button" class="btn-primary" (click)="startOver()">Submit Another</button>
     </section>
   }
@@ -51,5 +54,4 @@
       </ng-template>
     </pw-shell>
   }
-
 </main>

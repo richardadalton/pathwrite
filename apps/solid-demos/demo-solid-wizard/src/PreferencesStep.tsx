@@ -3,8 +3,8 @@ import { usePathContext } from "@daltonr/pathwrite-solid";
 import type { OnboardingData } from "./onboarding";
 
 const THEME_OPTIONS = [
-  { value: "light",  label: "Light",         desc: "Always bright" },
-  { value: "dark",   label: "Dark",           desc: "Easy on the eyes" },
+  { value: "light", label: "Light", desc: "Always bright" },
+  { value: "dark", label: "Dark", desc: "Easy on the eyes" },
   { value: "system", label: "System Default", desc: "Follows your OS setting" },
 ];
 

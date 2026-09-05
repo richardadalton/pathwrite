@@ -2,10 +2,10 @@
 import { usePathContext, PathShell } from "@daltonr/pathwrite-vue";
 import { employeeDetailsPath, DETAILS_INITIAL } from "./employee-details";
 import type { OnboardingData } from "./onboarding";
-import PersonalTab    from "./tabs/PersonalTab.vue";
-import DepartmentTab  from "./tabs/DepartmentTab.vue";
-import EquipmentTab   from "./tabs/EquipmentTab.vue";
-import RolesTab       from "./tabs/RolesTab.vue";
+import PersonalTab from "./tabs/PersonalTab.vue";
+import DepartmentTab from "./tabs/DepartmentTab.vue";
+import EquipmentTab from "./tabs/EquipmentTab.vue";
+import RolesTab from "./tabs/RolesTab.vue";
 
 const { snapshot: outerSnapshot } = usePathContext<OnboardingData>();
 </script>
@@ -13,9 +13,9 @@ const { snapshot: outerSnapshot } = usePathContext<OnboardingData>();
 <template>
   <div v-if="outerSnapshot" class="nested-shell-wrapper">
     <p class="step-intro">
-      Fill in details for <strong>{{ outerSnapshot.data.employeeName }}</strong> using the tabs below.
-      Switch between tabs freely — data is saved as you type.
-      First name, last name, department, and job title are required before proceeding.
+      Fill in details for <strong>{{ outerSnapshot.data.employeeName }}</strong> using the tabs below. Switch
+      between tabs freely — data is saved as you type. First name, last name, department, and job title are
+      required before proceeding.
     </p>
 
     <PathShell

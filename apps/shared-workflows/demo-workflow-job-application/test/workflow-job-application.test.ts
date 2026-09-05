@@ -17,10 +17,10 @@ import {
 class FastMockServices implements ApplicationServices {
   async getRoles() {
     return [
-      { id: "eng",    label: "Software Engineer" },
-      { id: "pm",     label: "Product Manager" },
+      { id: "eng", label: "Software Engineer" },
+      { id: "pm", label: "Product Manager" },
       { id: "design", label: "Designer" },
-      { id: "data",   label: "Data Scientist" },
+      { id: "data", label: "Data Scientist" },
       { id: "devrel", label: "Developer Advocate" },
     ];
   }
@@ -53,7 +53,7 @@ describe("MockApplicationServices", () => {
     await vi.runAllTimersAsync();
     const roles = await p;
     expect(roles).toHaveLength(5);
-    expect(roles.map(r => r.id)).toEqual(["eng", "pm", "design", "data", "devrel"]);
+    expect(roles.map((r) => r.id)).toEqual(["eng", "pm", "design", "data", "devrel"]);
     vi.useRealTimers();
   });
 
@@ -82,8 +82,16 @@ describe("MockApplicationServices", () => {
     vi.useFakeTimers();
     const svc = new MockApplicationServices();
     const [eng, data] = await Promise.all([
-      (async () => { const p = svc.requiresCoverLetter("eng"); await vi.runAllTimersAsync(); return p; })(),
-      (async () => { const p = svc.requiresCoverLetter("data"); await vi.runAllTimersAsync(); return p; })(),
+      (async () => {
+        const p = svc.requiresCoverLetter("eng");
+        await vi.runAllTimersAsync();
+        return p;
+      })(),
+      (async () => {
+        const p = svc.requiresCoverLetter("data");
+        await vi.runAllTimersAsync();
+        return p;
+      })(),
     ]);
     vi.useRealTimers();
     expect(eng).toBe(true);
@@ -94,7 +102,7 @@ describe("MockApplicationServices", () => {
     vi.useFakeTimers();
     const svc = new MockApplicationServices();
     const results = await Promise.all(
-      ["pm", "design", "devrel"].map(async id => {
+      ["pm", "design", "devrel"].map(async (id) => {
         const p = svc.requiresCoverLetter(id);
         await vi.runAllTimersAsync();
         return p;
@@ -111,7 +119,7 @@ describe("MockApplicationServices", () => {
 
 describe("createApplicationPath — fieldErrors", () => {
   const path = createApplicationPath(fast);
-  const roleStep       = path.steps[0];
+  const roleStep = path.steps[0];
   const experienceStep = path.steps[1];
   const coverLetterStep = path.steps[3]; // index 3 = coverLetter (after role, experience, eligibility)
 
@@ -160,7 +168,9 @@ describe("createApplicationPath — fieldErrors", () => {
       expect(errs(coverLetterStep, { coverLetter: "A".repeat(20) }).coverLetter).toBeUndefined();
     });
     it("accepts a letter longer than 20 characters", () => {
-      expect(errs(coverLetterStep, { coverLetter: "I am a great fit for this role." }).coverLetter).toBeUndefined();
+      expect(
+        errs(coverLetterStep, { coverLetter: "I am a great fit for this role." }).coverLetter
+      ).toBeUndefined();
     });
   });
 });
@@ -272,7 +282,7 @@ describe("createApplicationPath — full completion", () => {
   it("completes an eng application (cover letter required)", async () => {
     const engine = new PathEngine();
     let completedData: ApplicationData | null = null;
-    engine.subscribe(e => {
+    engine.subscribe((e) => {
       if (e.type === "completed") completedData = e.data as ApplicationData;
     });
 
@@ -296,7 +306,7 @@ describe("createApplicationPath — full completion", () => {
   it("completes a pm application (cover letter skipped)", async () => {
     const engine = new PathEngine();
     let completedData: ApplicationData | null = null;
-    engine.subscribe(e => {
+    engine.subscribe((e) => {
       if (e.type === "completed") completedData = e.data as ApplicationData;
     });
 

@@ -1,11 +1,5 @@
 import { onDestroy, getContext, setContext } from "svelte";
-import type {
-  PathData,
-  PathDefinition,
-  PathEngine,
-  PathEvent,
-  PathSnapshot
-} from "@daltonr/pathwrite-core";
+import type { PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot } from "@daltonr/pathwrite-core";
 import { PathEngine as PathEngineClass } from "@daltonr/pathwrite-core";
 
 // Re-export core utilities and types for convenience
@@ -21,7 +15,7 @@ export type {
   PathStepContext,
   ProgressLayout,
   RootProgress,
-  SerializedPathState
+  SerializedPathState,
 } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
@@ -61,7 +55,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
+  startSubPath: (
+    path: PathDefinition<any>,
+    initialData?: PathData,
+    meta?: Record<string, unknown>
+  ) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. No-op when already on the first step of a top-level path. Pops back to the parent path when on the first step of a sub-path. */
@@ -149,16 +147,12 @@ export interface UsePathReturn<TData extends PathData = PathData> {
  * {/if}
  * ```
  */
-export function usePath<TData extends PathData = PathData>(
-  options?: UsePathOptions
-): UsePathReturn<TData> {
+export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
   let ownEngine: PathEngine | null = null;
   const resolveEngine = (): PathEngine => options?.engine ?? (ownEngine ??= new PathEngineClass());
   let engine = resolveEngine();
 
-  let _snapshot: PathSnapshot<TData> | null = $state(
-    engine.snapshot() as PathSnapshot<TData> | null
-  );
+  let _snapshot: PathSnapshot<TData> | null = $state(engine.snapshot() as PathSnapshot<TData> | null);
 
   const onEngineEvent = (event: PathEvent): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
@@ -185,7 +179,10 @@ export function usePath<TData extends PathData = PathData>(
   });
 
   // Auto-cleanup when component is destroyed
-  onDestroy(() => { unsubscribe(); stopWatching(); });
+  onDestroy(() => {
+    unsubscribe();
+    stopWatching();
+  });
 
   const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
     engine.start(path, initialData);
@@ -200,8 +197,10 @@ export function usePath<TData extends PathData = PathData>(
   const previous = (): Promise<void> => engine.previous();
   const cancel = (): Promise<void> => engine.cancel();
 
-  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStep(stepId, options);
-  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> => engine.goToStepChecked(stepId, options);
+  const goToStep = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStep(stepId, options);
+  const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
+    engine.goToStepChecked(stepId, options);
 
   const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
     engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
@@ -215,7 +214,9 @@ export function usePath<TData extends PathData = PathData>(
   const validate = (): void => engine.validate();
 
   return {
-    get snapshot() { return _snapshot; },
+    get snapshot() {
+      return _snapshot;
+    },
     start,
     startSubPath,
     next,
@@ -228,7 +229,7 @@ export function usePath<TData extends PathData = PathData>(
     restart,
     retry,
     suspend,
-    validate
+    validate,
   };
 }
 
@@ -263,7 +264,10 @@ const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
  * returns (derived from `UsePathReturn`, so the two cannot drift apart) plus
  * the `services` object given to `<PathShell>`.
  */
-export interface PathContext<TData extends PathData = PathData, TServices = unknown> extends UsePathReturn<TData> {
+export interface PathContext<
+  TData extends PathData = PathData,
+  TServices = unknown,
+> extends UsePathReturn<TData> {
   services: TServices;
 }
 
@@ -287,7 +291,10 @@ export interface PathContext<TData extends PathData = PathData, TServices = unkn
  * <button onclick={ctx.next}>Next</button>
  * ```
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): PathContext<
+  TData,
+  TServices
+> {
   const ctx = getContext<PathContext<TData, TServices>>(PATH_CONTEXT_KEY);
   if (!ctx) {
     throw new Error(
@@ -302,7 +309,9 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
  * Internal: Set the PathContext for child components.
  * Used by PathShell component.
  */
-export function setPathContext<TData extends PathData = PathData, TServices = unknown>(ctx: PathContext<TData, TServices>): void {
+export function setPathContext<TData extends PathData = PathData, TServices = unknown>(
+  ctx: PathContext<TData, TServices>
+): void {
   setContext(PATH_CONTEXT_KEY, ctx);
 }
 
@@ -312,7 +321,8 @@ export function setPathContext<TData extends PathData = PathData, TServices = un
  * the outer shell's context for `restoreKey` auto-wiring — must be called
  * before `setPathContext()` so it reads the parent rather than self.
  */
-export function getPathContextOrNull<TData extends PathData = PathData, TServices = unknown>(): PathContext<TData, TServices> | undefined {
+export function getPathContextOrNull<TData extends PathData = PathData, TServices = unknown>():
+  PathContext<TData, TServices> | undefined {
   return getContext<PathContext<TData, TServices>>(PATH_CONTEXT_KEY);
 }
 
@@ -351,7 +361,7 @@ export function bindData<TData extends PathData, K extends string & keyof TData>
     },
     set(value: TData[K]) {
       setData(key, value);
-    }
+    },
   };
 }
 
@@ -367,4 +377,3 @@ export function stepIdToCamelCase(id: string): string {
 
 // Export PathShell component
 export { default as PathShell } from "./PathShell.svelte";
-

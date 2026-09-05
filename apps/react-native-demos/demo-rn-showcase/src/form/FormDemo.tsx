@@ -1,13 +1,5 @@
 import React, { useRef, useState } from "react";
-import {
-  SafeAreaView,
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TouchableOpacity,
-} from "react-native";
+import { SafeAreaView, StyleSheet, View, Text, ScrollView, Pressable, TouchableOpacity } from "react-native";
 import { PathShell } from "@daltonr/pathwrite-react-native";
 import type { PathShellHandle } from "@daltonr/pathwrite-react-native";
 import type { PathData } from "@daltonr/pathwrite-react-native";
@@ -23,7 +15,7 @@ interface Props {
 
 export function FormDemo({ onBack }: Props) {
   const shellRef = useRef<PathShellHandle>(null);
-  const [view,          setView]          = useState<DemoView>("form");
+  const [view, setView] = useState<DemoView>("form");
   const [submittedData, setSubmittedData] = useState<ContactData | null>(null);
 
   function handleComplete(data: PathData) {
@@ -81,8 +73,8 @@ export function FormDemo({ onBack }: Props) {
             <Text style={styles.resultIcon}>✅</Text>
             <Text style={styles.resultTitle}>Message Sent!</Text>
             <Text style={styles.resultBody}>
-              Thanks <Text style={styles.bold}>{submittedData.name}</Text>, we've received
-              your message and will get back to you shortly.
+              Thanks <Text style={styles.bold}>{submittedData.name}</Text>, we've received your message and
+              will get back to you shortly.
             </Text>
 
             <View style={styles.summary}>

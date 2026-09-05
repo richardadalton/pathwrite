@@ -28,8 +28,8 @@ export default function App() {
       <div class="page-header">
         <h1>Job Application</h1>
         <p class="subtitle">
-          Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code>{" "}
-          with accurate progress, <code>loadingLabel</code>, and service injection via{" "}
+          Demonstrates async <code>canMoveNext</code> guards, async <code>shouldSkip</code> with accurate
+          progress, <code>loadingLabel</code>, and service injection via{" "}
           <code>usePathContext&lt;TData, TServices&gt;</code>.
         </p>
       </div>
@@ -40,8 +40,7 @@ export default function App() {
             <div class="result-icon">✓</div>
             <h2>Application Submitted!</h2>
             <p>
-              Your application for role <strong>{data().roleId}</strong> was received.
-              We'll be in touch soon.
+              Your application for role <strong>{data().roleId}</strong> was received. We'll be in touch soon.
             </p>
             <button class="btn-primary" onClick={() => setCompletedData(null)}>
               Submit Another
@@ -61,11 +60,11 @@ export default function App() {
           validationDisplay="inline"
           onComplete={handleComplete}
           steps={{
-            "role":         () => <RoleStep />,
-            "experience":   () => <ExperienceStep />,
-            "eligibility":  () => <EligibilityStep />,
+            role: () => <RoleStep />,
+            experience: () => <ExperienceStep />,
+            eligibility: () => <EligibilityStep />,
             "cover-letter": () => <CoverLetterStep />,
-            "review":       () => <ReviewStep />,
+            review: () => <ReviewStep />,
           }}
         />
       </Show>

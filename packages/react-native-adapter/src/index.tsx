@@ -21,7 +21,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import type { StyleProp, ViewStyle, TextStyle } from "react-native";
+import type { StyleProp, ViewStyle } from "react-native";
 import {
   PathData,
   PathDefinition,
@@ -60,7 +60,11 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Start (or restart) a path. */
   start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
+  startSubPath: (
+    path: PathDefinition<any>,
+    initialData?: PathData,
+    meta?: Record<string, unknown>
+  ) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
   next: () => Promise<void>;
   /** Go back one step. */
@@ -174,8 +178,14 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const next = useCallback(() => engine.next(), [engine]);
   const previous = useCallback(() => engine.previous(), [engine]);
   const cancel = useCallback(() => engine.cancel(), [engine]);
-  const goToStep = useCallback((stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStep(stepId, options), [engine]);
-  const goToStepChecked = useCallback((stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStepChecked(stepId, options), [engine]);
+  const goToStep = useCallback(
+    (stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStep(stepId, options),
+    [engine]
+  );
+  const goToStepChecked = useCallback(
+    (stepId: string, options?: { validateOnLeave?: boolean }) => engine.goToStepChecked(stepId, options),
+    [engine]
+  );
   const setData = useCallback(
     <K extends string & keyof TData>(key: K, value: TData[K]) => engine.setData(key, value as unknown),
     [engine]
@@ -186,7 +196,22 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const suspend = useCallback(() => engine.suspend(), [engine]);
   const validate = useCallback(() => engine.validate(), [engine]);
 
-  return { snapshot, start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart, retry, suspend, validate };
+  return {
+    snapshot,
+    start,
+    startSubPath,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    resetStep,
+    restart,
+    retry,
+    suspend,
+    validate,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +238,15 @@ const PathContext = createContext<PathContextValue | null>(null);
  * </PathProvider>
  * ```
  */
-export function PathProvider({ children, path: pathDef, initialData = {}, engine: externalEngine, fallback = null, onEvent, services }: PathProviderProps): ReactElement {
+export function PathProvider({
+  children,
+  path: pathDef,
+  initialData = {},
+  engine: externalEngine,
+  fallback = null,
+  onEvent,
+  services,
+}: PathProviderProps): ReactElement {
   if (!pathDef && !externalEngine) {
     throw new Error("<PathProvider> needs a `path` to start or an `engine` to adopt.");
   }
@@ -225,7 +258,6 @@ export function PathProvider({ children, path: pathDef, initialData = {}, engine
       void path.start(pathDef, initialData);
     }
     // Mount-time start only, like PathShell.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return createElement(
     PathContext.Provider,
@@ -240,7 +272,10 @@ export function PathProvider({ children, path: pathDef, initialData = {}, engine
  *
  * `TData` narrows `snapshot.data`; `TServices` types the `services` value.
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<
+  UsePathReturn<TData>,
+  "snapshot"
+> & { snapshot: PathSnapshot<TData>; services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
@@ -249,8 +284,11 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
   // <PathShell> and <PathProvider> — render their children only while a path
   // is active (and a fallback / empty state otherwise).
   return {
-    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices }),
-    services: ctx.services as TServices
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & {
+      snapshot: PathSnapshot<TData>;
+      services: TServices;
+    }),
+    services: ctx.services as TServices,
   };
 }
 
@@ -392,36 +430,39 @@ export interface PathShellProps {
  * />
  * ```
  */
-export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell({
-  path: pathDef,
-  engine: externalEngine,
-  steps,
-  initialData = {},
-  restoreKey,
-  autoStart = true,
-  onComplete,
-  onCancel,
-  onEvent,
-  backLabel = "Previous",
-  nextLabel = "Next",
-  completeLabel = "Complete",
-  loadingLabel,
-  cancelLabel = "Cancel",
-  hideCancel = false,
-  hideProgress = false,
-  progressLayout = "merged",
-  hideFooter = false,
-  layout = "auto",
-  validationDisplay = "summary",
-  renderHeader,
-  renderFooter,
-  style,
-  keyboardVerticalOffset = 0,
-  disableBodyScroll = false,
-  services,
-  validateWhen = false,
-  completionContent,
-}: PathShellProps, ref): ReactElement {
+export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell(
+  {
+    path: pathDef,
+    engine: externalEngine,
+    steps,
+    initialData = {},
+    restoreKey,
+    autoStart = true,
+    onComplete,
+    onCancel,
+    onEvent,
+    backLabel = "Previous",
+    nextLabel = "Next",
+    completeLabel = "Complete",
+    loadingLabel,
+    cancelLabel = "Cancel",
+    hideCancel = false,
+    hideProgress = false,
+    progressLayout = "merged",
+    hideFooter = false,
+    layout = "auto",
+    validationDisplay = "summary",
+    renderHeader,
+    renderFooter,
+    style,
+    keyboardVerticalOffset = 0,
+    disableBodyScroll = false,
+    services,
+    validateWhen = false,
+    completionContent,
+  }: PathShellProps,
+  ref
+): ReactElement {
   const outerCtx = useContext(PathContext);
 
   // When remounting under restoreKey, rebuild the inner engine from the state the
@@ -429,7 +470,8 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // step (which re-ran onEnter/onLeave and lost attempted / visited state).
   const [restoredEngine] = useState<PathEngine | null>(() => {
     if (externalEngine || !restoreKey || !outerCtx) return null;
-    const stored = outerCtx.path.snapshot?.data[restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    const stored = outerCtx.path.snapshot?.data[restoreKey] as
+      { serializedState?: SerializedPathState } | undefined;
     if (!stored || typeof stored !== "object" || !stored.serializedState) return null;
     try {
       return PathEngine.fromState(stored.serializedState, { [pathDef.id]: pathDef });
@@ -449,14 +491,28 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       if (event.type === "completed") onComplete?.(event.data);
       if (event.type === "cancelled") onCancel?.(event.data);
       if (restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(
-          restoreKey, { ...event.snapshot, serializedState: engine.exportState() }
-        );
+        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(restoreKey, {
+          ...event.snapshot,
+          serializedState: engine.exportState(),
+        });
       }
     },
   });
 
-  const { snapshot, start, next, previous, cancel, goToStep, goToStepChecked, setData, restart, retry, suspend, validate } = pathReturn;
+  const {
+    snapshot,
+    start,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
+    restart,
+    retry,
+    suspend,
+    validate,
+  } = pathReturn;
 
   useEffect(() => {
     if (validateWhen) validate();
@@ -488,9 +544,10 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       }
       Promise.resolve(start(pathDef, startData))
         .then(() => (restoreStepId ? goToStep(restoreStepId) : undefined))
-        .then(() => { if (validateWhenRef.current) validate(); });
+        .then(() => {
+          if (validateWhenRef.current) validate();
+        });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Look up step content — prefer formId (StepChoice inner step) over stepId
@@ -501,7 +558,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   const contextValue: PathContextValue = { path: pathReturn, services: services ?? null };
 
   const actions: PathShellActions = {
-    next, previous, cancel, goToStep, goToStepChecked, setData,
+    next,
+    previous,
+    cancel,
+    goToStep,
+    goToStepChecked,
+    setData,
     restart: () => restart(),
     retry: () => retry(),
     suspend: () => suspend(),
@@ -547,7 +609,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         ))}
       </View>
       {(() => {
-        const cur = snap.steps.find(s => s.status === "current");
+        const cur = snap.steps.find((s) => s.status === "current");
         const title = cur?.title ?? cur?.id;
         return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
       })()}
@@ -613,7 +675,8 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   // one step (same rule as the React shell).
   const showRoot = !effectiveHideProgress && !!snapshot.rootProgress && progressLayout !== "activeOnly";
   const showProgress =
-    !effectiveHideProgress && (renderHeader
+    !effectiveHideProgress &&
+    (renderHeader
       ? true
       : (snapshot.stepCount > 1 || snapshot.nestingLevel > 0) && progressLayout !== "rootOnly");
 
@@ -630,22 +693,27 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         {showProgress && (renderHeader ? renderHeader(snapshot) : renderDots(snapshot))}
 
         {/* Body — step content */}
-        {disableBodyScroll
-          ? <View style={[styles.body, styles.bodyContent]}>{stepContent}</View>
-          : <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>{stepContent}</ScrollView>
-        }
+        {disableBodyScroll ? (
+          <View style={[styles.body, styles.bodyContent]}>{stepContent}</View>
+        ) : (
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+            {stepContent}
+          </ScrollView>
+        )}
 
         {/* Validation messages */}
-        {validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && Object.keys(snapshot.fieldErrors).length > 0 && (
-          <View style={styles.validation}>
-            {Object.entries(snapshot.fieldErrors).map(([key, msg]) => (
-              <Text key={key} style={styles.validationItem}>
-                {key !== "_" && <Text style={styles.validationLabel}>{formatFieldKey(key)}: </Text>}
-                {msg}
-              </Text>
-            ))}
-          </View>
-        )}
+        {validationDisplay !== "inline" &&
+          (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
+          Object.keys(snapshot.fieldErrors).length > 0 && (
+            <View style={styles.validation}>
+              {Object.entries(snapshot.fieldErrors).map(([key, msg]) => (
+                <Text key={key} style={styles.validationItem}>
+                  {key !== "_" && <Text style={styles.validationLabel}>{formatFieldKey(key)}: </Text>}
+                  {msg}
+                </Text>
+              ))}
+            </View>
+          )}
 
         {/* Warning messages */}
         {validationDisplay !== "inline" && Object.keys(snapshot.fieldWarnings).length > 0 && (
@@ -660,52 +728,53 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         )}
 
         {/* Blocking error — guard returned { allowed: false, reason } */}
-        {validationDisplay !== "inline" && (snapshot.hasAttemptedNext || snapshot.hasValidated) && snapshot.blockingError && (
-          <Text style={styles.blockingError}>{snapshot.blockingError}</Text>
-        )}
+        {validationDisplay !== "inline" &&
+          (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
+          snapshot.blockingError && <Text style={styles.blockingError}>{snapshot.blockingError}</Text>}
 
         {/* Error panel — replaces footer when an async operation has failed */}
-        {snapshot.status === "error" && snapshot.error
-          ? (() => {
-              const err = snapshot.error!;
-              const escalated = err.retryCount >= 2;
-              return (
-                <View style={styles.errorPanel}>
-                  <Text style={styles.errorTitle}>
-                    {escalated ? "Still having trouble." : "Something went wrong."}
-                  </Text>
-                  <Text style={styles.errorMessage}>
-                    {errorPhaseMessage(err.phase)}{err.message ? ` ${err.message}` : ""}
-                  </Text>
-                  <View style={styles.errorActions}>
-                    {!escalated && (
-                      <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
-                        <Text style={styles.btnPrimaryText}>Try again</Text>
-                      </Pressable>
-                    )}
-                    {snapshot.hasPersistence && (
-                      <Pressable
-                        style={[styles.btn, escalated ? styles.btnRetry : styles.btnSuspend]}
-                        onPress={suspend}
-                      >
-                        <Text style={escalated ? styles.btnPrimaryText : styles.btnCancelText}>
-                          Save and come back later
-                        </Text>
-                      </Pressable>
-                    )}
-                    {escalated && !snapshot.hasPersistence && (
-                      <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
-                        <Text style={styles.btnPrimaryText}>Try again</Text>
-                      </Pressable>
-                    )}
-                  </View>
+        {snapshot.status === "error" && snapshot.error ? (
+          (() => {
+            const err = snapshot.error!;
+            const escalated = err.retryCount >= 2;
+            return (
+              <View style={styles.errorPanel}>
+                <Text style={styles.errorTitle}>
+                  {escalated ? "Still having trouble." : "Something went wrong."}
+                </Text>
+                <Text style={styles.errorMessage}>
+                  {errorPhaseMessage(err.phase)}
+                  {err.message ? ` ${err.message}` : ""}
+                </Text>
+                <View style={styles.errorActions}>
+                  {!escalated && (
+                    <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                      <Text style={styles.btnPrimaryText}>Try again</Text>
+                    </Pressable>
+                  )}
+                  {snapshot.hasPersistence && (
+                    <Pressable
+                      style={[styles.btn, escalated ? styles.btnRetry : styles.btnSuspend]}
+                      onPress={suspend}
+                    >
+                      <Text style={escalated ? styles.btnPrimaryText : styles.btnCancelText}>
+                        Save and come back later
+                      </Text>
+                    </Pressable>
+                  )}
+                  {escalated && !snapshot.hasPersistence && (
+                    <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                      <Text style={styles.btnPrimaryText}>Try again</Text>
+                    </Pressable>
+                  )}
                 </View>
-              );
-            })()
-          : !effectiveHideFooter
-          ? renderFooter
-            ? renderFooter(snapshot, actions)
-            : (
+              </View>
+            );
+          })()
+        ) : !effectiveHideFooter ? (
+          renderFooter ? (
+            renderFooter(snapshot, actions)
+          ) : (
             <View style={styles.footer}>
               <View style={styles.footerLeft}>
                 {isFormMode && !hideCancel && (
@@ -719,7 +788,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                 )}
                 {!isFormMode && !snapshot.isFirstStep && (
                   <Pressable
-                    style={[styles.btn, styles.btnBack, (snapshot.status !== "idle" || !snapshot.canMovePrevious) && styles.btnDisabled]}
+                    style={[
+                      styles.btn,
+                      styles.btnBack,
+                      (snapshot.status !== "idle" || !snapshot.canMovePrevious) && styles.btnDisabled,
+                    ]}
                     onPress={previous}
                     disabled={snapshot.status !== "idle" || !snapshot.canMovePrevious}
                   >
@@ -745,24 +818,24 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                   onPress={next}
                   disabled={snapshot.status !== "idle"}
                 >
-                  {snapshot.status !== "idle" && loadingLabel
-                    ? <Text style={styles.btnPrimaryText}>{loadingLabel}</Text>
-                    : snapshot.status !== "idle"
-                      ? <ActivityIndicator size="small" color="#ffffff" />
-                      : <Text style={styles.btnPrimaryText}>{snapshot.isLastStep ? completeLabel : `${nextLabel} →`}</Text>
-                  }
+                  {snapshot.status !== "idle" && loadingLabel ? (
+                    <Text style={styles.btnPrimaryText}>{loadingLabel}</Text>
+                  ) : snapshot.status !== "idle" ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.btnPrimaryText}>
+                      {snapshot.isLastStep ? completeLabel : `${nextLabel} →`}
+                    </Text>
+                  )}
                 </Pressable>
               </View>
             </View>
           )
-          : null
-        }
+        ) : null}
       </KeyboardAvoidingView>
     </PathContext.Provider>
   );
 });
-
-
 
 // ---------------------------------------------------------------------------
 // Styles

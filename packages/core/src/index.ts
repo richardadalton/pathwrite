@@ -270,13 +270,7 @@ export type StepStatus = "completed" | "current" | "upcoming";
  * | `error`       | An async operation failed — see `snapshot.error` for details |
  */
 export type PathStatus =
-  | "idle"
-  | "entering"
-  | "validating"
-  | "leaving"
-  | "completing"
-  | "completed"
-  | "error";
+  "idle" | "entering" | "validating" | "leaving" | "completing" | "completed" | "error";
 
 /**
  * The subset of `PathStatus` values that identify which phase was active
@@ -519,12 +513,7 @@ export type PathObserver = (event: PathEvent, engine: PathEngine) => void;
  * | `"onComplete"`      | The entire path completes                                  |
  * | `"manual"`          | Never — caller decides when to act                        |
  */
-export type ObserverStrategy =
-  | "onEveryChange"
-  | "onNext"
-  | "onSubPathComplete"
-  | "onComplete"
-  | "manual";
+export type ObserverStrategy = "onEveryChange" | "onNext" | "onSubPathComplete" | "onComplete" | "manual";
 
 /**
  * Returns `true` when `event` matches the trigger condition for `strategy`.
@@ -544,9 +533,11 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
     case "onEveryChange":
       // Only react once the engine has settled — stateChanged fires on every
       // phase transition; only "idle" and "error" are settled states.
-      return (event.type === "stateChanged" &&
-        (event.snapshot.status === "idle" || event.snapshot.status === "error"))
-        || event.type === "resumed";
+      return (
+        (event.type === "stateChanged" &&
+          (event.snapshot.status === "idle" || event.snapshot.status === "error")) ||
+        event.type === "resumed"
+      );
     case "onNext":
       // "The user's position moved forward and settled." Besides next(),
       // that includes leaving a sub-path: completion emits only `resumed`
@@ -554,9 +545,11 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
       // with cause "cancel". Without these, the last save is still *inside*
       // the sub-path and a restore drops the user back into a finished flow.
       if (event.type === "resumed") return true;
-      return event.type === "stateChanged"
-        && (event.cause === "next" || event.cause === "cancel")
-        && (event.snapshot.status === "idle" || event.snapshot.status === "error");
+      return (
+        event.type === "stateChanged" &&
+        (event.cause === "next" || event.cause === "cancel") &&
+        (event.snapshot.status === "idle" || event.snapshot.status === "error")
+      );
     case "onSubPathComplete":
       return event.type === "resumed";
     case "onComplete":
@@ -565,7 +558,6 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
       return false;
   }
 }
-
 
 /**
  * Options accepted by the `PathEngine` constructor and `PathEngine.fromState()`.
@@ -619,7 +611,10 @@ function isStepChoice(item: PathStep | StepChoice): item is StepChoice {
  * Used by shells to render labeled field-error summaries.
  */
 export function formatFieldKey(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim();
 }
 
 /**
@@ -629,11 +624,16 @@ export function formatFieldKey(key: string): string {
  */
 export function errorPhaseMessage(phase: string): string {
   switch (phase) {
-    case "entering":   return "Failed to load this step.";
-    case "validating": return "The check could not be completed.";
-    case "leaving":    return "Failed to save your progress.";
-    case "completing": return "Your submission could not be sent.";
-    default:           return "An unexpected error occurred.";
+    case "entering":
+      return "Failed to load this step.";
+    case "validating":
+      return "The check could not be completed.";
+    case "leaving":
+      return "Failed to save your progress.";
+    case "completing":
+      return "Your submission could not be sent.";
+    default:
+      return "An unexpected error occurred.";
   }
 }
 
@@ -678,7 +678,7 @@ export class PathEngine {
    * that hits an API would otherwise fire on every setData (keystroke) via
    * stateChanged → snapshot(). Navigation still awaits these normally.
    */
-  private readonly _knownAsyncFns = new WeakSet<Function>();
+  private readonly _knownAsyncFns = new WeakSet<(...args: never[]) => unknown>();
 
   constructor(options?: PathEngineOptions) {
     if (options?.observers) {
@@ -733,7 +733,7 @@ export class PathEngine {
       if (!definition) {
         throw new Error(
           `Cannot restore state: path definition "${stackItem.pathId}" not found. ` +
-          `Provide all path definitions that were active when state was exported.`
+            `Provide all path definitions that were active when state was exported.`
         );
       }
       engine.pathStack.push({
@@ -745,16 +745,14 @@ export class PathEngine {
         resolvedSkips: new Set(stackItem.skippedStepIds ?? []),
         subPathMeta: stackItem.subPathMeta ? { ...stackItem.subPathMeta } : undefined,
         stepEntryData: stackItem.stepEntryData ? { ...stackItem.stepEntryData } : { ...stackItem.data },
-        stepEnteredAt: stackItem.stepEnteredAt ?? Date.now()
+        stepEnteredAt: stackItem.stepEnteredAt ?? Date.now(),
       });
     }
 
     // Restore the active path
     const activeDefinition = pathDefinitions[state.pathId];
     if (!activeDefinition) {
-      throw new Error(
-        `Cannot restore state: active path definition "${state.pathId}" not found.`
-      );
+      throw new Error(`Cannot restore state: active path definition "${state.pathId}" not found.`);
     }
 
     engine.activePath = {
@@ -768,7 +766,7 @@ export class PathEngine {
       // from the parent when this path was started). On restore, it's undefined.
       subPathMeta: undefined,
       stepEntryData: state.stepEntryData ? { ...state.stepEntryData } : { ...state.data },
-      stepEnteredAt: state.stepEnteredAt ?? Date.now()
+      stepEnteredAt: state.stepEnteredAt ?? Date.now(),
     };
 
     // Only settled states survive a restore. A state exported while a hook was
@@ -873,7 +871,11 @@ export class PathEngine {
    *                    the sub-path without embedding that information in the
    *                    sub-path's own data.
    */
-  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
+  public startSubPath(
+    path: PathDefinition<any>,
+    initialData: PathData = {},
+    meta?: Record<string, unknown>
+  ): Promise<void> {
     if (this._status === "completed") return Promise.resolve();
     this.requireActivePath();
     return this._startAsync(path, initialData, true, meta);
@@ -915,7 +917,12 @@ export class PathEngine {
    * Every navigation method routes hook / guard failures through here so the
    * caller's promise resolves and the shell can offer "Try again".
    */
-  private _failNavigation(err: unknown, phase: ErrorPhase, retry: (cause: StateChangeCause) => Promise<void>, cause: StateChangeCause): void {
+  private _failNavigation(
+    err: unknown,
+    phase: ErrorPhase,
+    retry: (cause: StateChangeCause) => Promise<void>,
+    cause: StateChangeCause
+  ): void {
     this._error = { message: PathEngine.errorMessage(err), phase, retryCount: this._retryCount };
     this._pendingRetry = retry;
     this._status = "error";
@@ -935,7 +942,7 @@ export class PathEngine {
     const fn = this._pendingRetry;
     this._pendingRetry = null;
     this._error = null;
-    this._status = "idle";  // allow the retry fn's entry guard to pass
+    this._status = "idle"; // allow the retry fn's entry guard to pass
     return fn("retry");
   }
 
@@ -1051,7 +1058,11 @@ export class PathEngine {
    * but `validateOnLeave` still marks the step attempted (and emits so shells
    * re-render). Only acts on a settled engine, like every other navigation.
    */
-  private _stayOnCurrentStep(active: ActivePath, options: { validateOnLeave?: boolean } | undefined, cause: StateChangeCause): Promise<void> {
+  private _stayOnCurrentStep(
+    active: ActivePath,
+    options: { validateOnLeave?: boolean } | undefined,
+    cause: StateChangeCause
+  ): Promise<void> {
     if (options?.validateOnLeave && (this._status === "idle" || this._status === "error")) {
       active.attemptedNextSteps.add(this.getCurrentItem(active).id);
       this.emitStateChanged(cause);
@@ -1114,9 +1125,9 @@ export class PathEngine {
 
     // Filter out steps confirmed as skipped during navigation. Steps not yet
     // evaluated (e.g. on first render) are included optimistically.
-    const visibleSteps = steps.filter(s => !active.resolvedSkips.has(s.id));
+    const visibleSteps = steps.filter((s) => !active.resolvedSkips.has(s.id));
     const stepCount = visibleSteps.length;
-    const visibleIndex = visibleSteps.findIndex(s => s.id === item.id);
+    const visibleIndex = visibleSteps.findIndex((s) => s.id === item.id);
     // Fall back to raw index if not found (should not happen in normal use)
     const effectiveStepIndex = visibleIndex >= 0 ? visibleIndex : active.currentStepIndex;
 
@@ -1124,9 +1135,11 @@ export class PathEngine {
     let rootProgress: RootProgress | undefined;
     if (this.pathStack.length > 0) {
       const root = this.pathStack[0];
-      const rootVisibleSteps = root.definition.steps.filter(s => !root.resolvedSkips.has(s.id));
+      const rootVisibleSteps = root.definition.steps.filter((s) => !root.resolvedSkips.has(s.id));
       const rootStepCount = rootVisibleSteps.length;
-      const rootVisibleIndex = rootVisibleSteps.findIndex(s => s.id === root.definition.steps[root.currentStepIndex]?.id);
+      const rootVisibleIndex = rootVisibleSteps.findIndex(
+        (s) => s.id === root.definition.steps[root.currentStepIndex]?.id
+      );
       const rootEffectiveIndex = rootVisibleIndex >= 0 ? rootVisibleIndex : root.currentStepIndex;
       rootProgress = {
         pathId: root.definition.id,
@@ -1137,10 +1150,13 @@ export class PathEngine {
           id: s.id,
           title: s.title,
           meta: s.meta,
-          status: i < rootEffectiveIndex ? "completed" as const
-            : i === rootEffectiveIndex ? "current" as const
-            : "upcoming" as const
-        }))
+          status:
+            i < rootEffectiveIndex
+              ? ("completed" as const)
+              : i === rootEffectiveIndex
+                ? ("current" as const)
+                : ("upcoming" as const),
+        })),
       };
     }
 
@@ -1154,17 +1170,20 @@ export class PathEngine {
       formId: isStepChoice(item) ? effectiveStep.id : undefined,
       stepIndex: effectiveStepIndex,
       stepCount,
-      progress: isCompleted ? 1 : (stepCount <= 1 ? 1 : effectiveStepIndex / (stepCount - 1)),
+      progress: isCompleted ? 1 : stepCount <= 1 ? 1 : effectiveStepIndex / (stepCount - 1),
       steps: visibleSteps.map((s, i) => ({
         id: s.id,
         title: s.title,
         meta: s.meta,
-        status: (isCompleted || i < effectiveStepIndex) ? "completed" as const
-          : i === effectiveStepIndex ? "current" as const
-          : "upcoming" as const
+        status:
+          isCompleted || i < effectiveStepIndex
+            ? ("completed" as const)
+            : i === effectiveStepIndex
+              ? ("current" as const)
+              : ("upcoming" as const),
       })),
       isFirstStep: isCompleted ? false : effectiveStepIndex === 0,
-      isLastStep: isCompleted ? true : (effectiveStepIndex === stepCount - 1 && this.pathStack.length === 0),
+      isLastStep: isCompleted ? true : effectiveStepIndex === stepCount - 1 && this.pathStack.length === 0,
       nestingLevel: this.pathStack.length,
       rootProgress,
       status: this._status,
@@ -1179,7 +1198,7 @@ export class PathEngine {
       fieldWarnings: isCompleted ? {} : this.evaluateFieldMessagesSync(effectiveStep.fieldWarnings, active),
       isDirty: isCompleted ? false : this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
-      data: { ...active.data }
+      data: { ...active.data },
     };
   }
 
@@ -1220,12 +1239,12 @@ export class PathEngine {
         skippedStepIds: Array.from(p.resolvedSkips),
         subPathMeta: p.subPathMeta ? { ...p.subPathMeta } : undefined,
         stepEntryData: { ...p.stepEntryData },
-        stepEnteredAt: p.stepEnteredAt
+        stepEnteredAt: p.stepEnteredAt,
       })),
       _status: this._status,
       initialData: { ...this._rootInitialData },
       hasValidated: this._hasValidated,
-      blockingError: this._blockingError
+      blockingError: this._blockingError,
     };
   }
 
@@ -1249,7 +1268,7 @@ export class PathEngine {
       // Store the meta on the parent before pushing to stack
       const parentWithMeta: ActivePath = {
         ...parent,
-        subPathMeta
+        subPathMeta,
       };
       this.pathStack.push(parentWithMeta);
     }
@@ -1262,8 +1281,8 @@ export class PathEngine {
       attemptedNextSteps: new Set(),
       resolvedSkips: new Set(),
       subPathMeta: undefined,
-      stepEntryData: { ...initialData },  // Will be updated in enterCurrentStep
-      stepEnteredAt: 0  // Will be set in enterCurrentStep
+      stepEntryData: { ...initialData }, // Will be updated in enterCurrentStep
+      stepEnteredAt: 0, // Will be set in enterCurrentStep
     };
 
     await this.skipSteps(1);
@@ -1297,7 +1316,11 @@ export class PathEngine {
       guardResult = await this.canMoveNext(active, this.getEffectiveStep(active));
     } catch (err) {
       if (this.isStale(gen)) return;
-      this._error = { message: PathEngine.errorMessage(err), phase: "validating", retryCount: this._retryCount };
+      this._error = {
+        message: PathEngine.errorMessage(err),
+        phase: "validating",
+        retryCount: this._retryCount,
+      };
       this._pendingRetry = (c) => this._nextAsync(active, c);
       this._status = "error";
       this.emitStateChanged(cause);
@@ -1314,7 +1337,11 @@ export class PathEngine {
         patch = await this.leaveCurrentStep(active, this.getEffectiveStep(active));
       } catch (err) {
         if (this.isStale(gen)) return;
-        this._error = { message: PathEngine.errorMessage(err), phase: "leaving", retryCount: this._retryCount };
+        this._error = {
+          message: PathEngine.errorMessage(err),
+          phase: "leaving",
+          retryCount: this._retryCount,
+        };
         this._pendingRetry = (c) => this._nextAsync(active, c);
         this._status = "error";
         this.emitStateChanged(cause);
@@ -1407,7 +1434,12 @@ export class PathEngine {
     await this._enterCurrentStepWithErrorHandling(cause);
   }
 
-  private async _goToStepAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }, cause: StateChangeCause = "goToStep"): Promise<void> {
+  private async _goToStepAsync(
+    active: ActivePath,
+    targetIndex: number,
+    options?: { validateOnLeave?: boolean },
+    cause: StateChangeCause = "goToStep"
+  ): Promise<void> {
     if (this._status !== "idle") return;
     const gen = this._generation;
 
@@ -1425,7 +1457,12 @@ export class PathEngine {
       patch = await this.leaveCurrentStep(active, currentStep);
     } catch (err) {
       if (this.isStale(gen)) return;
-      this._failNavigation(err, "leaving", (c) => this._goToStepAsync(active, targetIndex, options, c), cause);
+      this._failNavigation(
+        err,
+        "leaving",
+        (c) => this._goToStepAsync(active, targetIndex, options, c),
+        cause
+      );
       return;
     }
     if (this.isStale(gen)) return;
@@ -1437,7 +1474,12 @@ export class PathEngine {
     await this._enterCurrentStepWithErrorHandling(cause);
   }
 
-  private async _goToStepCheckedAsync(active: ActivePath, targetIndex: number, options?: { validateOnLeave?: boolean }, cause: StateChangeCause = "goToStepChecked"): Promise<void> {
+  private async _goToStepCheckedAsync(
+    active: ActivePath,
+    targetIndex: number,
+    options?: { validateOnLeave?: boolean },
+    cause: StateChangeCause = "goToStepChecked"
+  ): Promise<void> {
     if (this._status !== "idle") return;
     const gen = this._generation;
 
@@ -1529,7 +1571,7 @@ export class PathEngine {
             pathId: parent.definition.id,
             stepId: parentItem.id,
             data: { ...parent.data },
-            isFirstEntry: !parent.visitedStepIds.has(parentItem.id)
+            isFirstEntry: !parent.visitedStepIds.has(parentItem.id),
           };
           const patch = await parentStep.onSubPathCancel(cancelledPathId, cancelledData, ctx, cancelledMeta);
           if (this.isStale(gen)) return;
@@ -1575,7 +1617,7 @@ export class PathEngine {
           pathId: parent.definition.id,
           stepId: parentItem.id,
           data: { ...parent.data },
-          isFirstEntry: !parent.visitedStepIds.has(parentItem.id)
+          isFirstEntry: !parent.visitedStepIds.has(parentItem.id),
         };
         patch = await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta);
         if (this.isStale(gen)) return;
@@ -1593,7 +1635,7 @@ export class PathEngine {
         type: "resumed",
         resumedPathId: parent.definition.id,
         fromSubPathId: finishedPathId,
-        snapshot: this.snapshot()!
+        snapshot: this.snapshot()!,
       });
     } else {
       // currentStepIndex was incremented past the last step in _nextAsync to
@@ -1651,7 +1693,11 @@ export class PathEngine {
       // No stateChanged here — finishActivePath emits "completed" or "resumed"
     } catch (err) {
       if (this.isStale(gen)) return;
-      this._error = { message: PathEngine.errorMessage(err), phase: "completing", retryCount: this._retryCount };
+      this._error = {
+        message: PathEngine.errorMessage(err),
+        phase: "completing",
+        retryCount: this._retryCount,
+      };
       // Retry: call finishActivePath again (activePath is still set because onComplete
       // throws before this.activePath = null in the restructured finishActivePath)
       this._pendingRetry = (c) => this._finishActivePathWithErrorHandling(c);
@@ -1685,7 +1731,11 @@ export class PathEngine {
       this.emitStateChanged(cause);
     } catch (err) {
       if (this.isStale(gen)) return;
-      this._error = { message: PathEngine.errorMessage(err), phase: "entering", retryCount: this._retryCount };
+      this._error = {
+        message: PathEngine.errorMessage(err),
+        phase: "entering",
+        retryCount: this._retryCount,
+      };
       // Retry: re-enter the current step (don't repeat guards/leave)
       this._pendingRetry = (c) => this._enterCurrentStepWithErrorHandling(c);
       this._status = "error";
@@ -1778,21 +1828,19 @@ export class PathEngine {
       pathId: active.definition.id,
       stepId: item.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id)
+      isFirstEntry: !active.visitedStepIds.has(item.id),
     };
     let selectedId: string;
     try {
       selectedId = item.select(ctx);
     } catch (err) {
-      throw new Error(
-        `[pathwrite] StepChoice "${item.id}".select() threw an error: ${err}`
-      );
+      throw new Error(`[pathwrite] StepChoice "${item.id}".select() threw an error: ${err}`, { cause: err });
     }
     const found = item.steps.find((s) => s.id === selectedId);
     if (!found) {
       throw new Error(
         `[pathwrite] StepChoice "${item.id}".select() returned "${selectedId}" ` +
-        `but no step with that id exists in its steps array.`
+          `but no step with that id exists in its steps array.`
       );
     }
     active.resolvedChoiceStep = found;
@@ -1844,10 +1892,7 @@ export class PathEngine {
     if (!active) return;
     const gen = this._generation;
 
-    while (
-      active.currentStepIndex >= 0 &&
-      active.currentStepIndex < active.definition.steps.length
-    ) {
+    while (active.currentStepIndex >= 0 && active.currentStepIndex < active.definition.steps.length) {
       const item = active.definition.steps[active.currentStepIndex];
       if (!item.shouldSkip) {
         // This step has no shouldSkip — it is definitely visible. Remove it from
@@ -1859,7 +1904,7 @@ export class PathEngine {
         pathId: active.definition.id,
         stepId: item.id,
         data: { ...active.data },
-        isFirstEntry: !active.visitedStepIds.has(item.id)
+        isFirstEntry: !active.visitedStepIds.has(item.id),
       };
       const rawResult = item.shouldSkip(ctx);
       if (rawResult && typeof (rawResult as Promise<boolean>).then === "function") {
@@ -1867,7 +1912,7 @@ export class PathEngine {
           this._hasWarnedAsyncShouldSkip = true;
           console.warn(
             `[Pathwrite] Step "${item.id}" has an async shouldSkip. ` +
-            `snapshot().stepCount and progress may be approximate until after the first navigation.`
+              `snapshot().stepCount and progress may be approximate until after the first navigation.`
           );
         }
       }
@@ -1910,21 +1955,18 @@ export class PathEngine {
       pathId: active.definition.id,
       stepId: item.id,
       data: { ...active.data },
-      isFirstEntry
+      isFirstEntry,
     };
     return effectiveStep.onEnter(ctx);
   }
 
-  private async leaveCurrentStep(
-    active: ActivePath,
-    step: PathStep
-  ): Promise<Partial<PathData> | void> {
+  private async leaveCurrentStep(active: ActivePath, step: PathStep): Promise<Partial<PathData> | void> {
     if (!step.onLeave) return;
     const ctx: PathStepContext = {
       pathId: active.definition.id,
       stepId: step.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id)
+      isFirstEntry: !active.visitedStepIds.has(step.id),
     };
     return step.onLeave(ctx);
   }
@@ -1938,7 +1980,7 @@ export class PathEngine {
         pathId: active.definition.id,
         stepId: step.id,
         data: { ...active.data },
-        isFirstEntry: !active.visitedStepIds.has(step.id)
+        isFirstEntry: !active.visitedStepIds.has(step.id),
       };
       const result = await step.canMoveNext(ctx);
       return PathEngine.normaliseGuardResult(result);
@@ -1959,7 +2001,7 @@ export class PathEngine {
       pathId: active.definition.id,
       stepId: step.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id)
+      isFirstEntry: !active.visitedStepIds.has(step.id),
     };
     const result = await step.canMovePrevious(ctx);
     return PathEngine.normaliseGuardResult(result);
@@ -1996,7 +2038,7 @@ export class PathEngine {
       pathId: active.definition.id,
       stepId: item.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id)
+      isFirstEntry: !active.visitedStepIds.has(item.id),
     };
     try {
       const result = guard(ctx);
@@ -2008,9 +2050,9 @@ export class PathEngine {
         (result as Promise<unknown>).catch(() => {});
         console.warn(
           `[pathwrite] Async guard detected on step "${item.id}". ` +
-          `Guards in snapshots must be synchronous. ` +
-          `Returning true (optimistic) as default. ` +
-          `The async guard will still be enforced during actual navigation.`
+            `Guards in snapshots must be synchronous. ` +
+            `Returning true (optimistic) as default. ` +
+            `The async guard will still be enforced during actual navigation.`
         );
         return true;
       }
@@ -2019,9 +2061,9 @@ export class PathEngine {
     } catch (err) {
       console.warn(
         `[pathwrite] Guard on step "${item.id}" threw an error during snapshot evaluation. ` +
-        `Returning true (allow navigation) as a safe default. ` +
-        `Note: guards are evaluated before onEnter runs on first entry — ` +
-        `ensure guards handle missing/undefined data gracefully.`,
+          `Returning true (allow navigation) as a safe default. ` +
+          `Note: guards are evaluated before onEnter runs on first entry — ` +
+          `ensure guards handle missing/undefined data gracefully.`,
         err
       );
       return true;
@@ -2063,11 +2105,15 @@ export class PathEngine {
       pathId: active.definition.id,
       stepId: item.id,
       data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id)
+      isFirstEntry: !active.visitedStepIds.has(item.id),
     };
     try {
       const result = fn(ctx);
-      if (result && typeof result === "object" && typeof (result as unknown as { then?: unknown }).then !== "function") {
+      if (
+        result &&
+        typeof result === "object" &&
+        typeof (result as unknown as { then?: unknown }).then !== "function"
+      ) {
         const filtered: Record<string, string> = {};
         for (const [key, val] of Object.entries(result)) {
           if (val !== undefined && val !== null && val !== "") {
@@ -2081,17 +2127,17 @@ export class PathEngine {
         (result as unknown as Promise<unknown>).catch(() => {});
         console.warn(
           `[pathwrite] Async fieldErrors detected on step "${item.id}". ` +
-          `fieldErrors must be synchronous. Returning {} as default. ` +
-          `Use synchronous validation or move async checks to canMoveNext.`
+            `fieldErrors must be synchronous. Returning {} as default. ` +
+            `Use synchronous validation or move async checks to canMoveNext.`
         );
       }
       return {};
     } catch (err) {
       console.warn(
         `[pathwrite] fieldErrors on step "${item.id}" threw an error during snapshot evaluation. ` +
-        `Returning {} as a safe default. ` +
-        `Note: fieldErrors is evaluated before onEnter runs on first entry — ` +
-        `ensure it handles missing/undefined data gracefully.`,
+          `Returning {} as a safe default. ` +
+          `Note: fieldErrors is evaluated before onEnter runs on first entry — ` +
+          `ensure it handles missing/undefined data gracefully.`,
         err
       );
       return {};
@@ -2121,7 +2167,6 @@ export class PathEngine {
     return false;
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // Services utilities
@@ -2189,20 +2234,13 @@ export type DefinedServices<T extends Record<string, AnyFn>> = T & {
   prefetch(manifest?: PrefetchManifest<T>): Promise<void>;
 };
 
-function _svcStorageGet(
-  storage: ServiceCacheStorage,
-  key: string
-): Promise<string | null> {
+function _svcStorageGet(storage: ServiceCacheStorage, key: string): Promise<string | null> {
   const result = storage.getItem(key);
   if (result instanceof Promise) return result;
   return Promise.resolve(result);
 }
 
-function _svcStorageSet(
-  storage: ServiceCacheStorage,
-  key: string,
-  value: string
-): Promise<void> {
+function _svcStorageSet(storage: ServiceCacheStorage, key: string, value: string): Promise<void> {
   const result = storage.setItem(key, value);
   if (result instanceof Promise) return result;
   return Promise.resolve();
@@ -2216,11 +2254,7 @@ function _svcSerializeArgs(args: unknown[]): string {
   }
 }
 
-async function _svcWithRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number,
-  methodName: string
-): Promise<T> {
+async function _svcWithRetry<T>(fn: () => Promise<T>, maxRetries: number, methodName: string): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -2262,7 +2296,9 @@ export function defineServices<T extends Record<string, AnyFn>>(
   const inFlight = new Map<string, Promise<unknown>>();
 
   if ("prefetch" in config) {
-    throw new Error('defineServices: "prefetch" is reserved for the prefetch() helper on the returned object; rename the method.');
+    throw new Error(
+      'defineServices: "prefetch" is reserved for the prefetch() helper on the returned object; rename the method.'
+    );
   }
 
   // Pre-hydrate the no-argument cache entries. A synchronous storage fills the
@@ -2271,7 +2307,11 @@ export function defineServices<T extends Record<string, AnyFn>>(
   if (storage) {
     const hydrate = (key: string, raw: string | null): void => {
       if (raw === null) return;
-      try { memCache.set(key, JSON.parse(raw)); } catch { /* corrupt entry — ignore */ }
+      try {
+        memCache.set(key, JSON.parse(raw));
+      } catch {
+        /* corrupt entry — ignore */
+      }
     };
     for (const [methodName, methodConfig] of Object.entries(config)) {
       if (methodConfig.cache !== "auto") continue;
@@ -2279,11 +2319,17 @@ export function defineServices<T extends Record<string, AnyFn>>(
       try {
         const result = storage.getItem(baseKey);
         if (result instanceof Promise) {
-          result.then((raw) => hydrate(baseKey, raw)).catch(() => { /* storage unavailable */ });
+          result
+            .then((raw) => hydrate(baseKey, raw))
+            .catch(() => {
+              /* storage unavailable */
+            });
         } else {
           hydrate(baseKey, result);
         }
-      } catch { /* storage unavailable */ }
+      } catch {
+        /* storage unavailable */
+      }
     }
   }
 
@@ -2309,23 +2355,23 @@ export function defineServices<T extends Record<string, AnyFn>>(
       let existing: string | null = null;
       try {
         existing = await _svcStorageGet(storage, key);
-      } catch { /* cache storage unavailable — treat as a miss */ }
+      } catch {
+        /* cache storage unavailable — treat as a miss */
+      }
       if (existing !== null) {
         try {
           const parsed = JSON.parse(existing);
           memCache.set(key, parsed);
           return parsed;
-        } catch { /* corrupt — fall through */ }
+        } catch {
+          /* corrupt — fall through */
+        }
       }
     }
 
     if (inFlight.has(key)) return inFlight.get(key);
 
-    const promise = _svcWithRetry(
-      () => methodConfig.fn(...args),
-      methodConfig.retry ?? 0,
-      methodName
-    )
+    const promise = _svcWithRetry(() => methodConfig.fn(...args), methodConfig.retry ?? 0, methodName)
       .then(async (value) => {
         memCache.set(key, value);
         inFlight.delete(key);
@@ -2333,11 +2379,18 @@ export function defineServices<T extends Record<string, AnyFn>>(
         // web storage would coerce it to the string "undefined", which then
         // fails to parse on every load). Keep it in memory only.
         if (storage && value !== undefined) {
-          try { await _svcStorageSet(storage, key, JSON.stringify(value)); } catch { /* non-fatal */ }
+          try {
+            await _svcStorageSet(storage, key, JSON.stringify(value));
+          } catch {
+            /* non-fatal */
+          }
         }
         return value;
       })
-      .catch((err) => { inFlight.delete(key); throw err; });
+      .catch((err) => {
+        inFlight.delete(key);
+        throw err;
+      });
 
     inFlight.set(key, promise);
     return promise;
@@ -2353,7 +2406,10 @@ export function defineServices<T extends Record<string, AnyFn>>(
   wrapped.prefetch = async (manifest?: PrefetchManifest<T>): Promise<void> => {
     const tasks: Promise<unknown>[] = [];
     if (manifest) {
-      for (const [methodName, argSets] of Object.entries(manifest) as [string, Parameters<AnyFn>[] | undefined][]) {
+      for (const [methodName, argSets] of Object.entries(manifest) as [
+        string,
+        Parameters<AnyFn>[] | undefined,
+      ][]) {
         const methodConfig = config[methodName];
         if (!methodConfig || methodConfig.cache === "none") continue;
         if (!argSets || argSets.length === 0) {

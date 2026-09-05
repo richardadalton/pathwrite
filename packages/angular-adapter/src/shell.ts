@@ -14,7 +14,7 @@ import {
   SimpleChanges,
   inject,
   Injector,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Subject } from "rxjs";
@@ -27,7 +27,6 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
-  RootProgress,
   formatFieldKey,
   errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
@@ -97,9 +96,7 @@ export class PathStepDirective {
  */
 @Directive({ selector: "[pwShellHeader]", standalone: true })
 export class PathShellHeaderDirective {
-  public constructor(
-    public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>
-  ) {}
+  public constructor(public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>) {}
 }
 
 // ---------------------------------------------------------------------------
@@ -148,9 +145,7 @@ export class PathShellFooterDirective {
  */
 @Directive({ selector: "[pwShellCompletion]", standalone: true })
 export class PathShellCompletionDirective {
-  public constructor(
-    public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>
-  ) {}
+  public constructor(public readonly templateRef: TemplateRef<{ $implicit: PathSnapshot }>) {}
 }
 
 // ---------------------------------------------------------------------------
@@ -179,21 +174,30 @@ export class PathShellCompletionDirective {
     <div class="pw-shell" *ngIf="!(facade.state$ | async)">
       <div class="pw-shell__empty" *ngIf="!started">
         <p>No active path.</p>
-        <button *ngIf="!autoStart" type="button" class="pw-shell__start-btn" (click)="doStart()">Start</button>
+        <button *ngIf="!autoStart" type="button" class="pw-shell__start-btn" (click)="doStart()">
+          Start
+        </button>
       </div>
     </div>
 
     <!-- Active path -->
-    <div class="pw-shell" [ngClass]="progressLayout !== 'merged' ? 'pw-shell--progress-' + progressLayout : ''" *ngIf="facade.state$ | async as s">
+    <div
+      class="pw-shell"
+      [ngClass]="progressLayout !== 'merged' ? 'pw-shell--progress-' + progressLayout : ''"
+      *ngIf="facade.state$ | async as s"
+    >
       <!-- Root progress — persistent top-level bar visible during sub-paths -->
-      <div class="pw-shell__root-progress" *ngIf="!effectiveHideProgress && s.rootProgress && progressLayout !== 'activeOnly'">
+      <div
+        class="pw-shell__root-progress"
+        *ngIf="!effectiveHideProgress && s.rootProgress && progressLayout !== 'activeOnly'"
+      >
         <div class="pw-shell__steps">
           <div
             *ngFor="let step of s.rootProgress!.steps; let i = index"
             class="pw-shell__step"
             [ngClass]="'pw-shell__step--' + step.status"
           >
-            <span class="pw-shell__step-dot">{{ step.status === 'completed' ? '✓' : (i + 1) }}</span>
+            <span class="pw-shell__step-dot">{{ step.status === "completed" ? "✓" : i + 1 }}</span>
             <span class="pw-shell__step-label">{{ step.title ?? step.id }}</span>
           </div>
         </div>
@@ -206,18 +210,25 @@ export class PathShellCompletionDirective {
            hide both; only the default one additionally hides for a single-step path. -->
       <ng-container *ngIf="customHeader; else defaultHeader">
         <ng-container *ngIf="!effectiveHideProgress">
-          <ng-container *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"></ng-container>
+          <ng-container
+            *ngTemplateOutlet="customHeader.templateRef; context: { $implicit: s }"
+          ></ng-container>
         </ng-container>
       </ng-container>
       <ng-template #defaultHeader>
-        <div class="pw-shell__header" *ngIf="!effectiveHideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'">
+        <div
+          class="pw-shell__header"
+          *ngIf="
+            !effectiveHideProgress && (s.stepCount > 1 || s.nestingLevel > 0) && progressLayout !== 'rootOnly'
+          "
+        >
           <div class="pw-shell__steps">
             <div
               *ngFor="let step of s.steps; let i = index"
               class="pw-shell__step"
               [ngClass]="'pw-shell__step--' + step.status"
             >
-              <span class="pw-shell__step-dot">{{ step.status === 'completed' ? '✓' : (i + 1) }}</span>
+              <span class="pw-shell__step-dot">{{ step.status === "completed" ? "✓" : i + 1 }}</span>
               <span class="pw-shell__step-label">{{ step.title ?? step.id }}</span>
             </div>
           </div>
@@ -231,12 +242,16 @@ export class PathShellCompletionDirective {
       <ng-container *ngIf="s.status === 'completed'; else activeContent">
         <div class="pw-shell__body">
           <ng-container *ngIf="customCompletion; else defaultCompletion">
-            <ng-container *ngTemplateOutlet="customCompletion.templateRef; context: { $implicit: s }"></ng-container>
+            <ng-container
+              *ngTemplateOutlet="customCompletion.templateRef; context: { $implicit: s }"
+            ></ng-container>
           </ng-container>
           <ng-template #defaultCompletion>
             <div class="pw-shell__completion">
               <p class="pw-shell__completion-message">All done.</p>
-              <button type="button" class="pw-shell__completion-restart" (click)="facade.restart()">Start over</button>
+              <button type="button" class="pw-shell__completion-restart" (click)="facade.restart()">
+                Start over
+              </button>
             </div>
           </ng-template>
         </div>
@@ -255,55 +270,85 @@ export class PathShellCompletionDirective {
         </div>
 
         <!-- Validation messages — suppressed when validationDisplay="inline" -->
-        <ul class="pw-shell__validation" *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && fieldEntries(s).length > 0">
+        <ul
+          class="pw-shell__validation"
+          *ngIf="
+            validationDisplay !== 'inline' &&
+            (s.hasAttemptedNext || s.hasValidated) &&
+            fieldEntries(s).length > 0
+          "
+        >
           <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
-            <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+            <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{
+              formatFieldKey(entry[0])
+            }}</span
+            >{{ entry[1] }}
           </li>
         </ul>
 
         <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
         <ul class="pw-shell__warnings" *ngIf="validationDisplay !== 'inline' && warningEntries(s).length > 0">
           <li *ngFor="let entry of warningEntries(s)" class="pw-shell__warnings-item">
-            <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{ formatFieldKey(entry[0]) }}</span>{{ entry[1] }}
+            <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{
+              formatFieldKey(entry[0])
+            }}</span
+            >{{ entry[1] }}
           </li>
         </ul>
 
         <!-- Blocking error — guard returned { allowed: false, reason } -->
-        <p class="pw-shell__blocking-error"
-           *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && s.blockingError">
+        <p
+          class="pw-shell__blocking-error"
+          *ngIf="validationDisplay !== 'inline' && (s.hasAttemptedNext || s.hasValidated) && s.blockingError"
+        >
           {{ s.blockingError }}
         </p>
 
         <!-- Error panel — replaces footer when an async operation has failed -->
         <div class="pw-shell__error" *ngIf="s.status === 'error' && s.error; else footerOrCustom">
-          <div class="pw-shell__error-title">{{ s.error!.retryCount >= 2 ? 'Still having trouble.' : 'Something went wrong.' }}</div>
-          <div class="pw-shell__error-message">{{ errorPhaseMessage(s.error!.phase) }}{{ s.error!.message ? ' ' + s.error!.message : '' }}</div>
+          <div class="pw-shell__error-title">
+            {{ s.error!.retryCount >= 2 ? "Still having trouble." : "Something went wrong." }}
+          </div>
+          <div class="pw-shell__error-message">
+            {{ errorPhaseMessage(s.error!.phase) }}{{ s.error!.message ? " " + s.error!.message : "" }}
+          </div>
           <div class="pw-shell__error-actions">
             <button
               *ngIf="s.error!.retryCount < 2"
               type="button"
               class="pw-shell__btn pw-shell__btn--retry"
               (click)="facade.retry()"
-            >Try again</button>
+            >
+              Try again
+            </button>
             <button
               *ngIf="s.hasPersistence"
               type="button"
-              [class]="'pw-shell__btn ' + (s.error!.retryCount >= 2 ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend')"
+              [class]="
+                'pw-shell__btn ' +
+                (s.error!.retryCount >= 2 ? 'pw-shell__btn--retry' : 'pw-shell__btn--suspend')
+              "
               (click)="facade.suspend()"
-            >Save and come back later</button>
+            >
+              Save and come back later
+            </button>
             <button
               *ngIf="s.error!.retryCount >= 2 && !s.hasPersistence"
               type="button"
               class="pw-shell__btn pw-shell__btn--retry"
               (click)="facade.retry()"
-            >Try again</button>
+            >
+              Try again
+            </button>
           </div>
         </div>
         <!-- Footer — custom or default navigation buttons -->
         <ng-template #footerOrCustom>
           <ng-container *ngIf="!effectiveHideFooter">
             <ng-container *ngIf="customFooter; else defaultFooter">
-              <ng-container *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"></ng-container>
+              <ng-container
+                *ngTemplateOutlet="customFooter.templateRef; context: { $implicit: s, actions: shellActions }"
+              ></ng-container>
             </ng-container>
           </ng-container>
         </ng-template>
@@ -318,7 +363,9 @@ export class PathShellCompletionDirective {
               class="pw-shell__btn pw-shell__btn--cancel"
               [disabled]="s.status !== 'idle'"
               (click)="facade.cancel()"
-            >{{ cancelLabel }}</button>
+            >
+              {{ cancelLabel }}
+            </button>
             <!-- Wizard mode: Back on the left -->
             <button
               *ngIf="getResolvedLayout(s) === 'wizard' && !s.isFirstStep"
@@ -326,7 +373,9 @@ export class PathShellCompletionDirective {
               class="pw-shell__btn pw-shell__btn--back"
               [disabled]="s.status !== 'idle' || !s.canMovePrevious"
               (click)="facade.previous()"
-            >{{ backLabel }}</button>
+            >
+              {{ backLabel }}
+            </button>
           </div>
           <div class="pw-shell__footer-right">
             <!-- Wizard mode: Cancel on the right -->
@@ -336,7 +385,9 @@ export class PathShellCompletionDirective {
               class="pw-shell__btn pw-shell__btn--cancel"
               [disabled]="s.status !== 'idle'"
               (click)="facade.cancel()"
-            >{{ cancelLabel }}</button>
+            >
+              {{ cancelLabel }}
+            </button>
             <!-- Both modes: Submit on the right -->
             <button
               type="button"
@@ -344,12 +395,16 @@ export class PathShellCompletionDirective {
               [class.pw-shell__btn--loading]="s.status !== 'idle'"
               [disabled]="s.status !== 'idle'"
               (click)="facade.next()"
-            >{{ s.status !== 'idle' && loadingLabel ? loadingLabel : s.isLastStep ? completeLabel : nextLabel }}</button>
+            >
+              {{
+                s.status !== "idle" && loadingLabel ? loadingLabel : s.isLastStep ? completeLabel : nextLabel
+              }}
+            </button>
           </div>
         </div>
       </ng-template>
     </div>
-  `
+  `,
 })
 export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   /** The path definition to run. Required unless [engine] is provided. */
@@ -470,13 +525,13 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   public ngOnChanges(changes: SimpleChanges): void {
-    if (changes['engine'] && this.engine) {
+    if (changes["engine"] && this.engine) {
       this.facade.adoptEngine(this.engine);
     }
-    if (changes['validateWhen'] && this.validateWhen) {
+    if (changes["validateWhen"] && this.validateWhen) {
       this.facade.validate();
     }
-    if (changes['services']) {
+    if (changes["services"]) {
       this.facade.services = this.services;
     }
   }
@@ -514,7 +569,8 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
    */
   private restoreFromStoredState(): boolean {
     if (!this.restoreKey || !this.outerFacade || !this.path) return false;
-    const stored = this.outerFacade.snapshot()?.data[this.restoreKey] as { serializedState?: SerializedPathState } | undefined;
+    const stored = this.outerFacade.snapshot()?.data[this.restoreKey] as
+      { serializedState?: SerializedPathState } | undefined;
     if (!stored || typeof stored !== "object" || !stored.serializedState) return false;
     try {
       this.facade.adoptEngine(PathEngine.fromState(stored.serializedState, { [this.path.id]: this.path }));
@@ -532,7 +588,7 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public doStart(): void {
-    if (!this.path) throw new Error('[pw-shell] [path] is required when no [engine] is provided');
+    if (!this.path) throw new Error("[pw-shell] [path] is required when no [engine] is provided");
     this.started = true;
     let startData: PathData = this.initialData;
     let restoreStepId: string | undefined;
@@ -546,9 +602,12 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     // ngOnChanges applied validateWhen before ngOnInit started the path, and
     // start() resets the engine's validated flag — re-apply it once the path
     // (and any restore jump) has settled.
-    this.facade.start(this.path, startData)
+    this.facade
+      .start(this.path, startData)
       .then(() => (restoreStepId ? this.facade.goToStep(restoreStepId) : undefined))
-      .then(() => { if (this.validateWhen) this.facade.validate(); });
+      .then(() => {
+        if (this.validateWhen) this.facade.validate();
+      });
   }
 
   /**
@@ -574,13 +633,19 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     return Object.entries(s.fieldWarnings) as [string, string][];
   }
 
-  get effectiveHideProgress(): boolean { return this.hideProgress || this.layout === "tabs"; }
-  get effectiveHideFooter(): boolean { return this.hideFooter || this.layout === "tabs"; }
+  get effectiveHideProgress(): boolean {
+    return this.hideProgress || this.layout === "tabs";
+  }
+  get effectiveHideFooter(): boolean {
+    return this.hideFooter || this.layout === "tabs";
+  }
 
   /** Resolves "auto"/"tabs" layout to "wizard" or "form" for footer button arrangement. */
   protected getResolvedLayout(s: PathSnapshot): "wizard" | "form" {
     return this.layout === "auto" || this.layout === "tabs"
-      ? (s.stepCount === 1 && s.nestingLevel === 0 ? "form" : "wizard")
+      ? s.stepCount === 1 && s.nestingLevel === 0
+        ? "form"
+        : "wizard"
       : this.layout;
   }
 

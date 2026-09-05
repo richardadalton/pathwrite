@@ -5,6 +5,8 @@ import type { UsePathReturn } from "../src/index";
 import { usePathContext } from "../src/index";
 describe("usePathContext() exposes everything usePath() does", () => {
   it("same members plus services", () => {
-    expectTypeOf<keyof ReturnType<typeof usePathContext<PathData, unknown>>>().toEqualTypeOf<keyof UsePathReturn | "services">();
+    expectTypeOf<keyof ReturnType<typeof usePathContext<PathData, unknown>>>().toEqualTypeOf<
+      keyof UsePathReturn | "services"
+    >();
   });
 });

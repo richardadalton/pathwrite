@@ -12,15 +12,15 @@ export default function EquipmentTab() {
       <TabBar />
       <div class="form-body">
         <div class="field">
-          <label for="laptopType">Laptop <span class="optional">(optional)</span></label>
+          <label for="laptopType">
+            Laptop <span class="optional">(optional)</span>
+          </label>
           <select
             id="laptopType"
             value={ctx.snapshot()?.data.laptopType ?? "macbook-pro"}
             onChange={(e) => ctx.setData("laptopType", e.currentTarget.value)}
           >
-            <For each={LAPTOP_TYPES}>
-              {(l) => <option value={l.value}>{l.label}</option>}
-            </For>
+            <For each={LAPTOP_TYPES}>{(l) => <option value={l.value}>{l.label}</option>}</For>
           </select>
         </div>
 
@@ -69,7 +69,9 @@ export default function EquipmentTab() {
         </div>
 
         <div class="field">
-          <label for="otherEquipment">Other Equipment <span class="optional">(optional)</span></label>
+          <label for="otherEquipment">
+            Other Equipment <span class="optional">(optional)</span>
+          </label>
           <input
             id="otherEquipment"
             type="text"

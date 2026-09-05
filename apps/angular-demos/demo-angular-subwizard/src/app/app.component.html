@@ -1,39 +1,50 @@
 <main class="page">
-
   <div class="page-header">
     <h1>Approval Workflow</h1>
-    <p class="subtitle">Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.</p>
+    <p class="subtitle">
+      Subwizard demo — dynamically launch a per-approver review subwizard gated by all approvers completing.
+    </p>
   </div>
 
   <!-- Completed -->
   @if (isCompleted && completedData) {
-    <section class="result-panel"
+    <section
+      class="result-panel"
       [class.success-panel]="overallStatus(completedData) === 'approved'"
-      [class.reject-panel]="overallStatus(completedData) !== 'approved'">
-      <div class="result-icon">{{ overallStatus(completedData) === 'approved' ? '✅' : '❌' }}</div>
-      <h2>{{ overallStatus(completedData) === 'approved' ? 'Document Approved!' : 'Document Rejected' }}</h2>
+      [class.reject-panel]="overallStatus(completedData) !== 'approved'"
+    >
+      <div class="result-icon">{{ overallStatus(completedData) === "approved" ? "✅" : "❌" }}</div>
+      <h2>{{ overallStatus(completedData) === "approved" ? "Document Approved!" : "Document Rejected" }}</h2>
       <p>
-        @if (overallStatus(completedData) === 'approved') {
-          All approvers signed off on <strong>{{ completedData.title }}</strong>.
+        @if (overallStatus(completedData) === "approved") {
+          All approvers signed off on <strong>{{ completedData.title }}</strong
+          >.
         } @else {
-          One or more approvers rejected <strong>{{ completedData.title }}</strong>.
+          One or more approvers rejected <strong>{{ completedData.title }}</strong
+          >.
         }
       </p>
 
       <div class="summary">
         <div class="summary-section">
           <p class="summary-section__title">Document</p>
-          <div class="summary-row"><span class="summary-key">Title</span><span>{{ completedData.title }}</span></div>
-          <div class="summary-row"><span class="summary-key">Description</span><span>{{ completedData.description }}</span></div>
+          <div class="summary-row">
+            <span class="summary-key">Title</span><span>{{ completedData.title }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-key">Description</span><span>{{ completedData.description }}</span>
+          </div>
         </div>
         <div class="summary-section">
           <p class="summary-section__title">Decisions</p>
           @for (id of completedData.approvers; track id) {
             <div class="summary-row">
               <span class="summary-key">{{ getApproverName(id) }}</span>
-              <span [class.text-approved]="getResult(completedData, id)?.decision === 'approved'"
-                    [class.text-rejected]="getResult(completedData, id)?.decision === 'rejected'">
-                {{ getResult(completedData, id)?.decision === 'approved' ? '✓ Approved' : '✗ Rejected' }}
+              <span
+                [class.text-approved]="getResult(completedData, id)?.decision === 'approved'"
+                [class.text-rejected]="getResult(completedData, id)?.decision === 'rejected'"
+              >
+                {{ getResult(completedData, id)?.decision === "approved" ? "✓ Approved" : "✗ Rejected" }}
                 @if (getResult(completedData, id)?.comment) {
                   — <em>{{ getResult(completedData, id)!.comment }}</em>
                 }
@@ -91,6 +102,4 @@
       </ng-template>
     </pw-shell>
   }
-
 </main>
-

@@ -27,7 +27,9 @@ export function ReviewStep() {
         {data.coverLetter ? (
           <View style={[styles.row, styles.rowLast]}>
             <Text style={styles.key}>Cover Letter</Text>
-            <Text style={styles.val} numberOfLines={3}>{data.coverLetter as string}</Text>
+            <Text style={styles.val} numberOfLines={3}>
+              {data.coverLetter as string}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -36,11 +38,24 @@ export function ReviewStep() {
 }
 
 const styles = StyleSheet.create({
-  body:    { gap: 14 },
-  intro:   { fontSize: 13, color: "#6b7280", lineHeight: 20 },
-  summary: { borderRadius: 8, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#f8fafc", overflow: "hidden" },
-  row:     { flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#f1f3f7" },
+  body: { gap: 14 },
+  intro: { fontSize: 13, color: "#6b7280", lineHeight: 20 },
+  summary: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f8fafc",
+    overflow: "hidden",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f3f7",
+  },
   rowLast: { borderBottomWidth: 0 },
-  key:     { width: 90, fontSize: 13, color: "#6b7280", fontWeight: "500" },
-  val:     { flex: 1, fontSize: 13, color: "#1f2937" },
+  key: { width: 90, fontSize: 13, color: "#6b7280", fontWeight: "500" },
+  val: { flex: 1, fontSize: 13, color: "#1f2937" },
 });

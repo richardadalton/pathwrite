@@ -6,31 +6,30 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "./wizard
 
 const { snapshot, startSubPath } = usePathContext<WizardData>();
 
-const members  = computed(() => (snapshot.value?.data.members  ?? []) as Person[]);
+const members = computed(() => (snapshot.value?.data.members ?? []) as Person[]);
 const profiles = computed(() => (snapshot.value?.data.profiles ?? {}) as Record<string, MemberProfile>);
-const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 
 function getProfile(index: number): MemberProfile | null {
   return profiles.value[String(index)] ?? null;
 }
 
-const allDone = computed(() =>
-  members.value.length > 0 &&
-  members.value.every((_, i) => !!getProfile(i)?.department)
+const allDone = computed(
+  () => members.value.length > 0 && members.value.every((_, i) => !!getProfile(i)?.department)
 );
 
 async function openProfile(member: Person, index: number) {
   const existing = getProfile(index);
   const initialData: ProfileSubData = {
-    memberName:  member.name,
-    memberRole:  member.role,
+    memberName: member.name,
+    memberRole: member.role,
     memberIndex: index,
     department: existing?.department ?? "",
-    startDate:  existing?.startDate  ?? "",
-    bio:        existing?.bio        ?? "",
-    goals30:    existing?.goals30    ?? "",
-    goals90:    existing?.goals90    ?? "",
+    startDate: existing?.startDate ?? "",
+    bio: existing?.bio ?? "",
+    goals30: existing?.goals30 ?? "",
+    goals90: existing?.goals90 ?? "",
   };
   // meta.memberIndex is forwarded to onSubPathComplete so the parent
   // knows which profile slot to update without embedding it in the data.
@@ -41,8 +40,8 @@ async function openProfile(member: Person, index: number) {
 <template>
   <div class="form-body">
     <p class="step-intro">
-      Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a
-      short two-step wizard, then return here when done. You can edit any profile before moving on.
+      Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a short two-step
+      wizard, then return here when done. You can edit any profile before moving on.
     </p>
 
     <div class="profile-list">
@@ -70,7 +69,9 @@ async function openProfile(member: Person, index: number) {
             class="btn-edit"
             :disabled="snapshot?.isNavigating"
             @click="openProfile(member, i)"
-          >Edit</button>
+          >
+            Edit
+          </button>
         </template>
 
         <!-- Pending state -->
@@ -80,7 +81,9 @@ async function openProfile(member: Person, index: number) {
             class="btn-fill"
             :disabled="snapshot?.isNavigating"
             @click="openProfile(member, i)"
-          >Fill in Profile →</button>
+          >
+            Fill in Profile →
+          </button>
         </template>
       </div>
     </div>
@@ -88,9 +91,6 @@ async function openProfile(member: Person, index: number) {
     <p v-if="allDone" class="gate-done">
       ✓ All {{ members.length }} profiles complete — click Next to review.
     </p>
-    <p v-else-if="attempted && errors._" class="gate-pending">
-      ⏳ {{ errors._ }}
-    </p>
+    <p v-else-if="attempted && errors._" class="gate-pending">⏳ {{ errors._ }}</p>
   </div>
 </template>
-

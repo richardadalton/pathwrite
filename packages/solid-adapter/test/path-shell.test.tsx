@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { PathShell, usePath, usePathContext } from "../src/index.js";
+import { PathShell, usePathContext } from "../src/index.js";
 import { createRoot } from "solid-js";
 import type { PathDefinition, PathSnapshot } from "@daltonr/pathwrite-core";
 
@@ -41,7 +41,7 @@ afterEach(() => {
 
 /** Flush onMount and any pending async work. */
 async function tick() {
-  await new Promise<void>(resolve => setTimeout(resolve, 0));
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 function mountShell(props: Record<string, unknown> = {}) {
@@ -112,12 +112,7 @@ describe("PathShell (Solid) — rendering", () => {
 
   it("hides progress automatically for a single-step path", async () => {
     dispose = render(
-      () => (
-        <PathShell
-          path={singleStepPath}
-          steps={{ only: () => <div>Only step</div> }}
-        />
-      ),
+      () => <PathShell path={singleStepPath} steps={{ only: () => <div>Only step</div> }} />,
       container
     );
     await tick();
@@ -138,12 +133,7 @@ describe("PathShell (Solid) — rendering", () => {
 
   it("shows Complete label on the last step", async () => {
     dispose = render(
-      () => (
-        <PathShell
-          path={singleStepPath}
-          steps={{ only: () => <div>Only step</div> }}
-        />
-      ),
+      () => <PathShell path={singleStepPath} steps={{ only: () => <div>Only step</div> }} />,
       container
     );
     await tick();
@@ -243,8 +233,7 @@ describe("PathShell (Solid) — validation", () => {
       {
         id: "form",
         title: "Form",
-        fieldErrors: ({ data }) =>
-          data.name ? {} : { name: "Name is required." },
+        fieldErrors: ({ data }) => (data.name ? {} : { name: "Name is required." }),
       },
       { id: "review", title: "Review" },
     ],
@@ -252,12 +241,7 @@ describe("PathShell (Solid) — validation", () => {
 
   it("does not show validation summary before Next is clicked", async () => {
     dispose = render(
-      () => (
-        <PathShell
-          path={guardedPath}
-          steps={{ form: () => <div />, review: () => <div /> }}
-        />
-      ),
+      () => <PathShell path={guardedPath} steps={{ form: () => <div />, review: () => <div /> }} />,
       container
     );
     await tick();
@@ -301,18 +285,6 @@ describe("PathShell (Solid) — validation", () => {
   });
 
   it("shows validation summary when validateWhen becomes true", async () => {
-    let setValidate!: (v: boolean) => void;
-    const [validateWhen, setValidateWhenInner] = (() => {
-      let v = false;
-      const listeners: Array<() => void> = [];
-      const get = () => v;
-      const set = (next: boolean) => {
-        v = next;
-        listeners.forEach(l => l());
-      };
-      return [get, set] as const;
-    })();
-
     // Use a reactive signal for validateWhen
     const { createSignal } = await import("solid-js");
     const [vw, setVw] = createSignal(false);
@@ -342,15 +314,7 @@ describe("PathShell (Solid) — validation", () => {
 
 describe("PathShell (Solid) — footer layout", () => {
   it("uses form layout for single-step path (Cancel left, no Back)", async () => {
-    dispose = render(
-      () => (
-        <PathShell
-          path={singleStepPath}
-          steps={{ only: () => <div /> }}
-        />
-      ),
-      container
-    );
+    dispose = render(() => <PathShell path={singleStepPath} steps={{ only: () => <div /> }} />, container);
     await tick();
     const footer = container.querySelector(".pw-shell__footer")!;
     expect(footer.querySelector(".pw-shell__footer-left .pw-shell__btn--cancel")).not.toBeNull();
@@ -366,13 +330,7 @@ describe("PathShell (Solid) — footer layout", () => {
 
   it("explicit layout=wizard overrides auto", async () => {
     dispose = render(
-      () => (
-        <PathShell
-          path={singleStepPath}
-          layout="wizard"
-          steps={{ only: () => <div /> }}
-        />
-      ),
+      () => <PathShell path={singleStepPath} layout="wizard" steps={{ only: () => <div /> }} />,
       container
     );
     await tick();
@@ -515,7 +473,15 @@ describe("PathShell (Solid) — step component identity across engine events", (
       () => (
         <PathShell
           path={namePath}
-          steps={{ name: () => <><Probe /><NameStep /></>, done: () => <div /> }}
+          steps={{
+            name: () => (
+              <>
+                <Probe />
+                <NameStep />
+              </>
+            ),
+            done: () => <div />,
+          }}
         />
       ),
       container
@@ -547,7 +513,10 @@ describe("PathShell (Solid) — step component identity across engine events", (
           path={namePath}
           steps={{
             name: () => <NameStep />,
-            done: () => { doneMounted(); return <div>Done</div>; },
+            done: () => {
+              doneMounted();
+              return <div>Done</div>;
+            },
           }}
         />
       ),
@@ -576,13 +545,23 @@ describe("PathShell (Solid) — the snapshot passed to a step render function is
       ctx = usePathContext();
       const plan = () => (props.snapshot.data.plan as string) ?? "none";
       const errors = () => Object.keys(props.snapshot.fieldErrors).length;
-      return <p id="plan">{plan()} / {errors()} / {String(props.snapshot.hasAttemptedNext)}</p>;
+      return (
+        <p id="plan">
+          {plan()} / {errors()} / {String(props.snapshot.hasAttemptedNext)}
+        </p>
+      );
     }
 
     dispose = render(
       () => (
         <PathShell
-          path={{ id: "sub", steps: [{ id: "plan", fieldErrors: ({ data }) => (data.plan ? {} : { plan: "pick one" }) }, { id: "pay" }] }}
+          path={{
+            id: "sub",
+            steps: [
+              { id: "plan", fieldErrors: ({ data }) => (data.plan ? {} : { plan: "pick one" }) },
+              { id: "pay" },
+            ],
+          }}
           steps={{ plan: (snap) => <PlanStep snapshot={snap} />, pay: () => <div /> }}
         />
       ),
@@ -610,7 +589,8 @@ describe("PathShell (Solid) — the snapshot passed to a step render function is
 
     function Details() {
       ctx = usePathContext();
-      if (ctx.snapshot()?.nestingLevel === 0) parentMounted(); else subMounted();
+      if (ctx.snapshot()?.nestingLevel === 0) parentMounted();
+      else subMounted();
       return <div>details@{ctx.snapshot()?.pathId}</div>;
     }
 
@@ -687,7 +667,12 @@ describe("PathShell (Solid) — StepChoice content lookup", () => {
 
   it("falls back to the choice id when nothing is registered under the inner step id", async () => {
     dispose = render(
-      () => <PathShell path={choicePath} steps={{ type: () => <div class="by-choice">Choice content</div>, done: () => <div /> }} />,
+      () => (
+        <PathShell
+          path={choicePath}
+          steps={{ type: () => <div class="by-choice">Choice content</div>, done: () => <div /> }}
+        />
+      ),
       container
     );
     await tick();
@@ -732,16 +717,30 @@ describe("PathShell (Solid) — custom header visibility", () => {
 
   it("hides a custom header when hideProgress is set", async () => {
     dispose = render(
-      () => <PathShell path={threeStepPath()} hideProgress renderHeader={header} steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }} />,
+      () => (
+        <PathShell
+          path={threeStepPath()}
+          hideProgress
+          renderHeader={header}
+          steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }}
+        />
+      ),
       container
     );
     await tick();
     expect(container.querySelector(".custom-header")).toBeNull();
   });
 
-  it("hides a custom header under layout=\"tabs\"", async () => {
+  it('hides a custom header under layout="tabs"', async () => {
     dispose = render(
-      () => <PathShell path={threeStepPath()} layout="tabs" renderHeader={header} steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }} />,
+      () => (
+        <PathShell
+          path={threeStepPath()}
+          layout="tabs"
+          renderHeader={header}
+          steps={{ "step-a": () => <div />, "step-b": () => <div />, "step-c": () => <div /> }}
+        />
+      ),
       container
     );
     await tick();
@@ -755,12 +754,18 @@ describe("PathShell (Solid) — custom header visibility", () => {
 
 describe("PathShell (Solid) — restoreKey remount fidelity", () => {
   it("a remounted inner shell resumes where it was: no hooks re-fire, attempted state survives", async () => {
-    const leaveA = vi.fn(); const enterA = vi.fn(); const enterB = vi.fn();
+    const leaveA = vi.fn();
+    const enterA = vi.fn();
+    const enterB = vi.fn();
     const inner: PathDefinition = {
       id: "inner",
       steps: [
         { id: "inner-a", onLeave: leaveA, onEnter: enterA },
-        { id: "inner-b", onEnter: enterB, fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }) },
+        {
+          id: "inner-b",
+          onEnter: enterB,
+          fieldErrors: ({ data }) => (data.city ? {} : { city: "City required" }),
+        },
       ],
     };
     const outer: PathDefinition = { id: "outer", steps: [{ id: "host" }, { id: "after" }] };
@@ -778,7 +783,10 @@ describe("PathShell (Solid) — restoreKey remount fidelity", () => {
                 validationDisplay="summary"
                 nextLabel="InnerNext"
                 completeLabel="InnerComplete"
-                steps={{ "inner-a": () => <div>Inner Content A</div>, "inner-b": () => <div>Inner Content B</div> }}
+                steps={{
+                  "inner-a": () => <div>Inner Content A</div>,
+                  "inner-b": () => <div>Inner Content B</div>,
+                }}
               />
             ),
             after: () => <div>After</div>,
@@ -789,7 +797,9 @@ describe("PathShell (Solid) — restoreKey remount fidelity", () => {
     );
     await tick();
     const click = async (label: string) => {
-      const btn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === label);
+      const btn = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === label
+      );
       expect(btn, `button "${label}"`).toBeDefined();
       (btn as HTMLButtonElement).click();
       await tick();
@@ -826,7 +836,18 @@ describe("PathShell (Solid) — late engine prop", () => {
     await started.start(threeStepPath(), { name: "restored" });
     const [engine, setEngine] = createSignal<InstanceType<typeof PathEngine> | undefined>(undefined);
     dispose = render(
-      () => <PathShell path={threeStepPath()} autoStart={false} engine={engine()} steps={{ "step-a": () => <div>Content A</div>, "step-b": () => <div>Content B</div>, "step-c": () => <div>Content C</div> }} />,
+      () => (
+        <PathShell
+          path={threeStepPath()}
+          autoStart={false}
+          engine={engine()}
+          steps={{
+            "step-a": () => <div>Content A</div>,
+            "step-b": () => <div>Content B</div>,
+            "step-c": () => <div>Content C</div>,
+          }}
+        />
+      ),
       container
     );
     await tick();

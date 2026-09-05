@@ -16,4 +16,3 @@ const data = computed(() => snapshot.value?.data);
     <p class="step-note">Use Back or Next to return to the parent course flow.</p>
   </div>
 </template>
-

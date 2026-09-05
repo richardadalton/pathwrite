@@ -5,14 +5,13 @@ import type { ProfileSubData } from "./wizard";
 
 const { snapshot, setData } = usePathContext<ProfileSubData>();
 
-const data     = computed(() => snapshot.value?.data);
-const errors   = computed(() => snapshot.value?.fieldErrors ?? {});
+const data = computed(() => snapshot.value?.data);
+const errors = computed(() => snapshot.value?.fieldErrors ?? {});
 const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
 </script>
 
 <template>
   <div class="form-body">
-
     <!-- Who we're filling in for -->
     <div class="subwizard-context">
       <p class="subwizard-for">Completing profile for</p>
@@ -62,7 +61,5 @@ const attempted = computed(() => snapshot.value?.hasAttemptedNext ?? false);
       ></textarea>
       <p v-if="attempted && errors.bio" class="field-error">{{ errors.bio }}</p>
     </div>
-
   </div>
 </template>
-

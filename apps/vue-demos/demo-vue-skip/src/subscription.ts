@@ -52,9 +52,9 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
       id: "shipping-address",
       title: "Shipping Address",
       fieldErrors: ({ data }) => ({
-        shippingName:     !data.shippingName?.trim()     ? "Name is required."     : undefined,
-        shippingAddress:  !data.shippingAddress?.trim()  ? "Address is required."  : undefined,
-        shippingCity:     !data.shippingCity?.trim()      ? "City is required."     : undefined,
+        shippingName: !data.shippingName?.trim() ? "Name is required." : undefined,
+        shippingAddress: !data.shippingAddress?.trim() ? "Address is required." : undefined,
+        shippingCity: !data.shippingCity?.trim() ? "City is required." : undefined,
         shippingPostcode: !data.shippingPostcode?.trim() ? "Postcode is required." : undefined,
       }),
     },
@@ -64,9 +64,9 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
       // Skip the entire payment step when the user chose the Free plan.
       shouldSkip: ({ data }) => data.plan === "free",
       fieldErrors: ({ data }) => ({
-        cardNumber: !data.cardNumber?.trim()  ? "Card number is required." : undefined,
-        cardExpiry: !data.cardExpiry?.trim()   ? "Expiry date is required." : undefined,
-        cardCvc:    !data.cardCvc?.trim()      ? "CVC is required."        : undefined,
+        cardNumber: !data.cardNumber?.trim() ? "Card number is required." : undefined,
+        cardExpiry: !data.cardExpiry?.trim() ? "Expiry date is required." : undefined,
+        cardCvc: !data.cardCvc?.trim() ? "CVC is required." : undefined,
       }),
     },
     {
@@ -78,17 +78,17 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
       onEnter: ({ data, isFirstEntry }) => {
         if (isFirstEntry) {
           return {
-            billingName:     data.billingName     || data.shippingName,
-            billingAddress:  data.billingAddress  || data.shippingAddress,
-            billingCity:     data.billingCity      || data.shippingCity,
+            billingName: data.billingName || data.shippingName,
+            billingAddress: data.billingAddress || data.shippingAddress,
+            billingCity: data.billingCity || data.shippingCity,
             billingPostcode: data.billingPostcode || data.shippingPostcode,
           };
         }
       },
       fieldErrors: ({ data }) => ({
-        billingName:     !data.billingName?.trim()     ? "Name is required."     : undefined,
-        billingAddress:  !data.billingAddress?.trim()  ? "Address is required."  : undefined,
-        billingCity:     !data.billingCity?.trim()      ? "City is required."     : undefined,
+        billingName: !data.billingName?.trim() ? "Name is required." : undefined,
+        billingAddress: !data.billingAddress?.trim() ? "Address is required." : undefined,
+        billingCity: !data.billingCity?.trim() ? "City is required." : undefined,
         billingPostcode: !data.billingPostcode?.trim() ? "Postcode is required." : undefined,
       }),
     },
@@ -98,4 +98,3 @@ export const subscriptionPath: PathDefinition<SubscriptionData> = {
     },
   ],
 };
-

@@ -1,5 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
-import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot, PathStatus, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
+import {
+  GuardResult,
+  PathData,
+  PathDefinition,
+  PathEngine,
+  PathEvent,
+  PathSnapshot,
+  PathStatus,
+  PathStep,
+  SerializedPathState,
+  StepChoice,
+  matchesStrategy,
+} from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -83,7 +95,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -93,7 +105,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }],
     });
     await engine.next();
     await engine.previous();
@@ -116,8 +128,8 @@ describe("PathEngine — navigation", () => {
       id: "w",
       steps: [
         { id: "step1", canMoveNext: () => ({ allowed: false, reason: "Not eligible." }) },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
     expect(engine.snapshot()?.blockingError).toBeNull();
     await engine.next();
@@ -131,9 +143,9 @@ describe("PathEngine — navigation", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "step1", canMoveNext: () => block ? ({ allowed: false, reason: "Not yet." }) : true },
-        { id: "step2" }
-      ]
+        { id: "step1", canMoveNext: () => (block ? { allowed: false, reason: "Not yet." } : true) },
+        { id: "step2" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()?.blockingError).toBe("Not yet.");
@@ -147,10 +159,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => ({ allowed: false }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.blockingError).toBeNull();
@@ -162,8 +171,8 @@ describe("PathEngine — navigation", () => {
       id: "w",
       steps: [
         { id: "step1", canMoveNext: async () => ({ allowed: false, reason: "Async blocked." }) },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()?.blockingError).toBe("Async blocked.");
@@ -173,10 +182,7 @@ describe("PathEngine — navigation", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => ({ allowed: false, reason: "Blocked." }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false, reason: "Blocked." }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.blockingError).toBe("Blocked.");
@@ -275,7 +281,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(false);
   });
@@ -284,7 +290,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }) }],
     });
     await engine.next();
     expect(engine.snapshot()?.canMovePrevious).toBe(false);
@@ -294,7 +300,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) }, { id: "step2" }]
+      steps: [{ id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) }, { id: "step2" }],
     });
     // Async guard — snapshot defaults to true; the engine enforces on navigation
     expect(engine.snapshot()?.canMoveNext).toBe(true);
@@ -302,13 +308,16 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
 
   it("updates canMoveNext when data changes via setData", async () => {
     const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "step1", canMoveNext: (ctx) => (ctx.data as { name: string }).name.length > 0 },
-        { id: "step2" }
-      ]
-    }, { name: "" });
+    await engine.start(
+      {
+        id: "w",
+        steps: [
+          { id: "step1", canMoveNext: (ctx) => (ctx.data as { name: string }).name.length > 0 },
+          { id: "step2" },
+        ],
+      },
+      { name: "" }
+    );
     expect(engine.snapshot()?.canMoveNext).toBe(false);
     await engine.setData("name", "Alice");
     expect(engine.snapshot()?.canMoveNext).toBe(true);
@@ -319,7 +328,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onEnter }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onEnter }],
     });
     const callsAfterStart = onEnter.mock.calls.length;
     await engine.next();
@@ -331,7 +340,7 @@ describe("PathEngine — snapshot canMoveNext / canMovePrevious", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }), onEnter }]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => ({ allowed: false }), onEnter }],
     });
     await engine.next();
     const callsAfterEnter = onEnter.mock.calls.length;
@@ -557,7 +566,6 @@ describe("PathEngine — stateChanged cause field", () => {
 // Snapshot fields
 // ---------------------------------------------------------------------------
 
-
 describe("PathEngine — lifecycle hooks", () => {
   it("calls onEnter when the path starts", async () => {
     const onEnter = vi.fn();
@@ -611,7 +619,7 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", onLeave: () => ({ left: true }) }, { id: "step2" }]
+      steps: [{ id: "step1", onLeave: () => ({ left: true }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.data.left).toBe(true);
@@ -622,7 +630,7 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onLeave }]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }), onLeave }],
     });
     await engine.next();
     expect(onLeave).not.toHaveBeenCalled();
@@ -656,14 +664,16 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "step1",
-        onSubPathComplete: (_id, subData) => ({ collected: subData.value })
-      }]
+      steps: [
+        {
+          id: "step1",
+          onSubPathComplete: (_id, subData) => ({ collected: subData.value }),
+        },
+      ],
     });
     await engine.startSubPath({
       id: "sub",
-      steps: [{ id: "s1", onEnter: () => ({ value: "hello" }) }]
+      steps: [{ id: "s1", onEnter: () => ({ value: "hello" }) }],
     });
     await engine.next();
     expect(engine.snapshot()?.data.collected).toBe("hello");
@@ -673,12 +683,14 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{
-        id: "step1",
-        onEnter: (ctx) => {
-          (ctx.data as PathData).sneaky = "mutation";
-        }
-      }]
+      steps: [
+        {
+          id: "step1",
+          onEnter: (ctx) => {
+            (ctx.data as PathData).sneaky = "mutation";
+          },
+        },
+      ],
     });
     expect(engine.snapshot()?.data.sneaky).toBeUndefined();
   });
@@ -688,7 +700,14 @@ describe("PathEngine — lifecycle hooks", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "my-path",
-      steps: [{ id: "my-step", onEnter: (ctx) => { captured = { pathId: ctx.pathId, stepId: ctx.stepId }; } }]
+      steps: [
+        {
+          id: "my-step",
+          onEnter: (ctx) => {
+            captured = { pathId: ctx.pathId, stepId: ctx.stepId };
+          },
+        },
+      ],
     });
     expect(captured).toEqual({ pathId: "my-path", stepId: "my-step" });
   });
@@ -756,8 +775,8 @@ describe("PathEngine — sub-paths", () => {
       steps: [
         { id: "a", title: "Alpha" },
         { id: "b", title: "Beta" },
-        { id: "c", title: "Gamma" }
-      ]
+        { id: "c", title: "Gamma" },
+      ],
     };
     await engine.start(root);
     await engine.next(); // advance root to step b
@@ -780,7 +799,10 @@ describe("PathEngine — sub-paths", () => {
     const engine = new PathEngine();
     const root: PathDefinition = {
       id: "root",
-      steps: [{ id: "r1", title: "Root 1" }, { id: "r2", title: "Root 2" }]
+      steps: [
+        { id: "r1", title: "Root 1" },
+        { id: "r2", title: "Root 2" },
+      ],
     };
     await engine.start(root);
     await engine.startSubPath(twoStepPath("level1"));
@@ -811,8 +833,12 @@ describe("PathEngine — subscriptions", () => {
     const engine = new PathEngine();
     const a: string[] = [];
     const b: string[] = [];
-    engine.subscribe((e) => { if (e.type === "stateChanged") a.push(e.snapshot.stepId); });
-    engine.subscribe((e) => { if (e.type === "stateChanged") b.push(e.snapshot.stepId); });
+    engine.subscribe((e) => {
+      if (e.type === "stateChanged") a.push(e.snapshot.stepId);
+    });
+    engine.subscribe((e) => {
+      if (e.type === "stateChanged") b.push(e.snapshot.stepId);
+    });
     await engine.start(twoStepPath());
     await engine.next();
     expect(a).toContain("step1");
@@ -861,7 +887,7 @@ describe("PathEngine — shouldSkip", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
+      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }],
     });
     expect(engine.snapshot()?.stepId).toBe("step2");
   });
@@ -870,7 +896,7 @@ describe("PathEngine — shouldSkip", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step3");
@@ -880,7 +906,7 @@ describe("PathEngine — shouldSkip", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true }, { id: "step3" }],
     });
     await engine.next();
     await engine.previous();
@@ -895,8 +921,8 @@ describe("PathEngine — shouldSkip", () => {
         { id: "step1" },
         { id: "skip-a", shouldSkip: () => true },
         { id: "skip-b", shouldSkip: () => true },
-        { id: "step4" }
-      ]
+        { id: "step4" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step4");
@@ -907,7 +933,7 @@ describe("PathEngine — shouldSkip", () => {
     const events = collectEvents(engine);
     await engine.start({
       id: "w",
-      steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => true }]
+      steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => true }],
     });
     await engine.next();
     expect(engine.snapshot()?.status).toBe("completed");
@@ -919,7 +945,7 @@ describe("PathEngine — shouldSkip", () => {
     const events = collectEvents(engine);
     await engine.start({
       id: "w",
-      steps: [{ id: "skip-only", shouldSkip: () => true }]
+      steps: [{ id: "skip-only", shouldSkip: () => true }],
     });
     expect(engine.snapshot()?.status).toBe("completed");
     expect(events.some((e) => e.type === "completed")).toBe(true);
@@ -929,7 +955,7 @@ describe("PathEngine — shouldSkip", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }]
+      steps: [{ id: "skip-me", shouldSkip: () => true }, { id: "step2" }],
     });
     await engine.previous();
     expect(engine.snapshot()).toBeNull();
@@ -937,14 +963,17 @@ describe("PathEngine — shouldSkip", () => {
 
   it("evaluates shouldSkip with the current path data", async () => {
     const engine = new PathEngine();
-    await engine.start({
-      id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "conditional", shouldSkip: (ctx) => ctx.data.skipMiddle === true },
-        { id: "step3" }
-      ]
-    }, { skipMiddle: true });
+    await engine.start(
+      {
+        id: "w",
+        steps: [
+          { id: "step1" },
+          { id: "conditional", shouldSkip: (ctx) => ctx.data.skipMiddle === true },
+          { id: "step3" },
+        ],
+      },
+      { skipMiddle: true }
+    );
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step3");
 
@@ -959,11 +988,7 @@ describe("PathEngine — shouldSkip", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "skip-me", shouldSkip: () => true, onEnter },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => true, onEnter }, { id: "step3" }],
     });
     await engine.next();
     expect(onEnter).not.toHaveBeenCalled();
@@ -991,7 +1016,10 @@ describe("PathEngine — stepTitle", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", title: "First" }, { id: "step2", title: "Second" }]
+      steps: [
+        { id: "step1", title: "First" },
+        { id: "step2", title: "Second" },
+      ],
     });
     expect(engine.snapshot()?.stepTitle).toBe("First");
     await engine.next();
@@ -1014,7 +1042,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: "Required" }) }],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required", email: "Required" });
   });
@@ -1023,7 +1051,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({}) }]
+      steps: [{ id: "step1", fieldErrors: () => ({}) }],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
@@ -1032,7 +1060,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: undefined }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: undefined }) }],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
   });
@@ -1045,10 +1073,10 @@ describe("PathEngine — fieldErrors", () => {
         {
           id: "step1",
           fieldErrors: (ctx) => ({
-            name: (ctx.data as PathData).name ? undefined : "Required"
-          })
-        }
-      ]
+            name: (ctx.data as PathData).name ? undefined : "Required",
+          }),
+        },
+      ],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
 
@@ -1060,7 +1088,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(false);
   });
@@ -1069,7 +1097,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({}) }]
+      steps: [{ id: "step1", fieldErrors: () => ({}) }],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
@@ -1078,10 +1106,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", fieldErrors: () => ({ name: "Required" }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }, { id: "step2" }],
     });
     expect(engine.snapshot()?.stepId).toBe("step1");
     await engine.next(); // blocked — fieldErrors has entries
@@ -1098,11 +1123,11 @@ describe("PathEngine — fieldErrors", () => {
         {
           id: "step1",
           fieldErrors: (ctx) => ({
-            name: (ctx.data as PathData).name ? undefined : "Required"
-          })
+            name: (ctx.data as PathData).name ? undefined : "Required",
+          }),
         },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(false);
     await engine.setData("name", "Alice");
@@ -1115,11 +1140,13 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{
-        id: "step1",
-        fieldErrors: () => ({ name: "Required" }), // has messages
-        canMoveNext: () => true                        // explicitly allows anyway
-      }]
+      steps: [
+        {
+          id: "step1",
+          fieldErrors: () => ({ name: "Required" }), // has messages
+          canMoveNext: () => true, // explicitly allows anyway
+        },
+      ],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
@@ -1128,7 +1155,7 @@ describe("PathEngine — fieldErrors", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => Promise.resolve({ name: "Required" }) as any }]
+      steps: [{ id: "step1", fieldErrors: () => Promise.resolve({ name: "Required" }) as any }],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({});
   });
@@ -1139,8 +1166,8 @@ describe("PathEngine — fieldErrors", () => {
       id: "w",
       steps: [
         { id: "step1", fieldErrors: () => ({ field: "Fill in step 1" }) },
-        { id: "step2", fieldErrors: () => ({}) }
-      ]
+        { id: "step2", fieldErrors: () => ({}) },
+      ],
     });
     expect(engine.snapshot()?.fieldErrors).toEqual({ field: "Fill in step 1" });
 
@@ -1188,7 +1215,7 @@ describe("PathEngine — validate()", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
     const events: PathEvent[] = [];
-    engine.subscribe(e => events.push(e));
+    engine.subscribe((e) => events.push(e));
     engine.validate();
     expect(events[0]).toMatchObject({ type: "stateChanged", cause: "validate" });
   });
@@ -1203,7 +1230,8 @@ describe("PathEngine — validate()", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath());
     engine.validate();
-    await engine.next(); await engine.next(); // complete the path
+    await engine.next();
+    await engine.next(); // complete the path
     await engine.start(twoStepPath());
     expect(engine.snapshot()?.hasValidated).toBe(false);
   });
@@ -1224,7 +1252,7 @@ describe("PathEngine — fieldWarnings", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) }]
+      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) }],
     });
     expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Did you mean gmail.com?" });
   });
@@ -1233,7 +1261,7 @@ describe("PathEngine — fieldWarnings", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldWarnings: () => ({ name: undefined, email: "Check this" }) }]
+      steps: [{ id: "step1", fieldWarnings: () => ({ name: undefined, email: "Check this" }) }],
     });
     expect(engine.snapshot()?.fieldWarnings).toEqual({ email: "Check this" });
   });
@@ -1246,10 +1274,10 @@ describe("PathEngine — fieldWarnings", () => {
         {
           id: "step1",
           fieldWarnings: (ctx) => ({
-            email: (ctx.data as PathData).email === "test@gmial.com" ? "Did you mean gmail.com?" : undefined
-          })
-        }
-      ]
+            email: (ctx.data as PathData).email === "test@gmial.com" ? "Did you mean gmail.com?" : undefined,
+          }),
+        },
+      ],
     });
     expect(engine.snapshot()?.fieldWarnings).toEqual({});
 
@@ -1261,7 +1289,7 @@ describe("PathEngine — fieldWarnings", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) }]
+      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) }],
     });
     expect(engine.snapshot()?.canMoveNext).toBe(true);
   });
@@ -1270,10 +1298,7 @@ describe("PathEngine — fieldWarnings", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", fieldWarnings: () => ({ email: "Looks odd" }) }, { id: "step2" }],
     });
     expect(engine.snapshot()?.stepId).toBe("step1");
     await engine.next();
@@ -1284,7 +1309,7 @@ describe("PathEngine — fieldWarnings", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", fieldWarnings: () => Promise.resolve({ email: "Warning" }) as any }]
+      steps: [{ id: "step1", fieldWarnings: () => Promise.resolve({ email: "Warning" }) as any }],
     });
     expect(engine.snapshot()?.fieldWarnings).toEqual({});
   });
@@ -1295,8 +1320,8 @@ describe("PathEngine — fieldWarnings", () => {
       id: "w",
       steps: [
         { id: "step1", fieldWarnings: () => ({ field: "Consider this" }) },
-        { id: "step2", fieldWarnings: () => ({}) }
-      ]
+        { id: "step2", fieldWarnings: () => ({}) },
+      ],
     });
     expect(engine.snapshot()?.fieldWarnings).toEqual({ field: "Consider this" });
 
@@ -1312,12 +1337,12 @@ describe("PathEngine — fieldWarnings", () => {
         {
           id: "step1",
           fieldErrors: (ctx) => ({
-            name: (ctx.data as PathData).name ? undefined : "Required"
+            name: (ctx.data as PathData).name ? undefined : "Required",
           }),
-          fieldWarnings: () => ({ email: "Did you mean gmail.com?" })
+          fieldWarnings: () => ({ email: "Did you mean gmail.com?" }),
         },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
     // Both populated
     expect(engine.snapshot()?.fieldErrors).toEqual({ name: "Required" });
@@ -1351,10 +1376,7 @@ describe("PathEngine — hasAttemptedNext", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => ({ allowed: false }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false }) }, { id: "step2" }],
     });
     expect(engine.snapshot()?.hasAttemptedNext).toBe(false);
     await engine.next(); // blocked but flag still sets
@@ -1510,7 +1532,7 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     await engine.start({
       id: "test",
       steps: [{ id: "s1" }, { id: "s2" }],
-      onComplete
+      onComplete,
     });
     await engine.next();
     await engine.next();
@@ -1521,11 +1543,14 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
   it("passes the final path data to onComplete", async () => {
     const onComplete = vi.fn();
     const engine = new PathEngine();
-    await engine.start({
-      id: "test",
-      steps: [{ id: "s1" }],
-      onComplete
-    }, { name: "Alice" });
+    await engine.start(
+      {
+        id: "test",
+        steps: [{ id: "s1" }],
+        onComplete,
+      },
+      { name: "Alice" }
+    );
     await engine.setData("age", 30);
     await engine.next();
     expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({ name: "Alice", age: 30 }));
@@ -1534,11 +1559,14 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
   it("calls onCancel when a top-level path is cancelled", async () => {
     const onCancel = vi.fn();
     const engine = new PathEngine();
-    await engine.start({
-      id: "test",
-      steps: [{ id: "s1" }],
-      onCancel
-    }, { foo: "bar" });
+    await engine.start(
+      {
+        id: "test",
+        steps: [{ id: "s1" }],
+        onCancel,
+      },
+      { foo: "bar" }
+    );
     await engine.cancel();
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onCancel).toHaveBeenCalledWith(expect.objectContaining({ foo: "bar" }));
@@ -1551,12 +1579,12 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     await engine.start({
       id: "parent",
       steps: [{ id: "s1" }],
-      onComplete: parentOnComplete
+      onComplete: parentOnComplete,
     });
     await engine.startSubPath({
       id: "sub",
       steps: [{ id: "sub1" }],
-      onComplete: subOnComplete
+      onComplete: subOnComplete,
     });
     await engine.next();
     expect(subOnComplete).not.toHaveBeenCalled();
@@ -1570,12 +1598,12 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     await engine.start({
       id: "parent",
       steps: [{ id: "s1" }],
-      onCancel: parentOnCancel
+      onCancel: parentOnCancel,
     });
     await engine.startSubPath({
       id: "sub",
       steps: [{ id: "sub1" }],
-      onCancel: subOnCancel
+      onCancel: subOnCancel,
     });
     await engine.cancel();
     expect(subOnCancel).not.toHaveBeenCalled();
@@ -1585,14 +1613,17 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
   it("supports async onComplete callback", async () => {
     let result: string | null = null;
     const engine = new PathEngine();
-    await engine.start({
-      id: "test",
-      steps: [{ id: "s1" }],
-      onComplete: async (data) => {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        result = "completed-" + data.value;
-      }
-    }, { value: "test" });
+    await engine.start(
+      {
+        id: "test",
+        steps: [{ id: "s1" }],
+        onComplete: async (data) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          result = "completed-" + data.value;
+        },
+      },
+      { value: "test" }
+    );
     await engine.next();
     expect(result).toBe("completed-test");
   });
@@ -1600,14 +1631,17 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
   it("supports async onCancel callback", async () => {
     let result: string | null = null;
     const engine = new PathEngine();
-    await engine.start({
-      id: "test",
-      steps: [{ id: "s1" }],
-      onCancel: async (data) => {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        result = "cancelled-" + data.value;
-      }
-    }, { value: "test" });
+    await engine.start(
+      {
+        id: "test",
+        steps: [{ id: "s1" }],
+        onCancel: async (data) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          result = "cancelled-" + data.value;
+        },
+      },
+      { value: "test" }
+    );
     await engine.cancel();
     expect(result).toBe("cancelled-test");
   });
@@ -1621,7 +1655,9 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     await engine.start({
       id: "test",
       steps: [{ id: "s1" }],
-      onComplete: () => { callOrder.push("callback"); }
+      onComplete: () => {
+        callOrder.push("callback");
+      },
     });
     await engine.next();
     expect(callOrder).toEqual(["callback", "event"]);
@@ -1636,7 +1672,9 @@ describe("PathEngine — onComplete / onCancel on PathDefinition", () => {
     await engine.start({
       id: "test",
       steps: [{ id: "s1" }],
-      onCancel: () => { callOrder.push("callback"); }
+      onCancel: () => {
+        callOrder.push("callback");
+      },
     });
     await engine.cancel();
     expect(callOrder).toEqual(["event", "callback"]);
@@ -1652,10 +1690,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => Promise.resolve(true) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => Promise.resolve(true) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step2");
@@ -1665,10 +1700,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => Promise.resolve({ allowed: false }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step1");
@@ -1678,10 +1710,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "step2", canMovePrevious: () => Promise.resolve({ allowed: false }) }
-      ]
+      steps: [{ id: "step1" }, { id: "step2", canMovePrevious: () => Promise.resolve({ allowed: false }) }],
     });
     await engine.next();
     await engine.previous();
@@ -1692,7 +1721,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "step1", onEnter: () => Promise.resolve({ asyncVisit: true }) }]
+      steps: [{ id: "step1", onEnter: () => Promise.resolve({ asyncVisit: true }) }],
     });
     expect(engine.snapshot()?.data.asyncVisit).toBe(true);
   });
@@ -1701,10 +1730,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", onLeave: () => Promise.resolve({ asyncLeft: true }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", onLeave: () => Promise.resolve({ asyncLeft: true }) }, { id: "step2" }],
     });
     await engine.next();
     expect(engine.snapshot()?.data.asyncLeft).toBe(true);
@@ -1714,15 +1740,16 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "step1",
-        onSubPathComplete: (_id, subData) =>
-          Promise.resolve({ collected: subData.value })
-      }]
+      steps: [
+        {
+          id: "step1",
+          onSubPathComplete: (_id, subData) => Promise.resolve({ collected: subData.value }),
+        },
+      ],
     });
     await engine.startSubPath({
       id: "sub",
-      steps: [{ id: "s1", onEnter: () => ({ value: "async-result" }) }]
+      steps: [{ id: "s1", onEnter: () => ({ value: "async-result" }) }],
     });
     await engine.next();
     expect(engine.snapshot()?.data.collected).toBe("async-result");
@@ -1732,11 +1759,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => Promise.resolve(true) }, { id: "step3" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step3");
@@ -1746,11 +1769,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => Promise.resolve(true) }, { id: "step3" }],
     });
     // After start: step1 (index 0). skip-me was checked at start — not applicable at step 1.
     // step1 is index 0 in visible steps [step1, step3] = stepCount 2
@@ -1758,11 +1777,11 @@ describe("PathEngine — async hooks and guards", () => {
     const snap = engine.snapshot()!;
     // After navigating: skip-me is now in resolvedSkips
     expect(snap.stepId).toBe("step3");
-    expect(snap.stepCount).toBe(2);        // skip-me excluded
-    expect(snap.stepIndex).toBe(1);        // step3 is index 1 in [step1, step3]
-    expect(snap.progress).toBe(1);         // last visible step
+    expect(snap.stepCount).toBe(2); // skip-me excluded
+    expect(snap.stepIndex).toBe(1); // step3 is index 1 in [step1, step3]
+    expect(snap.progress).toBe(1); // last visible step
     expect(snap.isLastStep).toBe(true);
-    expect(snap.steps.map(s => s.id)).toEqual(["step1", "step3"]);
+    expect(snap.steps.map((s) => s.id)).toEqual(["step1", "step3"]);
   });
 
   it("snapshot stepCount is optimistic (full count) before first navigation", async () => {
@@ -1770,11 +1789,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "skip-me", shouldSkip: () => Promise.resolve(true) },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "skip-me", shouldSkip: () => Promise.resolve(true) }, { id: "step3" }],
     });
     const snap = engine.snapshot()!;
     expect(snap.stepId).toBe("step1");
@@ -1787,11 +1802,7 @@ describe("PathEngine — async hooks and guards", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1" },
-        { id: "step2", shouldSkip: () => shouldSkipStep2 },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "step2", shouldSkip: () => shouldSkipStep2 }, { id: "step3" }],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step3");
@@ -1816,7 +1827,7 @@ describe("PathEngine — async hooks and guards", () => {
     statusesSeen.clear(); // reset — only care about next's transitions
     await engine.next();
     // Should have seen at least one non-idle status (validating, leaving, entering)
-    const busyStatuses = [...statusesSeen].filter(s => s !== "idle");
+    const busyStatuses = [...statusesSeen].filter((s) => s !== "idle");
     expect(busyStatuses.length).toBeGreaterThan(0);
   });
 
@@ -1848,10 +1859,10 @@ describe("PathEngine — async hooks and guards", () => {
       steps: [
         {
           id: "step1",
-          canMoveNext: () => new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 10))
+          canMoveNext: () => new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 10)),
         },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()?.stepId).toBe("step2");
@@ -1864,10 +1875,10 @@ describe("PathEngine — async hooks and guards", () => {
       steps: [
         {
           id: "step1",
-          canMoveNext: () => Promise.reject(new Error("network error"))
+          canMoveNext: () => Promise.reject(new Error("network error")),
         },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
 
     await engine.next();
@@ -1885,10 +1896,10 @@ describe("PathEngine — async hooks and guards", () => {
       steps: [
         {
           id: "step1",
-          canMoveNext: () => Promise.resolve(shouldAllow)
+          canMoveNext: () => Promise.resolve(shouldAllow),
         },
-        { id: "step2" }
-      ]
+        { id: "step2" },
+      ],
     });
 
     await engine.next();
@@ -1901,19 +1912,18 @@ describe("PathEngine — async hooks and guards", () => {
 
   it("drops a concurrent next() call while a guard is already awaiting", async () => {
     let resolveGuard!: (v: boolean) => void;
-    const guardPromise = new Promise<boolean>((resolve) => { resolveGuard = resolve; });
+    const guardPromise = new Promise<boolean>((resolve) => {
+      resolveGuard = resolve;
+    });
 
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "step1", canMoveNext: () => guardPromise },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => guardPromise }, { id: "step2" }],
     });
 
-    const first = engine.next();  // guard is now pending
-    engine.next();                // second call — should be dropped silently
+    const first = engine.next(); // guard is now pending
+    engine.next(); // second call — should be dropped silently
 
     resolveGuard(true);
     await first;
@@ -1932,10 +1942,7 @@ describe("PathEngine — error handling", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1", canMoveNext: () => Promise.reject(new Error("server down")) },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", canMoveNext: () => Promise.reject(new Error("server down")) }, { id: "s2" }],
     });
 
     await engine.next();
@@ -1949,10 +1956,7 @@ describe("PathEngine — error handling", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1" },
-        { id: "s2", onEnter: () => Promise.reject(new Error("load failed")) }
-      ]
+      steps: [{ id: "s1" }, { id: "s2", onEnter: () => Promise.reject(new Error("load failed")) }],
     });
 
     await engine.next();
@@ -1965,10 +1969,7 @@ describe("PathEngine — error handling", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1", onLeave: () => Promise.reject(new Error("save failed")) },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", onLeave: () => Promise.reject(new Error("save failed")) }, { id: "s2" }],
     });
 
     await engine.next();
@@ -1986,7 +1987,7 @@ describe("PathEngine — error handling", () => {
       onComplete: async () => {
         callCount++;
         throw new Error("submit failed");
-      }
+      },
     });
 
     await engine.next();
@@ -2007,10 +2008,10 @@ describe("PathEngine — error handling", () => {
           canMoveNext: async () => {
             if (shouldFail) throw new Error("temporary failure");
             return true;
-          }
+          },
         },
-        { id: "s2" }
-      ]
+        { id: "s2" },
+      ],
     });
 
     await engine.next();
@@ -2027,10 +2028,7 @@ describe("PathEngine — error handling", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1", canMoveNext: () => Promise.reject(new Error("flaky")) },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", canMoveNext: () => Promise.reject(new Error("flaky")) }, { id: "s2" }],
     });
 
     await engine.next();
@@ -2054,10 +2052,10 @@ describe("PathEngine — error handling", () => {
           canMoveNext: async () => {
             if (fail) throw new Error("oops");
             return true;
-          }
+          },
         },
-        { id: "s2" }
-      ]
+        { id: "s2" },
+      ],
     });
 
     await engine.next();
@@ -2086,10 +2084,7 @@ describe("PathEngine — error handling", () => {
 
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1", canMoveNext: () => Promise.reject(new Error("down")) },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", canMoveNext: () => Promise.reject(new Error("down")) }, { id: "s2" }],
     });
 
     await engine.next();
@@ -2137,11 +2132,15 @@ describe("PathEngine — error handling", () => {
   it("onComplete is called before the completed event fires", async () => {
     const order: string[] = [];
     const engine = new PathEngine();
-    engine.subscribe((e) => { if (e.type === "completed") order.push("event"); });
+    engine.subscribe((e) => {
+      if (e.type === "completed") order.push("event");
+    });
     await engine.start({
       id: "w",
       steps: [{ id: "s1" }],
-      onComplete: async () => { order.push("callback"); }
+      onComplete: async () => {
+        order.push("callback");
+      },
     });
 
     await engine.next();
@@ -2156,7 +2155,9 @@ describe("PathEngine — error handling", () => {
     await engine.start({
       id: "w",
       steps: [{ id: "s1" }],
-      onComplete: async () => { throw new Error("submit failed"); }
+      onComplete: async () => {
+        throw new Error("submit failed");
+      },
     });
 
     await engine.next();
@@ -2179,11 +2180,11 @@ describe("PathEngine — error handling", () => {
             hookCalls++;
             if (hookCalls === 1) throw new Error("save failed");
             return { saved: subData.value };
-          }
+          },
         },
-        { id: "p2" }
+        { id: "p2" },
       ],
-      onComplete
+      onComplete,
     };
     const sub: PathDefinition = { id: "sub", steps: [{ id: "s1" }] };
 
@@ -2208,8 +2209,8 @@ describe("PathEngine — error handling", () => {
     expect(snap.nestingLevel).toBe(0);
     expect(snap.data.saved).toBe(42);
     expect(onComplete).not.toHaveBeenCalled();
-    expect(events.map(e => e.type)).not.toContain("completed");
-    const resumed = events.filter(e => e.type === "resumed");
+    expect(events.map((e) => e.type)).not.toContain("completed");
+    const resumed = events.filter((e) => e.type === "resumed");
     expect(resumed).toHaveLength(1);
     // Adapters read their snapshot straight off the resumed event, so it must be settled.
     expect((resumed[0] as Extract<PathEvent, { type: "resumed" }>).snapshot.status).toBe("idle");
@@ -2224,14 +2225,23 @@ describe("PathEngine — error handling", () => {
     const engine = new PathEngine();
     let hookCalls = 0;
 
-    await engine.start({
-      id: "parent",
-      steps: [
-        { id: "p1", onSubPathComplete: async () => { hookCalls++; throw new Error("still down"); } },
-        { id: "p2" }
-      ],
-      onComplete
-    }, {});
+    await engine.start(
+      {
+        id: "parent",
+        steps: [
+          {
+            id: "p1",
+            onSubPathComplete: async () => {
+              hookCalls++;
+              throw new Error("still down");
+            },
+          },
+          { id: "p2" },
+        ],
+        onComplete,
+      },
+      {}
+    );
     await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] }, {});
     await engine.next();
     await engine.retry();
@@ -2338,10 +2348,7 @@ describe("PathEngine — lifecycle patterns", () => {
 
   it("skips review for memos via shouldSkip", async () => {
     const engine = new PathEngine();
-    await engine.start(
-      docLifecycle(),
-      freshData({ title: "Memo", body: "Lunch at noon", docType: "memo" }),
-    );
+    await engine.start(docLifecycle(), freshData({ title: "Memo", body: "Lunch at noon", docType: "memo" }));
     await engine.next(); // draft → approved (review skipped)
     expect(engine.snapshot()?.stepId).toBe("approved");
   });
@@ -2352,7 +2359,7 @@ describe("PathEngine — lifecycle patterns", () => {
 
     await engine.start(
       docLifecycle(),
-      freshData({ title: "Q3 Report", body: "Revenue up 15%", reviewOutcome: "approved" }),
+      freshData({ title: "Q3 Report", body: "Revenue up 15%", reviewOutcome: "approved" })
     );
     await engine.next(); // draft → review
     await engine.next(); // review → approved
@@ -2371,7 +2378,7 @@ describe("PathEngine — lifecycle patterns", () => {
     const engine = new PathEngine();
     await engine.start(
       docLifecycle(),
-      freshData({ title: "Draft", body: "Content", reviewOutcome: "pending" }),
+      freshData({ title: "Draft", body: "Content", reviewOutcome: "pending" })
     );
     await engine.next(); // draft → review
     await engine.next(); // blocked by guard
@@ -2382,7 +2389,7 @@ describe("PathEngine — lifecycle patterns", () => {
     const engine = new PathEngine();
     await engine.start(
       docLifecycle(),
-      freshData({ title: "Policy", body: "Content", reviewOutcome: "rejected" }),
+      freshData({ title: "Policy", body: "Content", reviewOutcome: "rejected" })
     );
     await engine.next(); // draft → review
     await engine.goToStep("draft");
@@ -2391,10 +2398,7 @@ describe("PathEngine — lifecycle patterns", () => {
 
   it("uses a review sub-path and merges the result into parent data", async () => {
     const engine = new PathEngine();
-    await engine.start(
-      docLifecycle(),
-      freshData({ title: "Plan", body: "Details" }),
-    );
+    await engine.start(docLifecycle(), freshData({ title: "Plan", body: "Details" }));
     await engine.next(); // draft → review
 
     // Launch sub-path with an "approved" decision
@@ -2415,7 +2419,7 @@ describe("PathEngine — lifecycle patterns", () => {
     const engine = new PathEngine();
     await engine.start(
       docLifecycle(),
-      freshData({ title: "Spec", body: "Details", reviewOutcome: "approved" }),
+      freshData({ title: "Spec", body: "Details", reviewOutcome: "approved" })
     );
     await engine.next(); // draft → review
     await engine.next(); // review → approved
@@ -2430,10 +2434,7 @@ describe("PathEngine — lifecycle patterns", () => {
 
   it("exposes per-state metadata via stepMeta", async () => {
     const engine = new PathEngine();
-    await engine.start(
-      docLifecycle(),
-      freshData({ title: "Doc", body: "Body", reviewOutcome: "approved" }),
-    );
+    await engine.start(docLifecycle(), freshData({ title: "Doc", body: "Body", reviewOutcome: "approved" }));
     expect(engine.snapshot()?.stepMeta).toEqual({ allowedRoles: ["author"] });
 
     await engine.next(); // → review
@@ -2445,10 +2446,7 @@ describe("PathEngine — lifecycle patterns", () => {
 
   it("rejection + re-review cycle completes the lifecycle", async () => {
     const engine = new PathEngine();
-    await engine.start(
-      docLifecycle(),
-      freshData({ title: "Policy", body: "v1" }),
-    );
+    await engine.start(docLifecycle(), freshData({ title: "Policy", body: "v1" }));
 
     // Draft → Review
     await engine.next();
@@ -2496,9 +2494,14 @@ describe("PathEngine — isFirstEntry", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
-        { id: "b" }
-      ]
+        {
+          id: "a",
+          onEnter: (ctx) => {
+            entries.push(ctx.isFirstEntry);
+          },
+        },
+        { id: "b" },
+      ],
     });
     expect(entries).toEqual([true]);
   });
@@ -2509,9 +2512,14 @@ describe("PathEngine — isFirstEntry", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
-        { id: "b" }
-      ]
+        {
+          id: "a",
+          onEnter: (ctx) => {
+            entries.push(ctx.isFirstEntry);
+          },
+        },
+        { id: "b" },
+      ],
     });
     await engine.next(); // leave a → enter b
     await engine.previous(); // leave b → re-enter a
@@ -2524,9 +2532,14 @@ describe("PathEngine — isFirstEntry", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "a", onEnter: (ctx) => { entries.push(ctx.isFirstEntry); } },
-        { id: "b" }
-      ]
+        {
+          id: "a",
+          onEnter: (ctx) => {
+            entries.push(ctx.isFirstEntry);
+          },
+        },
+        { id: "b" },
+      ],
     });
     await engine.next();
     await engine.previous();
@@ -2541,9 +2554,19 @@ describe("PathEngine — isFirstEntry", () => {
     await engine.start({
       id: "w",
       steps: [
-        { id: "a", onEnter: (ctx) => { entryLog.push({ id: "a", first: ctx.isFirstEntry }); } },
-        { id: "b", onEnter: (ctx) => { entryLog.push({ id: "b", first: ctx.isFirstEntry }); } }
-      ]
+        {
+          id: "a",
+          onEnter: (ctx) => {
+            entryLog.push({ id: "a", first: ctx.isFirstEntry });
+          },
+        },
+        {
+          id: "b",
+          onEnter: (ctx) => {
+            entryLog.push({ id: "b", first: ctx.isFirstEntry });
+          },
+        },
+      ],
     });
     await engine.next(); // first enter b
     await engine.previous(); // re-enter a
@@ -2552,7 +2575,7 @@ describe("PathEngine — isFirstEntry", () => {
       { id: "a", first: true },
       { id: "b", first: true },
       { id: "a", first: false },
-      { id: "b", first: false }
+      { id: "b", first: false },
     ]);
   });
 
@@ -2563,7 +2586,14 @@ describe("PathEngine — isFirstEntry", () => {
     await engine.start({ id: "parent", steps: [{ id: "step1" }] });
     await engine.startSubPath({
       id: "sub",
-      steps: [{ id: "step1", onEnter: (ctx) => { subEntries.push(ctx.isFirstEntry); } }]
+      steps: [
+        {
+          id: "step1",
+          onEnter: (ctx) => {
+            subEntries.push(ctx.isFirstEntry);
+          },
+        },
+      ],
     });
     expect(subEntries).toEqual([true]);
   });
@@ -2577,11 +2607,17 @@ describe("PathEngine — isFirstEntry", () => {
       steps: [
         {
           id: "a",
-          canMoveNext: (ctx) => { canMoveNextFirstEntry.push(ctx.isFirstEntry); return true; },
-          fieldErrors: (ctx) => { fieldErrorsFirstEntry.push(ctx.isFirstEntry); return {}; }
+          canMoveNext: (ctx) => {
+            canMoveNextFirstEntry.push(ctx.isFirstEntry);
+            return true;
+          },
+          fieldErrors: (ctx) => {
+            fieldErrorsFirstEntry.push(ctx.isFirstEntry);
+            return {};
+          },
         },
-        { id: "b" }
-      ]
+        { id: "b" },
+      ],
     });
     await engine.next();
     await engine.previous(); // re-enter "a"
@@ -2632,12 +2668,7 @@ describe("PathEngine — startSubPath meta", () => {
     await engine.startSubPath(twoStepPath("sub"));
     await engine.next();
     await engine.next();
-    expect(onSubPathComplete).toHaveBeenCalledWith(
-      "sub",
-      expect.any(Object),
-      expect.any(Object),
-      undefined
-    );
+    expect(onSubPathComplete).toHaveBeenCalledWith("sub", expect.any(Object), expect.any(Object), undefined);
   });
 
   it("meta is independent between consecutive sub-path runs", async () => {
@@ -2645,17 +2676,23 @@ describe("PathEngine — startSubPath meta", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "s1",
-        onSubPathComplete: (_id, _data, _ctx, meta) => { received.push(meta); }
-      }]
+      steps: [
+        {
+          id: "s1",
+          onSubPathComplete: (_id, _data, _ctx, meta) => {
+            received.push(meta);
+          },
+        },
+      ],
     });
 
     await engine.startSubPath(twoStepPath("sub"), {}, { index: 0 });
-    await engine.next(); await engine.next(); // complete first sub
+    await engine.next();
+    await engine.next(); // complete first sub
 
     await engine.startSubPath(twoStepPath("sub"), {}, { index: 1 });
-    await engine.next(); await engine.next(); // complete second sub
+    await engine.next();
+    await engine.next(); // complete second sub
 
     expect(received).toEqual([{ index: 0 }, { index: 1 }]);
   });
@@ -2704,7 +2741,7 @@ describe("PathEngine — onSubPathCancel", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{ id: "s1", onSubPathComplete, onSubPathCancel }]
+      steps: [{ id: "s1", onSubPathComplete, onSubPathCancel }],
     });
     await engine.startSubPath(twoStepPath("sub"));
     await engine.cancel();
@@ -2716,10 +2753,12 @@ describe("PathEngine — onSubPathCancel", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "s1",
-        onSubPathCancel: (subPathId) => ({ skipped: subPathId })
-      }]
+      steps: [
+        {
+          id: "s1",
+          onSubPathCancel: (subPathId) => ({ skipped: subPathId }),
+        },
+      ],
     });
     await engine.startSubPath(twoStepPath("sub"), { someValue: 1 });
     await engine.cancel();
@@ -2740,10 +2779,14 @@ describe("PathEngine — onSubPathCancel", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "s1",
-        onSubPathCancel: (_id, subData) => { receivedData = subData; }
-      }]
+      steps: [
+        {
+          id: "s1",
+          onSubPathCancel: (_id, subData) => {
+            receivedData = subData;
+          },
+        },
+      ],
     });
     await engine.startSubPath(twoStepPath("sub"), { partialInput: "hello" });
     await engine.setData("partialInput" as never, "hello updated");
@@ -2755,13 +2798,15 @@ describe("PathEngine — onSubPathCancel", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "parent",
-      steps: [{
-        id: "s1",
-        onSubPathCancel: async () => {
-          await Promise.resolve();
-          return { asyncResult: true };
-        }
-      }]
+      steps: [
+        {
+          id: "s1",
+          onSubPathCancel: async () => {
+            await Promise.resolve();
+            return { asyncResult: true };
+          },
+        },
+      ],
     });
     await engine.startSubPath(twoStepPath("sub"));
     await engine.cancel();
@@ -2783,19 +2828,18 @@ describe("PathEngine — guard error resilience", () => {
     await expect(
       engine.start({
         id: "p",
-        steps: [{
-          id: "s1",
-          canMoveNext: ({ data }) => (data.name as string).trim().length > 0
-        }]
+        steps: [
+          {
+            id: "s1",
+            canMoveNext: ({ data }) => (data.name as string).trim().length > 0,
+          },
+        ],
       })
     ).resolves.toBeUndefined();
 
     // Snapshot is still valid; canMoveNext defaults to true on error.
     expect(engine.snapshot()?.canMoveNext).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[pathwrite]"),
-      expect.anything()
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[pathwrite]"), expect.anything());
 
     warnSpy.mockRestore();
   });
@@ -2807,18 +2851,17 @@ describe("PathEngine — guard error resilience", () => {
     await expect(
       engine.start({
         id: "p",
-        steps: [{
-          id: "s1",
-          canMovePrevious: ({ data }) => (data.choice as string).toUpperCase() === "YES"
-        }]
+        steps: [
+          {
+            id: "s1",
+            canMovePrevious: ({ data }) => (data.choice as string).toUpperCase() === "YES",
+          },
+        ],
       })
     ).resolves.toBeUndefined();
 
     expect(engine.snapshot()?.canMovePrevious).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[pathwrite]"),
-      expect.anything()
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[pathwrite]"), expect.anything());
 
     warnSpy.mockRestore();
   });
@@ -2830,19 +2873,18 @@ describe("PathEngine — guard error resilience", () => {
     await expect(
       engine.start({
         id: "p",
-        steps: [{
-          id: "s1",
-          fieldErrors: ({ data }) => ({ name: (data.name as string).trim() })
-        }]
+        steps: [
+          {
+            id: "s1",
+            fieldErrors: ({ data }) => ({ name: (data.name as string).trim() }),
+          },
+        ],
       })
     ).resolves.toBeUndefined();
 
     // Safe default is an empty object.
     expect(engine.snapshot()?.fieldErrors).toEqual({});
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[pathwrite]"),
-      expect.anything()
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[pathwrite]"), expect.anything());
 
     warnSpy.mockRestore();
   });
@@ -2852,7 +2894,7 @@ describe("PathEngine — guard error resilience", () => {
 
     await engine.start({
       id: "p",
-      steps: [{ id: "s1", canMoveNext: () => ({ allowed: false }) }]
+      steps: [{ id: "s1", canMoveNext: () => ({ allowed: false }) }],
     });
 
     expect(engine.snapshot()?.canMoveNext).toBe(false);
@@ -2863,7 +2905,7 @@ describe("PathEngine — guard error resilience", () => {
 
     await engine.start({
       id: "p",
-      steps: [{ id: "s1", fieldErrors: () => ({ field: "Field is required" }) }]
+      steps: [{ id: "s1", fieldErrors: () => ({ field: "Field is required" }) }],
     });
 
     expect(engine.snapshot()?.fieldErrors).toEqual({ field: "Field is required" });
@@ -2872,16 +2914,16 @@ describe("PathEngine — guard error resilience", () => {
   it("still evaluates guards correctly after onEnter has run and data is populated", async () => {
     const engine = new PathEngine();
 
-    await engine.start(
-      {
-        id: "p",
-        steps: [{
+    await engine.start({
+      id: "p",
+      steps: [
+        {
           id: "s1",
           onEnter: () => ({ name: "" }),
-          canMoveNext: ({ data }) => (data.name as string).trim().length > 0
-        }]
-      }
-    );
+          canMoveNext: ({ data }) => (data.name as string).trim().length > 0,
+        },
+      ],
+    });
 
     // onEnter set name to "" — guard should now return false without throwing.
     expect(engine.snapshot()?.canMoveNext).toBe(false);
@@ -3068,15 +3110,15 @@ describe("PathEngine — isDirty", () => {
   it("tracks dirty state independently per step", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath(), { step1Data: "", step2Data: "" });
-    
+
     // Modify on step 1
     await engine.setData("step1Data", "changed");
     expect(engine.snapshot()?.isDirty).toBe(true);
-    
+
     // Navigate to step 2 - should reset to false
     await engine.next();
     expect(engine.snapshot()?.isDirty).toBe(false);
-    
+
     // Modify on step 2
     await engine.setData("step2Data", "changed");
     expect(engine.snapshot()?.isDirty).toBe(true);
@@ -3093,7 +3135,7 @@ describe("PathEngine — stepEnteredAt", () => {
     const before = Date.now();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     const after = Date.now();
-    
+
     const snapshot = engine.snapshot();
     expect(snapshot?.stepEnteredAt).toBeGreaterThanOrEqual(before);
     expect(snapshot?.stepEnteredAt).toBeLessThanOrEqual(after);
@@ -3103,13 +3145,13 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     const firstTimestamp = engine.snapshot()?.stepEnteredAt;
-    
+
     // Wait a bit to ensure different timestamp
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     await engine.next();
     const secondTimestamp = engine.snapshot()?.stepEnteredAt;
-    
+
     expect(secondTimestamp).toBeGreaterThan(firstTimestamp!);
   });
 
@@ -3117,13 +3159,13 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     await engine.next();
-    
+
     // Wait a bit
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     await engine.previous();
     const backTimestamp = engine.snapshot()?.stepEnteredAt;
-    
+
     // Should have a fresh timestamp for re-entry
     expect(backTimestamp).toBeGreaterThan(0);
   });
@@ -3131,7 +3173,7 @@ describe("PathEngine — stepEnteredAt", () => {
   it("is included in exportState", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
-    
+
     const state = engine.exportState();
     expect(state?.stepEnteredAt).toBeDefined();
     expect(typeof state?.stepEnteredAt).toBe("number");
@@ -3142,10 +3184,10 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     await engine.next();
-    
+
     const state = engine.exportState()!;
     const restoredEngine = PathEngine.fromState(state, { test: twoStepPath("test") });
-    
+
     const snapshot = restoredEngine.snapshot();
     expect(snapshot?.stepEnteredAt).toBe(state.stepEnteredAt);
   });
@@ -3153,15 +3195,15 @@ describe("PathEngine — stepEnteredAt", () => {
   it("defaults to current timestamp when restoring state without stepEnteredAt", async () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
-    
+
     const state = engine.exportState()!;
     // Simulate old state without stepEnteredAt
     delete (state as any).stepEnteredAt;
-    
+
     const before = Date.now();
     const restoredEngine = PathEngine.fromState(state, { test: twoStepPath("test") });
     const after = Date.now();
-    
+
     const snapshot = restoredEngine.snapshot();
     expect(snapshot?.stepEnteredAt).toBeGreaterThanOrEqual(before);
     expect(snapshot?.stepEnteredAt).toBeLessThanOrEqual(after);
@@ -3171,11 +3213,11 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     const step1Timestamp = engine.snapshot()?.stepEnteredAt;
-    
-    await new Promise(resolve => setTimeout(resolve, 10));
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
     await engine.next();
     const step2Timestamp = engine.snapshot()?.stepEnteredAt;
-    
+
     expect(step2Timestamp).toBeGreaterThan(step1Timestamp!);
   });
 
@@ -3183,11 +3225,11 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     const firstTimestamp = engine.snapshot()?.stepEnteredAt;
-    
-    await new Promise(resolve => setTimeout(resolve, 10));
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
     await engine.restart();
     const restartTimestamp = engine.snapshot()?.stepEnteredAt;
-    
+
     expect(restartTimestamp).toBeGreaterThan(firstTimestamp!);
   });
 
@@ -3195,9 +3237,9 @@ describe("PathEngine — stepEnteredAt", () => {
     const engine = new PathEngine();
     await engine.start(twoStepPath("test"), { name: "Alice" });
     const snapshot = engine.snapshot();
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const duration = Date.now() - snapshot!.stepEnteredAt;
     expect(duration).toBeGreaterThanOrEqual(50);
     expect(duration).toBeLessThan(200); // reasonable upper bound
@@ -3232,7 +3274,7 @@ describe("PathEngine — exportState / fromState", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "test",
-      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
+      steps: [{ id: "a" }, { id: "b" }, { id: "c" }],
     });
     await engine.next(); // visit b
     await engine.next(); // visit c
@@ -3296,7 +3338,7 @@ describe("PathEngine — exportState / fromState", () => {
     const engine1 = new PathEngine();
     const path: PathDefinition = {
       id: "test",
-      steps: [{ id: "a" }, { id: "b" }, { id: "c" }]
+      steps: [{ id: "a" }, { id: "b" }, { id: "c" }],
     };
     await engine1.start(path);
     await engine1.next(); // visit b
@@ -3327,7 +3369,7 @@ describe("PathEngine — exportState / fromState", () => {
 
     const engine2 = PathEngine.fromState(state, { parent, sub });
     const snapshot = engine2.snapshot();
-    
+
     expect(snapshot?.pathId).toBe("sub");
     expect(snapshot?.stepId).toBe("step2");
     expect(snapshot?.data.subValue).toBe("s1");
@@ -3366,7 +3408,7 @@ describe("PathEngine — exportState / fromState", () => {
       data: {},
       visitedStepIds: [],
       pathStack: [],
-      _status: "idle"
+      _status: "idle",
     };
 
     expect(() => {
@@ -3416,13 +3458,9 @@ describe("PathEngine — exportState / fromState", () => {
     const engine1 = new PathEngine();
     const path: PathDefinition = {
       id: "complex",
-      steps: [
-        { id: "step1" },
-        { id: "step2" },
-        { id: "step3" }
-      ]
+      steps: [{ id: "step1" }, { id: "step2" }, { id: "step3" }],
     };
-    
+
     await engine1.start(path, { a: 1, b: "test" });
     await engine1.next();
     await engine1.setData("c", [1, 2, 3]);
@@ -3453,7 +3491,7 @@ describe("PathEngine — exportState / fromState", () => {
         data: {},
         visitedStepIds: ["step1"],
         pathStack: [],
-        _status: status
+        _status: status,
       };
 
       const engine = PathEngine.fromState(state, { test: path });
@@ -3473,7 +3511,7 @@ describe("PathEngine — exportState / fromState", () => {
       data: {},
       visitedStepIds: ["step1", "step2"],
       pathStack: [],
-      _status: "completed"
+      _status: "completed",
     };
 
     const engine = PathEngine.fromState(state, { test: path });
@@ -3484,10 +3522,7 @@ describe("PathEngine — exportState / fromState", () => {
     // A naive autosave that persists on every stateChanged, including mid-flight ones.
     const path: PathDefinition = {
       id: "test",
-      steps: [
-        { id: "step1", onLeave: () => new Promise<void>(r => setTimeout(r, 10)) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", onLeave: () => new Promise<void>((r) => setTimeout(r, 10)) }, { id: "step2" }],
     };
     let captured: SerializedPathState | null = null;
     const engine1 = new PathEngine();
@@ -3517,7 +3552,7 @@ describe("PathEngine — exportState / fromState", () => {
       data: {},
       visitedStepIds: [],
       pathStack: [],
-      _status: "idle"
+      _status: "idle",
     };
 
     const engine = PathEngine.fromState(state, { test: path });
@@ -3535,7 +3570,7 @@ describe("PathEngine — exportState / fromState", () => {
     const engine2 = PathEngine.fromState(state, { test: path });
     const events: PathEvent[] = [];
     engine2.subscribe((e) => events.push(e));
-    
+
     await engine2.next(); // should complete
     expect(engine2.snapshot()?.status).toBe("completed");
     expect(events.some((e) => e.type === "completed")).toBe(true);
@@ -3610,7 +3645,7 @@ describe("PathEngine — exportState / fromState", () => {
       id: "form",
       completionBehaviour: "reset",
       steps: [{ id: "step1" }, { id: "step2" }],
-      onComplete
+      onComplete,
     };
     const engine1 = new PathEngine();
     await engine1.start(path, { name: "" });
@@ -3622,7 +3657,7 @@ describe("PathEngine — exportState / fromState", () => {
     await engine2.next(); // completes → engine calls restart() internally
 
     expect(onComplete).toHaveBeenCalledWith({ name: "Alice" });
-    expect(events.map(e => e.type)).toContain("completed");
+    expect(events.map((e) => e.type)).toContain("completed");
     const snap = engine2.snapshot()!;
     expect(snap.status).toBe("idle");
     expect(snap.error).toBeNull();
@@ -3666,7 +3701,7 @@ describe("PathEngine — StepChoice", () => {
         steps: [
           {
             id: "contact",
-            select: ({ data }) => data.type === "company" ? "company" : "individual",
+            select: ({ data }) => (data.type === "company" ? "company" : "individual"),
             steps: [{ id: "individual" }, { id: "company" }],
           } satisfies StepChoice,
         ],
@@ -3766,9 +3801,7 @@ describe("PathEngine — StepChoice", () => {
           {
             id: "contact",
             select: () => "individual",
-            steps: [
-              { id: "individual", canMoveNext: ({ data }) => !!data.agreed },
-            ],
+            steps: [{ id: "individual", canMoveNext: ({ data }) => !!data.agreed }],
           } satisfies StepChoice,
           { id: "step2" },
         ],
@@ -3815,7 +3848,7 @@ describe("PathEngine — StepChoice", () => {
           { id: "step1" },
           {
             id: "contact",
-            select: ({ data }) => data.type === "company" ? "company" : "individual",
+            select: ({ data }) => (data.type === "company" ? "company" : "individual"),
             steps: [{ id: "individual" }, { id: "company" }],
           } satisfies StepChoice,
         ],
@@ -3840,9 +3873,7 @@ describe("PathEngine — StepChoice", () => {
         {
           id: "contact",
           select: () => "individual",
-          steps: [
-            { id: "individual", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) },
-          ],
+          steps: [{ id: "individual", fieldWarnings: () => ({ email: "Did you mean gmail.com?" }) }],
         } satisfies StepChoice,
       ],
     });
@@ -3877,7 +3908,7 @@ describe("PathEngine — StepChoice", () => {
       steps: [
         {
           id: "contact",
-          select: ({ data }) => data.mode === "company" ? "company" : "individual",
+          select: ({ data }) => (data.mode === "company" ? "company" : "individual"),
           steps: [{ id: "individual" }, { id: "company" }],
         } satisfies StepChoice,
       ],
@@ -3911,7 +3942,6 @@ describe("PathEngine — StepChoice", () => {
   });
 });
 
-
 // ---------------------------------------------------------------------------
 // start() while a path is active — C4
 // ---------------------------------------------------------------------------
@@ -3936,8 +3966,8 @@ describe("PathEngine — start() while a path is active", () => {
     expect(snap.data).toEqual({ from: "b" });
     expect(engine.exportState()!.pathStack).toEqual([]);
     // Torn down silently, like restart(): no cancelled / resumed for the old path.
-    expect(events.map(e => e.type)).not.toContain("cancelled");
-    expect(events.map(e => e.type)).not.toContain("resumed");
+    expect(events.map((e) => e.type)).not.toContain("cancelled");
+    expect(events.map((e) => e.type)).not.toContain("resumed");
   });
 
   it("calling start() twice with the same definition leaves a single top-level path", async () => {
@@ -3967,7 +3997,7 @@ describe("PathEngine — start() while a path is active", () => {
     await engine.cancel();
 
     expect(engine.snapshot()).toBeNull();
-    expect(events.filter(e => e.type === "cancelled")).toHaveLength(1);
+    expect(events.filter((e) => e.type === "cancelled")).toHaveLength(1);
   });
 
   it("start() while a sub-path is active clears the whole stack", async () => {
@@ -4001,10 +4031,7 @@ describe("PathEngine — start() while a path is active", () => {
   it("start() while a path is active resets transient state", async () => {
     const path: PathDefinition = {
       id: "form",
-      steps: [
-        { id: "step1", canMoveNext: () => ({ allowed: false, reason: "nope" }) },
-        { id: "step2" }
-      ]
+      steps: [{ id: "step1", canMoveNext: () => ({ allowed: false, reason: "nope" }) }, { id: "step2" }],
     };
     const engine = new PathEngine();
     await engine.start(path, {});
@@ -4057,7 +4084,7 @@ describe("PathEngine — async guards are not re-invoked on every snapshot", () 
       engine.snapshot();
     }
 
-    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async guard"));
+    const asyncWarnings = warnSpy.mock.calls.filter((c) => String(c[0]).includes("Async guard"));
     expect(asyncWarnings).toHaveLength(1);
     warnSpy.mockRestore();
   });
@@ -4108,7 +4135,7 @@ describe("PathEngine — async guards are not re-invoked on every snapshot", () 
     }
 
     expect(fieldErrors).toHaveBeenCalledTimes(1);
-    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async fieldErrors"));
+    const asyncWarnings = warnSpy.mock.calls.filter((c) => String(c[0]).includes("Async fieldErrors"));
     expect(asyncWarnings).toHaveLength(1);
     warnSpy.mockRestore();
   });
@@ -4118,7 +4145,10 @@ describe("PathEngine — async guards are not re-invoked on every snapshot", () 
     const guard1 = vi.fn(async () => true as const);
     const guard2 = vi.fn(async () => true as const);
     const engine = new PathEngine();
-    await engine.start({ id: "p", steps: [{ id: "s1", canMoveNext: guard1 }, { id: "s2", canMoveNext: guard2 }, { id: "s3" }] });
+    await engine.start({
+      id: "p",
+      steps: [{ id: "s1", canMoveNext: guard1 }, { id: "s2", canMoveNext: guard2 }, { id: "s3" }],
+    });
     await engine.setData("a", 1);
     await engine.next(); // guard1: detection + navigation
     await engine.setData("b", 2);
@@ -4126,7 +4156,7 @@ describe("PathEngine — async guards are not re-invoked on every snapshot", () 
 
     expect(guard1).toHaveBeenCalledTimes(2);
     expect(guard2).toHaveBeenCalledTimes(1);
-    const asyncWarnings = warnSpy.mock.calls.filter(c => String(c[0]).includes("Async guard"));
+    const asyncWarnings = warnSpy.mock.calls.filter((c) => String(c[0]).includes("Async guard"));
     expect(asyncWarnings).toHaveLength(2);
     warnSpy.mockRestore();
   });
@@ -4144,13 +4174,16 @@ describe("PathEngine — hasAttemptedNext is scoped to the path instance", () =>
   const subPath: PathDefinition = {
     id: "add-item",
     steps: [
-      { id: "details", fieldErrors: ({ data }) => ({ amount: !data.amount ? "Amount is required." : undefined }) },
-      { id: "confirm" }
-    ]
+      {
+        id: "details",
+        fieldErrors: ({ data }) => ({ amount: !data.amount ? "Amount is required." : undefined }),
+      },
+      { id: "confirm" },
+    ],
   };
   const parentPath: PathDefinition = {
     id: "claim",
-    steps: [{ id: "items" }, { id: "review" }]
+    steps: [{ id: "items" }, { id: "review" }],
   };
 
   it("is false on a fresh instance of a sub-path that was attempted and cancelled", async () => {
@@ -4184,9 +4217,12 @@ describe("PathEngine — hasAttemptedNext is scoped to the path instance", () =>
     const parent: PathDefinition = {
       id: "parent",
       steps: [
-        { id: "details", fieldErrors: ({ data }) => ({ name: !data.name ? "Name is required." : undefined }) },
-        { id: "next" }
-      ]
+        {
+          id: "details",
+          fieldErrors: ({ data }) => ({ name: !data.name ? "Name is required." : undefined }),
+        },
+        { id: "next" },
+      ],
     };
     const engine = new PathEngine();
     await engine.start(parent, {});
@@ -4201,7 +4237,7 @@ describe("PathEngine — hasAttemptedNext is scoped to the path instance", () =>
   it("a parent step does not inherit attempted state from a sub-path step with the same id", async () => {
     const parent: PathDefinition = {
       id: "parent",
-      steps: [{ id: "items" }, { id: "details" }]
+      steps: [{ id: "items" }, { id: "details" }],
     };
     const engine = new PathEngine();
     await engine.start(parent, {});
@@ -4220,8 +4256,8 @@ describe("PathEngine — hasAttemptedNext is scoped to the path instance", () =>
       id: "parent",
       steps: [
         { id: "items", fieldErrors: ({ data }) => ({ items: !data.items ? "Add an item." : undefined }) },
-        { id: "review" }
-      ]
+        { id: "review" },
+      ],
     };
     const engine = new PathEngine();
     await engine.start(parent, {});
@@ -4247,7 +4283,9 @@ describe("PathEngine — error handling for navigation other than next()", () =>
   // and any caller that does not await gets an unhandled rejection.
 
   function flaky(fail: { current: boolean }, message: string) {
-    return async () => { if (fail.current) throw new Error(message); };
+    return async () => {
+      if (fail.current) throw new Error(message);
+    };
   }
 
   it("previous(): a throwing onLeave sets snapshot.error (phase leaving) instead of rejecting, and retry() recovers", async () => {
@@ -4255,7 +4293,7 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "s1" }, { id: "s2", onLeave: flaky(fail, "save failed") }]
+      steps: [{ id: "s1" }, { id: "s2", onLeave: flaky(fail, "save failed") }],
     });
     await engine.next();
 
@@ -4281,9 +4319,15 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     await engine.start({
       id: "w",
       steps: [
-        { id: "s1", onEnter: async () => { enterCalls++; if (fail.current && enterCalls > 1) throw new Error("load failed"); } },
-        { id: "s2" }
-      ]
+        {
+          id: "s1",
+          onEnter: async () => {
+            enterCalls++;
+            if (fail.current && enterCalls > 1) throw new Error("load failed");
+          },
+        },
+        { id: "s2" },
+      ],
     });
     await engine.next();
 
@@ -4307,7 +4351,7 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "s1" }, { id: "s2" }, { id: "s3", onLeave: flaky(fail, "save failed") }]
+      steps: [{ id: "s1" }, { id: "s2" }, { id: "s3", onLeave: flaky(fail, "save failed") }],
     });
     await engine.goToStep("s3");
 
@@ -4331,9 +4375,15 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     await engine.start({
       id: "w",
       steps: [
-        { id: "s1", canMoveNext: async () => { if (fail.current) throw new Error("check failed"); return true; } },
-        { id: "s2" }
-      ]
+        {
+          id: "s1",
+          canMoveNext: async () => {
+            if (fail.current) throw new Error("check failed");
+            return true;
+          },
+        },
+        { id: "s2" },
+      ],
     });
 
     await expect(engine.goToStepChecked("s2")).resolves.toBeUndefined();
@@ -4354,17 +4404,22 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     const fail = { current: true };
     let hookCalls = 0;
     const engine = new PathEngine();
-    await engine.start({
-      id: "parent",
-      steps: [{
-        id: "p1",
-        onSubPathCancel: async () => {
-          hookCalls++;
-          if (fail.current) throw new Error("cleanup failed");
-          return { cleaned: true };
-        }
-      }]
-    }, {});
+    await engine.start(
+      {
+        id: "parent",
+        steps: [
+          {
+            id: "p1",
+            onSubPathCancel: async () => {
+              hookCalls++;
+              if (fail.current) throw new Error("cleanup failed");
+              return { cleaned: true };
+            },
+          },
+        ],
+      },
+      {}
+    );
     await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] }, {});
 
     await expect(engine.cancel()).resolves.toBeUndefined();
@@ -4389,7 +4444,15 @@ describe("PathEngine — error handling for navigation other than next()", () =>
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "s1" }, { id: "s2", onLeave: async () => { throw new Error("still down"); } }]
+      steps: [
+        { id: "s1" },
+        {
+          id: "s2",
+          onLeave: async () => {
+            throw new Error("still down");
+          },
+        },
+      ],
     });
     await engine.next();
 
@@ -4419,8 +4482,14 @@ describe("PathEngine — previous() runs its guard under status validating", () 
       id: "w",
       steps: [
         { id: "s1" },
-        { id: "s2", canMovePrevious: async () => { observed = engine.snapshot()!.status; return true; } }
-      ]
+        {
+          id: "s2",
+          canMovePrevious: async () => {
+            observed = engine.snapshot()!.status;
+            return true;
+          },
+        },
+      ],
     });
     await engine.next();
 
@@ -4433,10 +4502,7 @@ describe("PathEngine — previous() runs its guard under status validating", () 
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [
-        { id: "s1" },
-        { id: "s2", canMovePrevious: async () => true, onLeave: async () => {} }
-      ]
+      steps: [{ id: "s1" }, { id: "s2", canMovePrevious: async () => true, onLeave: async () => {} }],
     });
     await engine.next();
 
@@ -4469,8 +4535,8 @@ describe("PathEngine — previous() runs its guard under status validating", () 
       id: "w",
       steps: [
         { id: "s1" },
-        { id: "s2", canMovePrevious: async () => ({ allowed: false, reason: "locked" }) }
-      ]
+        { id: "s2", canMovePrevious: async () => ({ allowed: false, reason: "locked" }) },
+      ],
     });
     await engine.next();
 
@@ -4509,8 +4575,13 @@ describe("PathEngine — stateChanged cause reflects the method that triggered i
     const events = collectEvents(engine);
     await engine.start({
       id: "express",
-      steps: [{ id: "s1", shouldSkip: () => true }, { id: "s2", shouldSkip: () => true }],
-      onComplete: async () => { throw new Error("submit failed"); }
+      steps: [
+        { id: "s1", shouldSkip: () => true },
+        { id: "s2", shouldSkip: () => true },
+      ],
+      onComplete: async () => {
+        throw new Error("submit failed");
+      },
     });
 
     expect(engine.snapshot()!.status).toBe("error");
@@ -4523,7 +4594,9 @@ describe("PathEngine — stateChanged cause reflects the method that triggered i
     await engine.start({
       id: "w",
       steps: [{ id: "s1" }],
-      onComplete: async () => { if (fail) throw new Error("submit failed"); }
+      onComplete: async () => {
+        if (fail) throw new Error("submit failed");
+      },
     });
     await engine.next();
     expect(engine.snapshot()!.status).toBe("error");
@@ -4543,7 +4616,15 @@ describe("PathEngine — stateChanged cause reflects the method that triggered i
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "s1" }, { id: "s2", onEnter: async () => { if (fail) throw new Error("load failed"); } }]
+      steps: [
+        { id: "s1" },
+        {
+          id: "s2",
+          onEnter: async () => {
+            if (fail) throw new Error("load failed");
+          },
+        },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()!.error?.phase).toBe("entering");
@@ -4561,7 +4642,15 @@ describe("PathEngine — stateChanged cause reflects the method that triggered i
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "s1", onLeave: async () => { if (fail) throw new Error("save failed"); } }, { id: "s2" }]
+      steps: [
+        {
+          id: "s1",
+          onLeave: async () => {
+            if (fail) throw new Error("save failed");
+          },
+        },
+        { id: "s2" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()!.error?.phase).toBe("leaving");
@@ -4589,7 +4678,9 @@ describe("PathEngine — subscriber errors do not escape into engine state", () 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const engine = new PathEngine();
     await engine.start(threeStepPath("w"));
-    engine.subscribe(() => { throw new Error("listener exploded"); });
+    engine.subscribe(() => {
+      throw new Error("listener exploded");
+    });
 
     await expect(engine.next()).resolves.toBeUndefined();
 
@@ -4611,9 +4702,13 @@ describe("PathEngine — subscriber errors do not escape into engine state", () 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const engine = new PathEngine();
     await engine.start(twoStepPath("w"));
-    engine.subscribe(() => { throw new Error("listener exploded"); });
+    engine.subscribe(() => {
+      throw new Error("listener exploded");
+    });
     const received: string[] = [];
-    engine.subscribe((e) => { received.push(e.type === "stateChanged" ? e.snapshot.status : e.type); });
+    engine.subscribe((e) => {
+      received.push(e.type === "stateChanged" ? e.snapshot.status : e.type);
+    });
 
     await engine.next();
 
@@ -4624,7 +4719,9 @@ describe("PathEngine — subscriber errors do not escape into engine state", () 
   it("a throwing subscriber during start() still leaves the engine idle on the first step", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const engine = new PathEngine();
-    engine.subscribe(() => { throw new Error("listener exploded"); });
+    engine.subscribe(() => {
+      throw new Error("listener exploded");
+    });
 
     await expect(engine.start(twoStepPath("w"))).resolves.toBeUndefined();
 
@@ -4637,7 +4734,9 @@ describe("PathEngine — subscriber errors do not escape into engine state", () 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const engine = new PathEngine();
     await engine.start(twoStepPath("w"));
-    engine.subscribe(() => { throw new Error("listener exploded"); });
+    engine.subscribe(() => {
+      throw new Error("listener exploded");
+    });
 
     await engine.next();
 
@@ -4657,7 +4756,7 @@ describe("PathEngine — completion snapshot when the last step is skipped", () 
 
   const path: PathDefinition = {
     id: "w",
-    steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }]
+    steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }],
   };
 
   it("the completed snapshot sits on the last visible step, not the skipped one", async () => {
@@ -4678,7 +4777,12 @@ describe("PathEngine — completion snapshot when the last step is skipped", () 
   it("a failing onComplete reached through a skipped last step shows the error on the last visible step", async () => {
     let fail = true;
     const engine = new PathEngine();
-    await engine.start({ ...path, onComplete: async () => { if (fail) throw new Error("submit failed"); } });
+    await engine.start({
+      ...path,
+      onComplete: async () => {
+        if (fail) throw new Error("submit failed");
+      },
+    });
     await engine.next();
 
     let snap = engine.snapshot()!;
@@ -4697,7 +4801,7 @@ describe("PathEngine — completion snapshot when the last step is skipped", () 
     const engine = new PathEngine();
     await engine.start({
       id: "w",
-      steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }, { id: "c", shouldSkip: () => true }]
+      steps: [{ id: "a" }, { id: "b", shouldSkip: () => true }, { id: "c", shouldSkip: () => true }],
     });
     await engine.next();
 
@@ -4727,7 +4831,15 @@ describe("PathEngine — suspend() only acts on a settled engine", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "p",
-      steps: [{ id: "a", onLeave: () => { throw new Error("boom"); } }, { id: "b" }]
+      steps: [
+        {
+          id: "a",
+          onLeave: () => {
+            throw new Error("boom");
+          },
+        },
+        { id: "b" },
+      ],
     });
     await engine.next();
     expect(engine.snapshot()?.status).toBe("error");
@@ -4761,7 +4873,15 @@ describe("PathEngine — suspend() only acts on a settled engine", () => {
     engine.subscribe((e) => events.push(e));
     await engine.start({
       id: "p",
-      steps: [{ id: "a", onLeave: async () => { await sleep(20); } }, { id: "b" }]
+      steps: [
+        {
+          id: "a",
+          onLeave: async () => {
+            await sleep(20);
+          },
+        },
+        { id: "b" },
+      ],
     });
 
     const nav = engine.next();
@@ -4801,7 +4921,18 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
 
   it("start(B) while A's onLeave is pending: B's first step is entered exactly once and sees no stray events", async () => {
     const enteredB1 = vi.fn();
-    const A: PathDefinition = { id: "A", steps: [{ id: "a1", onLeave: async () => { await sleep(20); } }, { id: "a2", onEnter: vi.fn() }] };
+    const A: PathDefinition = {
+      id: "A",
+      steps: [
+        {
+          id: "a1",
+          onLeave: async () => {
+            await sleep(20);
+          },
+        },
+        { id: "a2", onEnter: vi.fn() },
+      ],
+    };
     const B: PathDefinition = { id: "B", steps: [{ id: "b1", onEnter: enteredB1 }, { id: "b2" }] };
     const engine = new PathEngine();
     await engine.start(A);
@@ -4826,7 +4957,15 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     const engine = new PathEngine();
     await engine.start({
       id: "A",
-      steps: [{ id: "a1", onLeave: async () => { await sleep(20); } }, { id: "a2", onEnter: enteredA2 }]
+      steps: [
+        {
+          id: "a1",
+          onLeave: async () => {
+            await sleep(20);
+          },
+        },
+        { id: "a2", onEnter: enteredA2 },
+      ],
     });
 
     const stale = engine.next();
@@ -4845,7 +4984,16 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     const engine = new PathEngine();
     await engine.start({
       id: "A",
-      steps: [{ id: "a1", canMoveNext: async () => { await sleep(20); throw new Error("stale failure"); } }, { id: "a2" }]
+      steps: [
+        {
+          id: "a1",
+          canMoveNext: async () => {
+            await sleep(20);
+            throw new Error("stale failure");
+          },
+        },
+        { id: "a2" },
+      ],
     });
 
     const stale = engine.next();
@@ -4863,8 +5011,16 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
       id: "A",
       steps: [
         { id: "a1" },
-        { id: "a2", onEnter: async () => { if (slowEnter) { await sleep(20); return { fromStale: true }; } } }
-      ]
+        {
+          id: "a2",
+          onEnter: async () => {
+            if (slowEnter) {
+              await sleep(20);
+              return { fromStale: true };
+            }
+          },
+        },
+      ],
     });
 
     const stale = engine.next();
@@ -4873,12 +5029,22 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
 
     // Restart onto a path whose first step fails to enter.
     slowEnter = false;
-    await engine.start({ id: "B", steps: [{ id: "b1", onEnter: () => { throw new Error("b1 failed"); } }] });
+    await engine.start({
+      id: "B",
+      steps: [
+        {
+          id: "b1",
+          onEnter: () => {
+            throw new Error("b1 failed");
+          },
+        },
+      ],
+    });
     expect(engine.snapshot()?.status).toBe("error");
 
     await stale;
     expect(engine.snapshot()?.status).toBe("error"); // stale success did not flip it to idle
-    expect(engine.snapshot()?.data).toEqual({});     // stale patch not applied
+    expect(engine.snapshot()?.data).toEqual({}); // stale patch not applied
   });
 
   it("restart() while onComplete is pending: the old path does not complete afterwards", async () => {
@@ -4888,7 +5054,9 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     await engine.start({
       id: "A",
       steps: [{ id: "a1" }],
-      onComplete: async () => { await sleep(20); }
+      onComplete: async () => {
+        await sleep(20);
+      },
     });
 
     const stale = engine.next();
@@ -4908,7 +5076,16 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     engine.subscribe((e) => events.push(e.type));
     await engine.start({
       id: "parent",
-      steps: [{ id: "p1", onSubPathComplete: async () => { await sleep(20); return { merged: true }; } }, { id: "p2" }]
+      steps: [
+        {
+          id: "p1",
+          onSubPathComplete: async () => {
+            await sleep(20);
+            return { merged: true };
+          },
+        },
+        { id: "p2" },
+      ],
     });
     await engine.startSubPath({ id: "sub", steps: [{ id: "s1" }] });
 
@@ -4929,7 +5106,17 @@ describe("PathEngine — start()/restart() during an in-flight navigation", () =
     const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
     await engine.start({
       id: "A",
-      steps: [{ id: "a1" }, { id: "a2", shouldSkip: async () => { await sleep(20); return true; } }, { id: "a3" }]
+      steps: [
+        { id: "a1" },
+        {
+          id: "a2",
+          shouldSkip: async () => {
+            await sleep(20);
+            return true;
+          },
+        },
+        { id: "a3" },
+      ],
     });
 
     const stale = engine.next();
@@ -4948,7 +5135,10 @@ describe("PathEngine — goToStep / goToStepChecked to the current step", () => 
     const onEnter = vi.fn();
     const def: PathDefinition = {
       id: "p",
-      steps: [{ id: "a", onLeave, onEnter, fieldErrors: ({ data }) => (data.x ? {} : { x: "required" }) }, { id: "b" }]
+      steps: [
+        { id: "a", onLeave, onEnter, fieldErrors: ({ data }) => (data.x ? {} : { x: "required" }) },
+        { id: "b" },
+      ],
     };
     return { def, onLeave, onEnter };
   }
@@ -5062,9 +5252,14 @@ describe("PathEngine — validate() while in error status", () => {
     return {
       id: "p",
       steps: [
-        { id: "a", onLeave: () => { throw new Error("boom"); } },
-        { id: "b" }
-      ]
+        {
+          id: "a",
+          onLeave: () => {
+            throw new Error("boom");
+          },
+        },
+        { id: "b" },
+      ],
     };
   }
 
@@ -5094,7 +5289,18 @@ describe("PathEngine — validate() while in error status", () => {
 
   it("is still ignored while a navigation is in flight", async () => {
     const engine = new PathEngine();
-    await engine.start({ id: "p", steps: [{ id: "a", onLeave: async () => { await sleep(10); } }, { id: "b" }] });
+    await engine.start({
+      id: "p",
+      steps: [
+        {
+          id: "a",
+          onLeave: async () => {
+            await sleep(10);
+          },
+        },
+        { id: "b" },
+      ],
+    });
     const nav = engine.next();
     await new Promise((r) => setTimeout(r, 0));
     engine.validate();
@@ -5119,8 +5325,8 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
         { id: "a", canMoveNext: ({ data }) => (data.ok ? true : { allowed: false, reason: "not yet" }) },
         { id: "b", shouldSkip: () => true },
         { id: "c" },
-        { id: "d" }
-      ]
+        { id: "d" },
+      ],
     };
   }
 
@@ -5173,7 +5379,11 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
   it("serialises and restores attempted / skipped state per stack entry", async () => {
     const parent: PathDefinition = {
       id: "parent",
-      steps: [{ id: "p1", canMoveNext: () => ({ allowed: false, reason: "no" }) }, { id: "p2", shouldSkip: () => true }, { id: "p3" }]
+      steps: [
+        { id: "p1", canMoveNext: () => ({ allowed: false, reason: "no" }) },
+        { id: "p2", shouldSkip: () => true },
+        { id: "p3" },
+      ],
     };
     const sub: PathDefinition = { id: "sub", steps: [{ id: "s1", canMoveNext: () => false }, { id: "s2" }] };
     const engine = new PathEngine();
@@ -5201,7 +5411,7 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
       data: {},
       visitedStepIds: ["a", "c"],
       pathStack: [],
-      _status: "idle"
+      _status: "idle",
     };
     const restored = PathEngine.fromState(state, { p: def() });
     const s = restored.snapshot()!;
@@ -5213,8 +5423,15 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
 
   it("ignores a non-string blockingError in hand-edited state", () => {
     const state = {
-      version: 1, pathId: "p", currentStepIndex: 0, data: {}, visitedStepIds: [], pathStack: [], _status: "idle",
-      blockingError: 42, hasValidated: "yes"
+      version: 1,
+      pathId: "p",
+      currentStepIndex: 0,
+      data: {},
+      visitedStepIds: [],
+      pathStack: [],
+      _status: "idle",
+      blockingError: 42,
+      hasValidated: "yes",
     } as unknown as SerializedPathState;
     const s = PathEngine.fromState(state, { p: def() }).snapshot()!;
     expect(s.blockingError).toBeNull();
@@ -5225,7 +5442,12 @@ describe("PathEngine — exportState round-trips attempted, skipped, validated a
 describe("PathEngine — data keys that collide with object internals", () => {
   /** An object with an *own* "__proto__" key (an object literal would set the prototype instead). */
   function withOwnProto(value: unknown): PathData {
-    return Object.defineProperty({}, "__proto__", { value, enumerable: true, configurable: true, writable: true }) as PathData;
+    return Object.defineProperty({}, "__proto__", {
+      value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    }) as PathData;
   }
 
   it("setData('__proto__', v) stores an own property and does not re-parent the data", async () => {
@@ -5236,7 +5458,9 @@ describe("PathEngine — data keys that collide with object internals", () => {
     const data = engine.snapshot()!.data as Record<string, unknown>;
     expect(Object.prototype.hasOwnProperty.call(data, "__proto__")).toBe(true);
     expect(data["polluted"]).toBeUndefined();
-    expect(JSON.parse(JSON.stringify(engine.exportState()!.data))).toEqual({ ["__proto__"]: { polluted: true } });
+    expect(JSON.parse(JSON.stringify(engine.exportState()!.data))).toEqual({
+      ["__proto__"]: { polluted: true },
+    });
     expect(Object.getPrototypeOf(engine.snapshot()!.data)).toBe(Object.prototype);
   });
 
@@ -5244,7 +5468,7 @@ describe("PathEngine — data keys that collide with object internals", () => {
     const engine = new PathEngine();
     await engine.start({
       id: "p",
-      steps: [{ id: "a", onEnter: () => withOwnProto("from-hook") }, { id: "b" }]
+      steps: [{ id: "a", onEnter: () => withOwnProto("from-hook") }, { id: "b" }],
     });
     const data = engine.snapshot()!.data as Record<string, unknown>;
     expect(Object.prototype.hasOwnProperty.call(data, "__proto__")).toBe(true);
@@ -5265,15 +5489,28 @@ describe("PathEngine — data keys that collide with object internals", () => {
 
 describe("matchesStrategy — onNext covers the return from a sub-path", () => {
   const settled = { status: "idle" } as unknown as PathSnapshot;
-  const resumed: PathEvent = { type: "resumed", resumedPathId: "parent", fromSubPathId: "child", snapshot: settled };
+  const resumed: PathEvent = {
+    type: "resumed",
+    resumedPathId: "parent",
+    fromSubPathId: "child",
+    snapshot: settled,
+  };
 
   it("matches resumed (sub-path completed, parent resumed)", () => {
     expect(matchesStrategy("onNext", resumed)).toBe(true);
   });
 
   it("matches a settled stateChanged with cause cancel (sub-path cancelled back to the parent)", () => {
-    expect(matchesStrategy("onNext", { type: "stateChanged", cause: "cancel", snapshot: settled })).toBe(true);
-    expect(matchesStrategy("onNext", { type: "stateChanged", cause: "cancel", snapshot: { status: "leaving" } as unknown as PathSnapshot })).toBe(false);
+    expect(matchesStrategy("onNext", { type: "stateChanged", cause: "cancel", snapshot: settled })).toBe(
+      true
+    );
+    expect(
+      matchesStrategy("onNext", {
+        type: "stateChanged",
+        cause: "cancel",
+        snapshot: { status: "leaving" } as unknown as PathSnapshot,
+      })
+    ).toBe(false);
   });
 
   it("still ignores setData, previous and goToStep", () => {

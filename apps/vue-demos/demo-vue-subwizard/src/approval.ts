@@ -3,10 +3,10 @@ import type { DocumentData, ApprovalData, ApproverResult } from "./types";
 
 export const AVAILABLE_APPROVERS = [
   { id: "alice", name: "Alice Johnson" },
-  { id: "bob",   name: "Bob Smith" },
+  { id: "bob", name: "Bob Smith" },
   { id: "carol", name: "Carol Williams" },
-  { id: "dave",  name: "Dave Brown" },
-  { id: "eve",   name: "Eve Davis" },
+  { id: "dave", name: "Dave Brown" },
+  { id: "eve", name: "Eve Davis" },
 ];
 
 export const INITIAL_DATA: DocumentData = {
@@ -42,17 +42,15 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       id: "create-document",
       title: "Create Document",
       fieldErrors: ({ data }) => ({
-        title:       !data.title?.trim()       ? "Document title is required." : undefined,
-        description: !data.description?.trim() ? "Description is required."   : undefined,
+        title: !data.title?.trim() ? "Document title is required." : undefined,
+        description: !data.description?.trim() ? "Description is required." : undefined,
       }),
     },
     {
       id: "select-approvers",
       title: "Select Approvers",
       fieldErrors: ({ data }) => ({
-        approvers: !(data.approvers as string[])?.length
-          ? "Select at least one approver."
-          : undefined,
+        approvers: !(data.approvers as string[])?.length ? "Select at least one approver." : undefined,
       }),
     },
     {
@@ -63,11 +61,12 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       // fieldErrors — no messages means canMoveNext is true.
       fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
-        const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
+        const pending = (data.approvers as string[]).filter((id) => !results[id]?.decision);
         return {
-          _: pending.length > 0
-            ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
-            : undefined,
+          _:
+            pending.length > 0
+              ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
+              : undefined,
         };
       },
       // Called automatically when any approval subwizard completes.
@@ -80,7 +79,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
             ...existing,
             [approverId]: {
               decision: subPathData.decision as "approved" | "rejected",
-              comment:  (subPathData.comment as string) ?? "",
+              comment: (subPathData.comment as string) ?? "",
             },
           },
         };
@@ -92,4 +91,3 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
     },
   ],
 };
-

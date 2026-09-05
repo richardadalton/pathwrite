@@ -24,7 +24,6 @@ import type {
   PathDefinition,
   PathData,
   PathObserver,
-  PathEngineOptions,
   ObserverStrategy,
   PathStore,
 } from "@daltonr/pathwrite-core";
@@ -63,7 +62,9 @@ export interface HttpStoreOptions {
 }
 
 export class HttpStore implements PathStore {
-  private options: Required<Omit<HttpStoreOptions, "headers" | "onError" | "credentials" | "signal" | "timeoutMs">> &
+  private options: Required<
+    Omit<HttpStoreOptions, "headers" | "onError" | "credentials" | "signal" | "timeoutMs">
+  > &
     Pick<HttpStoreOptions, "headers" | "onError" | "credentials" | "signal" | "timeoutMs">;
 
   constructor(options: HttpStoreOptions) {
@@ -127,13 +128,17 @@ export class HttpStore implements PathStore {
         }
       }
       if (timeoutMs) {
-        timer = setTimeout(() => controller!.abort(new Error(`HttpStore: request timed out after ${timeoutMs} ms`)), timeoutMs);
+        timer = setTimeout(
+          () => controller!.abort(new Error(`HttpStore: request timed out after ${timeoutMs} ms`)),
+          timeoutMs
+        );
       }
     }
     try {
       // Mirror fetch(): a request started with an already-aborted signal
       // rejects at once, whatever the fetch implementation does.
-      if (controller?.signal.aborted) throw controller.signal.reason ?? new Error("HttpStore: request aborted");
+      if (controller?.signal.aborted)
+        throw controller.signal.reason ?? new Error("HttpStore: request aborted");
       return await this.options.fetch(url, {
         ...init,
         ...(credentials ? { credentials } : {}),
@@ -176,9 +181,8 @@ export class HttpStore implements PathStore {
       }
       // Read as text so an empty body ("no record") is distinguishable from a
       // corrupt one; `json()` would throw the same SyntaxError for both.
-      const raw = typeof response.text === "function"
-        ? await response.text()
-        : JSON.stringify(await response.json());
+      const raw =
+        typeof response.text === "function" ? await response.text() : JSON.stringify(await response.json());
       if (raw.trim() === "") return null;
       let parsed: unknown;
       try {
@@ -189,7 +193,9 @@ export class HttpStore implements PathStore {
       if (parsed === null) return null; // a JSON `null` body: nothing stored
       const problem = describeInvalidState(parsed);
       if (problem) {
-        throw new Error(`HttpStore.load: the response for "${key}" is not a SerializedPathState (${problem}).`);
+        throw new Error(
+          `HttpStore.load: the response for "${key}" is not a SerializedPathState (${problem}).`
+        );
       }
       return parsed as SerializedPathState;
     } catch (error) {
@@ -374,7 +380,8 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
           data: event.data,
           _status: "completed",
         };
-        options.store.save(options.key, finalState)
+        options.store
+          .save(options.key, finalState)
           .then(() => options.onSaveSuccess?.())
           .catch((error) => {
             const err = error instanceof Error ? error : new Error(String(error));
@@ -520,7 +527,9 @@ export async function restoreOrStart(
     } else {
       console.warn(`[pathwrite] Could not restore saved state for "${options.key}"; starting fresh.`, err);
     }
-    await options.store.delete(options.key).catch(() => { /* best effort */ });
+    await options.store.delete(options.key).catch(() => {
+      /* best effort */
+    });
   }
 
   const engine = new PathEngine(engineOptions);

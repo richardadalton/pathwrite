@@ -28,9 +28,7 @@ export default function USAddressForm(props: Props) {
           onInput={(e) => setData({ streetAddress: e.currentTarget.value })}
           placeholder="123 Main St"
         />
-        {errors().streetAddress && (
-          <span class="field-error">{errors().streetAddress}</span>
-        )}
+        {errors().streetAddress && <span class="field-error">{errors().streetAddress}</span>}
       </div>
 
       <div class="field">
@@ -65,11 +63,7 @@ export default function USAddressForm(props: Props) {
           <label for="state">
             State <span class="required">*</span>
           </label>
-          <select
-            id="state"
-            value={data().state}
-            onChange={(e) => setData({ state: e.currentTarget.value })}
-          >
+          <select id="state" value={data().state} onChange={(e) => setData({ state: e.currentTarget.value })}>
             <option value="">Select state…</option>
             {US_STATES.map((s) => (
               <option value={s.code}>{s.name}</option>

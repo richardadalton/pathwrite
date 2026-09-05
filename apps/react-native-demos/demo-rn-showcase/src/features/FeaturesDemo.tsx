@@ -3,16 +3,16 @@ import { SafeAreaView, StyleSheet, View, Text, TouchableOpacity } from "react-na
 import { PathShell } from "@daltonr/pathwrite-react-native";
 import type { PathShellHandle } from "@daltonr/pathwrite-react-native";
 import { mainPath, INITIAL_DATA } from "./demo-path";
-import { NameStep }            from "./NameStep";
-import { CountryStep }         from "./CountryStep";
-import { AddressUSStep }       from "./AddressUSStep";
-import { AddressIEStep }       from "./AddressIEStep";
-import { SkipToggleStep }      from "./SkipToggleStep";
-import { OptionalStep }        from "./OptionalStep";
-import { SubwizardIntroStep }  from "./SubwizardIntroStep";
-import { SubStep1 }            from "./SubStep1";
-import { SubStep2 }            from "./SubStep2";
-import { DoneStep }            from "./DoneStep";
+import { NameStep } from "./NameStep";
+import { CountryStep } from "./CountryStep";
+import { AddressUSStep } from "./AddressUSStep";
+import { AddressIEStep } from "./AddressIEStep";
+import { SkipToggleStep } from "./SkipToggleStep";
+import { OptionalStep } from "./OptionalStep";
+import { SubwizardIntroStep } from "./SubwizardIntroStep";
+import { SubStep1 } from "./SubStep1";
+import { SubStep2 } from "./SubStep2";
+import { DoneStep } from "./DoneStep";
 
 interface Props {
   onBack: () => void;
@@ -43,16 +43,16 @@ export function FeaturesDemo({ onBack }: Props) {
           hideCancel
           onComplete={() => shellRef.current?.restart()}
           steps={{
-            "name":             <NameStep />,
-            "country":          <CountryStep />,
-            "address-us":       <AddressUSStep />,
-            "address-ie":       <AddressIEStep />,
-            "skip-toggle":      <SkipToggleStep />,
-            "optional":         <OptionalStep />,
-            "subwizard-intro":  <SubwizardIntroStep />,
-            "sub-1":            <SubStep1 />,
-            "sub-2":            <SubStep2 />,
-            "done":             <DoneStep />,
+            name: <NameStep />,
+            country: <CountryStep />,
+            "address-us": <AddressUSStep />,
+            "address-ie": <AddressIEStep />,
+            "skip-toggle": <SkipToggleStep />,
+            optional: <OptionalStep />,
+            "subwizard-intro": <SubwizardIntroStep />,
+            "sub-1": <SubStep1 />,
+            "sub-2": <SubStep2 />,
+            done: <DoneStep />,
           }}
         />
       </View>

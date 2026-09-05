@@ -1,12 +1,6 @@
 import { Injectable, OnDestroy, DestroyRef, signal, Signal, inject } from "@angular/core";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
-import {
-  PathData,
-  PathDefinition,
-  PathEngine,
-  PathEvent,
-  PathSnapshot
-} from "@daltonr/pathwrite-core";
+import { PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot } from "@daltonr/pathwrite-core";
 
 /**
  * Angular facade over PathEngine. Provide at component level for an isolated
@@ -122,7 +116,11 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.suspend();
   }
 
-  public startSubPath(path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>): Promise<void> {
+  public startSubPath(
+    path: PathDefinition<any>,
+    initialData: PathData = {},
+    meta?: Record<string, unknown>
+  ): Promise<void> {
     return this._engine.startSubPath(path, initialData, meta);
   }
 
@@ -184,20 +182,32 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
  * against the facade, so the context cannot drift from it again.
  */
 export type FacadeContextMethod =
-  | "start" | "startSubPath" | "next" | "previous" | "cancel"
-  | "setData" | "resetStep" | "goToStep" | "goToStepChecked"
-  | "restart" | "retry" | "suspend" | "validate";
+  | "start"
+  | "startSubPath"
+  | "next"
+  | "previous"
+  | "cancel"
+  | "setData"
+  | "resetStep"
+  | "goToStep"
+  | "goToStepChecked"
+  | "restart"
+  | "retry"
+  | "suspend"
+  | "validate";
 
 /**
  * What step components receive from `usePathContext()`: the facade's methods
  * (types picked from `PathFacade`, so signatures cannot drift), the snapshot
  * signal, and the `services` object given to `<pw-shell>`.
  */
-export type UsePathContextReturn<TData extends PathData = PathData, TServices = unknown> =
-  Pick<PathFacade<TData>, FacadeContextMethod> & {
-    snapshot: Signal<PathSnapshot<TData> | null>;
-    services: TServices;
-  };
+export type UsePathContextReturn<TData extends PathData = PathData, TServices = unknown> = Pick<
+  PathFacade<TData>,
+  FacadeContextMethod
+> & {
+  snapshot: Signal<PathSnapshot<TData> | null>;
+  services: TServices;
+};
 
 /**
  * Access the nearest `PathFacade`'s path instance for use in Angular step components.
@@ -235,13 +245,16 @@ export type UsePathContextReturn<TData extends PathData = PathData, TServices = 
  *
  * @throws Error if PathFacade is not provided in the injector tree
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): UsePathContextReturn<TData, TServices> {
+export function usePathContext<
+  TData extends PathData = PathData,
+  TServices = unknown,
+>(): UsePathContextReturn<TData, TServices> {
   const facade = inject(PathFacade, { optional: true }) as PathFacade<TData> | null;
 
   if (!facade) {
     throw new Error(
       "usePathContext() requires PathFacade to be provided. " +
-      "Add 'providers: [PathFacade]' to your component or a parent component."
+        "Add 'providers: [PathFacade]' to your component or a parent component."
     );
   }
 
@@ -344,8 +357,7 @@ export type {
   PathStepContext,
   ProgressLayout,
   RootProgress,
-  SerializedPathState
+  SerializedPathState,
 } from "@daltonr/pathwrite-core";
 
 export { PathEngine } from "@daltonr/pathwrite-core";
-

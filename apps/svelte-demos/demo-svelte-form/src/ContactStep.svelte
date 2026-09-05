@@ -6,21 +6,15 @@
   // no props, no template refs needed.
   const ctx = usePathContext<ContactData>();
 
-  const SUBJECTS = [
-    "General Enquiry",
-    "Bug Report",
-    "Feature Request",
-    "Other",
-  ];
+  const SUBJECTS = ["General Enquiry", "Bug Report", "Feature Request", "Other"];
 
   // Derived reactive value for character count
-  let messageLen = $derived((ctx.snapshot?.data.message as string ?? "").length);
+  let messageLen = $derived(((ctx.snapshot?.data.message as string) ?? "").length);
   let errors = $derived(ctx.snapshot?.hasAttemptedNext ? (ctx.snapshot.fieldErrors ?? {}) : {});
 </script>
 
 {#if ctx.snapshot}
   <div class="form-body">
-
     <!-- Name -->
     <div class="field" class:field--error={errors.name}>
       <label for="name">
@@ -83,12 +77,9 @@
         rows="5"
         value={ctx.snapshot.data.message ?? ""}
         oninput={(e) => ctx.setData("message", e.currentTarget.value)}
-        placeholder="How can we help you?"
-      ></textarea>
+        placeholder="How can we help you?"></textarea>
       <span class="char-count">{messageLen} chars</span>
       {#if errors.message}<span class="field-error">{errors.message}</span>{/if}
     </div>
-
   </div>
 {/if}
-

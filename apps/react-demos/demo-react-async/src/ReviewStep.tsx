@@ -8,9 +8,7 @@ export function ReviewStep() {
 
   return (
     <div className="form-body">
-      <p className="step-intro">
-        All async checks passed. Review your application before submitting.
-      </p>
+      <p className="step-intro">All async checks passed. Review your application before submitting.</p>
 
       <div className="eligibility-summary">
         <div className="summary-row">

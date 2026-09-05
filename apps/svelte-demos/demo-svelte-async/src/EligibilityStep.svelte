@@ -7,14 +7,14 @@
   // validationDisplay="inline" suppresses the shell's blockingError rendering —
   // we render it here instead.
   let blockingError = $derived(ctx.snapshot?.hasAttemptedNext ? ctx.snapshot.blockingError : null);
-  let guardRunning  = $derived(ctx.snapshot?.status === "validating");
+  let guardRunning = $derived(ctx.snapshot?.status === "validating");
 </script>
 
 {#if ctx.snapshot}
   <div class="form-body">
     <p class="step-intro">
-      Clicking <strong>Next</strong> runs an async eligibility check against our API.
-      The check takes ~900ms — watch the spinner on the button.
+      Clicking <strong>Next</strong> runs an async eligibility check against our API. The check takes ~900ms — watch
+      the spinner on the button.
     </p>
 
     <div class="eligibility-summary">
@@ -39,9 +39,9 @@
     {#if !guardRunning}
       <p class="hint">
         <strong>What's happening:</strong> <code>canMoveNext</code> is async — it calls
-        <code>services.checkEligibility()</code> and the engine awaits the result before deciding
-        whether to advance. While it runs, <code>snapshot.status === "validating"</code>, and the
-        shell shows a CSS spinner on the Next button. If blocked, we render
+        <code>services.checkEligibility()</code> and the engine awaits the result before deciding whether to
+        advance. While it runs, <code>snapshot.status === "validating"</code>, and the shell shows a CSS
+        spinner on the Next button. If blocked, we render
         <code>snapshot.blockingError</code> here (since <code>validationDisplay="inline"</code>
         suppresses the shell's own rendering).
       </p>

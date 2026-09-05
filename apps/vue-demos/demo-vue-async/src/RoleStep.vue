@@ -5,14 +5,14 @@ import type { ApplicationData } from "@daltonr/pathwrite-demo-workflow-job-appli
 import type { ApplicationServices, Role } from "@daltonr/pathwrite-demo-workflow-job-application";
 
 const { snapshot, setData, services } = usePathContext<ApplicationData, ApplicationServices>();
-const errors = () => snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {};
+const errors = () => (snapshot.value?.hasAttemptedNext ? snapshot.value.fieldErrors : {});
 
-const roles   = ref<Role[]>([]);
+const roles = ref<Role[]>([]);
 const loading = ref(true);
 
 onMounted(() => {
-  services.getRoles().then(r => {
-    roles.value   = r;
+  services.getRoles().then((r) => {
+    roles.value = r;
     loading.value = false;
   });
 });

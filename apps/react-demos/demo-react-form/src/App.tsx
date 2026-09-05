@@ -36,7 +36,9 @@ export default function App() {
         <section className="result-panel success-panel">
           <div className="result-icon">✅</div>
           <h2>Message Sent!</h2>
-          <p>Thanks <strong>{submittedData.name}</strong>, we've received your message.</p>
+          <p>
+            Thanks <strong>{submittedData.name}</strong>, we've received your message.
+          </p>
           <div className="submitted-summary">
             <div className="summary-row">
               <span className="summary-label">Email</span>
@@ -83,11 +85,10 @@ export default function App() {
           onComplete={handleComplete}
           onCancel={handleCancel}
           steps={{
-            contact: <ContactStep />
+            contact: <ContactStep />,
           }}
         />
       )}
     </main>
   );
 }
-

@@ -12,8 +12,8 @@ export function NameStep() {
     <View style={styles.container}>
       <Text style={styles.label}>What's your name?</Text>
       <Text style={styles.hint}>
-        Next unlocks once you've entered at least 2 characters.
-        This is a <Text style={styles.code}>canMoveNext</Text> guard.
+        Next unlocks once you've entered at least 2 characters. This is a{" "}
+        <Text style={styles.code}>canMoveNext</Text> guard.
       </Text>
       <TextInput
         style={styles.input}

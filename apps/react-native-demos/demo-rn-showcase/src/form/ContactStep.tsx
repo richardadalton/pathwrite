@@ -6,8 +6,8 @@ import type { ContactData } from "./path";
 export function ContactStep() {
   const { snapshot, setData } = usePathContext<ContactData>();
   if (!snapshot) return null;
-  const data     = snapshot.data;
-  const errors   = snapshot.hasAttemptedNext ? (snapshot.fieldErrors ?? {}) : {};
+  const data = snapshot.data;
+  const errors = snapshot.hasAttemptedNext ? (snapshot.fieldErrors ?? {}) : {};
   const warnings = snapshot.fieldWarnings ?? {};
 
   return (
@@ -24,12 +24,12 @@ export function ContactStep() {
         <TextInput
           style={[styles.input, errors.name ? styles.inputError : undefined]}
           value={data.name ?? ""}
-          onChangeText={text => setData("name", text)}
+          onChangeText={(text) => setData("name", text)}
           placeholder="Your full name"
           autoCapitalize="words"
           autoCorrect={false}
         />
-        {errors.name   && <Text style={styles.error}>{errors.name}</Text>}
+        {errors.name && <Text style={styles.error}>{errors.name}</Text>}
       </View>
 
       {/* Email */}
@@ -40,16 +40,14 @@ export function ContactStep() {
         <TextInput
           style={[styles.input, errors.email ? styles.inputError : undefined]}
           value={data.email ?? ""}
-          onChangeText={text => setData("email", text)}
+          onChangeText={(text) => setData("email", text)}
           placeholder="you@example.com"
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
         />
-        {errors.email   && <Text style={styles.error}>{errors.email}</Text>}
-        {!errors.email && warnings.email && (
-          <Text style={styles.warning}>{warnings.email as string}</Text>
-        )}
+        {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+        {!errors.email && warnings.email && <Text style={styles.warning}>{warnings.email as string}</Text>}
       </View>
 
       {/* Subject */}
@@ -60,7 +58,7 @@ export function ContactStep() {
         <TextInput
           style={[styles.input, errors.subject ? styles.inputError : undefined]}
           value={data.subject ?? ""}
-          onChangeText={text => setData("subject", text)}
+          onChangeText={(text) => setData("subject", text)}
           placeholder="What's this about?"
           autoCorrect={false}
         />
@@ -75,14 +73,14 @@ export function ContactStep() {
         <TextInput
           style={[styles.input, styles.textarea, errors.message ? styles.inputError : undefined]}
           value={data.message ?? ""}
-          onChangeText={text => setData("message", text)}
+          onChangeText={(text) => setData("message", text)}
           placeholder="Tell us how we can help… (min. 10 characters)"
           multiline
           numberOfLines={4}
           textAlignVertical="top"
           autoCorrect
         />
-        {errors.message   && <Text style={styles.error}>{errors.message}</Text>}
+        {errors.message && <Text style={styles.error}>{errors.message}</Text>}
         {!errors.message && warnings.message && (
           <Text style={styles.warning}>{warnings.message as string}</Text>
         )}

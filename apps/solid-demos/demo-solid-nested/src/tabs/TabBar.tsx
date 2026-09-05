@@ -18,7 +18,7 @@ export default function TabBar() {
             type="button"
             class="tab-btn"
             classList={{
-              "tab-btn--active":    step.status === "current",
+              "tab-btn--active": step.status === "current",
               "tab-btn--completed": step.status === "completed",
             }}
             onClick={() => ctx.goToStep(step.id)}

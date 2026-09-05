@@ -9,9 +9,7 @@ export default function EligibilityStep() {
 
   // blockingError is set when canMoveNext returns { allowed: false, reason }.
   // Render it here because the shell uses validationDisplay="inline".
-  const blockingError = createMemo(() =>
-    snap().hasAttemptedNext ? snap().blockingError : null
-  );
+  const blockingError = createMemo(() => (snap().hasAttemptedNext ? snap().blockingError : null));
 
   const guardRunning = createMemo(() => snap().status === "validating");
 
@@ -19,8 +17,8 @@ export default function EligibilityStep() {
     <Show when={ctx.snapshot()}>
       <div class="form-body">
         <p class="step-intro">
-          Clicking <strong>Next</strong> runs an async eligibility check against
-          our API. The check takes ~900ms — watch the spinner on the button.
+          Clicking <strong>Next</strong> runs an async eligibility check against our API. The check takes
+          ~900ms — watch the spinner on the button.
         </p>
 
         <div class="eligibility-summary">
@@ -39,18 +37,18 @@ export default function EligibilityStep() {
         </div>
 
         <Show when={blockingError()}>
-          <p class="field-error" style="margin-top: 12px">{blockingError()}</p>
+          <p class="field-error" style="margin-top: 12px">
+            {blockingError()}
+          </p>
         </Show>
 
         <Show when={!guardRunning()}>
           <p class="hint">
-            <strong>What's happening:</strong> <code>canMoveNext</code> is async
-            — it calls <code>services.checkEligibility()</code> and the engine
-            awaits the result before deciding whether to advance. While it runs,{" "}
-            <code>snapshot.status === "validating"</code>, and the shell shows a
+            <strong>What's happening:</strong> <code>canMoveNext</code> is async — it calls{" "}
+            <code>services.checkEligibility()</code> and the engine awaits the result before deciding whether
+            to advance. While it runs, <code>snapshot.status === "validating"</code>, and the shell shows a
             CSS spinner on the Next button. If blocked, the guard returns{" "}
-            <code>{"{ allowed: false, reason }"}</code> and <code>snapshot.blockingError</code>{" "}
-            is set.
+            <code>{"{ allowed: false, reason }"}</code> and <code>snapshot.blockingError</code> is set.
           </p>
         </Show>
       </div>

@@ -15,8 +15,7 @@ export default function BillingAddressStep(props: Props) {
   return (
     <div class="form-body">
       <p class="step-intro">
-        Enter your billing address. Fields are pre-filled from your shipping address via{" "}
-        <code>onEnter</code>.
+        Enter your billing address. Fields are pre-filled from your shipping address via <code>onEnter</code>.
       </p>
 
       <div class={`field${errors().billingName ? " field--error" : ""}`}>
@@ -44,9 +43,7 @@ export default function BillingAddressStep(props: Props) {
           onInput={(e) => setData({ billingAddress: e.currentTarget.value })}
           placeholder="123 Main St"
         />
-        {errors().billingAddress && (
-          <span class="field-error">{errors().billingAddress}</span>
-        )}
+        {errors().billingAddress && <span class="field-error">{errors().billingAddress}</span>}
       </div>
 
       <div class={`field${errors().billingCity ? " field--error" : ""}`}>
@@ -74,9 +71,7 @@ export default function BillingAddressStep(props: Props) {
           onInput={(e) => setData({ billingPostcode: e.currentTarget.value })}
           placeholder="D01 F5P2"
         />
-        {errors().billingPostcode && (
-          <span class="field-error">{errors().billingPostcode}</span>
-        )}
+        {errors().billingPostcode && <span class="field-error">{errors().billingPostcode}</span>}
       </div>
     </div>
   );

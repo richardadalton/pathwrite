@@ -17,14 +17,21 @@ export interface SubscriptionData {
 
 export const INITIAL_DATA: SubscriptionData = {
   plan: "",
-  shippingName: "", shippingAddress: "", shippingCity: "", shippingPostcode: "",
-  cardNumber: "", cardExpiry: "", cardCvc: "",
+  shippingName: "",
+  shippingAddress: "",
+  shippingCity: "",
+  shippingPostcode: "",
+  cardNumber: "",
+  cardExpiry: "",
+  cardCvc: "",
   billingSameAsShipping: true,
-  billingName: "", billingAddress: "", billingCity: "", billingPostcode: "",
+  billingName: "",
+  billingAddress: "",
+  billingCity: "",
+  billingPostcode: "",
 };
 
 export const PLAN_LABELS: Record<string, string> = {
   free: "Free",
   paid: "Pro — $29/mo",
 };
-

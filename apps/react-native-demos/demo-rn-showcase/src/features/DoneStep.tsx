@@ -13,8 +13,8 @@ export function DoneStep() {
       <Text style={styles.emoji}>🎉</Text>
       <Text style={styles.label}>Done, {name}!</Text>
       <Text style={styles.body}>
-        You've completed the full demo — guards, StepChoice, conditional skipping,
-        and a sub-wizard, all in one path.
+        You've completed the full demo — guards, StepChoice, conditional skipping, and a sub-wizard, all in
+        one path.
       </Text>
     </View>
   );

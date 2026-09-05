@@ -102,8 +102,8 @@ export default function ReviewStep(props: Props) {
 
       <Show when={!isPaid()}>
         <p class="hint">
-          Payment and billing steps were <strong>skipped</strong> — the Free plan has no payment
-          required. This is powered by <code>shouldSkip</code> on those steps.
+          Payment and billing steps were <strong>skipped</strong> — the Free plan has no payment required.
+          This is powered by <code>shouldSkip</code> on those steps.
         </p>
       </Show>
     </div>

@@ -28,9 +28,7 @@ export default function IrishAddressForm(props: Props) {
           onInput={(e) => setData({ addressLine1: e.currentTarget.value })}
           placeholder="12 O'Connell Street"
         />
-        {errors().addressLine1 && (
-          <span class="field-error">{errors().addressLine1}</span>
-        )}
+        {errors().addressLine1 && <span class="field-error">{errors().addressLine1}</span>}
       </div>
 
       <div class="field">

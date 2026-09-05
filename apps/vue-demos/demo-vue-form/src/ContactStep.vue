@@ -7,31 +7,19 @@ import type { ContactData } from "./path";
 // no prop drilling or template references needed.
 const { snapshot, setData, resetStep } = usePathContext<ContactData>();
 
-const errors = computed(() =>
-  snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}
-);
+const errors = computed(() => (snapshot.value?.hasAttemptedNext ? (snapshot.value.fieldErrors ?? {}) : {}));
 
-const SUBJECTS = [
-  "General Enquiry",
-  "Bug Report",
-  "Feature Request",
-  "Other",
-];
+const SUBJECTS = ["General Enquiry", "Bug Report", "Feature Request", "Other"];
 </script>
 
 <template>
   <div v-if="snapshot" class="form-body">
-
     <!-- isDirty indicator -->
-    <div v-if="snapshot.isDirty" class="unsaved-changes-banner">
-      ✏️ You have unsaved changes
-    </div>
+    <div v-if="snapshot.isDirty" class="unsaved-changes-banner">✏️ You have unsaved changes</div>
 
     <!-- Name -->
     <div class="field" :class="{ 'field--error': errors.name }">
-      <label for="name">
-        Full Name <span class="required">*</span>
-      </label>
+      <label for="name"> Full Name <span class="required">*</span> </label>
       <input
         id="name"
         type="text"
@@ -46,9 +34,7 @@ const SUBJECTS = [
 
     <!-- Email -->
     <div class="field" :class="{ 'field--error': errors.email }">
-      <label for="email">
-        Email Address <span class="required">*</span>
-      </label>
+      <label for="email"> Email Address <span class="required">*</span> </label>
       <input
         id="email"
         type="email"
@@ -62,9 +48,7 @@ const SUBJECTS = [
 
     <!-- Subject -->
     <div class="field" :class="{ 'field--error': errors.subject }">
-      <label for="subject">
-        Subject <span class="required">*</span>
-      </label>
+      <label for="subject"> Subject <span class="required">*</span> </label>
       <select
         id="subject"
         :value="snapshot.data['subject']"
@@ -89,27 +73,18 @@ const SUBJECTS = [
         @input="setData('message', ($event.target as HTMLTextAreaElement).value)"
         placeholder="How can we help you?"
       />
-      <span class="char-count">
-        {{ (snapshot.data['message'] as string ?? '').length }} chars
-      </span>
+      <span class="char-count"> {{ ((snapshot.data["message"] as string) ?? "").length }} chars </span>
       <span v-if="errors.message" class="field-error">{{ errors.message }}</span>
     </div>
 
     <!-- Reset Button -->
     <div class="reset-button-container">
-      <button
-        type="button"
-        class="btn-reset"
-        @click="resetStep"
-        :disabled="!snapshot.isDirty"
-      >
+      <button type="button" class="btn-reset" @click="resetStep" :disabled="!snapshot.isDirty">
         Clear Form
       </button>
     </div>
-
   </div>
 </template>
-
 
 <style scoped>
 .unsaved-changes-banner {

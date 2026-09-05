@@ -8,7 +8,7 @@ import TabBar from "./TabBar.vue";
 const { snapshot, setData } = usePathContext<EmployeeDetails>();
 
 const showErrors = computed(() => snapshot.value.hasAttemptedNext || snapshot.value.hasValidated);
-const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {});
+const errors = computed(() => (showErrors.value ? snapshot.value.fieldErrors : {}));
 </script>
 
 <template>
@@ -31,7 +31,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field">
         <label for="manager">Reporting Manager <span class="optional">(optional)</span></label>
         <input
-          id="manager" type="text"
+          id="manager"
+          type="text"
           :value="snapshot.data.manager ?? ''"
           @input="setData('manager', ($event.target as HTMLInputElement).value)"
           placeholder="e.g. John Murphy"
@@ -53,7 +54,8 @@ const errors = computed(() => showErrors.value ? snapshot.value.fieldErrors : {}
       <div class="field">
         <label for="startDate">Start Date <span class="optional">(optional)</span></label>
         <input
-          id="startDate" type="date"
+          id="startDate"
+          type="date"
           :value="snapshot.data.startDate ?? ''"
           @input="setData('startDate', ($event.target as HTMLInputElement).value)"
         />

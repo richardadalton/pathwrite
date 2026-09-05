@@ -18,19 +18,19 @@ const milestones: Milestone[] = [
   {
     id: "core-concepts",
     title: TOPICS["core-concepts"].title,
-    stepIds: ["core-concepts-topic", "core-concepts-quiz"]
+    stepIds: ["core-concepts-topic", "core-concepts-quiz"],
   },
   {
     id: "subpaths",
     title: TOPICS.subpaths.title,
-    stepIds: ["subpaths-topic", "subpaths-quiz"]
+    stepIds: ["subpaths-topic", "subpaths-quiz"],
   },
   {
     id: "persistence",
     title: TOPICS.persistence.title,
-    stepIds: ["persistence-topic", "persistence-quiz"]
+    stepIds: ["persistence-topic", "persistence-quiz"],
   },
-  { id: "certificate", title: "Certificate", stepIds: ["certificate"] }
+  { id: "certificate", title: "Certificate", stepIds: ["certificate"] },
 ];
 
 const stepToMilestone = new Map<string, MilestoneId>();
@@ -46,9 +46,7 @@ const rootStepId = computed(() => {
   return root.steps[root.stepIndex]?.id ?? props.snapshot.stepId;
 });
 
-const activeMilestoneId = computed<MilestoneId>(() =>
-  stepToMilestone.get(rootStepId.value) ?? "profile"
-);
+const activeMilestoneId = computed<MilestoneId>(() => stepToMilestone.get(rootStepId.value) ?? "profile");
 
 const courseStepStatuses = computed(() => {
   const source = props.snapshot.rootProgress?.steps ?? props.snapshot.steps;
@@ -72,12 +70,15 @@ function milestoneState(id: MilestoneId): "completed" | "current" | "upcoming" {
   return "upcoming";
 }
 
-const completedCount = computed(() =>
-  milestones.filter((milestone) => milestoneState(milestone.id) === "completed").length
+const completedCount = computed(
+  () => milestones.filter((milestone) => milestoneState(milestone.id) === "completed").length
 );
 
 const activeIndex = computed(() =>
-  Math.max(0, milestones.findIndex((milestone) => milestone.id === activeMilestoneId.value))
+  Math.max(
+    0,
+    milestones.findIndex((milestone) => milestone.id === activeMilestoneId.value)
+  )
 );
 </script>
 
@@ -85,9 +86,7 @@ const activeIndex = computed(() =>
   <div class="milestone-header">
     <div class="milestone-header__top">
       <p class="milestone-header__eyebrow">Course milestones</p>
-      <p class="milestone-header__meta">
-        Module {{ activeIndex + 1 }} of {{ milestones.length }}
-      </p>
+      <p class="milestone-header__meta">Module {{ activeIndex + 1 }} of {{ milestones.length }}</p>
     </div>
 
     <div class="milestone-track" role="list" aria-label="Course milestones">
@@ -98,7 +97,9 @@ const activeIndex = computed(() =>
         :class="`milestone-item--${milestoneState(milestone.id)}`"
         role="listitem"
       >
-        <span class="milestone-item__dot">{{ milestoneState(milestone.id) === "completed" ? "✓" : index + 1 }}</span>
+        <span class="milestone-item__dot">{{
+          milestoneState(milestone.id) === "completed" ? "✓" : index + 1
+        }}</span>
         <span class="milestone-item__label">{{ milestone.title }}</span>
       </div>
     </div>
@@ -113,5 +114,3 @@ const activeIndex = computed(() =>
     </div>
   </div>
 </template>
-
-

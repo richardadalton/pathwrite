@@ -4,18 +4,16 @@
   import TabBar from "./TabBar.svelte";
 
   const PERMISSIONS = [
-    { key: "permAdmin",   label: "Admin Access",     desc: "Full system administration" },
-    { key: "permDev",     label: "Developer Access",  desc: "Code repositories & CI/CD pipelines" },
-    { key: "permHR",      label: "HR Access",         desc: "Personnel records & payroll" },
-    { key: "permFinance", label: "Finance Access",    desc: "Accounting & expense systems" },
+    { key: "permAdmin", label: "Admin Access", desc: "Full system administration" },
+    { key: "permDev", label: "Developer Access", desc: "Code repositories & CI/CD pipelines" },
+    { key: "permHR", label: "HR Access", desc: "Personnel records & payroll" },
+    { key: "permFinance", label: "Finance Access", desc: "Accounting & expense systems" },
   ] as const;
 
   const ctx = usePathContext<EmployeeDetails>();
 
   let errors = $derived(
-    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated
-      ? ctx.snapshot?.fieldErrors ?? {}
-      : {}
+    ctx.snapshot?.hasAttemptedNext || ctx.snapshot?.hasValidated ? (ctx.snapshot?.fieldErrors ?? {}) : {}
   );
 </script>
 

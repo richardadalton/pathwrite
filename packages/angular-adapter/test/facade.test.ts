@@ -36,7 +36,9 @@ describe("PathFacade — state$", () => {
   it("emits updated snapshots as navigation progresses", async () => {
     const facade = new PathFacade();
     const steps: string[] = [];
-    facade.state$.subscribe((s) => { if (s) steps.push(s.stepId); });
+    facade.state$.subscribe((s) => {
+      if (s) steps.push(s.stepId);
+    });
 
     await facade.start(twoStepPath());
     await facade.next();
@@ -88,7 +90,9 @@ describe("PathFacade — state$", () => {
     await facade.next();
 
     let received: string | null = null;
-    facade.state$.subscribe((s) => { received = s?.stepId ?? null; });
+    facade.state$.subscribe((s) => {
+      received = s?.stepId ?? null;
+    });
     expect(received).toBe("step2");
   });
 });
@@ -114,7 +118,11 @@ describe("PathFacade — snapshot()", () => {
     await facade.start(twoStepPath());
     await facade.next();
     let stateValue: string | undefined;
-    facade.state$.subscribe((s) => { stateValue = s?.stepId; }).unsubscribe();
+    facade.state$
+      .subscribe((s) => {
+        stateValue = s?.stepId;
+      })
+      .unsubscribe();
     expect(facade.snapshot()?.stepId).toBe(stateValue);
   });
 });
@@ -224,7 +232,9 @@ describe("PathFacade — navigation methods", () => {
   it("setData() update is reflected in state$", async () => {
     const facade = new PathFacade();
     let latest: unknown;
-    facade.state$.subscribe((s) => { latest = s?.data.label; });
+    facade.state$.subscribe((s) => {
+      latest = s?.data.label;
+    });
 
     await facade.start(twoStepPath(), { label: "old" });
     await facade.setData("label", "new");
@@ -291,7 +301,7 @@ describe("PathFacade — goToStepChecked", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }]
+      steps: [{ id: "a", canMoveNext: () => ({ allowed: false }) }, { id: "b" }],
     });
     await facade.goToStepChecked("b");
     expect(facade.snapshot()?.stepId).toBe("a");
@@ -301,7 +311,7 @@ describe("PathFacade — goToStepChecked", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "a" }, { id: "b", canMovePrevious: () => ({ allowed: false }) }]
+      steps: [{ id: "a" }, { id: "b", canMovePrevious: () => ({ allowed: false }) }],
     });
     await facade.goToStep("b");
     await facade.goToStepChecked("a");
@@ -347,7 +357,9 @@ describe("PathFacade — generic typing <TData>", () => {
   it("state$ emits snapshots with the typed data shape", async () => {
     const facade = new PathFacade<StepData>();
     let latest: StepData | undefined;
-    facade.state$.subscribe((s) => { if (s) latest = s.data; });
+    facade.state$.subscribe((s) => {
+      if (s) latest = s.data;
+    });
 
     await facade.start(twoStepPath(), { name: "Bob", count: 7 });
     expect(latest?.name).toBe("Bob");
@@ -372,10 +384,7 @@ describe("PathFacade — generic typing <TData>", () => {
     const facade = new PathFacade<StepData>();
     const path: PathDefinition = {
       id: "p",
-      steps: [
-        { id: "s1", canMoveNext: (ctx) => (ctx.data as StepData).count > 0 },
-        { id: "s2" }
-      ]
+      steps: [{ id: "s1", canMoveNext: (ctx) => (ctx.data as StepData).count > 0 }, { id: "s2" }],
     };
     await facade.start(path, { name: "", count: 0 });
     expect(facade.snapshot()?.canMoveNext).toBe(false);
@@ -400,7 +409,7 @@ describe("PathFacade — fieldErrors", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ field: "Field is required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ field: "Field is required" }) }],
     });
     expect(facade.snapshot()?.fieldErrors).toEqual({ field: "Field is required" });
   });
@@ -409,7 +418,7 @@ describe("PathFacade — fieldErrors", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: undefined }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required", email: undefined }) }],
     });
     expect(facade.snapshot()?.fieldErrors).toEqual({ name: "Required" });
   });
@@ -422,10 +431,10 @@ describe("PathFacade — fieldErrors", () => {
         {
           id: "step1",
           fieldErrors: (ctx) => ({
-            name: (ctx.data as PathData).name ? undefined : "Name is required"
-          })
-        }
-      ]
+            name: (ctx.data as PathData).name ? undefined : "Name is required",
+          }),
+        },
+      ],
     });
     expect(facade.snapshot()?.fieldErrors).toEqual({ name: "Name is required" });
 
@@ -436,11 +445,13 @@ describe("PathFacade — fieldErrors", () => {
   it("is reflected in state$", async () => {
     const facade = new PathFacade();
     let latest: Record<string, string> | undefined;
-    facade.state$.subscribe((s) => { if (s) latest = s.fieldErrors; });
+    facade.state$.subscribe((s) => {
+      if (s) latest = s.fieldErrors;
+    });
 
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ field: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ field: "Required" }) }],
     });
     expect(latest).toEqual({ field: "Required" });
   });
@@ -449,7 +460,7 @@ describe("PathFacade — fieldErrors", () => {
     const facade = new PathFacade();
     await facade.start({
       id: "w",
-      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }]
+      steps: [{ id: "step1", fieldErrors: () => ({ name: "Required" }) }],
     });
     expect(facade.snapshot()?.canMoveNext).toBe(false);
   });
@@ -567,7 +578,10 @@ describe("syncFormGroup", () => {
     const path: PathDefinition = {
       id: "p",
       steps: [
-        { id: "s1", canMoveNext: (ctx) => typeof ctx.data.name === "string" && (ctx.data.name as string).length > 0 },
+        {
+          id: "s1",
+          canMoveNext: (ctx) => typeof ctx.data.name === "string" && (ctx.data.name as string).length > 0,
+        },
         { id: "s2" },
       ],
     };
@@ -732,7 +746,9 @@ describe("PathFacade — services", () => {
   it("is exposed via usePathContext — type assertion narrows the value", () => {
     // usePathContext() requires Angular DI (inject()), so we test the facade
     // property directly — the return mapping is a trivial `facade.services as TServices`.
-    interface MyServices { label: string }
+    interface MyServices {
+      label: string;
+    }
     const facade = new PathFacade();
     facade.services = { label: "hello" } as MyServices;
     expect((facade.services as MyServices).label).toBe("hello");

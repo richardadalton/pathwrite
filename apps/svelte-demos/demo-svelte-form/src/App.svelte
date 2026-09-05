@@ -50,9 +50,7 @@
           <span>{submittedData.message}</span>
         </div>
       </div>
-      <button class="btn-primary" onclick={tryAgain}>
-        Send Another Message
-      </button>
+      <button class="btn-primary" onclick={tryAgain}> Send Another Message </button>
     </section>
   {/if}
 
@@ -62,9 +60,7 @@
       <div class="result-icon">✖</div>
       <h2>Message Discarded</h2>
       <p>Your message was not sent.</p>
-      <button class="btn-secondary" onclick={tryAgain}>
-        Try Again
-      </button>
+      <button class="btn-secondary" onclick={tryAgain}> Try Again </button>
     </section>
   {/if}
 
@@ -82,4 +78,3 @@
     />
   {/if}
 </main>
-

@@ -32,9 +32,7 @@ export default function App() {
     <main class="page">
       <div class="page-header">
         <h1>Subscription Signup</h1>
-        <p class="subtitle">
-          Skip demo — Free plan skips payment and billing steps automatically.
-        </p>
+        <p class="subtitle">Skip demo — Free plan skips payment and billing steps automatically.</p>
       </div>
 
       <Show when={isCompleted() && completedData()}>
@@ -86,7 +84,9 @@ export default function App() {
                   </div>
                 </div>
               </Show>
-              <button class="btn-primary" onClick={startOver}>Start Over</button>
+              <button class="btn-primary" onClick={startOver}>
+                Start Over
+              </button>
             </section>
           );
         }}
@@ -97,7 +97,9 @@ export default function App() {
           <div class="result-icon">✕</div>
           <h2>Signup Cancelled</h2>
           <p>Your signup was cancelled. No charges have been made.</p>
-          <button class="btn-secondary" onClick={startOver}>Start Over</button>
+          <button class="btn-secondary" onClick={startOver}>
+            Start Over
+          </button>
         </section>
       </Show>
 
@@ -110,9 +112,9 @@ export default function App() {
           steps={{
             "select-plan": (snap) => <SelectPlanStep snapshot={snap} />,
             "shipping-address": (snap) => <ShippingAddressStep snapshot={snap} />,
-            "payment": (snap) => <PaymentStep snapshot={snap} />,
+            payment: (snap) => <PaymentStep snapshot={snap} />,
             "billing-address": (snap) => <BillingAddressStep snapshot={snap} />,
-            "review": (snap) => <ReviewStep snapshot={snap} />,
+            review: (snap) => <ReviewStep snapshot={snap} />,
           }}
         />
       </Show>

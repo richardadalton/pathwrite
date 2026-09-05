@@ -28,7 +28,13 @@ export const Pressable = (props: any) =>
   );
 export const ScrollView = (props: any) => createElement("div", domProps(props), props.children);
 export const KeyboardAvoidingView = (props: any) => createElement("div", domProps(props), props.children);
-export const TextInput = (props: { value?: string; onChangeText?: (text: string) => void; placeholder?: string; testID?: string; [k: string]: unknown }) =>
+export const TextInput = (props: {
+  value?: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
+  testID?: string;
+  [k: string]: unknown;
+}) =>
   createElement("input", {
     ...domProps(props),
     value: props.value ?? "",
@@ -39,7 +45,7 @@ export const ActivityIndicator = noop;
 
 export const Platform = {
   OS: "ios" as const,
-  select: <T,>(spec: Record<string, T>): T | undefined => spec.ios ?? spec.default,
+  select: <T>(spec: Record<string, T>): T | undefined => spec.ios ?? spec.default,
 };
 
 export const StyleSheet = {

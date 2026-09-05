@@ -1,9 +1,18 @@
 /* ── Base resets ──────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   background: #f5f7fb;
   color: #1f2937;
 }
@@ -15,7 +24,9 @@ body {
   padding: 40px 24px 60px;
 }
 
-.page-header { margin-bottom: 24px; }
+.page-header {
+  margin-bottom: 24px;
+}
 
 .page-header h1 {
   margin: 0 0 6px;
@@ -64,7 +75,9 @@ body {
   padding: 2px 0;
 }
 
-.pw-shell__validation-item::before { content: "⚠ "; }
+.pw-shell__validation-item::before {
+  content: "⚠ ";
+}
 
 .pw-shell__footer {
   background: #fff;
@@ -78,7 +91,10 @@ body {
 }
 
 .pw-shell__footer-left,
-.pw-shell__footer-right { display: flex; gap: 8px; }
+.pw-shell__footer-right {
+  display: flex;
+  gap: 8px;
+}
 
 .pw-shell__btn {
   border: 1px solid #c2d0e5;
@@ -91,8 +107,13 @@ body {
   transition: background 0.15s ease;
 }
 
-.pw-shell__btn:hover:not(:disabled) { background: #dbe4f0; }
-.pw-shell__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pw-shell__btn:hover:not(:disabled) {
+  background: #dbe4f0;
+}
+.pw-shell__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .pw-shell__btn--next {
   background: #2563eb;
@@ -112,7 +133,9 @@ body {
   color: #5b677a;
 }
 
-.pw-shell__btn--cancel:hover:not(:disabled) { background: #f3f4f6; }
+.pw-shell__btn--cancel:hover:not(:disabled) {
+  background: #f3f4f6;
+}
 
 /* ── Form fields ──────────────────────────────────────────────────────────── */
 .form-body {
@@ -136,7 +159,10 @@ body {
   gap: 4px;
 }
 
-.required { color: #dc2626; font-size: 13px; }
+.required {
+  color: #dc2626;
+  font-size: 13px;
+}
 
 .field-hint {
   font-size: 12px;
@@ -155,7 +181,9 @@ body {
   font-family: inherit;
   color: #1f2937;
   background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   width: 100%;
 }
 
@@ -176,7 +204,10 @@ body {
   cursor: pointer;
 }
 
-.field textarea { resize: vertical; min-height: 100px; }
+.field textarea {
+  resize: vertical;
+  min-height: 100px;
+}
 
 .char-count {
   font-size: 12px;
@@ -203,7 +234,6 @@ body {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-
 /* ── Result panels ────────────────────────────────────────────────────────── */
 .result-panel {
   border-radius: 10px;
@@ -211,17 +241,40 @@ body {
   text-align: center;
 }
 
-.result-icon { font-size: 36px; margin-bottom: 12px; }
-.result-panel h2 { margin: 0 0 8px; font-size: 20px; }
-.result-panel p  { margin: 0 0 20px; font-size: 15px; }
+.result-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+.result-panel h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.result-panel p {
+  margin: 0 0 20px;
+  font-size: 15px;
+}
 
-.success-panel { background: #f0fdf4; border: 1px solid #bbf7d0; }
-.success-panel h2 { color: #15803d; }
-.success-panel p  { color: #166534; }
+.success-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.success-panel h2 {
+  color: #15803d;
+}
+.success-panel p {
+  color: #166534;
+}
 
-.cancel-panel { background: #fafafa; border: 1px solid #e5e7eb; }
-.cancel-panel h2 { color: #374151; }
-.cancel-panel p  { color: #6b7280; }
+.cancel-panel {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+.cancel-panel h2 {
+  color: #374151;
+}
+.cancel-panel p {
+  color: #6b7280;
+}
 
 .submitted-summary {
   background: #fff;
@@ -241,8 +294,13 @@ body {
   margin-bottom: 8px;
   align-items: start;
 }
-.summary-row:last-child { margin-bottom: 0; }
-.summary-label { font-weight: 600; color: #374151; }
+.summary-row:last-child {
+  margin-bottom: 0;
+}
+.summary-label {
+  font-weight: 600;
+  color: #374151;
+}
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
@@ -255,7 +313,9 @@ body {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover {
+  background: #1d4ed8;
+}
 
 .btn-secondary {
   background: #fff;
@@ -267,5 +327,6 @@ body {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.btn-secondary:hover { background: #f3f4f6; }
-
+.btn-secondary:hover {
+  background: #f3f4f6;
+}

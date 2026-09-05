@@ -12,9 +12,7 @@ export default function EnterNameStep() {
   return (
     <Show when={ctx.snapshot()}>
       <div class="form-body">
-        <p class="step-intro">
-          Enter the new employee's full name to begin their onboarding record.
-        </p>
+        <p class="step-intro">Enter the new employee's full name to begin their onboarding record.</p>
 
         <div class="field" classList={{ "field--error": !!errors().employeeName }}>
           <label for="employeeName">

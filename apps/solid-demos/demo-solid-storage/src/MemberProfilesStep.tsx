@@ -6,13 +6,9 @@ import type { WizardData, Person, MemberProfile, ProfileSubData } from "./wizard
 export default function MemberProfilesStep() {
   const ctx = usePathContext<WizardData>();
 
-  const members = createMemo(() =>
-    (ctx.snapshot()?.data.members ?? []) as Person[]
-  );
+  const members = createMemo(() => (ctx.snapshot()?.data.members ?? []) as Person[]);
 
-  const profiles = createMemo(() =>
-    (ctx.snapshot()?.data.profiles ?? {}) as Record<string, MemberProfile>
-  );
+  const profiles = createMemo(() => (ctx.snapshot()?.data.profiles ?? {}) as Record<string, MemberProfile>);
 
   const errors = createMemo(() =>
     ctx.snapshot()?.hasAttemptedNext ? (ctx.snapshot()?.fieldErrors ?? {}) : {}
@@ -22,22 +18,21 @@ export default function MemberProfilesStep() {
     return profiles()[String(index)] ?? null;
   }
 
-  const allDone = createMemo(() =>
-    members().length > 0 &&
-    members().every((_, i) => !!getProfile(i)?.department)
+  const allDone = createMemo(
+    () => members().length > 0 && members().every((_, i) => !!getProfile(i)?.department)
   );
 
   function openProfile(member: Person, index: number) {
     const existing = getProfile(index);
     const initialData: ProfileSubData = {
-      memberName:  member.name,
-      memberRole:  member.role,
+      memberName: member.name,
+      memberRole: member.role,
       memberIndex: index,
       department: existing?.department ?? "",
-      startDate:  existing?.startDate  ?? "",
-      bio:        existing?.bio        ?? "",
-      goals30:    existing?.goals30    ?? "",
-      goals90:    existing?.goals90    ?? "",
+      startDate: existing?.startDate ?? "",
+      bio: existing?.bio ?? "",
+      goals30: existing?.goals30 ?? "",
+      goals90: existing?.goals90 ?? "",
     };
     ctx.startSubPath(memberProfileSubPath, initialData, { memberIndex: index });
   }
@@ -46,8 +41,8 @@ export default function MemberProfilesStep() {
     <Show when={ctx.snapshot()}>
       <div class="form-body">
         <p class="step-intro">
-          Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a
-          short two-step wizard, then return here when done. You can edit any profile before moving on.
+          Complete a profile for each team member. Click <strong>Fill in Profile</strong> to open a short
+          two-step wizard, then return here when done. You can edit any profile before moving on.
         </p>
 
         <div class="profile-list">
@@ -73,7 +68,9 @@ export default function MemberProfilesStep() {
                     class="btn-edit"
                     disabled={ctx.snapshot()?.isNavigating}
                     onClick={() => openProfile(member, i())}
-                  >Edit</button>
+                  >
+                    Edit
+                  </button>
                 </Show>
 
                 <Show when={!getProfile(i())}>
@@ -82,7 +79,9 @@ export default function MemberProfilesStep() {
                     class="btn-fill"
                     disabled={ctx.snapshot()?.isNavigating}
                     onClick={() => openProfile(member, i())}
-                  >Fill in Profile →</button>
+                  >
+                    Fill in Profile →
+                  </button>
                 </Show>
               </div>
             )}

@@ -5,8 +5,8 @@ import type { OnboardingData } from "./onboarding";
 const { snapshot, setData } = usePathContext<OnboardingData>();
 
 const THEME_OPTIONS = [
-  { value: "light",  label: "Light",         desc: "Always bright" },
-  { value: "dark",   label: "Dark",           desc: "Easy on the eyes" },
+  { value: "light", label: "Light", desc: "Always bright" },
+  { value: "dark", label: "Dark", desc: "Easy on the eyes" },
   { value: "system", label: "System Default", desc: "Follows your OS setting" },
 ];
 </script>
@@ -19,9 +19,13 @@ const THEME_OPTIONS = [
       <p class="pref-label">Interface Theme</p>
       <div class="radio-group">
         <label v-for="opt in THEME_OPTIONS" :key="opt.value" class="radio-option">
-          <input type="radio" name="theme" :value="opt.value"
+          <input
+            type="radio"
+            name="theme"
+            :value="opt.value"
             :checked="snapshot.data.theme === opt.value"
-            @change="setData('theme', opt.value)" />
+            @change="setData('theme', opt.value)"
+          />
           <span class="radio-option-label">{{ opt.label }}</span>
           <span class="radio-option-desc">{{ opt.desc }}</span>
         </label>
@@ -36,8 +40,11 @@ const THEME_OPTIONS = [
           <span>Receive updates, tips, and product announcements</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" :checked="snapshot.data.notifications"
-            @change="setData('notifications', ($event.target as HTMLInputElement).checked)" />
+          <input
+            type="checkbox"
+            :checked="snapshot.data.notifications"
+            @change="setData('notifications', ($event.target as HTMLInputElement).checked)"
+          />
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>
         </label>
@@ -45,4 +52,3 @@ const THEME_OPTIONS = [
     </div>
   </div>
 </template>
-

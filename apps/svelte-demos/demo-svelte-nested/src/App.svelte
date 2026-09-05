@@ -1,12 +1,12 @@
 <script lang="ts">
   import { PathShell } from "@daltonr/pathwrite-svelte";
   import { employeeOnboardingPath, ONBOARDING_INITIAL, type OnboardingData } from "./onboarding";
-  import EnterNameStep      from "./EnterNameStep.svelte";
+  import EnterNameStep from "./EnterNameStep.svelte";
   import EmployeeDetailsStep from "./EmployeeDetailsStep.svelte";
-  import ConfirmStep        from "./ConfirmStep.svelte";
+  import ConfirmStep from "./ConfirmStep.svelte";
 
-  let isCompleted   = $state(false);
-  let isCancelled   = $state(false);
+  let isCompleted = $state(false);
+  let isCancelled = $state(false);
   let completedData = $state<OnboardingData | null>(null);
 
   function handleComplete(data: OnboardingData) {
@@ -19,8 +19,8 @@
   }
 
   function startOver() {
-    isCompleted   = false;
-    isCancelled   = false;
+    isCompleted = false;
+    isCancelled = false;
     completedData = null;
   }
 </script>

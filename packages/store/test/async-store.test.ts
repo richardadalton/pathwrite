@@ -13,7 +13,8 @@ const mockState: SerializedPathState = {
   currentStepIndex: 1,
   data: { name: "Alice", email: "alice@example.com" },
   visitedStepIds: ["step1", "step2"],
-  pathStack: [], _status: "idle",
+  pathStack: [],
+  _status: "idle",
 };
 
 /** Creates a fresh in-memory AsyncStorageAdapter spy. */
@@ -27,10 +28,14 @@ function makeAsyncStorageSpy(): AsyncStorageAdapter & {
   const _data = new Map<string, string>();
   return {
     _data,
-    getItem:    vi.fn(async (k: string) => _data.has(k) ? _data.get(k)! : null),
-    setItem:    vi.fn(async (k: string, v: string) => { _data.set(k, v); }),
-    removeItem: vi.fn(async (k: string) => { _data.delete(k); }),
-    getAllKeys:  vi.fn(async () => Array.from(_data.keys()) as readonly string[]),
+    getItem: vi.fn(async (k: string) => (_data.has(k) ? _data.get(k)! : null)),
+    setItem: vi.fn(async (k: string, v: string) => {
+      _data.set(k, v);
+    }),
+    removeItem: vi.fn(async (k: string) => {
+      _data.delete(k);
+    }),
+    getAllKeys: vi.fn(async () => Array.from(_data.keys()) as readonly string[]),
   };
 }
 
@@ -224,8 +229,8 @@ describe("AsyncStorageStore — list()", () => {
 
   it("throws when the adapter does not implement getAllKeys", async () => {
     const adapterWithoutKeys: AsyncStorageAdapter = {
-      getItem:    async () => null,
-      setItem:    async () => {},
+      getItem: async () => null,
+      setItem: async () => {},
       removeItem: async () => {},
     };
     const store = new AsyncStorageStore({ storage: adapterWithoutKeys });

@@ -16,8 +16,8 @@ const guardRunning = computed(() => snapshot.value?.status === "validating");
 <template>
   <div v-if="snapshot" class="form-body">
     <p class="step-intro">
-      Clicking <strong>Next</strong> runs an async eligibility check against our API.
-      The check takes ~900ms — watch the spinner on the button.
+      Clicking <strong>Next</strong> runs an async eligibility check against our API. The check takes ~900ms —
+      watch the spinner on the button.
     </p>
 
     <div class="eligibility-summary">
@@ -39,11 +39,11 @@ const guardRunning = computed(() => snapshot.value?.status === "validating");
 
     <p v-if="!guardRunning" class="hint">
       <strong>What's happening:</strong> <code>canMoveNext</code> is async — it calls
-      <code>services.checkEligibility()</code> and the engine awaits the result before deciding
-      whether to advance. While it runs, <code>snapshot.status === "validating"</code>, and the
-      shell shows a CSS spinner on the Next button. If blocked, the guard returns
-      <code>{ allowed: false, reason }</code> and we render <code>snapshot.blockingError</code>
-      here (since <code>validationDisplay="inline"</code> suppresses the shell's own rendering).
+      <code>services.checkEligibility()</code> and the engine awaits the result before deciding whether to
+      advance. While it runs, <code>snapshot.status === "validating"</code>, and the shell shows a CSS spinner
+      on the Next button. If blocked, the guard returns <code>{ allowed: false, reason }</code> and we render
+      <code>snapshot.blockingError</code> here (since <code>validationDisplay="inline"</code> suppresses the
+      shell's own rendering).
     </p>
   </div>
 </template>

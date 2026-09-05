@@ -3,10 +3,10 @@ import type { DocumentData, ApprovalData, ApproverResult } from "./types";
 
 export const AVAILABLE_APPROVERS = [
   { id: "alice", name: "Alice Johnson" },
-  { id: "bob",   name: "Bob Smith" },
+  { id: "bob", name: "Bob Smith" },
   { id: "carol", name: "Carol Williams" },
-  { id: "dave",  name: "Dave Brown" },
-  { id: "eve",   name: "Eve Davis" },
+  { id: "dave", name: "Dave Brown" },
+  { id: "eve", name: "Eve Davis" },
 ];
 
 export const INITIAL_DATA: DocumentData = {
@@ -37,8 +37,8 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       id: "createDocument",
       title: "Create Document",
       fieldErrors: ({ data }) => ({
-        title:       !data.title?.toString().trim()       ? "Document title is required." : undefined,
-        description: !data.description?.toString().trim() ? "Description is required."   : undefined,
+        title: !data.title?.toString().trim() ? "Document title is required." : undefined,
+        description: !data.description?.toString().trim() ? "Description is required." : undefined,
       }),
     },
     {
@@ -53,11 +53,12 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
       title: "Awaiting Approvals",
       fieldErrors: ({ data }) => {
         const results = (data.approvalResults ?? {}) as Record<string, ApproverResult>;
-        const pending = (data.approvers as string[]).filter(id => !results[id]?.decision);
+        const pending = (data.approvers as string[]).filter((id) => !results[id]?.decision);
         return {
-          _: pending.length > 0
-            ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
-            : undefined,
+          _:
+            pending.length > 0
+              ? `Waiting for ${pending.length} approver${pending.length !== 1 ? "s" : ""} to complete their review.`
+              : undefined,
         };
       },
       onSubPathComplete(_subPathId, subPathData, ctx, meta) {
@@ -68,7 +69,7 @@ export const approvalWorkflowPath: PathDefinition<DocumentData> = {
             ...existing,
             [approverId]: {
               decision: subPathData.decision as "approved" | "rejected",
-              comment:  (subPathData.comment as string) ?? "",
+              comment: (subPathData.comment as string) ?? "",
             },
           },
         };

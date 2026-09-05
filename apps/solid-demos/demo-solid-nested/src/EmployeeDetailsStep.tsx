@@ -12,9 +12,9 @@ export default function EmployeeDetailsStep() {
   return (
     <div class="nested-shell-wrapper">
       <p class="step-intro">
-        Fill in details for <strong>{ctx.snapshot()?.data.employeeName}</strong> using the tabs below.
-        Switch between tabs freely — data is saved as you type.
-        First name, last name, department, and job title are required before proceeding.
+        Fill in details for <strong>{ctx.snapshot()?.data.employeeName}</strong> using the tabs below. Switch
+        between tabs freely — data is saved as you type. First name, last name, department, and job title are
+        required before proceeding.
       </p>
 
       <PathShell
@@ -25,10 +25,10 @@ export default function EmployeeDetailsStep() {
         validateWhen={ctx.snapshot()?.hasAttemptedNext ?? false}
         validationDisplay="inline"
         steps={{
-          "personal":   () => <PersonalTab />,
-          "department": () => <DepartmentTab />,
-          "equipment":  () => <EquipmentTab />,
-          "roles":      () => <RolesTab />,
+          personal: () => <PersonalTab />,
+          department: () => <DepartmentTab />,
+          equipment: () => <EquipmentTab />,
+          roles: () => <RolesTab />,
         }}
       />
     </div>

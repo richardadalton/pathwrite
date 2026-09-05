@@ -6,15 +6,9 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@daltonr/pathwrite-core": [
-        "packages/core/src/index.ts"
-      ]
+      "@daltonr/pathwrite-core": ["packages/core/src/index.ts"]
     }
   },
-  "include": [
-    "packages/*/test/**/*.test-d.ts"
-  ],
-  "exclude": [
-    "packages/solid-adapter/**"
-  ]
+  "include": ["packages/*/test/**/*.test-d.ts"],
+  "exclude": ["packages/solid-adapter/**"]
 }

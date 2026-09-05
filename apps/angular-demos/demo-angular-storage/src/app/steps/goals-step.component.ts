@@ -5,36 +5,92 @@ import type { ProfileSubData } from "../wizard";
 @Component({
   selector: "app-goals-step",
   standalone: true,
-  styles: [`
-    .form-body { display: flex; flex-direction: column; gap: 18px; }
-    .subwizard-context {
-      background: #f0f9ff; border: 1px solid #bae6fd;
-      border-radius: 8px; padding: 12px 16px;
-    }
-    .subwizard-for { margin: 0 0 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0369a1; }
-    .subwizard-name { margin: 0; font-size: 15px; font-weight: 600; color: #0c4a6e; }
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
-    .required { color: #dc2626; font-size: 13px; }
-    .field-hint { font-size: 12px; color: #9ca3af; font-weight: 400; flex: 1 0 100%; }
-    .field textarea {
-      border: 1px solid #c2d0e5; border-radius: 6px;
-      padding: 9px 12px; font-size: 14px; font-family: inherit;
-      color: #1f2937; background: #fff; width: 100%;
-      resize: vertical; min-height: 120px;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .field textarea:focus {
-      outline: none; border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-    }
-    .field--error textarea { border-color: #dc2626; }
-    .field--error textarea:focus { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
-    .field-error { font-size: 13px; color: #dc2626; }
-  `],
+  styles: [
+    `
+      .form-body {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .subwizard-context {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        padding: 12px 16px;
+      }
+      .subwizard-for {
+        margin: 0 0 2px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #0369a1;
+      }
+      .subwizard-name {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #0c4a6e;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .required {
+        color: #dc2626;
+        font-size: 13px;
+      }
+      .field-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        font-weight: 400;
+        flex: 1 0 100%;
+      }
+      .field textarea {
+        border: 1px solid #c2d0e5;
+        border-radius: 6px;
+        padding: 9px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        color: #1f2937;
+        background: #fff;
+        width: 100%;
+        resize: vertical;
+        min-height: 120px;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .field textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .field--error textarea {
+        border-color: #dc2626;
+      }
+      .field--error textarea:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+      }
+      .field-error {
+        font-size: 13px;
+        color: #dc2626;
+      }
+    `,
+  ],
   template: `
     <div class="form-body">
-
       <div class="subwizard-context">
         <p class="subwizard-for">Setting goals for</p>
         <p class="subwizard-name">{{ data.memberName }}</p>
@@ -53,7 +109,7 @@ import type { ProfileSubData } from "../wizard";
           [value]="data.goals30 ?? ''"
           (input)="path.setData('goals30', $any($event.target).value)"
         ></textarea>
-        @if (errors()['goals30']; as msg) {
+        @if (errors()["goals30"]; as msg) {
           <span class="field-error">{{ msg }}</span>
         }
       </div>
@@ -71,13 +127,12 @@ import type { ProfileSubData } from "../wizard";
           [value]="data.goals90 ?? ''"
           (input)="path.setData('goals90', $any($event.target).value)"
         ></textarea>
-        @if (errors()['goals90']; as msg) {
+        @if (errors()["goals90"]; as msg) {
           <span class="field-error">{{ msg }}</span>
         }
       </div>
-
     </div>
-  `
+  `,
 })
 export class GoalsStepComponent {
   protected readonly path = usePathContext<ProfileSubData>();

@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "start": "vite dev", "build": "vite build", "preview": "vite preview" },
+  "scripts": {
+    "start": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@daltonr/pathwrite-solid": "*",
     "@daltonr/pathwrite-demo-workflow-job-application": "*",
