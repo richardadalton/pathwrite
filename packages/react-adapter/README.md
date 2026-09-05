@@ -81,11 +81,11 @@ Step components call `usePathContext()` to access engine state — no prop drill
 | `goToStep(stepId)` | function | Jump to a step by ID, bypassing guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | function | Jump to a step by ID, checking the relevant navigation guard first. |
 | `setData(key, value)` | function | Update a single data field. Type-checked when `TData` is provided. |
-| `resetStep()` | function | Re-run `onEnter` for the current step without changing step index. |
+| `resetStep()` | function | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
 | `startSubPath(definition, data?, meta?)` | function | Push a sub-path. `meta` is echoed back to `onSubPathComplete` / `onSubPathCancel`. |
-| `suspend()` | function | Suspend an async step while work completes. |
-| `retry()` | function | Retry the current step after a suspension or error. |
-| `restart(definition, data?)` | function | Tear down the active path without firing hooks and start fresh. |
+| `suspend()` | function | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `retry()` | function | Re-run the operation that set `snapshot.error`. Increments `snapshot.error.retryCount` on repeated failure. No-op when there is no pending error. |
+| `restart()` | function | Tear down the active path without firing hooks and restart the root path with the `initialData` from the original `start()`. Takes no arguments; throws if nothing has been started. |
 | `validate()` | function | Set `snapshot.hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 All returned callbacks are referentially stable — safe to pass as props or include in `useEffect` dependency arrays.
@@ -100,17 +100,29 @@ All returned callbacks are referentially stable — safe to pass as props or inc
 |---|---|---|---|
 | `path` | `PathDefinition` | required | The path to run. |
 | `steps` | `Record<string, ReactNode>` | required | Map of step ID to content. Keys must exactly match step IDs. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
-| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
-| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so step components render their own errors. |
-| `loadingLabel` | `string` | `"Loading…"` | Label shown during async step suspension. |
-| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
+| `onEvent` | `(event: PathEvent) => void` | — | Called for every engine event. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
-| `services` | `TServices` | — | Services object injected into step lifecycle hooks via `PathStepContext`. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so step components render their own errors. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `unknown` | — | Services object made available to step components via `usePathContext<TData, TServices>().services`. Pass the same object you gave your path factory so steps can call service methods directly. |
+| `className` | `string` | — | Extra CSS class on the root element. |
+| `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Replace the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Replace the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
 | `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (requires `completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a "Start over" button is shown. Components inside `completionContent` can call `usePathContext()` to access `restart` and `snapshot.data`. |
 
 Step components rendered inside `<PathShell>` call `usePathContext()` to read `snapshot` and invoke actions — no prop drilling required.
@@ -119,14 +131,38 @@ Step components rendered inside `<PathShell>` call `usePathContext()` to read `s
 
 ## usePathContext
 
-`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` or `<PathProvider>` ancestor. `snapshot` is typed `PathSnapshot | null`, exactly like `usePath`: it is `null` under a bare `<PathProvider>` until `start()` is called (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so a plain `if (!snapshot) return null;` narrows it. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. Pass your data type as `TData` to get typed access to `snapshot.data` and `setData`; pass `TServices` to type the `services` field on `PathStepContext`. Throws if called outside a provider.
+`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` or `<PathProvider>` ancestor. `snapshot` is typed `PathSnapshot | null`, exactly like `usePath`: it is `null` under a bare `<PathProvider>` until `start()` is called (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so a plain `if (!snapshot) return null;` narrows it. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. Pass your data type as `TData` to get typed access to `snapshot.data` and `setData`; pass `TServices` to type the returned `services` value (the object given to the `services` prop of `<PathShell>` or `<PathProvider>`). Throws if called outside a provider.
+
+---
+
+## useField and FieldError
+
+`useField(field)` returns `{ value, onChange, error, warning }` bound to `snapshot.data[field]`, ready to spread onto an `<input>`, `<select>` or `<textarea>`. `value` is always a `string` (`""` when unset); `onChange` calls `setData(field, e.target.value)`; `error` is the field's error message once the user has attempted to advance (or `validate()` has run), otherwise `undefined`; `warning` is shown immediately.
+
+`<FieldError field="..." />` renders that error (after an attempt) or warning (immediately) as `<span class="pw-field-error">` / `<span class="pw-field-warning">`, and nothing when there is no message. It also registers the field with the enclosing `<PathShell>`, which then omits it from the shell's summary list so messages are not duplicated.
+
+```tsx
+import { useField, FieldError } from "@daltonr/pathwrite-react";
+
+function DetailsStep() {
+  const name = useField<SignupData, "name">("name");
+  return (
+    <div>
+      <input type="text" placeholder="Name" {...name} />
+      <FieldError field="name" />
+    </div>
+  );
+}
+```
+
+Both work inside a `<PathShell>` or a bare `<PathProvider>` and are null-safe: with no active path they render an empty, message-free field instead of throwing. For inputs that need a value transform (`.trim()`, `Number()`), keep an explicit `onChange` handler.
 
 ---
 
 ## Further reading
 
 - [React getting started guide](../../docs/getting-started/frameworks/react.md)
-- [Navigation guide](../../docs/guides/navigation.md)
+- [Navigation guide](../../docs/developer-guide/04-navigation.md)
 - [Full docs](../../docs/README.md)
 
 ---

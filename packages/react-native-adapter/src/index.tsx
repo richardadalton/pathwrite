@@ -72,7 +72,7 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   setData: <K extends string & keyof TData>(key: K, value: TData[K]) => void;
   /** Reset the current step's data to what it was when the step was entered. */
   resetStep: () => void;
-  /** Tear down any active path and immediately start the given path fresh. */
+  /** Tear down any active path (without firing hooks) and immediately restart the root path with the `initialData` from the original `start()`. Takes no arguments. */
   restart: () => void;
   /** Re-runs the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
   retry: () => void;

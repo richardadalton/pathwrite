@@ -31,7 +31,7 @@ import {
 export interface UsePathOptions {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
-   * returned by `createPersistedEngine()` from `@daltonr/pathwrite-store`.
+   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
    *
    * When provided:
    * - `usePath` will **not** create its own engine.
@@ -369,7 +369,7 @@ export interface PathShellProps {
   path: PathDefinition<any>;
   /**
    * An externally-managed engine — for example, the engine returned by
-   * `createPersistedEngine()`. When supplied, `PathShell` will skip its own
+   * `restoreOrStart()` from `@daltonr/pathwrite-store`. When supplied, `PathShell` will skip its own
    * `start()` call and drive the UI from the provided engine instead.
    */
   engine?: PathEngine;
@@ -579,7 +579,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
   }));
 
   // Auto-start on mount — skipped when an external engine is provided since
-  // the caller is responsible for starting it (e.g. via createPersistedEngine).
+  // the caller is responsible for starting it (e.g. via restoreOrStart).
   const startedRef = useRef(false);
   useEffect(() => {
     if (autoStart && !startedRef.current && !externalEngine) {

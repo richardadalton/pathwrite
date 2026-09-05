@@ -107,11 +107,11 @@ Each step render function runs once, when its step becomes current, and the comp
 | `goToStep(stepId)` | function | Jump to a step by ID, bypassing guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | function | Jump to a step by ID, checking the relevant navigation guard first. |
 | `setData(key, value)` | function | Update a single data field. Type-checked when `TData` is provided. |
-| `resetStep()` | function | Re-run `onEnter` for the current step without changing step index. |
+| `resetStep()` | function | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
 | `startSubPath(definition, data?, meta?)` | function | Push a sub-path. `meta` is echoed back to `onSubPathComplete` / `onSubPathCancel`. |
-| `suspend()` | function | Suspend an async step while work completes. |
-| `retry()` | function | Retry the current step after a suspension or error. |
-| `restart()` | function | Tear down the active path without firing hooks and start fresh. |
+| `suspend()` | function | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `retry()` | function | Re-run the operation that set `snapshot().error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `restart()` | function | Tear down the active path without firing hooks and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
 | `validate()` | function | Set `snapshot().hasValidated` without navigating. Used to trigger inline errors across all tabs in a nested shell. |
 
 ---
@@ -139,14 +139,21 @@ Each step render function runs once, when its step becomes current, and the comp
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` to suppress the summary and handle errors inside step components. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `hideFooter` | `boolean` | `false` | Hide the footer entirely. The error panel is still shown on async failure. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `class` | `string` | — | Extra CSS class on the root element. |
 | `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer shell's `hasAttemptedNext` for nested shells. |
 | `services` | `object \| null` | `null` | Services object passed through context to all step components. |
 | `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
-| `renderHeader` | `(snapshot) => JSX.Element` | — | Replace the default progress header. |
-| `renderFooter` | `(snapshot, actions) => JSX.Element` | — | Replace the default navigation buttons. |
+| `renderHeader` | `(snapshot) => JSX.Element` | — | Replace the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `renderFooter` | `(snapshot, actions) => JSX.Element` | — | Replace the default navigation buttons. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
 | `completionContent` | `(snapshot: PathSnapshot) => JSX.Element` | — | Custom content rendered when `snapshot().status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
@@ -402,7 +409,7 @@ function App() {
 ## Further reading
 
 - [SolidJS getting started guide](../../docs/getting-started/frameworks/solidjs.md)
-- [Navigation guide](../../docs/guides/navigation.md)
+- [Navigation guide](../../docs/developer-guide/04-navigation.md)
 - [Full docs](../../docs/README.md)
 
 ---

@@ -84,11 +84,11 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | `goToStep(stepId)` | function | Jump to a step by ID, bypassing guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | function | Jump to a step by ID, checking the relevant navigation guard first. |
 | `setData(key, value)` | function | Update a single data field. Type-checked when `TData` is provided. |
-| `resetStep()` | function | Re-run `onEnter` for the current step without changing step index. |
+| `resetStep()` | function | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
 | `startSubPath(definition, data?, meta?)` | function | Push a sub-path. `meta` is echoed back to `onSubPathComplete` / `onSubPathCancel`. |
-| `suspend()` | function | Suspend an async step while work completes. |
-| `retry()` | function | Retry the current step after a suspension or error. |
-| `restart(definition, data?)` | function | Tear down the active path without firing hooks and start fresh. |
+| `suspend()` | function | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `retry()` | function | Re-run the operation that set `snapshot.value.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `restart()` | function | Tear down the active path without firing hooks and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
 | `validate()` | function | Set `snapshot.value.hasValidated` without navigating. Triggers all inline field errors simultaneously. Used to validate all tabs in a nested shell at once. |
 
 ---
@@ -100,14 +100,25 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `path` | `PathDefinition` | required | The path to run. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
-| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so slot components render their own errors. |
-| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
-| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
-| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
 | `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
-| `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
+| `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
+| `backLabel` | `string` | `"Previous"` | Previous button label. |
+| `nextLabel` | `string` | `"Next"` | Next button label. |
+| `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
+| `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
+| `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
+| `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
+| `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. Use `"inline"` so slot components render their own errors. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `object \| null` | `null` | Services object available to slot components via `usePathContext<TData, TServices>().services`. |
+
+The component instance exposes `restart()` for template refs (`shellRef.value.restart()`), which restarts the path with its original `initialData` without remounting.
 
 **Emits:**
 
@@ -122,22 +133,22 @@ Step components call `usePathContext()` inside named slots to access engine stat
 | Slot | Scope | Description |
 |---|---|---|
 | `#[stepId]` | `{ snapshot }` | Named slot rendered when the active step matches `stepId`. Name must match the step ID exactly. |
-| `#header` | `{ snapshot }` | Replaces the default progress header. |
-| `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
+| `#header` | `{ snapshot }` | Replaces the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
 | `#completion` | `{ snapshot }` | Rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |
 
 ---
 
 ## usePathContext
 
-`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` ancestor. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. The `snapshot` is the same `DeepReadonly<Ref<PathSnapshot | null>>` — access the current value as `snapshot.value`. Pass your data type as `TData` to get typed access to `snapshot.value?.data` and `setData`; pass `TServices` to type the `services` field on `PathStepContext`. Must be called inside the `setup` function of a component that is a descendant of `<PathShell>`.
+`usePathContext<TData, TServices>()` reads the engine instance provided by the nearest `<PathShell>` ancestor. It returns the same shape as `usePath` — `snapshot`, `next`, `previous`, `cancel`, `setData`, and the rest of the action callbacks. Here `snapshot` is typed `DeepReadonly<Ref<PathSnapshot>>` — non-null, since slot components only render while a path is active. Read it as `snapshot.value` in `<script setup>`; inside `<template>` the ref auto-unwraps, so write `snapshot.data` rather than `snapshot.value.data`. Pass your data type as `TData` to get typed access to `snapshot.value.data` and `setData`; pass `TServices` to type the returned `services` value (the object given to `PathShell`'s `services` prop). Must be called inside the `setup` function of a component that is a descendant of `<PathShell>`.
 
 ---
 
 ## Further reading
 
 - [Vue getting started guide](../../docs/getting-started/frameworks/vue.md)
-- [Navigation guide](../../docs/guides/navigation.md)
+- [Navigation guide](../../docs/developer-guide/04-navigation.md)
 - [Full docs](../../docs/README.md)
 
 ---

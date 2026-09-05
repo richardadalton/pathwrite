@@ -89,5 +89,5 @@ Saved state that cannot be used never blocks the app. If the store fails to load
 
 ## Further reading
 
-- [docs/guides/persistence.md](../../docs/guides/persistence.md) — strategies, offline patterns, custom stores, and the full `HttpStore` options reference
+- [docs/developer-guide/09-persistence.md](../../docs/developer-guide/09-persistence.md) — strategies, offline patterns, custom stores, and the full `HttpStore` options reference
 - [docs/README.md](../../docs/README.md) — documentation index

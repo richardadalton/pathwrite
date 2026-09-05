@@ -98,7 +98,8 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
 
   /**
    * Tears down any active path (without firing lifecycle hooks) and immediately
-   * starts the given path fresh. Safe to call whether or not a path is running.
+   * restarts the root path with the `initialData` from the original `start()`
+   * call. Takes no arguments; rejects if the engine has never been started.
    * Use for "Start over" / retry flows without destroying and re-creating the
    * component that provides this facade.
    */
@@ -193,7 +194,8 @@ export interface UsePathContextReturn<TData extends PathData = PathData, TServic
   /** Jump to a step by ID, checking guards first. */
   goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /**
-   * Tears down any active path and immediately starts the given path fresh.
+   * Tears down any active path and immediately restarts the root path with the
+   * `initialData` from the original `start()` call. Takes no arguments.
    * Use for "Start over" / retry flows.
    */
   restart: () => Promise<void>;
@@ -229,7 +231,7 @@ export interface UsePathContextReturn<TData extends PathData = PathData, TServic
  *   providers: [PathFacade],  // ← Provide at this component or a parent
  *   template: `
  *     @if (path.snapshot(); as s) {
- *       <div>Step: {{ s.activeStep?.title }}</div>
+ *       <div>Step: {{ s.stepTitle }}</div>
  *       <button (click)="path.next()">Next</button>
  *     }
  *   `

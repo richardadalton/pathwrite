@@ -1,6 +1,6 @@
 # Getting Started — Angular
 
-Pathwrite's Angular adapter provides `PathFacade`, an `@Injectable` service that exposes path state and events as RxJS observables and Angular signals. The recommended API for step components is `injectPath()`, which mirrors React's `usePathContext()` and Vue's `usePath()` for a consistent cross-framework experience.
+Pathwrite's Angular adapter provides `PathFacade`, an `@Injectable` service that exposes path state and events as RxJS observables and Angular signals. The recommended API for step components is `usePathContext()`, which mirrors React's and Vue's `usePathContext()` for a consistent cross-framework experience.
 
 ## Installation
 
@@ -8,14 +8,15 @@ Pathwrite's Angular adapter provides `PathFacade`, an `@Injectable` service that
 npm install @daltonr/pathwrite-core @daltonr/pathwrite-angular
 ```
 
-Peer dependencies: `@angular/core >= 16.0.0`, `rxjs >= 7.0.0`.
+Peer dependencies: `@angular/core`, `@angular/common`, `@angular/forms >= 17.0.0`, `rxjs >= 7.0.0`.
 
 All core types are re-exported from the Angular package:
 
 ```ts
 import {
   PathFacade,
-  injectPath,
+  usePathContext,
+  syncFormGroup,
   PathEngine,
   PathDefinition,
   PathData,
@@ -32,6 +33,7 @@ import {
   PathStepDirective,
   PathShellHeaderDirective,
   PathShellFooterDirective,
+  PathShellCompletionDirective,
 } from "@daltonr/pathwrite-angular/shell";
 ```
 
@@ -69,7 +71,7 @@ Providing `PathFacade` in `providers: [PathFacade]` at the root `AppModule` or a
 | Method | Description |
 |--------|-------------|
 | `start(definition, data?)` | Start or re-start a path. |
-| `restart(definition, data?)` | Tear down any active path (without firing hooks) and start fresh. Safe to call at any time. |
+| `restart()` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
 | `startSubPath(definition, data?, meta?)` | Push a sub-path. Requires an active path. `meta` is returned unchanged to `onSubPathComplete` / `onSubPathCancel` on the parent step. |
 | `next()` | Advance one step. Completes the path on the last step. |
 | `previous()` | Go back one step. No-op on the first step of a top-level path. |
@@ -77,8 +79,14 @@ Providing `PathFacade` in `providers: [PathFacade]` at the root `AppModule` or a
 | `setData(key, value)` | Update a single data value. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
 | `goToStep(stepId)` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | Jump to a step by ID, checking the current step's guard first. |
-| `adoptEngine(engine)` | Adopt an externally-managed `PathEngine`. The facade immediately reflects the engine's current state and forwards all subsequent events. |
+| `resetStep()` | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
+| `retry()` | Re-run the operation that set `snapshot().error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `validate()` | Trigger inline validation on all steps without navigating. Sets `snapshot().hasValidated`. |
+| `adoptEngine(engine)` | Adopt an externally-managed `PathEngine` (e.g. from `restoreOrStart()`). The facade immediately reflects the engine's current state and forwards all subsequent events. |
 | `snapshot()` | Synchronous read of the current `PathSnapshot \| null`. |
+
+All navigation methods return `Promise<void>`; `validate()` returns `void`.
 
 ### Type parameter
 
@@ -124,16 +132,20 @@ export class DetailsStepComponent {
 |--------|------|-------------|
 | `snapshot` | `Signal<PathSnapshot \| null>` | Current path snapshot as a signal. `null` when no path is active. |
 | `start(path, data?)` | `Promise<void>` | Start or restart a path. |
-| `restart(path, data?)` | `Promise<void>` | Tear down and restart fresh. |
+| `restart()` | `Promise<void>` | Tear down any active path and restart the root path with the `initialData` from the original `start()`. Takes no arguments. |
 | `startSubPath(path, data?, meta?)` | `Promise<void>` | Push a sub-path onto the stack. |
 | `next()` | `Promise<void>` | Advance one step. |
 | `previous()` | `Promise<void>` | Go back one step. |
 | `cancel()` | `Promise<void>` | Cancel the active path. |
 | `setData(key, value)` | `Promise<void>` | Update a single data field. Type-safe when `TData` is specified. |
+| `resetStep()` | `Promise<void>` | Restore the current step's data to what it was when the step was entered. No hooks run. |
 | `goToStep(stepId, options?)` | `Promise<void>` | Jump to a step by ID (no guard check). |
 | `goToStepChecked(stepId, options?)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
-| `validate()` | `void` | Set `snapshot().hasValidated` without navigating. Triggers all inline field errors simultaneously. |
+| `retry()` | `Promise<void>` | Re-run the operation that set `snapshot().error`. |
+| `suspend()` | `Promise<void>` | Pause with intent to return, preserving all state. Emits `suspended`. |
 | `services` | `TServices` | Services object passed to the nearest `<pw-shell>` via `[services]`. |
+
+`validate()` is not part of this object. To trigger inline errors on every step at once, bind the shell's `[validateWhen]` input, or call `inject(PathFacade).validate()` on the facade directly.
 
 ### Reading step data without local state
 
@@ -244,6 +256,34 @@ protected update(field: string & keyof ApplicationData, value: string): void {
 
 Inline string literals are always fine — this pattern only matters when the key is a variable.
 
+### Reactive forms — `syncFormGroup()`
+
+`syncFormGroup(facade, formGroup, destroyRef?)` mirrors every control of an Angular `FormGroup` into the engine via `setData`, so `canMoveNext` guards and `fieldErrors` evaluate against the live form state:
+
+- Writes `getRawValue()` to the facade immediately (disabled controls included), then re-applies it on every `valueChanges` emission.
+- Skips writes while no path is active, so it is safe to call before or after `facade.start()`.
+- Returns a cleanup function; pass a `DestroyRef` to unsubscribe automatically when the component is destroyed.
+
+```typescript
+import { DestroyRef, inject } from "@angular/core";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { PathFacade, syncFormGroup } from "@daltonr/pathwrite-angular";
+
+export class DetailsStepComponent implements OnInit {
+  private readonly facade = inject(PathFacade) as PathFacade<ApplicationData>;
+  protected readonly form = new FormGroup({
+    firstName: new FormControl("", Validators.required),
+    email:     new FormControl(""),
+  });
+
+  ngOnInit() {
+    syncFormGroup(this.facade, this.form, inject(DestroyRef));
+  }
+}
+```
+
+`syncFormGroup` only needs an object with `getRawValue()` and `valueChanges` (the `FormGroupLike` interface), so `@angular/forms` is not imported by the adapter itself.
+
 ---
 
 ## `<pw-shell>` — default UI component
@@ -293,18 +333,26 @@ Each `<ng-template pwStep="<stepId>">` is instantiated and rendered when the act
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
-| `path` | `PathDefinition` | required | The path definition to drive. Required unless `[engine]` is provided. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `autoStart` is suppressed. Use `@if (engine)` to gate mounting until the engine is ready. |
+| `path` | `PathDefinition` | — | The path definition to drive. Required unless `[engine]` is provided. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `facade.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `autoStart` is suppressed. Use `@if (engine)` to gate mounting until the engine is ready. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `<pw-shell>`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on `ngOnInit`. Ignored when `[engine]` is provided. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the facade so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. `"inline"` suppresses the shell's list so step components render errors themselves. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `unknown` | `null` | Services object made available to step components via `usePathContext<TData, TServices>().services`. |
+
+The package README ([packages/angular-adapter/README.md](../../../packages/angular-adapter/README.md)) is the canonical reference for these inputs.
 
 ### Outputs
 
@@ -351,7 +399,29 @@ import {
 export class MyComponent { }
 ```
 
-`actions` (`PathShellActions`) contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. All return `Promise<void>`.
+`actions` (`PathShellActions`) contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. All return `Promise<void>`. A custom `pwShellHeader` is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`.
+
+### Customising the completion panel
+
+With the default `completionBehaviour: "stayOnFinal"`, `<pw-shell>` shows an "All done." panel with a Start over button once `snapshot.status === "completed"`. Replace it with a `pwShellCompletion` template (`PathShellCompletionDirective`); the completed `PathSnapshot` is the implicit template context. To restart from inside the template, use a template reference to the shell:
+
+```typescript
+import { PathShellComponent, PathStepDirective, PathShellCompletionDirective } from "@daltonr/pathwrite-angular/shell";
+
+@Component({
+  imports: [PathShellComponent, PathStepDirective, PathShellCompletionDirective],
+  template: `
+    <pw-shell #shell [path]="myPath">
+      <ng-template pwShellCompletion let-s>
+        <h2>Thanks, {{ s.data.firstName }}!</h2>
+        <button (click)="shell.restart()">Start over</button>
+      </ng-template>
+      <ng-template pwStep="details"><app-details-step /></ng-template>
+    </pw-shell>
+  `
+})
+export class MyComponent { }
+```
 
 ### Context sharing inside `<pw-shell>`
 
@@ -384,7 +454,7 @@ The parent component hosting `<pw-shell>` does **not** need its own `PathFacade`
 
 ## Complete example
 
-A two-step job-application form. Step one collects personal details with `fieldErrors` validation. Step two uses `injectPath()` to read and update state.
+A two-step job-application form. Step one collects personal details with `fieldErrors` validation. Step two uses `usePathContext()` to read and update state.
 
 ```typescript
 // application-path.ts
@@ -427,7 +497,7 @@ export const applicationPath: PathDefinition<ApplicationData> = {
 ```typescript
 // details-step.component.ts
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { ApplicationData } from "./application-path";
 
 @Component({
@@ -462,14 +532,14 @@ import type { ApplicationData } from "./application-path";
   `
 })
 export class DetailsStepComponent {
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
 }
 ```
 
 ```typescript
 // cover-note-step.component.ts
 import { Component } from "@angular/core";
-import { injectPath } from "@daltonr/pathwrite-angular";
+import { usePathContext } from "@daltonr/pathwrite-angular";
 import type { ApplicationData } from "./application-path";
 
 @Component({
@@ -492,7 +562,7 @@ import type { ApplicationData } from "./application-path";
   `
 })
 export class CoverNoteStepComponent {
-  protected readonly path = injectPath<ApplicationData>();
+  protected readonly path = usePathContext<ApplicationData>();
 }
 ```
 
@@ -539,7 +609,7 @@ export class JobApplicationComponent {
 
 - `fieldErrors` on each step with auto-derived `canMoveNext`.
 - `snapshot.hasAttemptedNext` gates inline error display.
-- `injectPath()` in step components — resolves the shell's `PathFacade` automatically via DI; no `providers: [PathFacade]` needed in step components.
+- `usePathContext()` in step components — resolves the shell's `PathFacade` automatically via DI; no `providers: [PathFacade]` needed in step components.
 - `validationDisplay="inline"` suppresses the shell's summary list so step components render their own inline errors.
 
 ---
@@ -581,5 +651,7 @@ export class MyComponent {
   @ViewChild('shell', { read: PathShellComponent }) shell!: PathShellComponent;
 }
 ```
+
+`restart()` takes no arguments — it restarts the shell's path with its original `[initialData]` without destroying the component.
 
 © 2026 Devjoy Ltd. MIT License.

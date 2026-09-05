@@ -34,7 +34,7 @@ Creates an isolated path engine instance scoped to the calling component. Cleane
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `engine` | `PathEngine` | An externally-managed engine (e.g. from `createPersistedEngine()`). When provided, `usePath` subscribes to it instead of creating a new one. The caller owns the engine's lifecycle. Must be a stable reference. |
+| `engine` | `PathEngine` | An externally-managed engine (e.g. from `restoreOrStart()` in `@daltonr/pathwrite-store`). When provided, `usePath` subscribes to it instead of creating a new one. The caller owns the engine's lifecycle. Must be a stable reference. |
 | `onEvent` | `(event: PathEvent) => void` | Called for every engine event. The callback ref is kept current — changing it does not re-subscribe to the engine. |
 
 ### Return value
@@ -50,7 +50,11 @@ Creates an isolated path engine instance scoped to the calling component. Cleane
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `function` | Jump to a step by ID, checking the current step's guard first. Blocked if the guard returns false. |
 | `setData(key, value)` | `function` | Update a single data value. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
-| `restart(definition, data?)` | `function` | Tear down any active path (without firing hooks) and start fresh. Safe to call at any time. |
+| `resetStep()` | `function` | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
+| `restart()` | `function` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; throws if nothing has been started. |
+| `retry()` | `function` | Re-run the operation that set `snapshot.error`. Increments `snapshot.error.retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | `function` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `validate()` | `function` | Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. |
 
 All returned callbacks are **referentially stable** — safe to pass as props or add to `useEffect` dependency arrays without causing unnecessary re-renders.
 
@@ -94,7 +98,37 @@ function DetailsForm() {
 }
 ```
 
-`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`.
+`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot | null`: under a bare `<PathProvider>` it is `null` until `start()` (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so `if (!snapshot) return null;` is enough to narrow it.
+
+---
+
+## `useField()` and `<FieldError>` — input binding helpers
+
+`useField(field)` returns `{ value, onChange, error, warning }` bound to `snapshot.data[field]`, ready to spread onto an `<input>`, `<select>` or `<textarea>`:
+
+- `value` is always a `string` (`""` when the key is unset).
+- `onChange` calls `setData(field, e.target.value)`.
+- `error` is the field's error message once the user has attempted to advance (or `validate()` has run), otherwise `undefined`.
+- `warning` is the field's warning message, shown immediately.
+
+`<FieldError field="..." />` renders that error (after an attempt) or warning (immediately) as `<span class="pw-field-error">` / `<span class="pw-field-warning">`, and nothing when there is no message. It also registers the field with the enclosing `<PathShell>`, which then leaves it out of the shell's summary list — so inline and summary messages do not duplicate without switching `validationDisplay`.
+
+```tsx
+import { useField, FieldError } from "@daltonr/pathwrite-react";
+
+function DetailsStep() {
+  const firstName = useField<ApplicationData, "firstName">("firstName");
+  return (
+    <div>
+      <label htmlFor="firstName">First name</label>
+      <input id="firstName" type="text" {...firstName} />
+      <FieldError field="firstName" />
+    </div>
+  );
+}
+```
+
+Both work inside a `<PathShell>` or a bare `<PathProvider>` and are null-safe: with no active path they render an empty, message-free field instead of throwing. For inputs that need a value transform (`.trim()`, `Number()`), keep an explicit `onChange` handler — `useField` is for the no-transform case.
 
 ---
 
@@ -108,8 +142,9 @@ function DetailsForm() {
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | required | The path to run. |
 | `steps` | `Record<string, ReactNode>` | required | Map of step ID → content node. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
@@ -117,14 +152,22 @@ function DetailsForm() {
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where the shell renders `fieldErrors`. `"inline"` suppresses the shell's list so step components can render errors themselves. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `unknown` | — | Services object made available to step components via `usePathContext<TData, TServices>().services`. |
 | `className` | `string` | — | Extra CSS class on the root element. |
-| `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Render prop to replace the default progress header. |
-| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Render prop to replace the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
+| `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Render prop to replace the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Render prop to replace the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
+| `completionContent` | `ReactNode` | — | Rendered in place of the step body when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a Restart button is shown. |
+
+The package README ([packages/react-adapter/README.md](../../../packages/react-adapter/README.md)) is the canonical reference for these props.
 
 ### How step content works
 
@@ -353,6 +396,15 @@ const [formKey, setFormKey] = useState(0);
 <button onClick={() => setFormKey(k => k + 1)}>Start over</button>
 ```
 
-This is the idiomatic React approach — there is no `ref.restart()` method because function components have no instance.
+This is the simplest approach. Alternatively, `<PathShell>` is a `forwardRef` component exposing a `PathShellHandle`, so you can restart in place without remounting:
+
+```tsx
+const shellRef = useRef<PathShellHandle>(null);
+
+<PathShell ref={shellRef} path={applicationPath} steps={...} />
+<button onClick={() => shellRef.current?.restart()}>Start over</button>
+```
+
+`restart()` takes no arguments — it restarts the shell's path with its original `initialData`.
 
 © 2026 Devjoy Ltd. MIT License.

@@ -35,7 +35,7 @@ import {
 export interface UsePathOptions {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
-   * returned by `createPersistedEngine()` from `@daltonr/pathwrite-store`.
+   * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
    *
    * When provided:
    * - `usePath` will **not** create its own engine.
@@ -70,8 +70,9 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Reset the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. */
   resetStep: () => Promise<void>;
   /**
-   * Tear down any active path (without firing hooks) and immediately start the
-   * given path fresh. Safe to call whether or not a path is currently active.
+   * Tear down any active path (without firing hooks) and immediately restart
+   * the root path with the `initialData` from the original `start()` call.
+   * Takes no arguments; rejects if the engine has never been started.
    * Use for "Start over" / retry flows without remounting the component.
    */
   restart: () => Promise<void>;
@@ -211,7 +212,7 @@ export const PathShell = defineComponent({
     path: { type: Object as PropType<PathDefinition<any>>, required: true },
     /**
      * An externally-managed engine — for example, the engine returned by
-     * `createPersistedEngine()`. When supplied, `PathShell` will skip its own
+     * `restoreOrStart()` from `@daltonr/pathwrite-store`. When supplied, `PathShell` will skip its own
      * `start()` call and drive the UI from the provided engine instead.
      */
     engine: { type: Object as PropType<PathEngine>, default: undefined },
@@ -290,7 +291,7 @@ export const PathShell = defineComponent({
     const started = ref(false);
     onMounted(() => {
       // Skip auto-start when an external engine has been provided — the caller
-      // is responsible for starting it (e.g. via createPersistedEngine).
+      // is responsible for starting it (e.g. via restoreOrStart).
       if (props.autoStart && !started.value && !props.engine) {
         started.value = true;
         let startData: PathData = props.initialData;

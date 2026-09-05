@@ -7,10 +7,10 @@ Pathwrite's Svelte adapter uses Svelte 5 runes (`$state`, `$derived`, `$props`) 
 ## Installation
 
 ```bash
-npm install @daltonr/pathwrite-svelte
+npm install @daltonr/pathwrite-core @daltonr/pathwrite-svelte
 ```
 
-The `@daltonr/pathwrite-core` peer dependency is bundled into the adapter — you do not need to install it separately.
+`@daltonr/pathwrite-core` is a regular dependency of the adapter (not a peer dependency), so it is pulled in automatically. Installing it explicitly, as above, lets you import `PathEngine` and the store helpers from it directly and pin its version alongside the adapter.
 
 ---
 
@@ -38,7 +38,11 @@ Creates an isolated path engine instance. The adapter unsubscribes from the engi
 | `goToStep(stepId)` | `Promise<void>` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
 | `setData(key, value)` | `Promise<void>` | Update a single data value. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
-| `restart(definition, data?)` | `Promise<void>` | Tear down any active path (without firing hooks) and start fresh. Safe to call at any time. |
+| `resetStep()` | `Promise<void>` | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
+| `restart()` | `Promise<void>` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
+| `retry()` | `Promise<void>` | Re-run the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | `Promise<void>` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `validate()` | `void` | Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. |
 
 ### Gotcha — do not destructure `snapshot`
 
@@ -83,7 +87,7 @@ Step components rendered inside `<PathShell>` snippets call `usePathContext()` t
 {/if}
 ```
 
-`usePathContext()` throws a clear error if called outside a `<PathShell>`.
+`usePathContext()` throws a clear error if called outside a `<PathShell>`. It returns `snapshot` (typed `PathSnapshot | null` — narrow with `{#if ctx.snapshot}`), the navigation actions (`next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `resetStep`, `restart`, `retry`, `suspend`) and `services`. It does not expose `start`, `startSubPath` or `validate` — those belong to the shell that owns the engine.
 
 > **Use `usePathContext()`, not raw `getContext()`.** The context key is a private `Symbol`, so calling Svelte's `getContext()` directly with a string key will silently return `undefined`. Always use `usePathContext()` from `@daltonr/pathwrite-svelte`.
 
@@ -99,15 +103,24 @@ Step components rendered inside `<PathShell>` snippets call `usePathContext()` t
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | — | The path to run. Pass `path` for simple wizards where the shell manages the engine. |
 | `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with `path`. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. `"inline"` suppresses the shell's list so step components can render errors themselves. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `unknown` | `null` | Services object made available to step components via `usePathContext<TData, TServices>().services`. |
+
+The package README ([packages/svelte-adapter/README.md](../../../packages/svelte-adapter/README.md)) is the canonical reference for these props.
 
 ### Callbacks
 
@@ -132,7 +145,7 @@ Step content is provided as Svelte 5 snippets passed as children of `<PathShell>
 </PathShell>
 ```
 
-You can also replace the header and footer with custom snippets:
+You can also replace the header, footer and completion panel with custom snippets. A custom `header` is shown even for single-step paths and hidden under `hideProgress` or `layout="tabs"`; `completion(snap)` replaces the default "All done." panel when `snap.status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default):
 
 ```svelte
 <PathShell path={myPath}>
@@ -155,7 +168,18 @@ You can also replace the header and footer with custom snippets:
 </PathShell>
 ```
 
-`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`.
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`.
+
+---
+
+## Other exports
+
+| Export | Description |
+|--------|-------------|
+| `bindData(getSnapshot, setData, key)` | Two-way binding helper for inputs. Returns an object with a reactive `value` getter (reads `getSnapshot()?.data[key]`) and a `set(value)` method that calls `setData(key, value)`: `const name = bindData(() => path.snapshot, path.setData, "name")`, then `<input value={name.value} oninput={(e) => name.set(e.currentTarget.value)} />`. |
+| `stepIdToCamelCase(id)` | Converts a hyphenated step ID to camelCase (`"cover-note"` → `"coverNote"`). This is the conversion `<PathShell>` uses to resolve snippets for hyphenated step IDs. |
+| `setPathContext(ctx)` | Sets the `PathContext` that `usePathContext()` reads, under the adapter's private `Symbol` key. Used internally by `<PathShell>`; call it only if you are building your own shell component. |
+| `getPathContextOrNull()` | Reads the nearest ancestor `PathContext`, or `undefined` when there is none. Used internally by `<PathShell>` to reach the outer shell for `restoreKey`; it must be called before `setPathContext()` so it reads the parent rather than self. |
 
 ---
 

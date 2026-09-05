@@ -49,7 +49,11 @@ Creates an isolated path engine instance. The composable automatically unsubscri
 | `goToStep(stepId)` | `function` | Jump directly to a step by ID. Calls `onLeave` / `onEnter` but bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `function` | Jump to a step by ID, checking the current step's guard first. |
 | `setData(key, value)` | `function` | Update a single data value. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
-| `restart(definition, data?)` | `function` | Tear down any active path (without firing hooks) and start fresh. Safe to call at any time. |
+| `resetStep()` | `function` | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
+| `restart()` | `function` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
+| `retry()` | `function` | Re-run the operation that set `snapshot.value.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | `function` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `validate()` | `function` | Trigger inline validation on all steps without navigating. Sets `snapshot.value.hasValidated`. |
 
 ### Type parameter
 
@@ -88,13 +92,15 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
 <template>
   <input
     v-if="snapshot"
-    :value="snapshot.value?.data.firstName ?? ''"
+    :value="snapshot.data.firstName ?? ''"
     @input="setData('firstName', ($event.target as HTMLInputElement).value)"
   />
 </template>
 ```
 
-`usePathContext()` must be called inside the setup function of a component that is a descendant of `<PathShell>`.
+`usePathContext()` must be called inside the setup function of a component that is a descendant of `<PathShell>`. Its `snapshot` is typed `DeepReadonly<Ref<PathSnapshot>>` (non-null) — slot components only render while a path is active.
+
+> **`.value` in scripts, not in templates.** `snapshot` is a ref, so read `snapshot.value` in `<script setup>` code. Inside `<template>` a top-level ref is auto-unwrapped, so write `snapshot.data.firstName`, not `snapshot.value.data.firstName`.
 
 ---
 
@@ -107,17 +113,25 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | required | The path to run. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
 | `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. `"inline"` suppresses the shell's list so step components can render errors themselves. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `services` | `object \| null` | `null` | Services object made available to slot components via `usePathContext<TData, TServices>().services`. |
+
+The package README ([packages/vue-adapter/README.md](../../../packages/vue-adapter/README.md)) is the canonical reference for these props. The component also exposes `restart()` on its instance for template refs (see [Resetting the path](#resetting-the-path)).
 
 ### Emits
 
@@ -132,8 +146,9 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
 | Slot | Scope | Description |
 |------|-------|-------------|
 | `#[stepId]` | `{ snapshot }` | Named slot rendered when the active step matches `stepId`. The slot name must match the step ID exactly. |
-| `#header` | `{ snapshot }` | Replaces the default progress header. |
-| `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
+| `#header` | `{ snapshot }` | Replaces the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `#footer` | `{ snapshot, actions }` | Replaces the default navigation footer. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
+| `#completion` | `{ snapshot }` | Rendered in place of the step body when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a Restart button is shown. |
 
 ### How named slots work
 
@@ -241,14 +256,14 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
       <label for="firstName">First name</label>
       <input
         id="firstName"
-        :value="snapshot.value?.data.firstName ?? ''"
+        :value="snapshot.data.firstName ?? ''"
         @input="setData('firstName', ($event.target as HTMLInputElement).value)"
       />
       <p
-        v-if="snapshot.value?.hasAttemptedNext && snapshot.value?.fieldErrors.firstName"
+        v-if="snapshot.hasAttemptedNext && snapshot.fieldErrors.firstName"
         class="error"
       >
-        {{ snapshot.value?.fieldErrors.firstName }}
+        {{ snapshot.fieldErrors.firstName }}
       </p>
     </div>
     <div>
@@ -256,14 +271,14 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
       <input
         id="email"
         type="email"
-        :value="snapshot.value?.data.email ?? ''"
+        :value="snapshot.data.email ?? ''"
         @input="setData('email', ($event.target as HTMLInputElement).value)"
       />
       <p
-        v-if="snapshot.value?.hasAttemptedNext && snapshot.value?.fieldErrors.email"
+        v-if="snapshot.hasAttemptedNext && snapshot.fieldErrors.email"
         class="error"
       >
-        {{ snapshot.value?.fieldErrors.email }}
+        {{ snapshot.fieldErrors.email }}
       </p>
     </div>
   </div>
@@ -285,15 +300,15 @@ const { snapshot, setData } = usePathContext<ApplicationData>();
     <textarea
       id="coverNote"
       rows="6"
-      :value="snapshot.value?.data.coverNote ?? ''"
+      :value="snapshot.data.coverNote ?? ''"
       @input="setData('coverNote', ($event.target as HTMLTextAreaElement).value)"
       placeholder="Tell us why you're a great fit..."
     />
     <p
-      v-if="snapshot.value?.hasAttemptedNext && snapshot.value?.fieldErrors.coverNote"
+      v-if="snapshot.hasAttemptedNext && snapshot.fieldErrors.coverNote"
       class="error"
     >
-      {{ snapshot.value?.fieldErrors.coverNote }}
+      {{ snapshot.fieldErrors.coverNote }}
     </p>
   </div>
 </template>

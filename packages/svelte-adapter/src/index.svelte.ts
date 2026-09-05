@@ -71,8 +71,9 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Reset the current step's data to what it was when the step was entered. Useful for "Clear" or "Reset" buttons. */
   resetStep: () => Promise<void>;
   /**
-   * Tear down any active path (without firing hooks) and immediately start the
-   * given path fresh. Safe to call whether or not a path is currently active.
+   * Tear down any active path (without firing hooks) and immediately restart
+   * the root path with the `initialData` from the original `start()` call.
+   * Takes no arguments; rejects if the engine has never been started.
    * Use for "Start over" / retry flows without remounting the component.
    */
   restart: () => Promise<void>;

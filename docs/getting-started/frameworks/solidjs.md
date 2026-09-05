@@ -49,7 +49,10 @@ Creates an isolated path engine instance. The adapter registers an `onCleanup` h
 | `goToStep(stepId)` | `Promise<void>` | Jump directly to a step by ID. Calls `onLeave`/`onEnter`; bypasses guards and `shouldSkip`. |
 | `goToStepChecked(stepId)` | `Promise<void>` | Jump to a step by ID, checking the current step's guard first. |
 | `setData(key, value)` | `Promise<void>` | Update a single data value. When `TData` is specified, `key` and `value` are type-checked against your data shape. |
-| `restart()` | `Promise<void>` | Tear down any active path (without firing hooks) and start fresh. Safe to call at any time. |
+| `resetStep()` | `Promise<void>` | Restore the current step's data to what it was when the step was entered. Emits `stateChanged` with cause `"resetStep"`; no hooks run. |
+| `restart()` | `Promise<void>` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; rejects if nothing has been started. |
+| `retry()` | `Promise<void>` | Re-run the operation that set `snapshot().error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | `Promise<void>` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
 | `validate()` | `void` | Set `snapshot().hasValidated` without navigating. Used to trigger simultaneous inline errors across all tabs in a nested shell. |
 
 ### Type parameter
@@ -105,20 +108,30 @@ function DetailsStep() {
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | required | The path to run. |
-| `steps` | `Record<string, (snapshot: PathSnapshot) => JSX.Element>` | — | Step render functions keyed by step ID. The shell calls `steps[stepId](snap)` to render the current step. |
+| `steps` | `Record<string, (snapshot: PathSnapshot) => JSX.Element>` | — | Step render functions keyed by step ID (or `formId` for `StepChoice` steps; the shell falls back to the choice ID when an inner step ID has no entry). Each function is called once when its step becomes current and the component it returns is kept across engine events until the step changes, so inputs keep focus and local state. The `snapshot` argument is live — its properties read the current snapshot reactively. |
 | `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()` for persistence). Mutually exclusive with managing the engine internally. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. Ignored when `engine` is provided. |
 | `backLabel` | `string` | `"Previous"` | Previous button label. |
 | `nextLabel` | `string` | `"Next"` | Next button label. |
 | `completeLabel` | `string` | `"Complete"` | Complete button label (last step). |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, the button keeps its label and shows a CSS spinner. |
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress indicator. Also hidden automatically for single-step top-level paths. |
 | `hideFooter` | `boolean` | `false` | Hide the footer entirely. The error panel is still shown on async failure. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
-| `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to an outer shell's `snapshot().hasAttemptedNext` to trigger simultaneous error display in nested shells. |
-| `services` | `object \| null` | `null` | Services object passed through context to all step components. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where `fieldErrors` are rendered. `"inline"` suppresses the shell's list so step components can render errors themselves. |
+| `progressLayout` | `"merged" \| "split" \| "rootOnly" \| "activeOnly"` | `"merged"` | How the root and sub-path progress bars are arranged while a sub-path is active. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine. Bind to an outer shell's `snapshot().hasAttemptedNext` to trigger simultaneous error display in nested shells. |
+| `services` | `object \| null` | `null` | Services object made available to step components via `usePathContext<TData, TServices>().services`. |
+| `class` | `string` | — | Extra CSS class on the root element. |
+| `renderHeader` | `(snapshot: PathSnapshot) => JSX.Element` | — | Replace the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => JSX.Element` | — | Replace the default navigation footer. See below for `actions`. |
+| `completionContent` | `(snapshot: PathSnapshot) => JSX.Element` | — | Rendered in place of the step body when `snapshot().status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a Restart button is shown. |
+
+The package README ([packages/solid-adapter/README.md](../../../packages/solid-adapter/README.md)) is the canonical reference for these props.
 
 ### Callbacks
 
@@ -146,7 +159,7 @@ function DetailsStep() {
 />
 ```
 
-`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`.
+`actions` contains: `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. All return `Promise<void>`.
 
 ---
 

@@ -11,17 +11,20 @@ npm install @daltonr/pathwrite-core @daltonr/pathwrite-react-native
 Peer dependencies: `react >= 18.0.0`, `react-native >= 0.72.0`.
 
 ```ts
-import {
-  usePath,
-  usePathContext,
-  PathProvider,
-  PathShell,
+import { usePath, usePathContext, PathProvider, PathShell } from "@daltonr/pathwrite-react-native";
+import type {
   PathEngine,
   PathDefinition,
   PathData,
   PathSnapshot,
   PathEvent,
 } from "@daltonr/pathwrite-react-native";
+```
+
+The core types — including `PathEngine` — are re-exported from this package as **types only**. When you need the class as a value (for example to construct an engine yourself), import it from `@daltonr/pathwrite-core`:
+
+```ts
+import { PathEngine } from "@daltonr/pathwrite-core";
 ```
 
 ---
@@ -133,7 +136,10 @@ Creates an isolated path engine instance scoped to the calling component. Cleane
 | `goToStepChecked(stepId)` | `function` | Jump to a step by ID, checking the current step's guard first. |
 | `setData(key, value)` | `function` | Update a single data value. Type-checked when `TData` is provided. |
 | `resetStep()` | `function` | Restore data to the values recorded on step entry (reverts changes made since entering the current step). |
-| `restart(definition, data?)` | `function` | Tear down any active path (without firing hooks) and start fresh. |
+| `restart()` | `function` | Tear down any active path (without firing hooks) and restart the root path with the `initialData` from the original `start()`. Takes no arguments; throws if nothing has been started. |
+| `retry()` | `function` | Re-run the operation that set `snapshot.error`. Increments `snapshot.error.retryCount` on repeated failure. No-op when there is no pending error. |
+| `suspend()` | `function` | Pause the path with intent to return. Emits `suspended`; all state and data are preserved. |
+| `validate()` | `function` | Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. |
 
 All returned callbacks are **referentially stable** — safe to pass to `Pressable.onPress` or include in `useEffect` dependency arrays without causing extra re-renders.
 
@@ -180,7 +186,7 @@ export function DetailsStep() {
 }
 ```
 
-`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`.
+`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot | null`: under a bare `<PathProvider>` it is `null` until `start()` (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so `if (!snapshot) return null;` is enough to narrow it.
 
 ---
 
@@ -194,8 +200,9 @@ export function DetailsStep() {
 |------|------|---------|-------------|
 | `path` | `PathDefinition` | required | The path to drive. |
 | `steps` | `Record<string, ReactNode>` | required | Map of step ID → content. The shell renders `steps[snapshot.stepId]` for the active step. |
-| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. |
-| `engine` | `PathEngine` | — | An externally-managed engine. When provided, `PathShell` skips its own `start()`. |
+| `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
+| `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
+| `restoreKey` | `string` | — | Save this shell's full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restore from it on remount. No-op on a top-level shell. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |
@@ -203,14 +210,25 @@ export function DetailsStep() {
 | `backLabel` | `string` | `"Previous"` | Label for the back button. |
 | `nextLabel` | `string` | `"Next"` | Label for the next button. |
 | `completeLabel` | `string` | `"Complete"` | Label for the next button on the last step. |
+| `loadingLabel` | `string` | `undefined` | Label for the Next/Complete button while an async operation is in progress. When unset, an `ActivityIndicator` spinner is shown instead. |
 | `cancelLabel` | `string` | `"Cancel"` | Label for the cancel button. |
 | `hideCancel` | `boolean` | `false` | Hide the cancel button. |
 | `hideProgress` | `boolean` | `false` | Hide the progress header (dots, title, progress bar). Also hidden automatically for single-step top-level paths. |
+| `hideFooter` | `boolean` | `false` | Hide the footer (navigation buttons). The error panel is still shown on async failure. |
+| `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
 | `disableBodyScroll` | `boolean` | `false` | Replace the `ScrollView` body wrapper with a plain `View`. Use when the step content contains a `FlatList` or other virtualized list to avoid the "VirtualizedList inside ScrollView" warning. The step is then responsible for its own scrolling. |
+| `keyboardVerticalOffset` | `number` | `0` | Passed to the internal `KeyboardAvoidingView`. Set it to the height of any header or navigation bar above the shell (e.g. a React Navigation header) so inputs are not hidden behind the keyboard. |
 | `layout` | `"wizard" \| "form" \| "auto" \| "tabs"` | `"auto"` | `"wizard"`: Back on left, Cancel+Submit on right. `"form"`: Cancel on left, Submit on right, no Back. `"tabs"`: No progress header or footer — for tabbed interfaces. `"auto"` picks `"form"` for single-step paths. |
-| `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Replace the default progress header entirely. |
-| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Replace the default navigation buttons. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`. |
+| `validationDisplay` | `"summary" \| "inline" \| "both"` | `"summary"` | Where the shell renders `fieldErrors`. `"inline"` suppresses the shell's list so step components can render errors themselves. |
+| `renderHeader` | `(snapshot: PathSnapshot) => ReactNode` | — | Replace the default progress header entirely. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
+| `renderFooter` | `(snapshot: PathSnapshot, actions: PathShellActions) => ReactNode` | — | Replace the default navigation buttons. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
+| `services` | `unknown` | — | Services object made available to step components via `usePathContext<TData, TServices>().services`. |
+| `completionContent` | `ReactNode` | — | Rendered in place of the step body when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default). If omitted, a default "All done." panel with a Restart button is shown. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
+
+The package README ([packages/react-native-adapter/README.md](../../../packages/react-native-adapter/README.md)) is the canonical reference for these props.
+
+Unlike the web shells, the default footer's Next/Complete button is never disabled because `canMoveNext` is false — it is only disabled while the engine is busy (`status !== "idle"`). Tapping it on an invalid step runs `next()`, which marks the step as attempted and surfaces `fieldErrors` without navigating. `<PathShell>` is also a `forwardRef` component exposing a `PathShellHandle` with `restart()`, so a parent can restart the flow in place with `shellRef.current?.restart()`.
 
 ### How step content works
 
