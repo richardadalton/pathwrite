@@ -1567,12 +1567,7 @@ export class PathEngine {
         const parentItem = this.getCurrentItem(parent);
         const parentStep = this.getEffectiveStep(parent);
         if (parentStep.onSubPathCancel) {
-          const ctx: PathStepContext = {
-            pathId: parent.definition.id,
-            stepId: parentItem.id,
-            data: { ...parent.data },
-            isFirstEntry: !parent.visitedStepIds.has(parentItem.id),
-          };
+          const ctx = PathEngine.makeCtx(parent, parentItem.id);
           const patch = await parentStep.onSubPathCancel(cancelledPathId, cancelledData, ctx, cancelledMeta);
           if (this.isStale(gen)) return;
           this.applyPatch(patch);
@@ -1613,12 +1608,7 @@ export class PathEngine {
 
       let patch: Partial<PathData> | void | null | undefined;
       if (parentStep.onSubPathComplete) {
-        const ctx: PathStepContext = {
-          pathId: parent.definition.id,
-          stepId: parentItem.id,
-          data: { ...parent.data },
-          isFirstEntry: !parent.visitedStepIds.has(parentItem.id),
-        };
+        const ctx = PathEngine.makeCtx(parent, parentItem.id);
         patch = await parentStep.onSubPathComplete(finishedPathId, finishedData, ctx, finishedMeta);
         if (this.isStale(gen)) return;
       }
@@ -1824,12 +1814,7 @@ export class PathEngine {
       active.resolvedChoiceStep = undefined;
       return;
     }
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: item.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id),
-    };
+    const ctx = PathEngine.makeCtx(active, item.id);
     let selectedId: string;
     try {
       selectedId = item.select(ctx);
@@ -1900,12 +1885,7 @@ export class PathEngine {
         active.resolvedSkips.delete(item.id);
         break;
       }
-      const ctx: PathStepContext = {
-        pathId: active.definition.id,
-        stepId: item.id,
-        data: { ...active.data },
-        isFirstEntry: !active.visitedStepIds.has(item.id),
-      };
+      const ctx = PathEngine.makeCtx(active, item.id);
       const rawResult = item.shouldSkip(ctx);
       if (rawResult && typeof (rawResult as Promise<boolean>).then === "function") {
         if (!this._hasWarnedAsyncShouldSkip) {
@@ -1951,23 +1931,13 @@ export class PathEngine {
     // correct isFirstEntry value.
     active.visitedStepIds.add(item.id);
     if (!effectiveStep.onEnter) return;
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: item.id,
-      data: { ...active.data },
-      isFirstEntry,
-    };
+    const ctx = PathEngine.makeCtx(active, item.id, isFirstEntry);
     return effectiveStep.onEnter(ctx);
   }
 
   private async leaveCurrentStep(active: ActivePath, step: PathStep): Promise<Partial<PathData> | void> {
     if (!step.onLeave) return;
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: step.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id),
-    };
+    const ctx = PathEngine.makeCtx(active, step.id);
     return step.onLeave(ctx);
   }
 
@@ -1976,12 +1946,7 @@ export class PathEngine {
     step: PathStep
   ): Promise<{ allowed: boolean; reason: string | null }> {
     if (step.canMoveNext) {
-      const ctx: PathStepContext = {
-        pathId: active.definition.id,
-        stepId: step.id,
-        data: { ...active.data },
-        isFirstEntry: !active.visitedStepIds.has(step.id),
-      };
+      const ctx = PathEngine.makeCtx(active, step.id);
       const result = await step.canMoveNext(ctx);
       return PathEngine.normaliseGuardResult(result);
     }
@@ -1997,12 +1962,7 @@ export class PathEngine {
     step: PathStep
   ): Promise<{ allowed: boolean; reason: string | null }> {
     if (!step.canMovePrevious) return { allowed: true, reason: null };
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: step.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(step.id),
-    };
+    const ctx = PathEngine.makeCtx(active, step.id);
     const result = await step.canMovePrevious(ctx);
     return PathEngine.normaliseGuardResult(result);
   }
@@ -2026,6 +1986,20 @@ export class PathEngine {
    * If a guard throws, the error is caught, a `console.warn` is emitted, and the
    * safe default (`true`) is returned so the UI remains operable.
    */
+  /**
+   * Builds the context handed to every step hook, guard, selector and
+   * validator: a copy of the path data (so a hook cannot mutate engine state
+   * through it) and whether this is the first visit to `stepId`, unless the
+   * caller has already recorded the visit and passes `isFirstEntry` itself.
+   */
+  private static makeCtx(
+    active: ActivePath,
+    stepId: string,
+    isFirstEntry: boolean = !active.visitedStepIds.has(stepId)
+  ): PathStepContext {
+    return { pathId: active.definition.id, stepId, data: { ...active.data }, isFirstEntry };
+  }
+
   private evaluateGuardSync(
     guard: ((ctx: PathStepContext) => GuardResult | Promise<GuardResult>) | undefined,
     active: ActivePath
@@ -2034,12 +2008,7 @@ export class PathEngine {
     // Already known to be async: don't call it again, return the optimistic default.
     if (this._knownAsyncFns.has(guard)) return true;
     const item = this.getCurrentItem(active);
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: item.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id),
-    };
+    const ctx = PathEngine.makeCtx(active, item.id);
     try {
       const result = guard(ctx);
       if (result === true) return true;
@@ -2101,12 +2070,7 @@ export class PathEngine {
     // Already known to be async: don't call it again, return the safe default.
     if (this._knownAsyncFns.has(fn)) return {};
     const item = this.getCurrentItem(active);
-    const ctx: PathStepContext = {
-      pathId: active.definition.id,
-      stepId: item.id,
-      data: { ...active.data },
-      isFirstEntry: !active.visitedStepIds.has(item.id),
-    };
+    const ctx = PathEngine.makeCtx(active, item.id);
     try {
       const result = fn(ctx);
       if (
