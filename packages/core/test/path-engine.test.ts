@@ -5282,3 +5282,52 @@ describe("matchesStrategy — onNext covers the return from a sub-path", () => {
     }
   });
 });
+
+describe("PathEngine — every GuardResult form", () => {
+  function guarded(result: GuardResult | (() => GuardResult)): PathDefinition {
+    const fn = typeof result === "function" ? result : () => result;
+    return { id: "g", steps: [{ id: "a", canMoveNext: fn }, { id: "b" }] };
+  }
+
+  it("`false` blocks with no reason; the snapshot reports canMoveNext false", async () => {
+    const engine = new PathEngine();
+    await engine.start(guarded(false));
+    expect(engine.snapshot()!.canMoveNext).toBe(false);
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("a");
+    expect(engine.snapshot()!.blockingError).toBeNull();
+  });
+
+  it("`{ allowed: true }` allows", async () => {
+    const engine = new PathEngine();
+    await engine.start(guarded({ allowed: true }));
+    expect(engine.snapshot()!.canMoveNext).toBe(true);
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("b");
+  });
+
+  it("`{ allowed: true, reason }` allows and the reason is ignored", async () => {
+    const engine = new PathEngine();
+    await engine.start(guarded({ allowed: true, reason: "irrelevant" }));
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("b");
+    expect(engine.snapshot()!.blockingError).toBeNull();
+  });
+
+  it("`{ allowed: false, reason: null }` blocks with no message", async () => {
+    const engine = new PathEngine();
+    await engine.start(guarded({ allowed: false, reason: null }));
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("a");
+    expect(engine.snapshot()!.blockingError).toBeNull();
+  });
+
+  it("an async guard resolving `false` blocks", async () => {
+    const engine = new PathEngine();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await engine.start(guarded(async () => false));
+    await engine.next();
+    expect(engine.snapshot()!.stepId).toBe("a");
+    warn.mockRestore();
+  });
+});

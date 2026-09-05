@@ -27,6 +27,8 @@ Engine fixes for findings C1–C9 of the September 2026 review and all of its co
 
 - `matchesStrategy("onNext", …)` (and so the store's default `persistence` strategy) now also matches the return from a sub-path: the `resumed` event on completion and the settled `stateChanged` with cause `"cancel"` on cancel. Completing a sub-path emits no `stateChanged`, so the last save was still *inside* the sub-path and a restore dropped the user back into a finished flow.
 
+- `GuardResult` is now `boolean | { allowed: boolean; reason?: string | null }`. It was declared as `true | { allowed: false; reason?: string }`, so a guard returning a plain boolean — which the engine has always accepted at runtime and which the demos and docs use — failed to type-check in user code. `{ allowed: true }` is accepted too.
+
 **Behaviour changes** (bug fixes, but observable)
 
 - `start()` on an engine with an active path now **replaces** it, as documented, instead of nesting it as a sub-path. Code that relied on `start()` to nest should call `startSubPath()`. `start()` during an in-flight hook now proceeds (like `restart()`) rather than being silently dropped.

@@ -160,7 +160,7 @@ function DetailsStep() {
 
 These names appear in two places with different meanings, and it is worth being precise.
 
-On a `PathStep`, `canMoveNext` is a **guard function** — it receives a `PathStepContext` and returns a `GuardResult`. It is the definition of the rule.
+On a `PathStep`, `canMoveNext` is a **guard function** — it receives a `PathStepContext` and returns a `GuardResult`: a plain boolean (`false` blocks with no message) or `{ allowed, reason }` when you want the reason surfaced as `blockingError`. It is the definition of the rule.
 
 On a `PathSnapshot`, `canMoveNext` is a **derived boolean** — it reflects whether the guard would currently allow navigation, evaluated synchronously at snapshot time. Async guards default to `true` in the snapshot (optimistic) because the actual result is not known without running the async work.
 

@@ -19,6 +19,10 @@ export type FieldErrors = Record<string, string | undefined>;
  * - `{ allowed: false, reason: "..." }` — block with a message; the shell surfaces
  *   this as `snapshot.blockingError` between the step content and the nav buttons
  *
+ * A plain boolean is the short form: `true` allows, `false` blocks with no
+ * reason. The object form carries a `reason` that surfaces as
+ * `snapshot.blockingError`; `reason` is ignored when `allowed` is `true`.
+ *
  * @example
  * ```typescript
  * canMoveNext: async ({ data }) => {
@@ -28,7 +32,7 @@ export type FieldErrors = Record<string, string | undefined>;
  * }
  * ```
  */
-export type GuardResult = true | { allowed: false; reason?: string };
+export type GuardResult = boolean | { allowed: boolean; reason?: string | null };
 
 export interface SerializedPathState {
   version: 1;
@@ -1962,8 +1966,8 @@ export class PathEngine {
   }
 
   private static normaliseGuardResult(result: GuardResult): { allowed: boolean; reason: string | null } {
-    if (result === true) return { allowed: true, reason: null };
-    return { allowed: false, reason: result.reason ?? null };
+    if (typeof result === "boolean") return { allowed: result, reason: null };
+    return { allowed: result.allowed, reason: result.allowed ? null : (result.reason ?? null) };
   }
 
   /**
@@ -2010,8 +2014,8 @@ export class PathEngine {
         );
         return true;
       }
-      // { allowed: false, reason? } object returned synchronously
-      return false;
+      // `false` or an { allowed, reason? } object returned synchronously
+      return PathEngine.normaliseGuardResult(result as GuardResult).allowed;
     } catch (err) {
       console.warn(
         `[pathwrite] Guard on step "${item.id}" threw an error during snapshot evaluation. ` +
