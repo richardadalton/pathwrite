@@ -2261,17 +2261,27 @@ export function defineServices<T extends Record<string, AnyFn>>(
   const memCache = new Map<string, unknown>();
   const inFlight = new Map<string, Promise<unknown>>();
 
+  if ("prefetch" in config) {
+    throw new Error('defineServices: "prefetch" is reserved for the prefetch() helper on the returned object; rename the method.');
+  }
+
+  // Pre-hydrate the no-argument cache entries. A synchronous storage fills the
+  // memory cache before the first call; an asynchronous one fills it when its
+  // reads resolve (and a failing read is ignored, never an unhandled rejection).
   if (storage) {
-    const syncStorage = storage as SyncServiceStorage;
-    if (typeof syncStorage.getItem === "function") {
+    const hydrate = (key: string, raw: string | null): void => {
+      if (raw === null) return;
+      try { memCache.set(key, JSON.parse(raw)); } catch { /* corrupt entry — ignore */ }
+    };
+    for (const [methodName, methodConfig] of Object.entries(config)) {
+      if (methodConfig.cache !== "auto") continue;
+      const baseKey = `${keyPrefix}${methodName}`;
       try {
-        for (const [methodName, methodConfig] of Object.entries(config)) {
-          if (methodConfig.cache !== "auto") continue;
-          const baseKey = `${keyPrefix}${methodName}`;
-          const raw = syncStorage.getItem(baseKey);
-          if (raw !== null && !((raw as unknown) instanceof Promise)) {
-            try { memCache.set(baseKey, JSON.parse(raw)); } catch { /* ignore */ }
-          }
+        const result = storage.getItem(baseKey);
+        if (result instanceof Promise) {
+          result.then((raw) => hydrate(baseKey, raw)).catch(() => { /* storage unavailable */ });
+        } else {
+          hydrate(baseKey, result);
         }
       } catch { /* storage unavailable */ }
     }
@@ -2296,7 +2306,10 @@ export function defineServices<T extends Record<string, AnyFn>>(
     if (memCache.has(key)) return memCache.get(key);
 
     if (storage) {
-      const existing = await _svcStorageGet(storage, key);
+      let existing: string | null = null;
+      try {
+        existing = await _svcStorageGet(storage, key);
+      } catch { /* cache storage unavailable — treat as a miss */ }
       if (existing !== null) {
         try {
           const parsed = JSON.parse(existing);
@@ -2316,7 +2329,10 @@ export function defineServices<T extends Record<string, AnyFn>>(
       .then(async (value) => {
         memCache.set(key, value);
         inFlight.delete(key);
-        if (storage) {
+        // `undefined` has no JSON form (JSON.stringify returns undefined and a
+        // web storage would coerce it to the string "undefined", which then
+        // fails to parse on every load). Keep it in memory only.
+        if (storage && value !== undefined) {
           try { await _svcStorageSet(storage, key, JSON.stringify(value)); } catch { /* non-fatal */ }
         }
         return value;
@@ -2347,6 +2363,11 @@ export function defineServices<T extends Record<string, AnyFn>>(
         }
       }
     } else {
+      // Without a manifest, prefetch the cacheable methods that can be called
+      // with no arguments. `fn.length` counts the parameters before the first
+      // default or rest parameter, so `(opts = {}) => …` and `(...ids) => …`
+      // qualify and `(id) => …` does not. Use a manifest to prefetch methods
+      // that need arguments.
       for (const [methodName, methodConfig] of Object.entries(config)) {
         if (methodConfig.cache !== "auto" || methodConfig.fn.length > 0) continue;
         tasks.push(callMethod(methodName, methodConfig, []));

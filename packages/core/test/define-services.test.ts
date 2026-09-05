@@ -333,3 +333,85 @@ describe("defineServices — type shape", () => {
     expect(typeof svc.prefetch).toBe("function");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge cases (review): async storage pre-hydration, reserved names,
+// undefined results, failing cache storage
+// ---------------------------------------------------------------------------
+
+describe("defineServices — edge cases", () => {
+  function makeAsyncStorage(seed: Record<string, string> = {}, opts: { failGet?: boolean } = {}) {
+    const store: Record<string, string> = { ...seed };
+    return {
+      store,
+      getItem: vi.fn(async (k: string) => { if (opts.failGet) throw new Error("storage down"); return k in store ? store[k] : null; }),
+      setItem: vi.fn(async (k: string, v: string) => { store[k] = v; }),
+      removeItem: vi.fn(async (k: string) => { delete store[k]; })
+    };
+  }
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it("pre-hydrates from an async storage without discarding the promise (and without an unhandled rejection)", async () => {
+    const storage = makeAsyncStorage({ "pw-svc:config": JSON.stringify({ theme: "dark" }) });
+    const fn = vi.fn(async () => ({ theme: "fresh" }));
+    const svc = defineServices({ config: { fn, cache: "auto" } }, { storage });
+    await flush();
+    expect(await svc.config()).toEqual({ theme: "dark" }); // served from the hydrated cache
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("a rejecting async storage during pre-hydration is swallowed", async () => {
+    const rejections: unknown[] = [];
+    const onRejection = (e: unknown) => rejections.push(e);
+    process.on("unhandledRejection", onRejection);
+    try {
+      const storage = makeAsyncStorage({}, { failGet: true });
+      const fn = vi.fn(async () => 1);
+      const svc = defineServices({ n: { fn, cache: "auto" } }, { storage });
+      await flush();
+      expect(await svc.n()).toBe(1); // the failing cache read falls through to fn
+      await flush();
+      expect(rejections).toHaveLength(0);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
+  });
+
+  it("rejects a method named prefetch at definition time", () => {
+    expect(() => defineServices({ prefetch: { fn: async () => 1, cache: "none" } } as any)).toThrow(/prefetch/);
+  });
+
+  it("does not persist an undefined result as the string 'undefined'", async () => {
+    const storage = makeAsyncStorage();
+    const fn = vi.fn(async () => undefined);
+    const svc = defineServices({ nothing: { fn, cache: "auto" } }, { storage });
+    expect(await svc.nothing()).toBeUndefined();
+    expect(await svc.nothing()).toBeUndefined();
+    expect(fn).toHaveBeenCalledTimes(1);           // in-memory cache still works
+    expect(storage.setItem).not.toHaveBeenCalled(); // nothing written to storage
+    expect(Object.values(storage.store)).not.toContain("undefined");
+
+    // A fresh instance over the same storage must not choke on anything left behind
+    const fn2 = vi.fn(async () => undefined);
+    const svc2 = defineServices({ nothing: { fn: fn2, cache: "auto" } }, { storage });
+    expect(await svc2.nothing()).toBeUndefined();
+  });
+
+  it("prefetch() without a manifest calls methods whose parameters are all optional, and skips those with required ones", async () => {
+    const noArgs = vi.fn(async () => "a");
+    const withDefault = vi.fn(async (opts: { verbose?: boolean } = {}) => `b:${String(opts.verbose)}`);
+    const withRest = vi.fn(async (..._ids: string[]) => "c");
+    const required = vi.fn(async (id: string) => `d:${id}`);
+    const svc = defineServices({
+      noArgs: { fn: noArgs, cache: "auto" },
+      withDefault: { fn: withDefault, cache: "auto" },
+      withRest: { fn: withRest, cache: "auto" },
+      required: { fn: required, cache: "auto" }
+    });
+    await svc.prefetch();
+    expect(noArgs).toHaveBeenCalledTimes(1);
+    expect(withDefault).toHaveBeenCalledTimes(1);
+    expect(withRest).toHaveBeenCalledTimes(1);
+    expect(required).not.toHaveBeenCalled();
+  });
+});
