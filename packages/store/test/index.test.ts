@@ -929,3 +929,57 @@ describe("HttpStore.load — JSON null body", () => {
     await expect(store.load("k")).resolves.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// HttpStore — credentials, signal, timeoutMs (review item)
+// ---------------------------------------------------------------------------
+
+describe("HttpStore — credentials, signal and timeout", () => {
+  /** A fetch that never resolves on its own but rejects when its signal aborts. */
+  function hangingFetch() {
+    return vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      if (init?.signal?.aborted) { reject(init.signal.reason ?? new Error("aborted")); return; }
+      init?.signal?.addEventListener("abort", () => reject(init.signal!.reason ?? new Error("aborted")));
+    }));
+  }
+
+  it("forwards credentials on every request", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null") } as unknown as Response));
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any, credentials: "include" });
+    await store.save("k", mockState); await store.load("k"); await store.delete("k");
+    for (const call of fetchMock.mock.calls as unknown as [string, RequestInit][]) expect(call[1].credentials).toBe("include");
+  });
+
+  it("aborts a request that exceeds timeoutMs and reports it through onError", async () => {
+    vi.useFakeTimers();
+    try {
+      const onError = vi.fn();
+      const store = new HttpStore({ baseUrl: "/api", fetch: hangingFetch() as any, timeoutMs: 500, onError });
+      const p = store.load("k");
+      const settled = p.then(() => "resolved", (e: Error) => e.message);
+      await vi.advanceTimersByTimeAsync(600);
+      expect(await settled).toMatch(/timed out after 500 ms/);
+      expect(onError).toHaveBeenCalledWith(expect.any(Error), "load", "k");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("aborts when the caller's signal aborts", async () => {
+    const ac = new AbortController();
+    const store = new HttpStore({ baseUrl: "/api", fetch: hangingFetch() as any, signal: ac.signal });
+    const p = store.save("k", mockState);
+    const settled = p.then(() => "resolved", (e: Error) => e.message);
+    ac.abort(new Error("leaving page"));
+    expect(await settled).toBe("leaving page");
+  });
+
+  it("sends no signal or credentials when none are configured", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", text: () => Promise.resolve("null") } as unknown as Response));
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any });
+    await store.load("k");
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(init.signal).toBeUndefined();
+    expect(init.credentials).toBeUndefined();
+  });
+});

@@ -54,11 +54,17 @@ export interface HttpStoreOptions {
   fetch?: typeof fetch;
   /** Called when a request fails. Can be used for logging or error handling. */
   onError?: (error: Error, operation: "save" | "load" | "delete", key: string) => void;
+  /** `credentials` for every request (e.g. `"include"` to send cookies cross-origin). */
+  credentials?: RequestCredentials;
+  /** An `AbortSignal` that cancels every request when aborted (e.g. on navigation away). */
+  signal?: AbortSignal;
+  /** Abort any single request that takes longer than this many milliseconds. */
+  timeoutMs?: number;
 }
 
 export class HttpStore implements PathStore {
-  private options: Required<Omit<HttpStoreOptions, "headers" | "onError">> &
-    Pick<HttpStoreOptions, "headers" | "onError">;
+  private options: Required<Omit<HttpStoreOptions, "headers" | "onError" | "credentials" | "signal" | "timeoutMs">> &
+    Pick<HttpStoreOptions, "headers" | "onError" | "credentials" | "signal" | "timeoutMs">;
 
   constructor(options: HttpStoreOptions) {
     const baseUrl = options.baseUrl.replace(/\/$/, "");
@@ -70,6 +76,9 @@ export class HttpStore implements PathStore {
       deleteUrl: options.deleteUrl ?? ((key) => `${baseUrl}/state/${encodeURIComponent(key)}`),
       fetch: options.fetch ?? fetch.bind(globalThis),
       headers: options.headers,
+      credentials: options.credentials,
+      signal: options.signal,
+      timeoutMs: options.timeoutMs,
       onError: options.onError,
     };
   }
@@ -96,10 +105,50 @@ export class HttpStore implements PathStore {
     return merged;
   }
 
+  /**
+   * Runs one request with the store's `credentials`, the caller's `signal` and
+   * the `timeoutMs` budget applied. The timeout and the external signal are
+   * combined into one `AbortSignal`; the timer is cleared when the request
+   * settles so it never fires afterwards.
+   */
+  private async request(url: string, init: RequestInit): Promise<Response> {
+    const { credentials, signal, timeoutMs } = this.options;
+    let controller: AbortController | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let detach: (() => void) | null = null;
+    if (signal || timeoutMs) {
+      controller = new AbortController();
+      if (signal) {
+        if (signal.aborted) controller.abort(signal.reason);
+        else {
+          const onAbort = () => controller!.abort(signal.reason);
+          signal.addEventListener("abort", onAbort, { once: true });
+          detach = () => signal.removeEventListener("abort", onAbort);
+        }
+      }
+      if (timeoutMs) {
+        timer = setTimeout(() => controller!.abort(new Error(`HttpStore: request timed out after ${timeoutMs} ms`)), timeoutMs);
+      }
+    }
+    try {
+      // Mirror fetch(): a request started with an already-aborted signal
+      // rejects at once, whatever the fetch implementation does.
+      if (controller?.signal.aborted) throw controller.signal.reason ?? new Error("HttpStore: request aborted");
+      return await this.options.fetch(url, {
+        ...init,
+        ...(credentials ? { credentials } : {}),
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+    } finally {
+      if (timer) clearTimeout(timer);
+      detach?.();
+    }
+  }
+
   async save(key: string, state: SerializedPathState): Promise<void> {
     try {
       const url = this.options.saveUrl(key);
-      const response = await this.options.fetch(url, {
+      const response = await this.request(url, {
         method: "PUT",
         headers: await this.buildHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(state),
@@ -117,7 +166,7 @@ export class HttpStore implements PathStore {
   async load(key: string): Promise<SerializedPathState | null> {
     try {
       const url = this.options.loadUrl(key);
-      const response = await this.options.fetch(url, {
+      const response = await this.request(url, {
         method: "GET",
         headers: await this.buildHeaders({ "Content-Type": "application/json" }),
       });
@@ -153,7 +202,7 @@ export class HttpStore implements PathStore {
   async delete(key: string): Promise<void> {
     try {
       const url = this.options.deleteUrl(key);
-      const response = await this.options.fetch(url, {
+      const response = await this.request(url, {
         method: "DELETE",
         headers: await this.buildHeaders({}),
       });

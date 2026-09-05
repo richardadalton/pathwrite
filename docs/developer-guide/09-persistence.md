@@ -140,7 +140,7 @@ It is plain JSON with no functions, no class instances, and no Pathwrite-specifi
 
 ### HttpStore
 
-`HttpStore` persists state to a REST API. Configure it with a base URL and optional auth headers, then implement three endpoints on the server side.
+`HttpStore` persists state to a REST API. Configure it with a base URL and optional auth headers, then implement three endpoints on the server side. It also accepts `credentials` (e.g. `"include"` for cross-origin cookies), an `AbortSignal` (`signal`) that cancels every request when aborted, and `timeoutMs`, which aborts any single request that runs longer than that; an aborted or timed-out request is reported through `onError` like any other failure.
 
 ```typescript
 import { HttpStore } from "@daltonr/pathwrite-store";
