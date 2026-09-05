@@ -82,13 +82,26 @@ export class HttpStore implements PathStore {
     return this.options.headers;
   }
 
+  /**
+   * Merges the request defaults with the user's headers into a `Headers`
+   * object. `HeadersInit` may be a plain object, an array of `[name, value]`
+   * tuples or a `Headers` instance; spreading the latter two into an object
+   * literal yields nothing (a `Headers` instance has no own enumerable
+   * properties), which silently dropped auth headers. Going through `Headers`
+   * handles every form, and user headers override the defaults as before.
+   */
+  private async buildHeaders(defaults: Record<string, string>): Promise<Headers> {
+    const merged = new Headers(defaults);
+    new Headers(await this.getHeaders()).forEach((value, name) => merged.set(name, value));
+    return merged;
+  }
+
   async save(key: string, state: SerializedPathState): Promise<void> {
     try {
       const url = this.options.saveUrl(key);
-      const headers = await this.getHeaders();
       const response = await this.options.fetch(url, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", ...headers },
+        headers: await this.buildHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(state),
       });
       if (!response.ok) {
@@ -104,10 +117,9 @@ export class HttpStore implements PathStore {
   async load(key: string): Promise<SerializedPathState | null> {
     try {
       const url = this.options.loadUrl(key);
-      const headers = await this.getHeaders();
       const response = await this.options.fetch(url, {
         method: "GET",
-        headers: { "Content-Type": "application/json", ...headers },
+        headers: await this.buildHeaders({ "Content-Type": "application/json" }),
       });
       if (response.status === 404) return null;
       if (!response.ok) {
@@ -125,10 +137,9 @@ export class HttpStore implements PathStore {
   async delete(key: string): Promise<void> {
     try {
       const url = this.options.deleteUrl(key);
-      const headers = await this.getHeaders();
       const response = await this.options.fetch(url, {
         method: "DELETE",
-        headers: { ...headers },
+        headers: await this.buildHeaders({}),
       });
       if (response.status === 404) return;
       if (!response.ok) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { HttpStore, persistence, restoreOrStart } from "../src/index";
+import type { HttpStoreOptions } from "../src/index";
 import type { SerializedPathState, PathDefinition } from "@daltonr/pathwrite-core";
 import { PathEngine } from "@daltonr/pathwrite-core";
 
@@ -45,25 +46,31 @@ function make404Fetch() {
 // ---------------------------------------------------------------------------
 
 describe("HttpStore", () => {
+  /** The store hands fetch a Headers object; read it back as a plain record for assertions. */
+  function headersOf(mockFetch: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, string> {
+    const init = mockFetch.mock.calls[callIndex][1] as RequestInit;
+    const out: Record<string, string> = {};
+    new Headers(init.headers).forEach((v, k) => { out[k] = v; });
+    return out;
+  }
+
   it("saves state via PUT request", async () => {
     const mockFetch = makeOkFetch();
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     await store.save("user:123", mockState);
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", {
+    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mockState),
-    });
+    }));
+    expect(headersOf(mockFetch)).toEqual({ "content-type": "application/json" });
   });
 
   it("loads state via GET request", async () => {
     const mockFetch = makeOkFetch(mockState);
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     const loaded = await store.load("user:123");
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({ method: "GET" }));
+    expect(headersOf(mockFetch)).toEqual({ "content-type": "application/json" });
     expect(loaded).toEqual(mockState);
   });
 
@@ -76,10 +83,8 @@ describe("HttpStore", () => {
     const mockFetch = makeOkFetch();
     const store = new HttpStore({ baseUrl: "/api", fetch: mockFetch as any });
     await store.delete("user:123");
-    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", {
-      method: "DELETE",
-      headers: {},
-    });
+    expect(mockFetch).toHaveBeenCalledWith("/api/state/user%3A123", expect.objectContaining({ method: "DELETE" }));
+    expect(headersOf(mockFetch)).toEqual({});
   });
 
   it("includes custom headers in requests", async () => {
@@ -90,12 +95,7 @@ describe("HttpStore", () => {
       fetch: mockFetch as any,
     });
     await store.save("user:123", mockState);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Bearer token123" }),
-      })
-    );
+    expect(headersOf(mockFetch)).toMatchObject({ authorization: "Bearer token123" });
   });
 
   it("calls async header function", async () => {
@@ -104,12 +104,7 @@ describe("HttpStore", () => {
     const store = new HttpStore({ baseUrl: "/api", headers: getHeaders, fetch: mockFetch as any });
     await store.save("user:123", mockState);
     expect(getHeaders).toHaveBeenCalled();
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Bearer fresh-token" }),
-      })
-    );
+    expect(headersOf(mockFetch)).toMatchObject({ authorization: "Bearer fresh-token" });
   });
 
   it("uses custom URL builders", async () => {
@@ -624,5 +619,56 @@ describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
     expectFresh(r);
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HttpStore — every HeadersInit form reaches the request (review finding S4)
+// ---------------------------------------------------------------------------
+
+describe("HttpStore — HeadersInit forms (S4)", () => {
+  /** Read a header from whatever shape the store handed to fetch. */
+  function sent(fetchMock: ReturnType<typeof vi.fn>, method: string, name: string): string | null {
+    const call = fetchMock.mock.calls.find((c) => c[1]?.method === method);
+    expect(call, `${method} request`).toBeDefined();
+    return new Headers(call![1].headers as HeadersInit).get(name);
+  }
+
+  async function exercise(headers: HttpStoreOptions["headers"]) {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, statusText: "OK", json: () => Promise.resolve(null) } as Response));
+    const store = new HttpStore({ baseUrl: "/api", fetch: fetchMock as any, headers });
+    await store.save("k", mockState);
+    await store.load("k");
+    await store.delete("k");
+    return fetchMock;
+  }
+
+  it("a Headers instance is sent on PUT, GET and DELETE", async () => {
+    const f = await exercise(new Headers({ Authorization: "Bearer h-1" }));
+    for (const m of ["PUT", "GET", "DELETE"]) expect(sent(f, m, "Authorization")).toBe("Bearer h-1");
+  });
+
+  it("a function returning a Headers instance is sent", async () => {
+    const f = await exercise(async () => new Headers({ Authorization: "Bearer h-2" }));
+    for (const m of ["PUT", "GET", "DELETE"]) expect(sent(f, m, "Authorization")).toBe("Bearer h-2");
+  });
+
+  it("an array of [name, value] tuples is sent", async () => {
+    const f = await exercise([["Authorization", "Bearer h-3"]]);
+    for (const m of ["PUT", "GET", "DELETE"]) expect(sent(f, m, "Authorization")).toBe("Bearer h-3");
+  });
+
+  it("a plain object still works and keeps Content-Type on PUT/GET", async () => {
+    const f = await exercise({ Authorization: "Bearer h-4" });
+    for (const m of ["PUT", "GET", "DELETE"]) expect(sent(f, m, "Authorization")).toBe("Bearer h-4");
+    expect(sent(f, "PUT", "Content-Type")).toBe("application/json");
+    expect(sent(f, "GET", "Content-Type")).toBe("application/json");
+  });
+
+  it("user headers override the defaults whatever their form (as a plain object always could)", async () => {
+    const asObject = await exercise({ "Content-Type": "application/vnd.api+json" });
+    expect(sent(asObject, "PUT", "Content-Type")).toBe("application/vnd.api+json");
+    const asHeaders = await exercise(new Headers({ "Content-Type": "application/vnd.api+json" }));
+    expect(sent(asHeaders, "PUT", "Content-Type")).toBe("application/vnd.api+json");
   });
 });
