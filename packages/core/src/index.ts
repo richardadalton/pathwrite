@@ -142,19 +142,19 @@ export interface StepChoice<TData extends PathData = PathData> {
   title?: string;
   meta?: Record<string, unknown>;
   /** Called on step entry. Return the `id` of the step to activate. Throws if the returned id is not found in `steps`. */
-  select: (ctx: PathStepContext<TData>) => string;
+  select(ctx: PathStepContext<TData>): string;
   steps: PathStep<TData>[];
   /** When `true`, the engine skips this choice slot entirely (same semantics as `PathStep.shouldSkip`). */
-  shouldSkip?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
+  shouldSkip?(ctx: PathStepContext<TData>): boolean | Promise<boolean>;
 }
 
 export interface PathStep<TData extends PathData = PathData> {
   id: string;
   title?: string;
   meta?: Record<string, unknown>;
-  shouldSkip?: (ctx: PathStepContext<TData>) => boolean | Promise<boolean>;
-  canMoveNext?: (ctx: PathStepContext<TData>) => GuardResult | Promise<GuardResult>;
-  canMovePrevious?: (ctx: PathStepContext<TData>) => GuardResult | Promise<GuardResult>;
+  shouldSkip?(ctx: PathStepContext<TData>): boolean | Promise<boolean>;
+  canMoveNext?(ctx: PathStepContext<TData>): GuardResult | Promise<GuardResult>;
+  canMovePrevious?(ctx: PathStepContext<TData>): GuardResult | Promise<GuardResult>;
   /**
    * Returns a map of field ID → error message explaining why the step is not
    * yet valid. The shell displays these messages below the step content (labeled
@@ -175,7 +175,7 @@ export interface PathStep<TData extends PathData = PathData> {
    * })
    * ```
    */
-  fieldErrors?: (ctx: PathStepContext<TData>) => FieldErrors;
+  fieldErrors?(ctx: PathStepContext<TData>): FieldErrors;
   /**
    * Returns a map of field ID → warning message for non-blocking advisories.
    * Same shape as `fieldErrors`, but warnings never affect `canMoveNext` —
@@ -191,21 +191,21 @@ export interface PathStep<TData extends PathData = PathData> {
    * })
    * ```
    */
-  fieldWarnings?: (ctx: PathStepContext<TData>) => FieldErrors;
-  onEnter?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
-  onLeave?: (ctx: PathStepContext<TData>) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  fieldWarnings?(ctx: PathStepContext<TData>): FieldErrors;
+  onEnter?(ctx: PathStepContext<TData>): Partial<TData> | void | Promise<Partial<TData> | void>;
+  onLeave?(ctx: PathStepContext<TData>): Partial<TData> | void | Promise<Partial<TData> | void>;
   /**
    * Called on the parent step when a sub-path completes naturally (user
    * reached the last step). Receives the sub-path ID, its final data, the
    * parent step context, and the optional `meta` object that was passed to
    * `startSubPath()` for correlation (e.g. a collection item index).
    */
-  onSubPathComplete?: (
+  onSubPathComplete?(
     subPathId: string,
     subPathData: PathData,
     ctx: PathStepContext<TData>,
     meta?: Record<string, unknown>
-  ) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  ): Partial<TData> | void | Promise<Partial<TData> | void>;
   /**
    * Called on the parent step when a sub-path is cancelled — either via an
    * explicit `cancel()` call or by pressing Back on the sub-path's first step.
@@ -214,12 +214,12 @@ export interface PathStep<TData extends PathData = PathData> {
    * Return a patch to update the parent path's data (e.g. to record a
    * "skipped" or "declined" outcome).
    */
-  onSubPathCancel?: (
+  onSubPathCancel?(
     subPathId: string,
     subPathData: PathData,
     ctx: PathStepContext<TData>,
     meta?: Record<string, unknown>
-  ) => Partial<TData> | void | Promise<Partial<TData> | void>;
+  ): Partial<TData> | void | Promise<Partial<TData> | void>;
 }
 
 export interface PathDefinition<TData extends PathData = PathData> {
@@ -232,13 +232,13 @@ export interface PathDefinition<TData extends PathData = PathData> {
    * Only called for top-level paths — sub-path completion is handled by
    * the parent step's `onSubPathComplete` hook.
    */
-  onComplete?: (data: TData) => void | Promise<void>;
+  onComplete?(data: TData): void | Promise<void>;
   /**
    * Optional callback invoked when this path is cancelled. Receives the
    * path data at the time of cancellation. Only called for top-level paths —
    * sub-path cancellation is handled by the parent step's `onSubPathCancel` hook.
    */
-  onCancel?: (data: TData) => void | Promise<void>;
+  onCancel?(data: TData): void | Promise<void>;
   /**
    * Controls what happens after the path completes (i.e. after `onComplete` resolves).
    *
@@ -476,8 +476,8 @@ export type StateChangeCause =
   | "suspend"
   | "validate";
 
-export type PathEvent =
-  | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot }
+export type PathEvent<TData extends PathData = PathData> =
+  | { type: "stateChanged"; cause: StateChangeCause; snapshot: PathSnapshot<TData> }
   | { type: "completed"; pathId: string; data: PathData }
   | { type: "cancelled"; pathId: string; data: PathData }
   | { type: "suspended"; pathId: string; data: PathData }
@@ -485,7 +485,7 @@ export type PathEvent =
       type: "resumed";
       resumedPathId: string;
       fromSubPathId: string;
-      snapshot: PathSnapshot;
+      snapshot: PathSnapshot<TData>;
     };
 
 /**
@@ -500,7 +500,10 @@ export type PathEvent =
  * const persist: PathObserver = (event, engine) => { ... };
  * ```
  */
-export type PathObserver = (event: PathEvent, engine: PathEngine) => void;
+export type PathObserver<TData extends PathData = PathData> = (
+  event: PathEvent<TData>,
+  engine: PathEngine<TData>
+) => void;
 
 /**
  * Determines which engine events an observer should react to.
@@ -562,14 +565,14 @@ export function matchesStrategy(strategy: ObserverStrategy, event: PathEvent): b
 /**
  * Options accepted by the `PathEngine` constructor and `PathEngine.fromState()`.
  */
-export interface PathEngineOptions {
+export interface PathEngineOptions<TData extends PathData = PathData> {
   /**
    * Zero or more observers to register before the first event fires.
    * Each observer is called synchronously on every engine event for the
    * lifetime of the engine. Observers cannot be removed; for removable
    * listeners use `engine.subscribe()`.
    */
-  observers?: PathObserver[];
+  observers?: PathObserver<TData>[];
   /**
    * Set to `true` when a `PathStore` is attached and will persist path state.
    * Exposed as `snapshot.hasPersistence` so shells can honestly tell the user
@@ -637,10 +640,10 @@ export function errorPhaseMessage(phase: ErrorPhase): string {
   }
 }
 
-export class PathEngine {
+export class PathEngine<TData extends PathData = PathData> {
   private activePath: ActivePath | null = null;
   private readonly pathStack: ActivePath[] = [];
-  private readonly listeners = new Set<(event: PathEvent) => void>();
+  private readonly listeners = new Set<(event: PathEvent<TData>) => void>();
   private _status: PathStatus = "idle";
   /** Step IDs on which next() or goToStep({ validateOnLeave }) has been called. Per-step and persistent — does not reset on navigation, only on start()/restart(). */
   /** True after validate() has been called. Global — does not reset on step navigation. Resets on start/restart. */
@@ -648,8 +651,8 @@ export class PathEngine {
   /** Blocking message from canMoveNext returning { allowed: false, reason }. Cleared on step entry. */
   private _blockingError: string | null = null;
   /** The path and initial data from the most recent top-level start() call. Used by restart(). */
-  private _rootPath: PathDefinition<any> | null = null;
-  private _rootInitialData: PathData = {};
+  private _rootPath: PathDefinition<TData> | null = null;
+  private _rootInitialData: Partial<TData> = {};
   /** Structured error from the most recent failed async operation. Null when no error is active. */
   private _error: { message: string; phase: ErrorPhase; retryCount: number } | null = null;
   /** Stored retry function. Null when no error is pending. */
@@ -680,7 +683,7 @@ export class PathEngine {
    */
   private readonly _knownAsyncFns = new WeakSet<(...args: never[]) => unknown>();
 
-  constructor(options?: PathEngineOptions) {
+  constructor(options?: PathEngineOptions<TData>) {
     if (options?.observers) {
       for (const observer of options.observers) {
         // Wrap so observer receives the engine instance as the second argument
@@ -706,16 +709,16 @@ export class PathEngine {
    * @throws If `state` references a path ID not present in `pathDefinitions`,
    *         or if the state format is invalid.
    */
-  public static fromState(
+  public static fromState<TData extends PathData = PathData>(
     state: SerializedPathState,
     pathDefinitions: Record<string, PathDefinition>,
-    options?: PathEngineOptions
-  ): PathEngine {
+    options?: PathEngineOptions<TData>
+  ): PathEngine<TData> {
     if (state.version !== 1) {
       throw new Error(`Unsupported SerializedPathState version: ${state.version}`);
     }
 
-    const engine = new PathEngine(options);
+    const engine = new PathEngine<TData>(options);
 
     // Serialized state may be hand-edited, truncated, or written by a different
     // version of the path definition. Keep every restored index inside the
@@ -782,8 +785,10 @@ export class PathEngine {
     // restart() needs the root definition and its initial data, exactly as
     // start() records them. The root is the bottom of the stack when sub-paths
     // are active, otherwise the active path itself.
-    engine._rootPath = engine.pathStack[0]?.definition ?? activeDefinition;
-    engine._rootInitialData = state.initialData ? { ...state.initialData } : {};
+    // The stored definitions are untyped; the caller's type argument says
+    // what the root path's data really is.
+    engine._rootPath = (engine.pathStack[0]?.definition ?? activeDefinition) as PathDefinition<TData>;
+    engine._rootInitialData = (state.initialData ? { ...state.initialData } : {}) as Partial<TData>;
 
     // Re-derive the selected inner step for any StepChoice slots (not serialized —
     // always recomputed from current data on restore).
@@ -795,7 +800,7 @@ export class PathEngine {
     return engine;
   }
 
-  public subscribe(listener: (event: PathEvent) => void): () => void {
+  public subscribe(listener: (event: PathEvent<TData>) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -814,7 +819,7 @@ export class PathEngine {
    * Safe to call while a hook or guard of the old path is still running: the
    * old navigation is abandoned when it resumes and never touches the new path.
    */
-  public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
+  public start(path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> {
     this.assertPathHasSteps(path);
     this._rootPath = path;
     this._rootInitialData = initialData;
@@ -872,7 +877,7 @@ export class PathEngine {
    *                    sub-path's own data.
    */
   public startSubPath(
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData: PathData = {},
     meta?: Record<string, unknown>
   ): Promise<void> {
@@ -1004,7 +1009,7 @@ export class PathEngine {
     }
   }
 
-  public setData(key: string, value: unknown): Promise<void> {
+  public setData<K extends keyof TData & string>(key: K, value: TData[K]): Promise<void> {
     if (this._status === "completed") return Promise.resolve();
     const active = this.requireActivePath();
     PathEngine.setOwn(active.data, key, value);
@@ -1113,7 +1118,7 @@ export class PathEngine {
     this.emitStateChanged("validate");
   }
 
-  public snapshot(): PathSnapshot | null {
+  public snapshot(): PathSnapshot<TData> | null {
     if (this.activePath === null) {
       return null;
     }
@@ -1198,7 +1203,7 @@ export class PathEngine {
       fieldWarnings: isCompleted ? {} : this.evaluateFieldMessagesSync(effectiveStep.fieldWarnings, active),
       isDirty: isCompleted ? false : this.computeIsDirty(active),
       stepEnteredAt: active.stepEnteredAt,
-      data: { ...active.data },
+      data: { ...active.data } as TData,
     };
   }
 
@@ -1754,7 +1759,7 @@ export class PathEngine {
     }
   }
 
-  private emit(event: PathEvent): void {
+  private emit(event: PathEvent<TData>): void {
     for (const listener of this.listeners) {
       // A subscriber that throws must not abort the emit loop or unwind into
       // the navigation that emitted the event — that would leave the engine
