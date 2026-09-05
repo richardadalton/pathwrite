@@ -1,5 +1,33 @@
 # @daltonr/pathwrite-angular
 
+## 0.12.0
+
+### Minor Changes
+
+- 7dab99d: **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `[pwShellCompletion]` directive to render a custom done screen when `stayOnFinal` is active.
+
+  **`restoreKey` input on `<pw-shell>`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
+
+  **`layout` input on `<pw-shell>`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
+
+  **`validateWhen` input on `<pw-shell>`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
+
+  **`services` input on `<pw-shell>` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Stored on the scoped `PathFacade` instance; access it as `usePathContext<TData, TServices>().services`.
+
+  **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** on both `PathFacade` and `usePathContext()` — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+
+### Patch Changes
+
+- 3afacac: `<pw-shell>` shows "No active path." after the path is cancelled (or dismissed on completion) instead of an empty `.pw-shell`, like the other shells, and wraps the completion panel in `.pw-shell__body` so the shared stylesheet applies to it.
+- b46447a: `usePathContext()` now exposes the full action surface in every adapter. Svelte's `PathContext` lacked `start`, `startSubPath` and `validate`, so a step component could not launch a sub-path through the context; it now extends `UsePathReturn`, and `<PathShell>` provides all three. Angular's `UsePathContextReturn` lacked `validate()`; it is now derived from `PathFacade` (`Pick<PathFacade, FacadeContextMethod>`) and forwards `validate()`. Both were hand-written copies of the hook / facade surface that fell behind when `validate()` was added; each adapter now has a type-level test asserting the context matches its hook or facade, so this cannot recur silently.
+- 0b3c860: Custom shell headers follow one rule in every shell: shown whenever progress is not hidden (`hideProgress`, `layout="tabs"`), including for a single-step path; only the default progress header additionally hides for one step. Angular's `pwShellHeader` ignored `hideProgress` and `layout="tabs"`; Solid's `renderHeader` and React Native's `renderHeader` were hidden for single-step paths.
+- 42cbd0a: `restoreKey` restores a remounted inner shell in place. The value stored under `data[restoreKey]` is still the inner `PathSnapshot` (so outer steps keep reading `data.<key>.data.<field>`), but it now also carries a `serializedState` field — the inner engine's `exportState()`. On remount the inner engine is rebuilt from it with `PathEngine.fromState()` instead of starting the path and jumping to the step, which re-ran `onEnter` on the first step and `onLeave` / `onEnter` on the way to the target on every remount and lost attempted / visited state (a blocked attempt's errors vanished when the user came back). A stored value without `serializedState`, written by an older version, still restores the old way. Every shell has a remount test for this. Angular's `PathFacade` gains an `engine` getter.
+- f64b309: `PathShell` now falls back from a `StepChoice`'s inner step id (`formId`) to the slot's own `stepId` when looking up step content, as the React, Vue and Svelte shells already did. A choice registered under its own id (`steps={{ type: ... }}` / `<ng-template pwStep="type">`) rendered blank in Angular and Solid; content registered under the inner id still takes precedence.
+- 449dae5: `PathShell` now honours `validateWhen` when it is already `true` at mount. The shells applied it before the mount-time `start()`, which resets the engine's validated flag, so a nested shell that remounted with `validateWhen` bound to the outer step's `hasAttemptedNext` (the tabbed layout) never showed its inner errors. Vue's watcher also was not immediate, so a true initial value was never applied at all. All four shells now re-apply `validateWhen` once the path (and any `restoreKey` jump) has settled. Solid and Svelte already ran the effect after `start()` and are unchanged; every shell now has a regression test for the case.
+- Updated dependencies [ca1eba7]
+- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.12.0
+
 ## 0.11.0
 
 ### Patch Changes

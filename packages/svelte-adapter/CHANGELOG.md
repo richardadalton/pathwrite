@@ -1,5 +1,34 @@
 # @daltonr/pathwrite-svelte
 
+## 0.12.0
+
+### Minor Changes
+
+- 7dab99d: **`completionBehaviour`** — `"stayOnFinal"` (default), `"dismiss"`, or `"reset"`. Use the `{#snippet completion(snap)}` slot to render a custom done screen when `stayOnFinal` is active.
+
+  **`restoreKey` prop on `PathShell`** — pass a string key and the inner shell automatically saves its full state (data + active step) into the outer path's data on every change, restoring on remount. Eliminates state loss when navigating away from a wizard step that hosts a nested shell.
+
+  **`layout` prop on `PathShell`** _(replaces `footerLayout`)_ — accepted values: `"auto"` (default), `"wizard"`, `"form"`, `"tabs"`. The new `"tabs"` value hides both the progress header and footer in a single prop.
+
+  **`validateWhen` prop on `PathShell`** — when it becomes `true`, calls `validate()` on the engine. Bind to the outer snapshot's `hasAttemptedNext` when nesting a shell inside a wizard step.
+
+  **`services` prop on `PathShell` + `usePathContext<TData, TServices>()`** — pass an arbitrary services object to all step components without prop-drilling. Access it as `usePathContext<TData, TServices>().services`.
+
+  **`goToStep(stepId, options?)` / `goToStepChecked(stepId, options?)`** — both now accept `{ validateOnLeave: true }` to mark the departing step as attempted before navigating.
+
+  **Dev warning for camelCase callbacks** — passing `onComplete`, `onCancel`, or `onEvent` (camelCase) now emits a `console.warn` in development. Svelte requires lowercase: `oncomplete`, `oncancel`, `onevent`.
+
+### Patch Changes
+
+- b46447a: `usePathContext()` now exposes the full action surface in every adapter. Svelte's `PathContext` lacked `start`, `startSubPath` and `validate`, so a step component could not launch a sub-path through the context; it now extends `UsePathReturn`, and `<PathShell>` provides all three. Angular's `UsePathContextReturn` lacked `validate()`; it is now derived from `PathFacade` (`Pick<PathFacade, FacadeContextMethod>`) and forwards `validate()`. Both were hand-written copies of the hook / facade surface that fell behind when `validate()` was added; each adapter now has a type-level test asserting the context matches its hook or facade, so this cannot recur silently.
+- fe25e97: An `engine` that arrives after mount is adopted. `PathShell`'s `engine` prop (and `usePath({ engine })`) used to be read once at mount; an engine passed later — the common case when `restoreOrStart()` resolves asynchronously — was silently ignored while the shell kept driving its own path. The hook now tracks the engine in each framework's idiom (React / React Native: re-read on every render; Vue: a plain engine, ref or getter, watched; Solid: a plain engine or accessor, tracked; Svelte: a getter over the reactive prop) and, when it changes, re-subscribes and re-seeds its snapshot from the new engine. Angular already adopted a late `[engine]` via `ngOnChanges`; that is now pinned by a test. Set `autoStart` to `false` when the engine is expected later and the shell should not start its own path meanwhile.
+- 42cbd0a: `restoreKey` restores a remounted inner shell in place. The value stored under `data[restoreKey]` is still the inner `PathSnapshot` (so outer steps keep reading `data.<key>.data.<field>`), but it now also carries a `serializedState` field — the inner engine's `exportState()`. On remount the inner engine is rebuilt from it with `PathEngine.fromState()` instead of starting the path and jumping to the step, which re-ran `onEnter` on the first step and `onLeave` / `onEnter` on the way to the target on every remount and lost attempted / visited state (a blocked attempt's errors vanished when the user came back). A stored value without `serializedState`, written by an older version, still restores the old way. Every shell has a remount test for this. Angular's `PathFacade` gains an `engine` getter.
+- 4cccbb1: `.svelte` files are now type-checked: `svelte-check` runs as the first step of the package build (`npm run check`). It found and this release fixes: `PathShell` calling `restart(path, initialData)` against the zero-argument `restart()` (harmless at runtime, but wrong); `PathContext.snapshot` typed non-null while it is `null` with no active path (the README already narrows it with `{#if ctx.snapshot}`); the `path` prop typed optional but passed unguarded to `start()` — the shell now throws a clear error when neither `path` nor `engine` is given; and an `import.meta.env` read that relied on Vite's ambient types.
+- f6e8bae: `PathShellActions` is exported and is the type of the second argument of a custom `footer` snippet (`{#snippet footer(snap, actions)}`), which was typed `object`. Same shape as the other adapters' `PathShellActions`.
+- Updated dependencies [ca1eba7]
+- Updated dependencies [7dab99d]
+  - @daltonr/pathwrite-core@0.12.0
+
 ## 0.11.0
 
 ### Patch Changes

@@ -1,10 +1,10 @@
 {
   "name": "@daltonr/pathwrite-react-native",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
-  "description": "React Native adapter for @daltonr/pathwrite-core \u2014 hooks, context provider, and optional PathShell default UI.",
+  "description": "React Native adapter for @daltonr/pathwrite-core — hooks, context provider, and optional PathShell default UI.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
@@ -45,7 +45,7 @@
     "react-native": ">=0.72.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.11.0"
+    "@daltonr/pathwrite-core": "^0.12.0"
   },
   "devDependencies": {
     "react": "^18.3.1",
