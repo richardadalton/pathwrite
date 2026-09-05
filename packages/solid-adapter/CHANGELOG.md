@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-solid
 
+## 0.13.1
+
+### Patch Changes
+
+- Documentation only — no code changes. The README quick starts now compile as written: core's data type extends `PathData` (the example failed to type-check before), Solid's and Vue's step components import the shared data type instead of referring to one declared in another file, React Native imports only what it uses, the React / React Native examples drop null guards the non-null context snapshot no longer needs, and Svelte's completion callback parameter is typed.
+- Updated dependencies
+  - @daltonr/pathwrite-core@0.13.1
+
 ## 0.13.0
 
 ### Patch Changes
