@@ -151,7 +151,7 @@ Each step render function runs once, when its step becomes current, and the comp
 | `class` | `string` | — | Extra CSS class on the root element. |
 | `validateWhen` | `boolean` | `false` | When it becomes `true`, calls `validate()` on the engine. Bind to the outer shell's `hasAttemptedNext` for nested shells. |
 | `services` | `object \| null` | `null` | Services object passed through context to all step components. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `renderHeader` | `(snapshot) => JSX.Element` | — | Replace the default progress header. A custom header is shown even for single-step paths, and hidden under `hideProgress` or `layout="tabs"`. |
 | `renderFooter` | `(snapshot, actions) => JSX.Element` | — | Replace the default navigation buttons. `actions` contains `next`, `previous`, `cancel`, `goToStep`, `goToStepChecked`, `setData`, `restart`, `retry`, `suspend`. |
 | `completionContent` | `(snapshot: PathSnapshot) => JSX.Element` | — | Custom content rendered when `snapshot().status === "completed"` (`completionBehaviour: "stayOnFinal"`). Receives the completed snapshot. If omitted, a default "All done." panel is shown. |

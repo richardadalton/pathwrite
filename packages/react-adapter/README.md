@@ -102,7 +102,7 @@ All returned callbacks are referentially stable — safe to pass as props or inc
 | `steps` | `Record<string, ReactNode>` | required | Map of step ID to content. Keys must exactly match step IDs. |
 | `initialData` | `PathData` | `{}` | Initial data passed to `engine.start()`. Overridden by the stored snapshot when `restoreKey` is set. |
 | `engine` | `PathEngine` | — | An externally-managed engine (e.g. from `restoreOrStart()`). When provided, `PathShell` skips its own `start()`. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `autoStart` | `boolean` | `true` | Start the path automatically on mount. |
 | `onComplete` | `(data: PathData) => void` | — | Called when the path completes. |
 | `onCancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |

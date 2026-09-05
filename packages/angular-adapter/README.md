@@ -143,7 +143,7 @@ Step content is provided via `<ng-template pwStep="stepId">` directives inside `
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 | `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the facade so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `<pw-shell>`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `<pw-shell>`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 
 ### Outputs
 

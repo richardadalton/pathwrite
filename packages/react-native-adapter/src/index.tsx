@@ -57,29 +57,29 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Triggers a re-render on change. */
   snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => void;
+  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
   /** Push a sub-path onto the stack. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => void;
+  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
   /** Advance one step. Completes the path on the last step. */
-  next: () => void;
+  next: () => Promise<void>;
   /** Go back one step. */
-  previous: () => void;
+  previous: () => Promise<void>;
   /** Cancel the active path (or sub-path). */
-  cancel: () => void;
+  cancel: () => Promise<void>;
   /** Jump directly to a step by ID, bypassing guards and shouldSkip. Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. */
-  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /** Jump directly to a step by ID, checking the current step's guard first. */
-  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
   /** Update a single data value. When `TData` is specified, key and value are type-checked. */
-  setData: <K extends string & keyof TData>(key: K, value: TData[K]) => void;
+  setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
   /** Reset the current step's data to what it was when the step was entered. */
-  resetStep: () => void;
+  resetStep: () => Promise<void>;
   /** Tear down any active path (without firing hooks) and immediately restart the root path with the `initialData` from the original `start()`. Takes no arguments. */
-  restart: () => void;
+  restart: () => Promise<void>;
   /** Re-runs the operation that set `snapshot.error`. Increments `retryCount` on repeated failure. No-op when there is no pending error. */
-  retry: () => void;
+  retry: () => Promise<void>;
   /** Pauses the path with intent to return. Emits `suspended`. All state is preserved. */
-  suspend: () => void;
+  suspend: () => Promise<void>;
   /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
   validate: () => void;
 }
@@ -212,19 +212,19 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
 
 export interface PathShellHandle {
   /** Restart the shell's current path with its original `initialData`, without unmounting. */
-  restart: () => void;
+  restart: () => Promise<void>;
 }
 
 export interface PathShellActions {
-  next: () => void;
-  previous: () => void;
-  cancel: () => void;
-  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
-  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => void;
-  setData: (key: string, value: unknown) => void;
-  restart: () => void;
-  retry: () => void;
-  suspend: () => void;
+  next: () => Promise<void>;
+  previous: () => Promise<void>;
+  cancel: () => Promise<void>;
+  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
+  setData: (key: string, value: unknown) => Promise<void>;
+  restart: () => Promise<void>;
+  retry: () => Promise<void>;
+  suspend: () => Promise<void>;
 }
 
 export interface PathShellProps {

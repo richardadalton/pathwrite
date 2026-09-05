@@ -114,7 +114,7 @@ Step content is supplied as Svelte 5 snippets whose names match each step's `id`
 | `cancelLabel` | `string` | `"Cancel"` | Cancel button label. |
 | `hideCancel` | `boolean` | `false` | Hide the Cancel button. |
 | `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `services` | `unknown` | `null` | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 | `oncomplete` | `(data: PathData) => void` | — | Called when the path finishes naturally. |
 | `oncancel` | `(data: PathData) => void` | — | Called when the path is cancelled. |

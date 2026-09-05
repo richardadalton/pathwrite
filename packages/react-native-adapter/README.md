@@ -170,7 +170,7 @@ All returned callbacks are referentially stable.
 | `completionContent` | `ReactNode` | — | Custom content rendered when `snapshot.status === "completed"` (`completionBehaviour: "stayOnFinal"`). If omitted, a default "All done." panel is shown. |
 | `style` | `StyleProp<ViewStyle>` | — | Override for the root `View`. |
 | `validateWhen` | `boolean` | `false` | When `true` (including already at mount), calls `validate()` on the engine so all steps show inline errors at once. Bind to the outer snapshot's `hasAttemptedNext` when this shell is nested inside a step of an outer shell. |
-| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. |
+| `restoreKey` | `string` | — | When set, the shell automatically saves its full state (data + active step) into the nearest outer `PathShell`'s data under this key on every change, and restores from it on remount. No-op on a top-level shell. The stored value also carries the inner engine's serialized state, so a remount restores in place: no `onEnter` / `onLeave` re-run, attempted / visited state kept. |
 | `services` | `unknown` | — | Arbitrary services object available to step components via `usePathContext<TData, TServices>().services`. |
 
 The default footer's Next/Complete button is never disabled because `canMoveNext` is false — only while the engine is busy (`status !== "idle"`). Tapping it on an invalid step runs `next()`, which marks the step as attempted and surfaces `fieldErrors` without navigating.
