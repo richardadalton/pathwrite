@@ -1063,7 +1063,10 @@ export class PathEngine {
    * reveals its errors at once rather than requiring the user to visit each one.
    */
   public validate(): void {
-    if (this._status !== "idle" || !this.activePath) return;
+    // Settled statuses only. "error" counts: an outer shell whose Next just
+    // failed still needs to reveal the inner tabs' errors, and marking the
+    // engine validated does not touch the pending retry.
+    if ((this._status !== "idle" && this._status !== "error") || !this.activePath) return;
     this._hasValidated = true;
     this.emitStateChanged("validate");
   }

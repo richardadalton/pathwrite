@@ -5054,3 +5054,59 @@ describe("PathEngine — goToStep to a step previously resolved as skipped", () 
     expect(engine.snapshot()?.stepId).toBe("a");
   });
 });
+
+describe("PathEngine — validate() while in error status", () => {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  function failingLeavePath(): PathDefinition {
+    return {
+      id: "p",
+      steps: [
+        { id: "a", onLeave: () => { throw new Error("boom"); } },
+        { id: "b" }
+      ]
+    };
+  }
+
+  it("marks the engine validated and emits, without disturbing the error or its retry", async () => {
+    const engine = new PathEngine();
+    await engine.start(failingLeavePath());
+    await engine.next();
+    expect(engine.snapshot()?.status).toBe("error");
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+
+    engine.validate();
+
+    const s = engine.snapshot()!;
+    expect(s.hasValidated).toBe(true);
+    expect(s.status).toBe("error");
+    expect(s.error?.phase).toBe("leaving");
+    expect(events).toHaveLength(1);
+    expect(events[0].type === "stateChanged" && events[0].cause).toBe("validate");
+    expect(events[0].type === "stateChanged" && events[0].snapshot.hasValidated).toBe(true);
+
+    // The pending retry is intact.
+    await engine.retry();
+    expect(engine.snapshot()?.status).toBe("error");
+    expect(engine.snapshot()?.error?.retryCount).toBe(1);
+  });
+
+  it("is still ignored while a navigation is in flight", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "a", onLeave: async () => { await sleep(10); } }, { id: "b" }] });
+    const nav = engine.next();
+    await new Promise((r) => setTimeout(r, 0));
+    engine.validate();
+    expect(engine.snapshot()?.hasValidated).toBe(false);
+    await nav;
+  });
+
+  it("is still ignored after completion", async () => {
+    const engine = new PathEngine();
+    await engine.start({ id: "p", steps: [{ id: "a" }] });
+    await engine.next();
+    engine.validate();
+    expect(engine.snapshot()?.hasValidated).toBe(false);
+  });
+});
