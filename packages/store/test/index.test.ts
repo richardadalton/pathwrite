@@ -738,3 +738,70 @@ describe("persistence onNext — sub-path return (S5)", () => {
     expect(rec.pathStack).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// completionBehaviour "reset": delete must not land after the fresh save (S6)
+// ---------------------------------------------------------------------------
+
+/** In-memory store with a slow delete and an instant save, logging completion order. */
+class SlowDeleteStore {
+  public records = new Map<string, SerializedPathState>();
+  public completed: string[] = [];
+  private releaseDelete: (() => void) | null = null;
+
+  save(key: string, state: SerializedPathState): Promise<void> {
+    this.records.set(key, JSON.parse(JSON.stringify(state)));
+    this.completed.push("save");
+    return Promise.resolve();
+  }
+  load(key: string): Promise<SerializedPathState | null> { return Promise.resolve(this.records.get(key) ?? null); }
+  delete(key: string): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.releaseDelete = () => { this.records.delete(key); this.completed.push("delete"); resolve(); };
+    });
+  }
+  get deletePending(): boolean { return this.releaseDelete !== null; }
+  release(): void { const r = this.releaseDelete; this.releaseDelete = null; r?.(); }
+}
+
+describe("persistence — completion delete vs. reset save (S6)", () => {
+  const resetting: PathDefinition = { id: "kiosk", steps: [{ id: "a" }, { id: "b" }], completionBehaviour: "reset" };
+
+  it("the fresh session's save lands after the completion delete, so the new session survives", async () => {
+    const store = new SlowDeleteStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onEveryChange" })] });
+    await engine.start(resetting);
+    await engine.next();          // → b
+    await flush();
+    expect(store.records.get("k")?.currentStepIndex).toBe(1);
+
+    await engine.next();          // completes → delete (slow) → restart → fresh save
+    await flush();
+    expect(store.deletePending).toBe(true);
+    store.release();              // the DELETE finally lands
+    await flush();
+    await flush();
+
+    expect(store.completed.slice(-2)).toEqual(["delete", "save"]);
+    expect(store.records.has("k")).toBe(true);
+    expect(store.records.get("k")?.currentStepIndex).toBe(0);
+    expect(store.records.get("k")?._status).toBe("idle");
+  });
+
+  it("with onNext the first next() of the new session also lands after the delete", async () => {
+    const store = new SlowDeleteStore();
+    const engine = new PathEngine({ observers: [persistence({ store, key: "k", strategy: "onNext" })] });
+    await engine.start(resetting);
+    await engine.next();
+    await engine.next();          // completes; delete pending; engine restarted on a
+    await flush();
+    await engine.next();          // new session → b: save requested while delete is pending
+    await flush();
+    store.release();
+    await flush();
+    await flush();
+
+    expect(store.completed.slice(-2)).toEqual(["delete", "save"]);
+    expect(store.records.get("k")?.currentStepIndex).toBe(1);
+  });
+});

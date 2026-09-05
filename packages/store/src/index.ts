@@ -197,22 +197,34 @@ export function persistence(options: PersistenceOptions): PathObserver {
   const debounceMs = options.debounceMs ?? 0;
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  let pendingSave: Promise<void> | null = null;
-  // Set when a save is requested while one is already on the wire. The state
-  // is exported when a save *starts*, so a request that arrives mid-flight
-  // would otherwise be lost — the in-flight save carries the older state and
-  // nothing re-runs for the newer one. When the in-flight save settles (success
-  // or failure) one follow-up save runs with whatever the engine holds then;
-  // several mid-flight requests collapse into that single follow-up.
-  let dirty = false;
+
+  // All store operations for this key run one at a time, in the order they
+  // were requested, whatever the store's own latency. Two things depend on it:
+  //
+  // - A save requested while one is on the wire must run *after* it, with the
+  //   engine's state as it is then; the in-flight save carries older state and
+  //   exports happen when a save starts. Several such requests collapse into a
+  //   single follow-up (`saveQueued`).
+  // - The delete issued on completion must land before any save of the next
+  //   session. With `completionBehaviour: "reset"` the engine restarts (and
+  //   saves) immediately after emitting `completed`; an unserialised DELETE
+  //   that finished after that PUT wiped the new session.
+  let queue: Promise<void> = Promise.resolve();
+  let saveQueued = false;
+
+  /** Runs `op` after every previously queued operation, whether they succeeded or not. */
+  const enqueue = (op: () => Promise<void>): Promise<void> => {
+    queue = queue.then(op, op);
+    return queue;
+  };
 
   const performSave = (engine: PathEngine): Promise<void> => {
-    if (pendingSave) {
-      dirty = true;
-      return pendingSave;
-    }
-
-    pendingSave = (async () => {
+    // A save is already waiting its turn; when it runs it exports the state
+    // current at that moment, so this request is covered by it.
+    if (saveQueued) return queue;
+    saveQueued = true;
+    return enqueue(async () => {
+      saveQueued = false;
       const state = engine.exportState();
       if (!state) return;
       try {
@@ -222,16 +234,15 @@ export function persistence(options: PersistenceOptions): PathObserver {
         const err = error instanceof Error ? error : new Error(String(error));
         options.onSaveError?.(err);
       }
-    })().finally(() => {
-      pendingSave = null;
-      if (dirty) {
-        dirty = false;
-        void performSave(engine);
-      }
     });
-
-    return pendingSave;
   };
+
+  const performDelete = (): Promise<void> =>
+    enqueue(() =>
+      options.store.delete(options.key).catch((err) => {
+        console.warn("[pathwrite] Failed to delete saved state after completion:", err);
+      })
+    );
 
   const scheduleSave = (engine: PathEngine): void => {
     if (debounceMs > 0) {
@@ -278,11 +289,7 @@ export function persistence(options: PersistenceOptions): PathObserver {
 
     if (matchesStrategy(strategy, event)) scheduleSave(engine);
 
-    if (event.type === "completed") {
-      options.store.delete(options.key).catch((err) => {
-        console.warn("[pathwrite] Failed to delete saved state after completion:", err);
-      });
-    }
+    if (event.type === "completed") performDelete();
   };
 }
 
