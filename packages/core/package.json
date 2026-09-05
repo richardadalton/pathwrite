@@ -3,7 +3,7 @@
   "version": "0.13.1",
   "type": "module",
   "license": "MIT",
-  "description": "Headless path engine — deterministic state machine with stack-based sub-path orchestration. Zero dependencies.",
+  "description": "Headless path engine \u2014 deterministic state machine with stack-based sub-path orchestration. Zero dependencies.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
@@ -36,7 +36,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "publishConfig": {
     "access": "public"

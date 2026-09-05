@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.angular/
+.expo/
+.svelte-kit/
+*.tsbuildinfo
+package-lock.json
+CHANGELOG.md
+.changeset/
+docs/
+*.md

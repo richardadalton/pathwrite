@@ -24,7 +24,7 @@
     "test": "vitest run && npm run test:types",
     "test:types": "vitest run --typecheck.only --typecheck.tsconfig tsconfig.typecheck.json && tsc -p tsconfig.tests.json && tsc -p packages/solid-adapter/tsconfig.tests.json",
     "test:watch": "vitest",
-    "prepublish:check": "npm run clean && npm run build && npm test",
+    "prepublish:check": "npm run clean && npm run build && npm run lint && npm run format:check && npm test",
     "release": "npm run prepublish:check && changeset publish",
     "changeset": "changeset",
     "smoke:demos": "node ./scripts/smoke-demos.mjs",
@@ -65,17 +65,26 @@
     "demo:solid:storage": "npm run -w @daltonr/pathwrite-demo-solid-storage start",
     "demo:solid:nested": "npm run -w @daltonr/pathwrite-demo-solid-nested start",
     "demo:solid:async": "npm run -w @daltonr/pathwrite-demo-solid-async start",
-    "demo:rn": "npm run -w @daltonr/pathwrite-demo-rn-showcase start"
+    "demo:rn": "npm run -w @daltonr/pathwrite-demo-rn-showcase start",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
+    "@eslint/js": "^10.0.1",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "@types/node": "^22.13.14",
+    "eslint": "^10.10.0",
     "fast-check": "^4.6.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-svelte": "^4.1.1",
     "svelte": "^5.54.1",
     "svelte-check": "^4.7.6",
     "tsx": "^4.19.3",
     "typescript": "5.4.5",
+    "typescript-eslint": "^8.69.0",
     "vite-plugin-solid": "^2.11.11",
     "vitest": "^3.0.8"
   }

@@ -30,6 +30,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Lint and formatting
+        run: npm run lint && npm run format:check
+
       # vitest (unit + adapter shell tests), then `test:types`: the *.test-d.ts
       # assertions and a tsc pass over every test file.
       - name: Test

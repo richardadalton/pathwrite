@@ -3,7 +3,7 @@
   "version": "0.13.1",
   "type": "module",
   "license": "MIT",
-  "description": "Svelte 5 adapter for @daltonr/pathwrite-core — runes-based reactive bindings and optional PathShell component.",
+  "description": "Svelte 5 adapter for @daltonr/pathwrite-core \u2014 runes-based reactive bindings and optional PathShell component.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
@@ -48,7 +48,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.check.json --fail-on-warnings",
     "build": "npm run check && svelte-package -i src -o dist && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "peerDependencies": {
     "svelte": ">=5.0.0"
