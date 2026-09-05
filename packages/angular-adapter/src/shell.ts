@@ -27,6 +27,7 @@ import {
   PathEvent,
   PathSnapshot,
   ProgressLayout,
+  StepSummary,
   formatFieldKey,
   errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
@@ -193,7 +194,7 @@ export class PathShellCompletionDirective {
       >
         <div class="pw-shell__steps">
           <div
-            *ngFor="let step of s.rootProgress!.steps; let i = index"
+            *ngFor="let step of s.rootProgress!.steps; let i = index; trackBy: trackByStepId"
             class="pw-shell__step"
             [ngClass]="'pw-shell__step--' + step.status"
           >
@@ -224,7 +225,7 @@ export class PathShellCompletionDirective {
         >
           <div class="pw-shell__steps">
             <div
-              *ngFor="let step of s.steps; let i = index"
+              *ngFor="let step of s.steps; let i = index; trackBy: trackByStepId"
               class="pw-shell__step"
               [ngClass]="'pw-shell__step--' + step.status"
             >
@@ -278,7 +279,10 @@ export class PathShellCompletionDirective {
             fieldEntries(s).length > 0
           "
         >
-          <li *ngFor="let entry of fieldEntries(s)" class="pw-shell__validation-item">
+          <li
+            *ngFor="let entry of fieldEntries(s); trackBy: trackByFieldKey"
+            class="pw-shell__validation-item"
+          >
             <span *ngIf="entry[0] !== '_'" class="pw-shell__validation-label">{{
               formatFieldKey(entry[0])
             }}</span
@@ -288,7 +292,10 @@ export class PathShellCompletionDirective {
 
         <!-- Warning messages — non-blocking, shown immediately (no hasAttemptedNext gate) -->
         <ul class="pw-shell__warnings" *ngIf="validationDisplay !== 'inline' && warningEntries(s).length > 0">
-          <li *ngFor="let entry of warningEntries(s)" class="pw-shell__warnings-item">
+          <li
+            *ngFor="let entry of warningEntries(s); trackBy: trackByFieldKey"
+            class="pw-shell__warnings-item"
+          >
             <span *ngIf="entry[0] !== '_'" class="pw-shell__warnings-label">{{
               formatFieldKey(entry[0])
             }}</span
@@ -623,14 +630,44 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     return this.facade.restart();
   }
 
-  /** Returns Object.entries(s.fieldErrors) for use in *ngFor. */
-  protected fieldEntries(s: PathSnapshot): [string, string][] {
-    return Object.entries(s.fieldErrors) as [string, string][];
+  /**
+   * `Object.entries()` of a snapshot's `fieldErrors` / `fieldWarnings`, memoised
+   * on the identity of that object. The template reads these under `*ngIf` and
+   * `*ngFor` on every change-detection pass; without the cache each pass would
+   * allocate a fresh array of fresh tuples and NgForOf would tear down and
+   * rebuild every row. The engine builds a new messages object per snapshot,
+   * so a new snapshot naturally yields new entries. Keyed weakly so old
+   * snapshots are not retained by the shell.
+   */
+  private readonly entriesCache = new WeakMap<Record<string, string>, [string, string][]>();
+
+  private entriesOf(messages: Record<string, string>): [string, string][] {
+    let entries = this.entriesCache.get(messages);
+    if (!entries) {
+      entries = Object.entries(messages);
+      this.entriesCache.set(messages, entries);
+    }
+    return entries;
   }
 
-  /** Returns Object.entries(s.fieldWarnings) for use in *ngFor. */
+  /** Entries of `s.fieldErrors` for use in *ngFor — stable per snapshot. */
+  protected fieldEntries(s: PathSnapshot): [string, string][] {
+    return this.entriesOf(s.fieldErrors);
+  }
+
+  /** Entries of `s.fieldWarnings` for use in *ngFor — stable per snapshot. */
   protected warningEntries(s: PathSnapshot): [string, string][] {
-    return Object.entries(s.fieldWarnings) as [string, string][];
+    return this.entriesOf(s.fieldWarnings);
+  }
+
+  /** `trackBy` for the validation / warning rows: a row is identified by its field key. */
+  protected trackByFieldKey(_index: number, entry: [string, string]): string {
+    return entry[0];
+  }
+
+  /** `trackBy` for the progress step rows: `StepSummary` objects are rebuilt per snapshot, ids are not. */
+  protected trackByStepId(_index: number, step: StepSummary): string {
+    return step.id;
   }
 
   get effectiveHideProgress(): boolean {

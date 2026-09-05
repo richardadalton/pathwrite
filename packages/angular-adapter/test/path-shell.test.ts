@@ -5,6 +5,7 @@ import "@angular/compiler";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { Component, TemplateRef } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
@@ -359,5 +360,145 @@ describe("PathShell (Angular) — empty state and completion markup", () => {
     (el.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
     await settle();
     expect(el.querySelector(".pw-shell__body .pw-shell__completion")).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Validation / warning rows — memoised entries, DOM rows tracked by field key
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Angular) — validation and warning row stability", () => {
+  const path: PathDefinition = {
+    id: "stable",
+    steps: [
+      {
+        id: "form",
+        fieldErrors: ({ data }) => {
+          const errors: Record<string, string> = {};
+          if (!data.name) errors.name = "Name required";
+          if (!data.email) errors.email = "Email required";
+          if (data.email === "bad") errors.email = "Email invalid";
+          return errors;
+        },
+        fieldWarnings: ({ data }) => {
+          const warnings: Record<string, string> = {};
+          if (!data.nickname) warnings.nickname = "Nickname recommended";
+          if (data.nickname === "long") warnings.nickname = "Nickname is long";
+          return warnings;
+        },
+      },
+      { id: "done" },
+    ],
+  };
+
+  async function mount() {
+    @Component({
+      standalone: true,
+      imports: [PathShellComponent, PathStepDirective],
+      template: `
+        <pw-shell [path]="path" [validateWhen]="true" validationDisplay="summary">
+          <ng-template pwStep="form"><div class="form">Form</div></ng-template>
+          <ng-template pwStep="done"><div class="done">Done</div></ng-template>
+        </pw-shell>
+      `,
+    })
+    class Host {
+      path = path;
+    }
+    const fixture = TestBed.createComponent(Host);
+    const settle = async () => {
+      for (let i = 0; i < 4; i++) {
+        fixture.detectChanges();
+        await tick();
+      }
+      fixture.detectChanges();
+    };
+    await settle();
+    const shell = fixture.debugElement.query(By.directive(PathShellComponent))
+      .componentInstance as PathShellComponent;
+    return { fixture, settle, shell: shell as any, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it("fieldEntries returns the same array for the same snapshot and a new one after the errors change", async () => {
+    const { shell } = await mount();
+    const s1 = shell.facade.snapshot();
+    const first = shell.fieldEntries(s1);
+    expect(first).toEqual([
+      ["name", "Name required"],
+      ["email", "Email required"],
+    ]);
+    expect(shell.fieldEntries(s1)).toBe(first);
+
+    await shell.facade.setData("email", "bad");
+    const s2 = shell.facade.snapshot();
+    const second = shell.fieldEntries(s2);
+    expect(second).not.toBe(first);
+    expect(second).toEqual([
+      ["name", "Name required"],
+      ["email", "Email invalid"],
+    ]);
+    expect(shell.fieldEntries(s2)).toBe(second);
+  });
+
+  it("warningEntries returns the same array for the same snapshot and a new one after the warnings change", async () => {
+    const { shell } = await mount();
+    const s1 = shell.facade.snapshot();
+    const first = shell.warningEntries(s1);
+    expect(first).toEqual([["nickname", "Nickname recommended"]]);
+    expect(shell.warningEntries(s1)).toBe(first);
+
+    await shell.facade.setData("nickname", "long");
+    const s2 = shell.facade.snapshot();
+    const second = shell.warningEntries(s2);
+    expect(second).not.toBe(first);
+    expect(second).toEqual([["nickname", "Nickname is long"]]);
+    expect(shell.warningEntries(s2)).toBe(second);
+  });
+
+  it("keeps the error row DOM nodes across a change-detection pass that changes nothing", async () => {
+    const { fixture, el } = await mount();
+    const rows = () => Array.from(el.querySelectorAll(".pw-shell__validation-item"));
+    const before = rows();
+    expect(before).toHaveLength(2);
+
+    fixture.detectChanges();
+    fixture.detectChanges();
+    const after = rows();
+    expect(after).toHaveLength(2);
+    expect(after[0]).toBe(before[0]);
+    expect(after[1]).toBe(before[1]);
+  });
+
+  it("updates the error rows when an error changes, keeping the untouched row's node", async () => {
+    const { shell, settle, el } = await mount();
+    const rows = () => Array.from(el.querySelectorAll(".pw-shell__validation-item"));
+    const before = rows();
+    expect(before.map((r) => r.textContent?.trim())).toEqual(["NameName required", "EmailEmail required"]);
+
+    await shell.facade.setData("email", "bad");
+    await settle();
+    const after = rows();
+    expect(after.map((r) => r.textContent?.trim())).toEqual(["NameName required", "EmailEmail invalid"]);
+    // Tracked by field key: the "name" row is the same node, "email" was updated in place.
+    expect(after[0]).toBe(before[0]);
+    expect(after[1]).toBe(before[1]);
+
+    await shell.facade.setData("name", "Ada");
+    await settle();
+    const afterRemoval = rows();
+    expect(afterRemoval.map((r) => r.textContent?.trim())).toEqual(["EmailEmail invalid"]);
+    expect(afterRemoval[0]).toBe(before[1]);
+  });
+
+  it("keeps the warning row DOM nodes across a change-detection pass that changes nothing", async () => {
+    const { fixture, el } = await mount();
+    const rows = () => Array.from(el.querySelectorAll(".pw-shell__warnings-item"));
+    const before = rows();
+    expect(before).toHaveLength(1);
+
+    fixture.detectChanges();
+    const after = rows();
+    expect(after).toHaveLength(1);
+    expect(after[0]).toBe(before[0]);
   });
 });
