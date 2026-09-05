@@ -86,7 +86,6 @@ import { usePathContext } from "@daltonr/pathwrite-react";
 
 function DetailsForm() {
   const { snapshot, setData } = usePathContext<RegistrationData>();
-  if (!snapshot) return null;
 
   return (
     <input
@@ -98,7 +97,19 @@ function DetailsForm() {
 }
 ```
 
-`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot | null`: under a bare `<PathProvider>` it is `null` until `start()` (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so `if (!snapshot) return null;` is enough to narrow it.
+`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot` — never null — because both providers render their children only while a path is active.
+
+### `<PathProvider>` — a headless shell
+
+`PathProvider` supplies the same context as `PathShell` without rendering any UI. Give it a `path` (started once, on mount, with `initialData`) or an `engine` the parent owns — for example the one `usePath()` in the parent is bound to, or the engine from `restoreOrStart()` — and it renders `children` while a path is active and `fallback` otherwise (before the start resolves, after `cancel()`, after a `"dismiss"` completion).
+
+```tsx
+<PathProvider path={registrationPath} initialData={{ name: "" }} fallback={<Spinner />}>
+  <DetailsForm />
+</PathProvider>
+```
+
+A child cannot start the path itself: the provider (or the engine's owner) does, so `usePathContext().snapshot` is always populated inside.
 
 ---
 

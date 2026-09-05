@@ -88,6 +88,25 @@ export interface UsePathReturn<TData extends PathData = PathData> {
 }
 
 export type PathProviderProps = PropsWithChildren<{
+  /**
+   * The path to start when the provider mounts. Required unless `engine` is
+   * given. Started once, in an effect, with `initialData`.
+   */
+  path?: PathDefinition<any>;
+  /** Initial data for `path`. Ignored when `engine` is given. */
+  initialData?: PathData;
+  /**
+   * An externally managed engine — the one `usePath()` in the parent is bound
+   * to, or the engine returned by `restoreOrStart()`. The provider subscribes
+   * to it but never starts it; the owner does.
+   */
+  engine?: PathEngine;
+  /**
+   * Rendered instead of `children` while there is no active path: before
+   * `start()` resolves, after `cancel()`, and after a `"dismiss"` completion.
+   * Children therefore always see a non-null `snapshot` from `usePathContext()`.
+   */
+  fallback?: ReactNode;
   /** Forwarded to the internal usePath hook. */
   onEvent?: (event: PathEvent) => void;
   /**
@@ -210,12 +229,37 @@ interface PathContextValue {
 const PathContext = createContext<PathContextValue | null>(null);
 
 /**
- * Provides a single `usePath` instance to all descendants.
- * Consume with `usePathContext()`.
+ * A headless `PathShell`: provides the path context to its children without
+ * rendering any UI. Give it a `path` to start (or an `engine` the parent owns)
+ * and it renders `children` only while a path is active, and `fallback`
+ * otherwise — so, exactly as under `PathShell`, `usePathContext().snapshot` is
+ * never null inside.
+ *
+ * ```tsx
+ * <PathProvider path={signupPath} initialData={{ name: "" }} fallback={<Spinner />}>
+ *   <SignupForm />
+ * </PathProvider>
+ * ```
  */
-export function PathProvider({ children, onEvent, services }: PathProviderProps): ReactElement {
-  const path = usePath({ onEvent });
-  return createElement(PathContext.Provider, { value: { path, services: services ?? null } }, children);
+export function PathProvider({ children, path: pathDef, initialData = {}, engine: externalEngine, fallback = null, onEvent, services }: PathProviderProps): ReactElement {
+  if (!pathDef && !externalEngine) {
+    throw new Error("<PathProvider> needs a `path` to start or an `engine` to adopt.");
+  }
+  const path = usePath({ engine: externalEngine, onEvent });
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (pathDef && !externalEngine && !startedRef.current) {
+      startedRef.current = true;
+      void path.start(pathDef, initialData);
+    }
+    // Mount-time start only, like PathShell.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return createElement(
+    PathContext.Provider,
+    { value: { path, services: services ?? null } },
+    path.snapshot ? children : fallback
+  );
 }
 
 /**
@@ -234,17 +278,16 @@ export function PathProvider({ children, onEvent, services }: PathProviderProps)
  * }
  * ```
  */
-export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): UsePathReturn<TData> & { services: TServices } {
+export function usePathContext<TData extends PathData = PathData, TServices = unknown>(): Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices } {
   const ctx = useContext(PathContext);
   if (ctx === null) {
     throw new Error("usePathContext must be used within a <PathProvider>.");
   }
-  // `snapshot` is genuinely nullable here: under a bare <PathProvider> it is
-  // null until start() (and after cancel / a "dismiss" completion). Step
-  // components rendered by <PathShell> only exist while a snapshot does, so
-  // they can narrow with a plain `if (!snapshot) return null;`.
+  // `snapshot` is non-null by construction: both providers of this context —
+  // <PathShell> and <PathProvider> — render their children only while a path
+  // is active (and a fallback / empty state otherwise).
   return {
-    ...(ctx.path as unknown as UsePathReturn<TData>),
+    ...(ctx.path as unknown as Omit<UsePathReturn<TData>, "snapshot"> & { snapshot: PathSnapshot<TData>; services: TServices }),
     services: ctx.services as TServices
   };
 }
@@ -295,14 +338,12 @@ export function useField<TData extends PathData, K extends string & keyof TData>
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, setData]
   );
-  // No active path (bare <PathProvider> before start()): render an empty,
-  // message-free field rather than crash.
-  const showErrors = !!snapshot && (snapshot.hasAttemptedNext || snapshot.hasValidated);
+  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
   return {
-    value: String(snapshot?.data[field] ?? ""),
+    value: String(snapshot.data[field] ?? ""),
     onChange,
     error: showErrors ? snapshot.fieldErrors[field as string] : undefined,
-    warning: snapshot?.fieldWarnings[field as string],
+    warning: snapshot.fieldWarnings[field as string],
   };
 }
 
@@ -334,9 +375,9 @@ export function FieldError({ field, className }: { field: string; className?: st
     return () => inlineCtx?.unclaim(field);
   }, [field, inlineCtx]);
 
-  const showErrors = !!snapshot && (snapshot.hasAttemptedNext || snapshot.hasValidated);
+  const showErrors = snapshot.hasAttemptedNext || snapshot.hasValidated;
   const error = showErrors ? snapshot.fieldErrors[field] : undefined;
-  const warning = snapshot?.fieldWarnings[field];
+  const warning = snapshot.fieldWarnings[field];
   if (error) return createElement("span", { className: cls("pw-field-error", className) }, error);
   if (warning) return createElement("span", { className: cls("pw-field-warning", className) }, warning);
   return null;

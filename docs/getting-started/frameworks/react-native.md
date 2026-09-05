@@ -169,7 +169,6 @@ import { TextInput, Text, View } from "react-native";
 
 export function DetailsStep() {
   const { snapshot, setData } = usePathContext<ApplicationData>();
-  if (!snapshot) return null;
 
   return (
     <View>
@@ -186,7 +185,7 @@ export function DetailsStep() {
 }
 ```
 
-`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot | null`: under a bare `<PathProvider>` it is `null` until `start()` (and after cancel or a `"dismiss"` completion). Step components rendered by `<PathShell>` only exist while a snapshot does, so `if (!snapshot) return null;` is enough to narrow it.
+`usePathContext()` throws if called outside a `<PathProvider>` or `<PathShell>`. Its `snapshot` is typed `PathSnapshot` — never null — because both providers render their children only while a path is active. `PathProvider` is a headless shell: give it a `path` (started on mount with `initialData`) or an `engine` the parent owns, and it renders `children` while a path is active and `fallback` otherwise.
 
 ---
 

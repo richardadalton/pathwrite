@@ -10,8 +10,10 @@
 
 import { createElement } from "react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
+
+afterEach(() => cleanup());
 import { PathDefinition, PathEngine, PathEvent, PathStepContext } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
@@ -326,26 +328,51 @@ describe("usePath — StepChoice", () => {
 // ---------------------------------------------------------------------------
 
 describe("usePathContext", () => {
+  function Probe() {
+    const { snapshot, next } = usePathContext();
+    return createElement("div", null,
+      createElement("p", { "data-testid": "step" }, snapshot.stepId),
+      createElement("button", { onClick: () => next() }, "next")
+    );
+  }
+
   it("throws when used outside a PathProvider", () => {
     expect(() => renderHook(() => usePathContext())).toThrow(
       "usePathContext must be used within a <PathProvider>."
     );
   });
 
-  it("returns the shared path instance from PathProvider", async () => {
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, null, children);
-    const { result } = renderHook(() => usePathContext(), { wrapper });
-    await act(() => result.current.start(twoStepPath()));
-    expect(result.current.snapshot?.stepId).toBe("step1");
+  it("renders the fallback until the path has started, then children with a non-null snapshot", async () => {
+    const { container } = render(createElement(PathProvider, {
+      path: twoStepPath(), fallback: createElement("p", null, "loading")
+    }, createElement(Probe)));
+    expect(container.textContent).toContain("loading");
+    await act(async () => {});
+    expect(screen.getByTestId("step").textContent).toBe("step1");
+    await act(async () => { screen.getByText("next").click(); });
+    expect(screen.getByTestId("step").textContent).toBe("step2");
+  });
+
+  it("adopts an external engine without starting it, and gates children on its snapshot", async () => {
+    const engine = new PathEngine();
+    const { container } = render(createElement(PathProvider, { engine, fallback: createElement("p", null, "not started") }, createElement(Probe)));
+    expect(container.textContent).toContain("not started");
+    await act(async () => { await engine.start(twoStepPath()); });
+    expect(screen.getByTestId("step").textContent).toBe("step1");
+  });
+
+  it("throws when given neither a path nor an engine", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => render(createElement(PathProvider, null, createElement(Probe)))).toThrow(/path|engine/);
+    spy.mockRestore();
   });
 
   it("shares state between two consumers of the same provider", async () => {
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, null, children);
-    const hook1 = renderHook(() => usePathContext(), { wrapper });
-    const hook2 = renderHook(() => usePathContext(), { wrapper: wrapper as any });
-    // Both should see null before start
-    expect(hook1.result.current.snapshot).toBeNull();
+    function A() { return createElement("p", { "data-testid": "a" }, usePathContext().snapshot.stepId); }
+    function B() { return createElement("p", { "data-testid": "b" }, usePathContext().snapshot.stepId); }
+    render(createElement(PathProvider, { path: twoStepPath() }, createElement(A), createElement(B)));
+    await act(async () => {});
+    expect(screen.getByTestId("a").textContent).toBe("step1");
+    expect(screen.getByTestId("b").textContent).toBe("step1");
   });
 });

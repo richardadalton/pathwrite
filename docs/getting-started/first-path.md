@@ -291,7 +291,7 @@ export function RegistrationPath() {
 }
 ```
 
-When using `usePath` directly, step children need access to the engine too. Wrap the flow in a `PathProvider` and call `usePathContext()` in step components, or pass snapshot and setData down as props.
+When using `usePath` directly, step children need access to the engine too. Wrap the flow in a `PathProvider` — give it the `path` to start, or the `engine` your `usePath()` call is bound to — and call `usePathContext()` in step components, or pass snapshot and setData down as props.
 
 ## Next steps
 

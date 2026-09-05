@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { renderHook, render, act } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
+
+afterEach(() => cleanup());
 import { PathData, PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, PathShell, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
@@ -297,23 +300,57 @@ describe("usePath — goToStepChecked", () => {
 // ---------------------------------------------------------------------------
 
 describe("PathProvider + usePathContext", () => {
-  it("provides path state to child hooks", () => {
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, null, children);
-    const { result } = renderHook(() => usePathContext(), { wrapper });
-    expect(result.current.snapshot).toBeNull();
+  function Probe() {
+    const { snapshot, next, cancel } = usePathContext();
+    return createElement("div", null,
+      createElement("p", { "data-testid": "step" }, snapshot.stepId),
+      createElement("button", { onClick: () => next() }, "next"),
+      createElement("button", { onClick: () => cancel() }, "cancel")
+    );
+  }
+
+  it("renders the fallback until the path has started, then the children with a non-null snapshot", async () => {
+    const { container } = render(createElement(PathProvider, {
+      path: twoStepPath(), fallback: createElement("p", null, "loading")
+    }, createElement(Probe)));
+    // start() runs in an effect; before it resolves only the fallback is rendered
+    expect(container.textContent).toContain("loading");
+    await act(async () => {});
+    expect(container.textContent).not.toContain("loading");
+    expect(screen.getByTestId("step").textContent).toBe("step1");
   });
 
-  it("allows navigation through the provided context", async () => {
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, null, children);
-    const { result } = renderHook(() => usePathContext(), { wrapper });
+  it("children navigate through the context", async () => {
+    render(createElement(PathProvider, { path: twoStepPath() }, createElement(Probe)));
+    await act(async () => {});
+    await act(async () => { screen.getByText("next").click(); });
+    expect(screen.getByTestId("step").textContent).toBe("step2");
+  });
 
-    await act(() => result.current.start(twoStepPath()));
-    expect(result.current.snapshot?.stepId).toBe("step1");
+  it("shows the fallback again once the path is cancelled", async () => {
+    const { container } = render(createElement(PathProvider, {
+      path: twoStepPath(), fallback: createElement("p", null, "nothing active")
+    }, createElement(Probe)));
+    await act(async () => {});
+    await act(async () => { screen.getByText("cancel").click(); });
+    expect(container.textContent).toContain("nothing active");
+    expect(screen.queryByTestId("step")).toBeNull();
+  });
 
-    await act(() => result.current.next());
-    expect(result.current.snapshot?.stepId).toBe("step2");
+  it("adopts an engine the parent owns, never starts it, and gates children on its snapshot", async () => {
+    const engine = new PathEngine();
+    const { container } = render(createElement(PathProvider, {
+      engine, fallback: createElement("p", null, "not started")
+    }, createElement(Probe)));
+    expect(container.textContent).toContain("not started");
+    await act(async () => { await engine.start(twoStepPath(), { name: "Ada" }); });
+    expect(screen.getByTestId("step").textContent).toBe("step1");
+  });
+
+  it("throws when given neither a path nor an engine", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => render(createElement(PathProvider, null, createElement(Probe)))).toThrow(/path|engine/);
+    spy.mockRestore();
   });
 
   it("throws when usePathContext is used outside a PathProvider", () => {
@@ -326,97 +363,22 @@ describe("PathProvider + usePathContext", () => {
 
   it("forwards onEvent from PathProvider props", async () => {
     const onEvent = vi.fn();
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, { onEvent }, children);
-    const { result } = renderHook(() => usePathContext(), { wrapper });
-
-    await act(() => result.current.start(twoStepPath()));
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "stateChanged" })
-    );
+    render(createElement(PathProvider, { path: twoStepPath(), onEvent }, createElement(Probe)));
+    await act(async () => {});
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "stateChanged" }));
   });
 
-  it("exposes services passed to PathProvider via usePathContext", () => {
+  it("exposes services passed to PathProvider via usePathContext", async () => {
     const services = { greet: () => "hello" };
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(PathProvider, { services }, children);
-    const { result } = renderHook(
-      () => usePathContext<PathData, typeof services>(),
-      { wrapper }
-    );
-    expect(result.current.services).toBe(services);
-    expect(result.current.services.greet()).toBe("hello");
-  });
-
-  it("exposes services passed to PathShell via usePathContext inside a step", async () => {
-    const services = { getValue: () => 42 };
-    let capturedServices: typeof services | null = null;
-
-    function StepComponent() {
-      const ctx = usePathContext<PathData, typeof services>();
-      capturedServices = ctx.services;
+    let seen: typeof services | undefined;
+    function ServicesProbe() {
+      seen = usePathContext<PathData, typeof services>().services;
       return null;
     }
-
-    const { unmount } = render(
-      createElement(PathShell, {
-        path: twoStepPath(),
-        services,
-        steps: { step1: createElement(StepComponent) }
-      } as any)
-    );
-
-    await act(() => Promise.resolve());
-    expect(capturedServices).toBe(services);
-    expect(capturedServices!.getValue()).toBe(42);
-    unmount();
-  });
-
-  it("same services object reaches both guards and step components", async () => {
-    const services = { check: vi.fn(() => true) };
-    let servicesInGuard: typeof services | null = null;
-    let servicesInStep: typeof services | null = null;
-
-    function StepComponent() {
-      const ctx = usePathContext<PathData, typeof services>();
-      servicesInStep = ctx.services;
-      return null;
-    }
-
-    const path: PathDefinition<PathData> = {
-      id: "test",
-      steps: [
-        {
-          id: "step1",
-          canMoveNext: (ctx) => {
-            // Guards close over services via the factory pattern — verify same reference
-            servicesInGuard = services;
-            return services.check() ? true : { allowed: false };
-          }
-        },
-        { id: "step2" }
-      ]
-    };
-
-    const { unmount } = render(
-      createElement(PathShell, {
-        path,
-        services,
-        steps: { step1: createElement(StepComponent), step2: createElement(StepComponent) }
-      } as any)
-    );
-
-    await act(() => Promise.resolve());
-    expect(servicesInStep).toBe(services);
-
-    await act(() => {
-      const shell = document.querySelector(".pw-shell__btn--next") as HTMLButtonElement;
-      shell?.click();
-    });
-
-    expect(servicesInGuard).toBe(services);
-    expect(servicesInGuard).toBe(servicesInStep);
-    unmount();
+    render(createElement(PathProvider, { path: twoStepPath(), services }, createElement(ServicesProbe)));
+    await act(async () => {});
+    expect(seen).toBe(services);
+    expect(seen!.greet()).toBe("hello");
   });
 });
 

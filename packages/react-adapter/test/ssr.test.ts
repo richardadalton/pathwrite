@@ -41,7 +41,17 @@ describe("React adapter — server-side rendering", () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  it("useField and <FieldError> render on the server without warnings", () => {
+  it("PathProvider renders its fallback on the server (start() only runs in a client effect)", () => {
+    const html = renderToString(createElement(PathProvider, { path, fallback: createElement("p", null, "loading") }, createElement("p", null, "child")));
+    expect(html).toContain("loading");
+    expect(html).not.toContain("child");
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("useField and <FieldError> render on the server under an already-started engine, without warnings", async () => {
+    const { PathEngine } = await import("@daltonr/pathwrite-core");
+    const engine = new PathEngine();
+    await engine.start(path, { name: "" });
     function NameField() {
       const name = useField<{ name: string; [k: string]: unknown }, "name">("name");
       return createElement("div", null,
@@ -49,19 +59,9 @@ describe("React adapter — server-side rendering", () => {
         createElement(FieldError, { field: "name" })
       );
     }
-    const html = renderToString(createElement(PathProvider, null, createElement(NameField)));
+    const html = renderToString(createElement(PathProvider, { engine }, createElement(NameField)));
     expect(html).toContain("<input");
-    // useLayoutEffect on the server logs "useLayoutEffect does nothing on the server"
-    expect(errorSpy).not.toHaveBeenCalled();
-  });
-
-  it("usePathContext under a server-rendered PathProvider sees a null snapshot", () => {
-    function Probe() {
-      const { snapshot } = usePathContext();
-      return createElement("p", null, snapshot ? "active" : "no path");
-    }
-    const html = renderToString(createElement(PathProvider, null, createElement(Probe)));
-    expect(html).toContain("no path");
+    // useLayoutEffect on the server would log "useLayoutEffect does nothing on the server"
     expect(errorSpy).not.toHaveBeenCalled();
   });
 });
