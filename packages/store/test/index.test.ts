@@ -47,7 +47,7 @@ function make404Fetch() {
 
 describe("HttpStore", () => {
   /** The store hands fetch a Headers object; read it back as a plain record for assertions. */
-  function headersOf(mockFetch: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, string> {
+  function headersOf(mockFetch: { mock: { calls: unknown[][] } }, callIndex = 0): Record<string, string> {
     const init = mockFetch.mock.calls[callIndex][1] as RequestInit;
     const out: Record<string, string> = {};
     new Headers(init.headers).forEach((v, k) => { out[k] = v; });
@@ -554,7 +554,7 @@ describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
 
   async function attempt(store: MemoryStore, extra: Record<string, unknown> = {}) {
     const errors: Error[] = [];
-    const result = await restoreOrStart({ store, key: "k", path, initialData: { name: "" }, onRestoreError: (e) => errors.push(e), ...extra } as any);
+    const result = await restoreOrStart({ store, key: "k", path, initialData: { name: "" }, onRestoreError: (e: Error) => errors.push(e), ...extra } as any);
     return { ...result, errors };
   }
 
@@ -628,10 +628,10 @@ describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
 
 describe("HttpStore — HeadersInit forms (S4)", () => {
   /** Read a header from whatever shape the store handed to fetch. */
-  function sent(fetchMock: ReturnType<typeof vi.fn>, method: string, name: string): string | null {
-    const call = fetchMock.mock.calls.find((c) => c[1]?.method === method);
+  function sent(fetchMock: { mock: { calls: unknown[][] } }, method: string, name: string): string | null {
+    const call = fetchMock.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === method);
     expect(call, `${method} request`).toBeDefined();
-    return new Headers(call![1].headers as HeadersInit).get(name);
+    return new Headers((call![1] as RequestInit).headers).get(name);
   }
 
   async function exercise(headers: HttpStoreOptions["headers"]) {

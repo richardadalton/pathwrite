@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathStatus, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
+import { GuardResult, PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot, PathStatus, PathStep, SerializedPathState, StepChoice, matchesStrategy } from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -5284,7 +5284,7 @@ describe("matchesStrategy — onNext covers the return from a sub-path", () => {
 });
 
 describe("PathEngine — every GuardResult form", () => {
-  function guarded(result: GuardResult | (() => GuardResult)): PathDefinition {
+  function guarded(result: GuardResult | (() => GuardResult | Promise<GuardResult>)): PathDefinition {
     const fn = typeof result === "function" ? result : () => result;
     return { id: "g", steps: [{ id: "a", canMoveNext: fn }, { id: "b" }] };
   }

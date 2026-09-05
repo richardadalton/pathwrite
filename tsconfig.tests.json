@@ -1,0 +1,51 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@daltonr/pathwrite-core": [
+        "packages/core/src/index.ts"
+      ],
+      "@daltonr/pathwrite-react": [
+        "packages/react-adapter/src/index.ts"
+      ],
+      "@daltonr/pathwrite-react-native": [
+        "packages/react-native-adapter/src/index.tsx"
+      ],
+      "@daltonr/pathwrite-vue": [
+        "packages/vue-adapter/src/index.ts"
+      ],
+      "@daltonr/pathwrite-svelte": [
+        "packages/svelte-adapter/src/index.svelte.ts"
+      ],
+      "@daltonr/pathwrite-solid": [
+        "packages/solid-adapter/src/index.tsx"
+      ],
+      "@daltonr/pathwrite-angular": [
+        "packages/angular-adapter/src/index.ts"
+      ],
+      "@daltonr/pathwrite-angular/shell": [
+        "packages/angular-adapter/src/shell.ts"
+      ],
+      "@daltonr/pathwrite-demo-workflow-job-application": [
+        "apps/shared-workflows/demo-workflow-job-application/src/index.ts"
+      ],
+      "react-native": [
+        "packages/react-native-adapter/test/__mocks__/react-native.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/*/test/**/*.ts",
+    "packages/*/test/**/*.tsx"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "packages/solid-adapter/**",
+    "packages/pathwrite-services/**"
+  ]
+}

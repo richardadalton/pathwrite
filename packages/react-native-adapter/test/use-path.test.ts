@@ -12,7 +12,7 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { PathDefinition, PathEngine, PathEvent } from "@daltonr/pathwrite-core";
+import { PathDefinition, PathEngine, PathEvent, PathStepContext } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, usePathContext } from "../src/index";
 import type { UsePathOptions } from "../src/index";
 
@@ -233,7 +233,7 @@ describe("usePath — events", () => {
     const { result } = renderHook(() => usePath({ onEvent }));
     await act(() => result.current.start(twoStepPath()));
     const stateChangedCount = onEvent.mock.calls.filter(
-      ([e]: [PathEvent]) => e.type === "stateChanged"
+      (call) => (call[0] as PathEvent).type === "stateChanged"
     ).length;
     expect(stateChangedCount).toBeGreaterThanOrEqual(1);
   });
@@ -306,7 +306,7 @@ describe("usePath — StepChoice", () => {
       steps: [
         {
           id: "pick",
-          select: ({ data }) => (data as any).type === "a" ? "form-a" : "form-b",
+          select: ({ data }: PathStepContext) => (data as any).type === "a" ? "form-a" : "form-b",
           steps: [
             { id: "form-a" },
             { id: "form-b" },

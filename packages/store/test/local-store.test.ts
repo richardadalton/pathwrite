@@ -15,8 +15,7 @@ const mockState: SerializedPathState = {
   currentStepIndex: 1,
   data: { name: "Alice", email: "alice@example.com" },
   visitedStepIds: ["step1", "step2"],
-  pathStack: [],
-  _isNavigating: false,
+  pathStack: [], _status: "idle",
 };
 
 const simplePath: PathDefinition = {
@@ -287,7 +286,7 @@ describe("LocalStorageStore — integration with persistence and restoreOrStart"
     const savedState: SerializedPathState = {
       version: 1, pathId: "simple", currentStepIndex: 1,
       data: { name: "Restored" }, visitedStepIds: ["step1", "step2"],
-      pathStack: [], _isNavigating: false,
+      pathStack: [], _status: "idle",
     };
     await store.save("rw", savedState);
     const { engine, restored } = await restoreOrStart({

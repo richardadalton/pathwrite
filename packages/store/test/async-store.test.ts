@@ -13,8 +13,7 @@ const mockState: SerializedPathState = {
   currentStepIndex: 1,
   data: { name: "Alice", email: "alice@example.com" },
   visitedStepIds: ["step1", "step2"],
-  pathStack: [],
-  _isNavigating: false,
+  pathStack: [], _status: "idle",
 };
 
 /** Creates a fresh in-memory AsyncStorageAdapter spy. */

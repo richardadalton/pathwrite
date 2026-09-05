@@ -727,7 +727,7 @@ describe("PathShell — restoreKey", () => {
     await act(async () => screen.getByText("Next").click());
 
     expect(screen.getByText("Inner Content B")).toBeTruthy();
-    const stored = capturedOuterCtx?.snapshot.data.inner as PathSnapshot | undefined;
+    const stored = capturedOuterCtx?.snapshot?.data.inner as PathSnapshot | undefined;
     expect(stored?.stepId).toBe("inner-b");
   });
 

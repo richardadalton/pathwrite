@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { PathEngine } from "@daltonr/pathwrite-core";
+import type { PathStep, StepChoice } from "@daltonr/pathwrite-core";
 
 // Demo path definitions live in apps/. All adapter imports there are type-only
 // (import type ...) so they are stripped at runtime and cause no resolution issue.
@@ -42,13 +43,13 @@ async function traversePath(
 // ---------------------------------------------------------------------------
 
 describe("workflow demo — subscriptionPath skip conditions", () => {
-  const paymentStep   = subscriptionPath.steps.find(s => s.id === "payment")!;
-  const billingStep   = subscriptionPath.steps.find(s => s.id === "billing-address")!;
+  const paymentStep   = subscriptionPath.steps.find(s => s.id === "payment")! as PathStep<any>;
+  const billingStep   = subscriptionPath.steps.find(s => s.id === "billing-address")! as PathStep<any>;
 
   it("payment.shouldSkip is true ↔ plan === 'free', for any plan value", async () => {
     await fc.assert(fc.asyncProperty(
       fc.oneof(fc.constant("free"), fc.constant("paid"), fc.string()),
-      (plan) => {
+      async (plan) => {
         const result = paymentStep.shouldSkip!({ data: { plan } } as any);
         expect(result).toBe(plan === "free");
       }
@@ -59,7 +60,7 @@ describe("workflow demo — subscriptionPath skip conditions", () => {
     await fc.assert(fc.asyncProperty(
       fc.oneof(fc.constant("free"), fc.constant("paid"), fc.string()),
       fc.boolean(),
-      (plan, billingSameAsShipping) => {
+      async (plan, billingSameAsShipping) => {
         const result = billingStep.shouldSkip!({ data: { plan, billingSameAsShipping } } as any);
         expect(result).toBe(plan === "free" || billingSameAsShipping === true);
       }
@@ -124,14 +125,14 @@ describe("workflow demo — subscriptionPath skip conditions", () => {
 
 describe("workflow demo — onboardingPath guard consistency", () => {
   it("about-you: canMoveNext and fieldErrors never disagree (no silent block, no unguarded proceed)", async () => {
-    const step = onboardingPath.steps.find(s => s.id === "about-you")!;
+    const step = onboardingPath.steps.find(s => s.id === "about-you")! as PathStep<any>;
 
     await fc.assert(fc.asyncProperty(
       fc.record({
         jobTitle:   fc.string({ maxLength: 50 }),
         experience: fc.oneof(fc.constant(""), fc.string({ minLength: 1, maxLength: 20 })),
       }),
-      ({ jobTitle, experience }) => {
+      async ({ jobTitle, experience }) => {
         const ctx = {
           data: {
             firstName: "x", lastName: "x", email: "x@x.x",
@@ -161,13 +162,13 @@ describe("workflow demo — onboardingPath guard consistency", () => {
 // ---------------------------------------------------------------------------
 
 describe("workflow demo — addressPath StepChoice routing", () => {
-  const addressStep = addressPath.steps.find(s => s.id === "address")!;
+  const addressStep = addressPath.steps.find(s => s.id === "address")! as StepChoice<any>;
   const validStepIds = addressStep.steps!.map(s => s.id);
 
   it("select always returns a valid child step ID for any country string", async () => {
     await fc.assert(fc.asyncProperty(
       fc.string(),
-      (country) => {
+      async (country) => {
         const selected = addressStep.select!({ data: { ...ADDRESS_INITIAL, country } } as any);
         expect(validStepIds).toContain(selected);
       }
@@ -177,7 +178,7 @@ describe("workflow demo — addressPath StepChoice routing", () => {
   it("select returns 'address-us' only for country === 'US'; everything else routes to 'address-ie'", async () => {
     await fc.assert(fc.asyncProperty(
       fc.string(),
-      (country) => {
+      async (country) => {
         const selected = addressStep.select!({ data: { ...ADDRESS_INITIAL, country } } as any);
         if (country === "US") {
           expect(selected).toBe("address-us");
@@ -194,12 +195,12 @@ describe("workflow demo — addressPath StepChoice routing", () => {
 // ---------------------------------------------------------------------------
 
 describe("workflow demo — skipPath shouldSkip", () => {
-  const optionalStep = skipPath.steps.find(s => s.id === "optional")!;
+  const optionalStep = skipPath.steps.find(s => s.id === "optional")! as PathStep<any>;
 
   it("optional.shouldSkip ↔ skipOptional for any boolean value", async () => {
     await fc.assert(fc.asyncProperty(
       fc.boolean(),
-      (skipOptional) => {
+      async (skipOptional) => {
         const result = optionalStep.shouldSkip!({ data: { name: "test", skipNext: skipOptional } } as any);
         expect(result).toBe(skipOptional);
       }
@@ -219,7 +220,7 @@ describe("workflow demo — coursePath quiz scoring", () => {
         fc.string({ minLength: 1, maxLength: 10 }),
         fc.string({ minLength: 1, maxLength: 10 }),
       ),
-      (topicId, answers) => {
+      async (topicId, answers) => {
         const data = {
           ...COURSE_INITIAL,
           quizAnswers: { ...COURSE_INITIAL.quizAnswers, [topicId]: answers },
@@ -238,7 +239,7 @@ describe("workflow demo — coursePath quiz scoring", () => {
     await fc.assert(fc.asyncProperty(
       fc.constantFrom(...TOPIC_IDS),
       fc.integer({ min: 0, max: 2 }), // 0, 1, or 2 correct answers — never all 3
-      (topicId, numCorrect) => {
+      async (topicId, numCorrect) => {
         const topic = TOPICS[topicId];
         const answers = Object.fromEntries(
           topic.quizQuestions.map((q, i) => [q.id, i < numCorrect ? q.correctOptionId : "wrong"])
@@ -260,7 +261,7 @@ describe("workflow demo — coursePath quiz scoring", () => {
   it("getQuizScore === 100 iff every question is answered correctly", async () => {
     await fc.assert(fc.asyncProperty(
       fc.constantFrom(...TOPIC_IDS),
-      (topicId) => {
+      async (topicId) => {
         const topic = TOPICS[topicId];
         const allCorrect = Object.fromEntries(
           topic.quizQuestions.map(q => [q.id, q.correctOptionId])
@@ -280,7 +281,7 @@ describe("workflow demo — coursePath quiz scoring", () => {
 // ---------------------------------------------------------------------------
 
 describe("workflow demo — contactFormPath field warnings", () => {
-  const step = contactFormPath.steps[0];
+  const step = contactFormPath.steps[0] as PathStep<any>;
   const validBase = { name: "Test", subject: "support", message: "x".repeat(10) };
 
   it("gmail typo detector fires for all four known misspellings", async () => {
@@ -288,7 +289,7 @@ describe("workflow demo — contactFormPath field warnings", () => {
       fc.constantFrom("gmial", "gmali", "gmal", "gamil"),
       fc.string({ minLength: 1, maxLength: 20 }).filter(s => /^[a-z0-9]+$/i.test(s)),
       fc.string({ minLength: 2, maxLength: 10 }).filter(s => /^[a-z0-9]+$/i.test(s)),
-      (misspelling, localPart, tld) => {
+      async (misspelling, localPart, tld) => {
         const email = `${localPart}@${misspelling}.${tld}`;
         const warnings = step.fieldWarnings!({ data: { ...validBase, email } } as any);
         expect(warnings.email).toBeTruthy();
@@ -299,7 +300,7 @@ describe("workflow demo — contactFormPath field warnings", () => {
   it("gmail typo detector never fires for @gmail.com addresses", async () => {
     await fc.assert(fc.asyncProperty(
       fc.string({ minLength: 1, maxLength: 30 }).filter(s => /^[a-z0-9.+_-]+$/i.test(s)),
-      (localPart) => {
+      async (localPart) => {
         const email = `${localPart}@gmail.com`;
         const warnings = step.fieldWarnings!({ data: { ...validBase, email } } as any);
         expect(warnings.email).toBeUndefined();
@@ -313,7 +314,7 @@ describe("workflow demo — contactFormPath field warnings", () => {
 // ---------------------------------------------------------------------------
 
 describe("workflow demo — approvalWorkflowPath approval gate", () => {
-  const reviewStep = approvalWorkflowPath.steps.find(s => s.id === "approval-review")!;
+  const reviewStep = approvalWorkflowPath.steps.find(s => s.id === "approval-review")! as PathStep<any>;
 
   it("approval-review is blocked while any selected approver has no decision", async () => {
     const arbApprovers = fc.uniqueArray(
@@ -324,7 +325,7 @@ describe("workflow demo — approvalWorkflowPath approval gate", () => {
     await fc.assert(fc.asyncProperty(
       arbApprovers,
       arbApprovers,
-      (selectedApprovers, decidedSubset) => {
+      async (selectedApprovers, decidedSubset) => {
         // Build a results map from the intersection of decided ∩ selected
         const decided = decidedSubset.filter(id => selectedApprovers.includes(id));
         const results = Object.fromEntries(

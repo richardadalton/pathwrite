@@ -482,7 +482,11 @@ describe("usePathContext / setPathContext", () => {
       goToStep: path.goToStep,
       goToStepChecked: path.goToStepChecked,
       setData: path.setData,
-      restart: async () => {}
+      resetStep: path.resetStep,
+      restart: async () => {},
+      retry: async () => {},
+      suspend: async () => {},
+      services: null
     };
 
     setPathContext(ctx);
@@ -502,7 +506,11 @@ describe("usePathContext / setPathContext", () => {
       goToStep: path.goToStep,
       goToStepChecked: path.goToStepChecked,
       setData: path.setData,
-      restart: async () => {}
+      resetStep: path.resetStep,
+      restart: async () => {},
+      retry: async () => {},
+      suspend: async () => {},
+      services: null
     });
 
     const ctx = usePathContext();
