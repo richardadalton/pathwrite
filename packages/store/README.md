@@ -8,7 +8,7 @@ HTTP, localStorage, and AsyncStorage persistence for Pathwrite.
 npm install @daltonr/pathwrite-store
 ```
 
-`AsyncStorageStore` additionally requires `@react-native-async-storage/async-storage`, which is not installed automatically.
+`AsyncStorageStore` takes the storage instance as a constructor option (`new AsyncStorageStore({ storage: AsyncStorage })`), so your app installs `@react-native-async-storage/async-storage` itself — it is not a dependency of this package.
 
 ## Quick start
 
@@ -51,7 +51,7 @@ if (restored) {
 |---|---|---|
 | `HttpStore` | `@daltonr/pathwrite-store` | REST API backend (browser or Node). |
 | `LocalStorageStore` | `@daltonr/pathwrite-store` | Browser `localStorage` or `sessionStorage`. Falls back to in-memory in Node/test environments. |
-| `AsyncStorageStore` | `@daltonr/pathwrite-store` | React Native. Requires `@react-native-async-storage/async-storage` as a peer dependency. |
+| `AsyncStorageStore` | `@daltonr/pathwrite-store` | React Native. Pass your `@react-native-async-storage/async-storage` instance as the `storage` option; the package declares no dependency on it. |
 
 All three implement the `PathStore` interface from `@daltonr/pathwrite-core` (`save`, `load`, `delete`) and are interchangeable as far as `persistence()` and `restoreOrStart()` are concerned.
 

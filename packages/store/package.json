@@ -33,6 +33,7 @@
   ],
   "author": "Richard Dalton",
   "license": "MIT",
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "https://github.com/daltonr/pathwrite.git",

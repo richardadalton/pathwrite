@@ -80,7 +80,7 @@ Saves when a sub-path finishes and the parent path resumes. This is the natural 
 persistence({ store, key: "user:123:onboarding", strategy: "onComplete" })
 ```
 
-Saves a single record when the path completes — nothing mid-flow. Use this when you only want to capture the final submitted state for audit purposes, not to enable resumption. Unlike every other strategy, `"onComplete"` does *not* delete the record after saving, since the record is the point. The record is a normal `SerializedPathState` with `_status: "completed"` and the final `data`; `restoreOrStart` recognises it and starts fresh rather than resuming a finished path.
+Saves a single record when the path completes — nothing mid-flow. Use this when you only want to capture the final submitted state for audit purposes, not to enable resumption. Unlike every other strategy, `"onComplete"` does *not* delete the record after saving, since the record is the point. The record is a normal `SerializedPathState` with `_status: "completed"` and the final `data`; `restoreOrStart` recognises it and starts fresh rather than resuming a finished path. Ordering matters: the record is written on the `completed` event, which the engine emits only after `PathDefinition.onComplete` has resolved — so if `onComplete` throws, the path is in the error state and nothing is saved until a `retry()` succeeds.
 
 ### `"manual"`
 
