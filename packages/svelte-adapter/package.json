@@ -44,7 +44,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "svelte-package -i src -o dist && cp ../shell.css dist/index.css",
+    "check": "svelte-check --tsconfig ./tsconfig.check.json --fail-on-warnings",
+    "build": "npm run check && svelte-package -i src -o dist && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "test -d dist && echo 'dist already built, skipping' || (npm run clean && npm run build)"
   },

@@ -115,7 +115,7 @@
     }
   });
 
-  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, restart: restartFn, retry, suspend } = pathReturn;
+  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart: restartFn, retry, suspend } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
@@ -126,7 +126,8 @@
     goToStep,
     goToStepChecked,
     setData,
-    restart: () => restartFn(path, initialData),
+    resetStep,
+    restart: () => restartFn(),
     retry,
     suspend,
     get services() { return services; },
@@ -134,8 +135,13 @@
 
   // Dev-mode warning: camelCase callback props are silently ignored in Svelte.
   // Warn if the user passed onComplete/onCancel/onEvent instead of the correct
-  // lowercase forms oncomplete/oncancel/onevent.
-  if (import.meta.env?.DEV !== false) {
+  // lowercase forms oncomplete/oncancel/onevent. Runs once, on mount (a closure
+  // — reading the props at the top level would only capture their initial value).
+  // `import.meta.env` is a bundler convention (Vite); the cast keeps this
+  // package free of Vite's ambient types.
+  const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV !== false;
+  onMount(() => {
+    if (!isDev) return;
     const camelCallbacks = ['onComplete', 'onCancel', 'onEvent'] as const;
     for (const name of camelCallbacks) {
       if (name in stepSnippets) {
@@ -144,12 +150,13 @@
         );
       }
     }
-  }
+  });
 
   // Auto-start the path when no external engine is provided
   let started = false;
   onMount(() => {
     if (autoStart && !started && !engineProp) {
+      if (!path) throw new Error('[PathShell] "path" is required when no "engine" is provided');
       started = true;
       let startData: PathData = initialData ?? {};
       let restoreStepId: string | undefined;
@@ -180,7 +187,7 @@
   }
 
   let snap = $derived(pathReturn.snapshot);
-  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(path, initialData), retry, suspend });
+  let actions = $derived({ next, previous, cancel, goToStep, goToStepChecked, setData, restart: () => restartFn(), retry, suspend });
 
   let effectiveHideProgress = $derived(hideProgress || layout === 'tabs');
   let effectiveHideFooter = $derived(hideFooter || layout === 'tabs');
@@ -202,7 +209,7 @@
    * ```
    */
   export function restart(): Promise<void> {
-    return pathReturn.restart(path, initialData);
+    return pathReturn.restart();
   }
 </script>
 
@@ -211,7 +218,7 @@
     <div class="pw-shell__empty">
       <p>No active path.</p>
       {#if !autoStart}
-        <button type="button" class="pw-shell__start-btn" onclick={() => start(path, initialData)}>
+        <button type="button" class="pw-shell__start-btn" onclick={() => path && start(path, initialData)}>
           Start
         </button>
       {/if}
@@ -239,7 +246,7 @@
       {:else}
         <div class="pw-shell__completion">
           <p class="pw-shell__completion-message">All done.</p>
-          <button type="button" class="pw-shell__completion-restart" onclick={() => restartFn(path, initialData)}>
+          <button type="button" class="pw-shell__completion-restart" onclick={() => restartFn()}>
             Start over
           </button>
         </div>

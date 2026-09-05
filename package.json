@@ -73,6 +73,7 @@
     "@types/node": "^22.13.14",
     "fast-check": "^4.6.0",
     "svelte": "^5.54.1",
+    "svelte-check": "^4.7.6",
     "tsx": "^4.19.3",
     "typescript": "5.4.5",
     "vite-plugin-solid": "^2.11.11",

@@ -55,3 +55,26 @@ describe("PathShell (Svelte) — validateWhen true at mount", () => {
     expect(container.textContent).toContain("Required");
   });
 });
+
+// ---------------------------------------------------------------------------
+// restart() from the completion panel (review finding A8 — the shell called
+// restart(path, initialData) against a zero-argument signature)
+// ---------------------------------------------------------------------------
+
+describe("PathShell (Svelte) — restart from the completion panel", () => {
+  it("Start over restarts from step 1 with the original initial data", async () => {
+    const path: PathDefinition = { id: "p", steps: [{ id: "step-a" }, { id: "step-b" }] };
+    render({ path, initialData: { name: "Ada" }, stepA: StepA, stepB: StepB });
+    await tick();
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+    (container.querySelector(".pw-shell__btn--next") as HTMLButtonElement).click();
+    await tick();
+    expect(container.querySelector(".pw-shell__completion")).not.toBeNull();
+
+    (container.querySelector(".pw-shell__completion-restart") as HTMLButtonElement).click();
+    await tick();
+    expect(container.querySelector(".pw-shell__completion")).toBeNull();
+    expect(container.querySelector(".step-a")).not.toBeNull();
+  });
+});

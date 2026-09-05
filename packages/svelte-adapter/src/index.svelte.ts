@@ -217,7 +217,8 @@ export function usePath<TData extends PathData = PathData>(
 const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
 
 export interface PathContext<TData extends PathData = PathData, TServices = unknown> {
-  readonly snapshot: PathSnapshot<TData>;
+  /** `null` when no path is active (before start, after cancel or a "dismiss" completion). Narrow with `{#if ctx.snapshot}`. */
+  readonly snapshot: PathSnapshot<TData> | null;
   next: () => Promise<void>;
   previous: () => Promise<void>;
   cancel: () => Promise<void>;
