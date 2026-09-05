@@ -4708,3 +4708,80 @@ describe("PathEngine — completion snapshot when the last step is skipped", () 
     expect(snap.stepIndex).toBe(0);
   });
 });
+
+describe("PathEngine — suspend() only acts on a settled engine", () => {
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it("suspends from idle: clears nothing, emits suspended, stays idle", async () => {
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+    await engine.start(twoStepPath());
+    await engine.suspend();
+    expect(events.filter((e) => e.type === "suspended")).toHaveLength(1);
+    expect(engine.snapshot()?.status).toBe("idle");
+  });
+
+  it("suspends from error: clears the error and the pending retry", async () => {
+    const engine = new PathEngine();
+    await engine.start({
+      id: "p",
+      steps: [{ id: "a", onLeave: () => { throw new Error("boom"); } }, { id: "b" }]
+    });
+    await engine.next();
+    expect(engine.snapshot()?.status).toBe("error");
+    await engine.suspend();
+    expect(engine.snapshot()?.status).toBe("idle");
+    expect(engine.snapshot()?.error).toBeNull();
+    await engine.retry(); // nothing pending → no-op
+    expect(engine.snapshot()?.stepId).toBe("a");
+  });
+
+  it("is a no-op after completion, so a later next() cannot run onComplete again", async () => {
+    const onComplete = vi.fn();
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+    await engine.start({ id: "p", steps: [{ id: "a" }], onComplete });
+    await engine.next();
+    expect(engine.snapshot()?.status).toBe("completed");
+
+    await engine.suspend();
+    expect(engine.snapshot()?.status).toBe("completed");
+    expect(events.filter((e) => e.type === "suspended")).toHaveLength(0);
+
+    await engine.next();
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("is a no-op while a navigation is in flight; the navigation still completes normally", async () => {
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+    await engine.start({
+      id: "p",
+      steps: [{ id: "a", onLeave: async () => { await sleep(20); } }, { id: "b" }]
+    });
+
+    const nav = engine.next();
+    await tick();
+    expect(engine.snapshot()?.status).toBe("leaving");
+
+    await engine.suspend();
+    expect(engine.snapshot()?.status).toBe("leaving"); // not reset to idle
+    expect(events.filter((e) => e.type === "suspended")).toHaveLength(0);
+
+    await nav;
+    expect(engine.snapshot()?.status).toBe("idle");
+    expect(engine.snapshot()?.stepId).toBe("b");
+  });
+
+  it("still emits suspended when no path is active (the engine is idle)", async () => {
+    const engine = new PathEngine();
+    const events: PathEvent[] = [];
+    engine.subscribe((e) => events.push(e));
+    await engine.suspend();
+    expect(events.filter((e) => e.type === "suspended")).toHaveLength(1);
+  });
+});

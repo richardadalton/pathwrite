@@ -902,8 +902,15 @@ export class PathEngine {
    * has crossed `retryThreshold`. The `suspended` event signals the app to dismiss
    * the UI; Pathwrite's persistence layer handles saving progress automatically via
    * the configured store and observer strategy.
+   *
+   * Only a settled engine can be suspended: no-op while a navigation is in
+   * flight (`entering` / `validating` / `leaving` / `completing`) or after the
+   * path has `completed`. Suspending mid-operation would reset the status and
+   * let the in-flight navigation land on a supposedly suspended engine;
+   * suspending a completed path would let a later `next()` run `onComplete` again.
    */
   public suspend(): Promise<void> {
+    if (this._status !== "idle" && this._status !== "error") return Promise.resolve();
     const active = this.activePath;
     const pathId = active?.definition.id ?? "";
     const data = active ? { ...active.data } : {};
