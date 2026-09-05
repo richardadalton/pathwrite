@@ -217,25 +217,12 @@ export function usePath<TData extends PathData = PathData>(
 
 const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
 
-export interface PathContext<TData extends PathData = PathData, TServices = unknown> {
-  /** `null` when no path is active (before start, after cancel or a "dismiss" completion). Narrow with `{#if ctx.snapshot}`. */
-  readonly snapshot: PathSnapshot<TData> | null;
-  next: () => Promise<void>;
-  previous: () => Promise<void>;
-  cancel: () => Promise<void>;
-  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
-  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
-  setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
-  resetStep: () => Promise<void>;
-  restart: () => Promise<void>;
-  /** Re-run the operation that set `snapshot.error`. */
-  retry: () => Promise<void>;
-  /** Pause with intent to return, preserving all state. Emits `suspended`. */
-  suspend: () => Promise<void>;
-  /**
-   * Services object passed through context from `PathShell`.
-   * Typed as `TServices` when `usePathContext<TData, TServices>()` is used.
-   */
+/**
+ * What step components receive from `usePathContext()`: everything `usePath()`
+ * returns (derived from `UsePathReturn`, so the two cannot drift apart) plus
+ * the `services` object given to `<PathShell>`.
+ */
+export interface PathContext<TData extends PathData = PathData, TServices = unknown> extends UsePathReturn<TData> {
   services: TServices;
 }
 

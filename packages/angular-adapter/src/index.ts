@@ -177,44 +177,27 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
  * path state and strongly-typed navigation actions. Mirrors React's `usePathContext()`
  * return type for consistency across adapters.
  */
-export interface UsePathContextReturn<TData extends PathData = PathData, TServices = unknown> {
-  /** Current path snapshot as a signal. Returns `null` when no path is active. */
-  snapshot: Signal<PathSnapshot<TData> | null>;
-  /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
-  /** Push a sub-path onto the stack. */
-  startSubPath: (path: PathDefinition<any>, initialData?: PathData, meta?: Record<string, unknown>) => Promise<void>;
-  /** Advance one step. Completes the path on the last step. */
-  next: () => Promise<void>;
-  /** Go back one step. No-op when already on the first step. */
-  previous: () => Promise<void>;
-  /** Cancel the active path (or sub-path). */
-  cancel: () => Promise<void>;
-  /** Update a single data field. */
-  setData: <K extends string & keyof TData>(key: K, value: TData[K]) => Promise<void>;
-  /** Reset the current step's data to what it was when the step was entered. */
-  resetStep: () => Promise<void>;
-  /** Jump to a step by ID without checking guards. Pass `{ validateOnLeave: true }` to mark the departing step as attempted before navigating. */
-  goToStep: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
-  /** Jump to a step by ID, checking guards first. */
-  goToStepChecked: (stepId: string, options?: { validateOnLeave?: boolean }) => Promise<void>;
-  /**
-   * Tears down any active path and immediately restarts the root path with the
-   * `initialData` from the original `start()` call. Takes no arguments.
-   * Use for "Start over" / retry flows.
-   */
-  restart: () => Promise<void>;
-  /** Re-run the operation that set `snapshot().error`. */
-  retry: () => Promise<void>;
-  /** Pause with intent to return, preserving all state. Emits `suspended`. */
-  suspend: () => Promise<void>;
-  /**
-   * The services object passed to the nearest `<pw-shell>` via `[services]`.
-   * Typed as `TServices` — pass your services interface as the second generic:
-   * `usePathContext<MyData, MyServices>().services`.
-   */
-  services: TServices;
-}
+/**
+ * The `PathFacade` methods `usePathContext()` forwards: every public facade
+ * method except engine plumbing (`adoptEngine`), the Angular lifecycle hook and
+ * `snapshot()` (exposed as a signal instead). A type test enforces this list
+ * against the facade, so the context cannot drift from it again.
+ */
+export type FacadeContextMethod =
+  | "start" | "startSubPath" | "next" | "previous" | "cancel"
+  | "setData" | "resetStep" | "goToStep" | "goToStepChecked"
+  | "restart" | "retry" | "suspend" | "validate";
+
+/**
+ * What step components receive from `usePathContext()`: the facade's methods
+ * (types picked from `PathFacade`, so signatures cannot drift), the snapshot
+ * signal, and the `services` object given to `<pw-shell>`.
+ */
+export type UsePathContextReturn<TData extends PathData = PathData, TServices = unknown> =
+  Pick<PathFacade<TData>, FacadeContextMethod> & {
+    snapshot: Signal<PathSnapshot<TData> | null>;
+    services: TServices;
+  };
 
 /**
  * Access the nearest `PathFacade`'s path instance for use in Angular step components.
@@ -276,6 +259,7 @@ export function usePathContext<TData extends PathData = PathData, TServices = un
     restart: () => facade.restart(),
     retry: () => facade.retry(),
     suspend: () => facade.suspend(),
+    validate: () => facade.validate(),
     services: facade.services as TServices,
   };
 }

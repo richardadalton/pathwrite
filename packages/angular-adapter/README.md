@@ -200,7 +200,7 @@ export class MyWizardComponent {
 
 ## `usePathContext()`
 
-`usePathContext()` is the preferred API for step components and forms rendered inside `<pw-shell>`. It resolves the `PathFacade` from the nearest injector in the tree and returns a signal-based interface typed with optional `TData` and `TServices` generics — no `providers: [PathFacade]` needed in step components.
+`usePathContext()` is the preferred API for step components and forms rendered inside `<pw-shell>`. It resolves the `PathFacade` from the nearest injector in the tree and returns a signal-based interface typed with optional `TData` and `TServices` generics — no `providers: [PathFacade]` needed in step components. It forwards every `PathFacade` method — including `validate()` and `startSubPath()` — so a step component never needs the facade itself; the forwarded set is derived from the facade's type, so the two cannot drift apart.
 
 ```typescript
 import { usePathContext } from "@daltonr/pathwrite-angular";

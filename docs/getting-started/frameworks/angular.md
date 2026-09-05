@@ -143,6 +143,7 @@ export class DetailsStepComponent {
 | `goToStepChecked(stepId, options?)` | `Promise<void>` | Jump to a step by ID (guard-checked). |
 | `retry()` | `Promise<void>` | Re-run the operation that set `snapshot().error`. |
 | `suspend()` | `Promise<void>` | Pause with intent to return, preserving all state. Emits `suspended`. |
+| `validate()` | `void` | Mark the engine validated so every step shows inline errors without navigating. |
 | `services` | `TServices` | Services object passed to the nearest `<pw-shell>` via `[services]`. |
 
 `validate()` is not part of this object. To trigger inline errors on every step at once, bind the shell's `[validateWhen]` input, or call `inject(PathFacade).validate()` on the facade directly.

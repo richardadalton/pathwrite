@@ -70,7 +70,7 @@ The `snapshot` property is a reactive getter backed by a `$state` rune. Destruct
 
 ## `usePathContext()` — accessing state inside step components
 
-Step components rendered inside `<PathShell>` snippets call `usePathContext()` to access the same engine instance. `<PathShell>` calls `setContext()` internally with a private `Symbol` key; `usePathContext()` calls the matching `getContext()`.
+Step components rendered inside `<PathShell>` snippets call `usePathContext()` to access the same engine instance. `<PathShell>` calls `setContext()` internally with a private `Symbol` key; `usePathContext()` calls the matching `getContext()`. The context is the full `usePath()` return type (`PathContext` extends `UsePathReturn`), so `start`, `startSubPath` and `validate` are available to step components too — for example to launch a sub-path from a button inside a step.
 
 ```svelte
 <script lang="ts">

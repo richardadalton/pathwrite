@@ -476,6 +476,9 @@ describe("usePathContext / setPathContext", () => {
 
     const ctx: PathContext = {
       get snapshot() { return path.snapshot; },
+      start: path.start,
+      startSubPath: path.startSubPath,
+      validate: path.validate,
       next: path.next,
       previous: path.previous,
       cancel: path.cancel,
@@ -500,6 +503,9 @@ describe("usePathContext / setPathContext", () => {
 
     setPathContext({
       get snapshot() { return path.snapshot; },
+      start: path.start,
+      startSubPath: path.startSubPath,
+      validate: path.validate,
       next: path.next,
       previous: path.previous,
       cancel: path.cancel,

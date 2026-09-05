@@ -134,11 +134,14 @@
     }
   });
 
-  const { start, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart: restartFn, retry, suspend } = pathReturn;
+  const { start, startSubPath, next, previous, cancel, goToStep, goToStepChecked, setData, resetStep, restart: restartFn, retry, suspend, validate } = pathReturn;
 
   // Provide context for child step components
   setPathContext({
     get snapshot() { return pathReturn.snapshot; },
+    start,
+    startSubPath,
+    validate,
     next,
     previous,
     cancel,
