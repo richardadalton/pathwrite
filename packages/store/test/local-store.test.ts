@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LocalStorageStore } from "../src/local-store";
 import type { StorageAdapter } from "../src/local-store";
 import type { SerializedPathState, PathDefinition } from "@daltonr/pathwrite-core";
@@ -398,5 +398,34 @@ describe("LocalStorageStore — clear()", () => {
   it("is a no-op on an empty store", async () => {
     const store = new LocalStorageStore();
     await expect(store.clear()).resolves.toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// localStorage that throws on access (sandboxed iframe / blocked storage)
+// ---------------------------------------------------------------------------
+
+describe("LocalStorageStore — inaccessible localStorage", () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  beforeEach(() => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get() { throw new Error("SecurityError: The operation is insecure."); }
+    });
+  });
+  afterEach(() => {
+    if (original) Object.defineProperty(globalThis, "localStorage", original);
+    else delete (globalThis as { localStorage?: unknown }).localStorage;
+  });
+
+  it("falls back to in-memory storage instead of throwing from the constructor", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const store = new LocalStorageStore();
+    await store.save("k", mockState);
+    await expect(store.load("k")).resolves.toEqual(mockState);
+    await store.delete("k");
+    await expect(store.load("k")).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 });

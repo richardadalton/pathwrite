@@ -33,6 +33,20 @@ export interface LocalStorageStoreOptions {
   storage?: StorageAdapter | null;
 }
 
+/**
+ * Whether `localStorage` can be touched at all. In a sandboxed iframe, or with
+ * site data blocked, merely *reading* `localStorage` throws a SecurityError —
+ * `typeof localStorage` included — so the probe has to be wrapped.
+ */
+function localStorageIsUsable(): boolean {
+  try {
+    return typeof localStorage !== "undefined" && localStorage !== null;
+  } catch {
+    console.warn("[pathwrite] localStorage is not accessible here (sandboxed frame or blocked storage); LocalStorageStore is using in-memory storage for this session.");
+    return false;
+  }
+}
+
 function createMemoryStorage(): StorageAdapter {
   const map = new Map<string, string>();
   return {
@@ -60,7 +74,7 @@ export class LocalStorageStore implements PathStore {
 
     if (options.storage !== undefined) {
       this.storage = options.storage !== null ? options.storage : createMemoryStorage();
-    } else if (typeof localStorage !== "undefined") {
+    } else if (localStorageIsUsable()) {
       this.storage = {
         getItem: (k: string) => localStorage.getItem(k),
         setItem: (k: string, v: string) => localStorage.setItem(k, v),
