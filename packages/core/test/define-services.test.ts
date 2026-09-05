@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   defineServices,
   ServiceUnavailableError,
-} from "../src/index.js";
+} from "@daltonr/pathwrite-core";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -137,6 +137,19 @@ describe("defineServices — in-flight deduplication", () => {
 // ---------------------------------------------------------------------------
 
 describe("defineServices — retry", () => {
+  // The retry backoff waits on setTimeout; fake timers keep these tests instant.
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  /** Await a call while draining every backoff timer it schedules. */
+  async function settle<T>(call: Promise<T>): Promise<T> {
+    const guarded = call.catch((e: unknown) => ({ __rejected: e }));
+    await vi.runAllTimersAsync();
+    const r = await guarded;
+    if (r && typeof r === "object" && "__rejected" in (r as object)) throw (r as { __rejected: unknown }).__rejected;
+    return r as T;
+  }
+
   it("retries on failure and succeeds if fn eventually resolves", async () => {
     let calls = 0;
     const fn = vi.fn(() => {
@@ -145,26 +158,25 @@ describe("defineServices — retry", () => {
       return Promise.resolve("ok");
     });
     const svc = defineServices({ load: { fn, cache: "none", retry: 3 } });
-    const result = await svc.load();
-    expect(result).toBe("ok");
+    expect(await settle(svc.load())).toBe("ok");
     expect(fn).toHaveBeenCalledTimes(3);
-  }, 5000);
+  });
 
   it("throws ServiceUnavailableError when all retries exhausted", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("network down"));
     const svc = defineServices({ load: { fn, cache: "none", retry: 2 } });
-    await expect(svc.load()).rejects.toBeInstanceOf(ServiceUnavailableError);
+    await expect(settle(svc.load())).rejects.toBeInstanceOf(ServiceUnavailableError);
     expect(fn).toHaveBeenCalledTimes(3); // initial + 2 retries
-  }, 5000);
+  });
 
   it("ServiceUnavailableError exposes method name and attempt count", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("fail"));
     const svc = defineServices({ fetchData: { fn, cache: "none", retry: 1 } });
-    const err = await svc.fetchData().catch((e) => e);
+    const err = await settle(svc.fetchData()).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ServiceUnavailableError);
     expect((err as ServiceUnavailableError).method).toBe("fetchData");
     expect((err as ServiceUnavailableError).attempts).toBe(2);
-  }, 5000);
+  });
 
   it("clears in-flight entry on failure", async () => {
     let callCount = 0;

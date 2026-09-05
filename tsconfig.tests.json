@@ -45,7 +45,6 @@
   "exclude": [
     "**/node_modules",
     "**/dist",
-    "packages/solid-adapter/**",
-    "packages/pathwrite-services/**"
+    "packages/solid-adapter/**"
   ]
 }
