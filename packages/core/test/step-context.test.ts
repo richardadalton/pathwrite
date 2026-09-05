@@ -85,7 +85,7 @@ describe("PathStepContext shape", () => {
     await engine.next();
 
     // Nothing leaked back into the engine.
-    expect(engine.snapshot().data).toEqual({ v: 2 });
+    expect(engine.snapshot()!.data).toEqual({ v: 2 });
 
     const first = (name: string) => seen[name][0];
     checkCtx(first("onEnter"), "p", "a", { v: 1 });
