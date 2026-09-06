@@ -8,12 +8,6 @@ import type { PathDefinition, PathEvent, PathSnapshot } from "@daltonr/pathwrite
 
 vi.mock("../src/PathShell.svelte", () => ({ default: {} }));
 
-// usePath() calls onDestroy(), which needs a component context; stub it out.
-vi.mock("svelte", async () => {
-  const actual = await vi.importActual<typeof import("svelte")>("svelte");
-  return { ...actual, onDestroy: () => {} };
-});
-
 import { usePath } from "../src/index.svelte";
 
 const twoStepPath: PathDefinition = { id: "main", steps: [{ id: "step1" }, { id: "step2" }] };

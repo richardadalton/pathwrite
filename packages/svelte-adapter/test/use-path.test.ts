@@ -9,8 +9,11 @@ import { PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot } from "@
 vi.mock("../src/PathShell.svelte", () => ({ default: {} }));
 
 // ---------------------------------------------------------------------------
-// Mock Svelte lifecycle — usePath() calls onDestroy() which requires
-// a component context. We mock it to capture the cleanup callback.
+// Mock Svelte lifecycle to *capture* the cleanup callback, so these tests can
+// simulate a component being destroyed without mounting one. usePath() no
+// longer needs a component context to run (see
+// use-path-outside-component.test.ts); this mock is a test instrument, not a
+// workaround for a crash.
 // ---------------------------------------------------------------------------
 
 let destroyCallbacks: Array<() => void> = [];

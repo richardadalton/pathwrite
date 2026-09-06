@@ -88,6 +88,15 @@ export interface UsePathReturn<TData extends PathData = PathData> {
   suspend: () => Promise<void>;
   /** Trigger inline validation on all steps without navigating. Sets `snapshot.hasValidated`. */
   validate: () => void;
+  /**
+   * Release the engine subscription and the internal effect root.
+   *
+   * Inside a component this runs automatically on destroy and you never need to
+   * call it. Outside one — a `.svelte.ts` module, or your own `$effect.root` —
+   * there is no lifecycle to hook, so calling this is how you avoid leaking the
+   * subscription. Safe to call more than once.
+   */
+  destroy: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,11 +195,28 @@ export function usePath<TData extends PathData = PathData>(
     });
   });
 
-  // Auto-cleanup when component is destroyed
-  onDestroy(() => {
+  // Release the engine subscription and the effect root. Idempotent, because
+  // both a component teardown and an explicit destroy() may reach it.
+  let destroyed = false;
+  const destroy = (): void => {
+    if (destroyed) return;
+    destroyed = true;
     unsubscribe();
     stopWatching();
-  });
+  };
+
+  // Auto-cleanup when a component owns this hook. Outside a component there is
+  // no lifecycle to hang it on and `onDestroy` throws `lifecycle_outside_component`,
+  // which made usePath() unusable from a `.svelte.ts` module or from inside a
+  // caller's own $effect.root — the very thing the $effect.root above exists to
+  // support. There is no way to ask Svelte whether a component context exists
+  // without throwing, so the attempt itself is the test. When there is no
+  // component, teardown belongs to the caller via destroy().
+  try {
+    onDestroy(destroy);
+  } catch {
+    /* no component context: the caller owns cleanup through destroy() */
+  }
 
   const start = (path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> =>
     engine.start(path, initialData);
@@ -238,6 +264,7 @@ export function usePath<TData extends PathData = PathData>(
     retry,
     suspend,
     validate,
+    destroy,
   };
 }
 
@@ -272,10 +299,19 @@ const PATH_CONTEXT_KEY = Symbol("pathwrite-context");
  * returns (derived from `UsePathReturn`, so the two cannot drift apart) plus
  * the `services` object given to `<PathShell>`.
  */
-export interface PathContext<
-  TData extends PathData = PathData,
-  TServices = unknown,
-> extends UsePathReturn<TData> {
+/**
+ * What `usePathContext()` hands a step component: everything `usePath()`
+ * returns except `destroy`, plus the shell's `services`.
+ *
+ * `destroy` is deliberately excluded. It is the owner's handle on the
+ * subscription, and the owner is whoever called `usePath()` — normally the
+ * shell. A step component rendered inside that shell must not be able to tear
+ * down the subscription its own parent depends on.
+ */
+export interface PathContext<TData extends PathData = PathData, TServices = unknown> extends Omit<
+  UsePathReturn<TData>,
+  "destroy"
+> {
   services: TServices;
 }
 
