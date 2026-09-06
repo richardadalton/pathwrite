@@ -1,9 +1,9 @@
 {
   "name": "@daltonr/pathwrite-solid",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "type": "module",
   "license": "MIT",
-  "description": "SolidJS adapter for @daltonr/pathwrite-core \u2014 reactive usePath() composable and optional PathShell component.",
+  "description": "SolidJS adapter for @daltonr/pathwrite-core — reactive usePath() composable and optional PathShell component.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
@@ -47,7 +47,7 @@
     "solid-js": ">=1.8.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.13.1"
+    "@daltonr/pathwrite-core": "^0.14.0"
   },
   "devDependencies": {
     "solid-js": "^1.9.0"

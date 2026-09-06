@@ -1,9 +1,9 @@
 {
   "name": "@daltonr/pathwrite-core",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "type": "module",
   "license": "MIT",
-  "description": "Headless path engine \u2014 deterministic state machine with stack-based sub-path orchestration. Zero dependencies.",
+  "description": "Headless path engine — deterministic state machine with stack-based sub-path orchestration. Zero dependencies.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/richardadalton/pathwrite.git",
