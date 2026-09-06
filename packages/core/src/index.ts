@@ -898,8 +898,24 @@ export class PathEngine<TData extends PathData = PathData> {
 
   public previous(): Promise<void> {
     const active = this.requireActivePath();
+    // Back on the first step of a top-level path is a documented no-op, and it
+    // has to be a *true* no-op. `_beginNavigation()` clears `_error` and the
+    // pending retry, so running it before the no-op check let a call that
+    // navigates nowhere silently throw away the "Try again" the shell is
+    // offering: the panel stays on screen, the button does nothing, and no
+    // event is emitted to tell anyone otherwise.
+    if (this.isTopLevelFirstStep(active)) return Promise.resolve();
     this._beginNavigation();
     return this._previousAsync(active);
+  }
+
+  /**
+   * True when `previous()` has nowhere to go: the first step of a path with no
+   * parent on the stack. A sub-path on its first step is not included — that
+   * cancels back into its parent.
+   */
+  private isTopLevelFirstStep(active: ActivePath): boolean {
+    return active.currentStepIndex === 0 && this.pathStack.length === 0;
   }
 
   /** True when `start()` / `restart()` has torn the engine down since `gen` was captured. */
@@ -1386,7 +1402,7 @@ export class PathEngine<TData extends PathData = PathData> {
     // No-op when already on the first step of a top-level path.
     // Sub-paths still cancel/pop back to the parent when previous() is called
     // on their first step (the currentStepIndex < 0 branch below handles that).
-    if (active.currentStepIndex === 0 && this.pathStack.length === 0) return;
+    if (this.isTopLevelFirstStep(active)) return;
 
     const step = this.getEffectiveStep(active);
     const retry = (c: StateChangeCause) => this._previousAsync(active, c);
@@ -1550,6 +1566,9 @@ export class PathEngine<TData extends PathData = PathData> {
     // Pop the stack BEFORE emitting so snapshot() always reflects the parent
     // path (which has a valid currentStepIndex) rather than the cancelled
     // sub-path (which may have currentStepIndex = -1).
+    // Clear the sub-path's blocking reason with it: the parent is resuming on a
+    // step that never blocked (see finishActivePath).
+    this._blockingError = null;
     this.activePath = this.pathStack.pop() ?? null;
     await this._runSubPathCancelHook(cancelledPathId, cancelledData, cancelledMeta);
   }
@@ -1601,6 +1620,14 @@ export class PathEngine<TData extends PathData = PathData> {
     const finished = this.requireActivePath();
     const finishedPathId = finished.definition.id;
     const finishedData = { ...finished.data };
+
+    // `_blockingError` describes why the *current step* refused to advance, and
+    // is otherwise only cleared by entering a step. Finishing a path leaves the
+    // step without entering another one, so without this the reason a guard
+    // gave earlier survives into the completed snapshot, and out of a sub-path
+    // into the parent that never blocked at all. Shells render it under the
+    // step body, so it reads as an error about a screen the user already left.
+    this._blockingError = null;
 
     if (this.pathStack.length > 0) {
       // Peek at the parent — do NOT pop it yet. The sub-path must stay active
@@ -1850,9 +1877,25 @@ export class PathEngine<TData extends PathData = PathData> {
     const item = this.getCurrentItem(active);
     if (isStepChoice(item)) {
       // resolvedChoiceStep should always be set after enterCurrentStep; this
-      // branch is a defensive fallback (e.g. during fromState restore).
-      this.cacheResolvedChoiceStep(active);
-      return active.resolvedChoiceStep!;
+      // branch is a defensive fallback (e.g. during fromState restore, or after
+      // a failed entry left the choice unresolved).
+      //
+      // It must not throw. `snapshot()` reaches this, and `select` is ordinary
+      // user code driven by user data: one that throws or returns an unknown id
+      // would otherwise make every later `snapshot()` throw too, including the
+      // one the error handler itself takes, which left the engine wedged in
+      // `entering` and took the host application's render down with it.
+      //
+      // Navigation still resolves strictly: `enterCurrentStep` calls
+      // `cacheResolvedChoiceStep` directly, so a bad `select` surfaces there as
+      // a normal, retryable error with a real message.
+      try {
+        this.cacheResolvedChoiceStep(active);
+        if (active.resolvedChoiceStep) return active.resolvedChoiceStep;
+      } catch {
+        /* fall through to a renderable placeholder */
+      }
+      return item.steps[0] ?? { id: item.id };
     }
     return item;
   }

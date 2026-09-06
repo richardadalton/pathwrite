@@ -3711,20 +3711,33 @@ describe("PathEngine — StepChoice", () => {
     expect(engine.snapshot()?.formId).toBe("company");
   });
 
-  it("throws when select returns an id not in steps", async () => {
+  it("reports an unknown select id through the error model, leaving a usable engine", async () => {
+    // This used to reject. That rejection was a side effect of a bug rather
+    // than a contract: the entry error handler called emitStateChanged, which
+    // called snapshot(), which threw a second time out of the catch. With
+    // snapshot() no longer able to throw, a bad select id is handled like every
+    // other failing entry hook — status "error", the diagnostic on the
+    // snapshot, and a retry — instead of surfacing as an unhandled rejection in
+    // adapters that do not await start().
     const engine = new PathEngine();
-    await expect(
-      engine.start({
-        id: "main",
-        steps: [
-          {
-            id: "contact",
-            select: () => "nonexistent",
-            steps: [{ id: "individual" }],
-          } satisfies StepChoice,
-        ],
-      })
-    ).rejects.toThrow(/StepChoice "contact".select\(\) returned "nonexistent"/);
+    await engine.start({
+      id: "main",
+      steps: [
+        {
+          id: "contact",
+          select: () => "nonexistent",
+          steps: [{ id: "individual" }],
+        } satisfies StepChoice,
+      ],
+    });
+
+    const snap = engine.snapshot();
+    expect(snap?.status).toBe("error");
+    expect(snap?.error?.phase).toBe("entering");
+    expect(snap?.error?.message).toMatch(/StepChoice "contact".select\(\) returned "nonexistent"/);
+    // and the engine is still renderable and recoverable
+    expect(snap?.stepId).toBe("contact");
+    expect(() => engine.snapshot()).not.toThrow();
   });
 
   it("uses the inner step's title and meta; falls back to choice title/meta", async () => {

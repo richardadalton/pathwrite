@@ -18,6 +18,7 @@
  */
 
 import { PathEngine, matchesStrategy } from "@daltonr/pathwrite-core";
+import { UnusableStateError } from "./errors.js";
 import type {
   SerializedPathState,
   PathEvent,
@@ -188,12 +189,12 @@ export class HttpStore implements PathStore {
       try {
         parsed = JSON.parse(raw);
       } catch {
-        throw new Error(`HttpStore.load: the response for "${key}" is not valid JSON.`);
+        throw new UnusableStateError(`HttpStore.load: the response for "${key}" is not valid JSON.`);
       }
       if (parsed === null) return null; // a JSON `null` body: nothing stored
       const problem = describeInvalidState(parsed);
       if (problem) {
-        throw new Error(
+        throw new UnusableStateError(
           `HttpStore.load: the response for "${key}" is not a SerializedPathState (${problem}).`
         );
       }
@@ -309,6 +310,13 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
   let lastEngine: PathEngine | null = null;
   let changedSinceSave = false;
   let disposed = false;
+  // Latched when the path completes and its record is deleted. Anything still
+  // in flight at that moment must not write it back: a pending debounce timer,
+  // or a flush() from a beforeunload handler, would re-create the record of a
+  // finished path. That leaves whatever the user typed in storage indefinitely
+  // and offers a resume into a path whose onComplete has already run. Cleared
+  // when a new path starts, so completionBehaviour "reset" persists again.
+  let finished = false;
 
   /** Runs `op` after every previously queued operation, whether they succeeded or not. */
   const enqueue = (op: () => Promise<void>): Promise<void> => {
@@ -319,6 +327,7 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
   const performSave = (engine: PathEngine): Promise<void> => {
     // A save is already waiting its turn; when it runs it exports the state
     // current at that moment, so this request is covered by it.
+    if (finished) return queue;
     if (saveQueued) return queue;
     saveQueued = true;
     return enqueue(async () => {
@@ -336,12 +345,39 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
     });
   };
 
-  const performDelete = (): Promise<void> =>
-    enqueue(() =>
-      options.store.delete(options.key).catch((err) => {
+  const performDelete = (event: Extract<PathEvent, { type: "completed" }>): Promise<void> =>
+    enqueue(async () => {
+      try {
+        await options.store.delete(options.key);
+        return;
+      } catch (err) {
         console.warn("[pathwrite] Failed to delete saved state after completion:", err);
-      })
-    );
+      }
+      // The DELETE did not land, so the last record written before completion
+      // is still there — for every strategy but "onComplete" that record sits
+      // on the final step with status "idle". Restoring it would drop the user
+      // back onto that step, where pressing Next runs onComplete a second time
+      // and submits twice. Overwrite it with a tombstone instead: it is a valid
+      // SerializedPathState marked "completed", which restoreOrStart refuses to
+      // resume. Best effort; if this fails too there is nothing further to try.
+      try {
+        const exported = lastEngine?.exportState();
+        const tombstone: SerializedPathState = {
+          ...(exported ?? {
+            version: 1 as const,
+            pathId: event.pathId,
+            currentStepIndex: 0,
+            visitedStepIds: [],
+            pathStack: [],
+          }),
+          data: event.data,
+          _status: "completed",
+        };
+        await options.store.save(options.key, tombstone);
+      } catch (err) {
+        console.warn("[pathwrite] Failed to mark saved state completed after a failed delete:", err);
+      }
+    });
 
   const scheduleSave = (engine: PathEngine): void => {
     if (debounceMs > 0) {
@@ -359,6 +395,7 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
     if (disposed) return;
     lastEngine = engine;
     if (event.type === "stateChanged" || event.type === "resumed") changedSinceSave = true;
+    if (event.type === "stateChanged" && event.cause === "start") finished = false;
 
     if (strategy === "onComplete") {
       if (event.type === "completed") {
@@ -391,9 +428,20 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
       return;
     }
 
-    if (matchesStrategy(strategy, event)) scheduleSave(engine);
+    if (event.type === "completed") {
+      // Disarm before deleting: a debounce armed by the last keystroke would
+      // otherwise fire after the DELETE and resurrect the record.
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      changedSinceSave = false;
+      finished = true;
+      performDelete(event);
+      return;
+    }
 
-    if (event.type === "completed") performDelete();
+    if (matchesStrategy(strategy, event)) scheduleSave(engine);
   }) as PersistenceObserver;
 
   observer.flush = async (): Promise<void> => {
@@ -402,7 +450,7 @@ export function persistence(options: PersistenceOptions): PersistenceObserver {
       saveTimer = null;
       changedSinceSave = true; // the debounced save never ran
     }
-    if (lastEngine && !disposed && (changedSinceSave || strategy === "manual")) {
+    if (lastEngine && !disposed && !finished && (changedSinceSave || strategy === "manual")) {
       void performSave(lastEngine);
     }
     await queue;
@@ -502,34 +550,66 @@ export async function restoreOrStart<TData extends PathData = PathData>(
   const engineOptions = { observers, hasPersistence: true };
 
   // Saved state that cannot be used must never block the app: the user would
-  // be stuck until storage is cleared by hand. Anything that goes wrong
-  // between load and a restored engine — corrupt JSON, an unsupported
-  // version, a path id that no longer exists — is reported, the record is
-  // dropped (best effort) and the path starts fresh.
-  try {
-    const saved = await options.store.load(options.key);
+  // be stuck until storage is cleared by hand. But "cannot be used" splits into
+  // two cases that deserve opposite treatment, and collapsing them into one
+  // catch is how a transient outage came to destroy saved progress.
+  const report = (error: unknown, note: string) => {
+    const err = error instanceof Error ? error : new Error(String(error));
+    if (options.onRestoreError) options.onRestoreError(err);
+    else console.warn(`[pathwrite] ${note} for "${options.key}"; starting fresh.`, err);
+  };
 
+  let saved: SerializedPathState | null = null;
+  let readOk = true;
+  try {
+    saved = await options.store.load(options.key);
+  } catch (error) {
+    // The record could not be read. That says nothing about whether it is any
+    // good: a 503 during a deploy, an expired token, a dropped mobile
+    // connection and an abort all land here. Deleting on this path threw away
+    // work the user had done whenever the store was briefly unreachable, and
+    // the deletion is unrecoverable. Start fresh for this session and leave
+    // whatever is stored untouched, so the next attempt can still find it.
+    readOk = false;
+    // A SyntaxError is accepted alongside UnusableStateError: a custom store
+    // that simply lets JSON.parse throw (which is what the built-in stores did
+    // before UnusableStateError existed) is reporting a parse failure, not an
+    // unreachable backend. Every other error leaves the record untouched.
+    if (error instanceof UnusableStateError || error instanceof SyntaxError) {
+      // The store read the record and it is not usable. Nothing will ever make
+      // it loadable, so clear it or the app starts fresh forever.
+      report(error, "Saved state is unusable");
+      await options.store.delete(options.key).catch(() => {
+        /* best effort */
+      });
+    } else {
+      report(error, "Could not read saved state");
+    }
+  }
+
+  if (readOk && saved !== null) {
     // A finished path is never resumed. The "onComplete" strategy leaves its
     // audit record in place (status "completed"; older versions wrote
     // currentStepIndex -1), and a state saved with status "completed" by any
     // other strategy is one whose completion-time delete never landed. Either
     // way the user starts fresh; the record is left for the app to deal with.
-    const isFinished = saved !== null && (saved._status === "completed" || saved.currentStepIndex < 0);
+    const isFinished = saved._status === "completed" || saved.currentStepIndex < 0;
 
-    if (saved && !isFinished) {
-      const engine = PathEngine.fromState<TData>(saved, pathDefs, engineOptions);
-      return { engine, restored: true };
+    if (!isFinished) {
+      try {
+        const engine = PathEngine.fromState<TData>(saved, pathDefs, engineOptions);
+        return { engine, restored: true };
+      } catch (error) {
+        // The record was read and is genuinely unusable: an unsupported
+        // version, a path id no longer in pathDefinitions (a renamed path), or
+        // a malformed shape. Nothing will ever make it loadable, so dropping it
+        // is what lets the app start next time.
+        report(error, "Saved state is unusable");
+        await options.store.delete(options.key).catch(() => {
+          /* best effort */
+        });
+      }
     }
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    if (options.onRestoreError) {
-      options.onRestoreError(err);
-    } else {
-      console.warn(`[pathwrite] Could not restore saved state for "${options.key}"; starting fresh.`, err);
-    }
-    await options.store.delete(options.key).catch(() => {
-      /* best effort */
-    });
   }
 
   const engine = new PathEngine<TData>(engineOptions);
@@ -553,6 +633,7 @@ export type {
   PathStore,
 } from "@daltonr/pathwrite-core";
 
+export { UnusableStateError } from "./errors.js";
 export { LocalStorageStore } from "./local-store.js";
 export type { LocalStorageStoreOptions, StorageAdapter } from "./local-store.js";
 

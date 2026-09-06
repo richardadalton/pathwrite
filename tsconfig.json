@@ -1,11 +1,17 @@
 {
   "extends": "./tsconfig.base.json",
   "files": [],
+  // Solution file for the composite packages. Angular (ngc) and store are not
+  // composite projects, so they are built by their own scripts rather than
+  // referenced here. The three apps/demo-* references that used to sit in this
+  // list pointed at directories deleted long ago, which made any tooling that
+  // resolves a tsconfig from apps/ fail to parse it.
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/react-adapter" },
-    { "path": "./apps/demo-console" },
-    { "path": "./apps/demo-angular" },
-    { "path": "./apps/demo-angular-course" }
+    { "path": "./packages/react-native-adapter" },
+    { "path": "./packages/vue-adapter" },
+    { "path": "./packages/svelte-adapter" },
+    { "path": "./packages/solid-adapter" }
   ]
 }

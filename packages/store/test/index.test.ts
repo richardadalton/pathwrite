@@ -458,7 +458,7 @@ class SlowStore {
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-describe("persistence — real engine, slow store (S1)", () => {
+describe("persistence — no change is lost behind a slow save", () => {
   const threeSteps: PathDefinition = { id: "p", steps: [{ id: "s1" }, { id: "s2" }, { id: "s3" }] };
 
   it("a change that arrives while a save is in flight is saved afterwards, not dropped", async () => {
@@ -549,7 +549,7 @@ class MemoryStore {
   }
 }
 
-describe("persistence onComplete + restoreOrStart (S2)", () => {
+describe("persistence onComplete — the audit record never resumes a finished path", () => {
   const twoSteps: PathDefinition = { id: "audit", steps: [{ id: "a" }, { id: "b" }] };
 
   it("writes a valid, recognisably final record (stayOnFinal)", async () => {
@@ -634,7 +634,7 @@ describe("persistence onComplete + restoreOrStart (S2)", () => {
 // restoreOrStart falls back to a fresh start on corrupt / stale state (S3)
 // ---------------------------------------------------------------------------
 
-describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
+describe("restoreOrStart — an unusable record never stops the app starting", () => {
   const path: PathDefinition = { id: "p", steps: [{ id: "a" }, { id: "b" }] };
   const good: SerializedPathState = {
     version: 1,
@@ -727,7 +727,7 @@ describe("restoreOrStart — corrupt or stale saved state (S3)", () => {
 // HttpStore — every HeadersInit form reaches the request (review finding S4)
 // ---------------------------------------------------------------------------
 
-describe("HttpStore — HeadersInit forms (S4)", () => {
+describe("HttpStore — every HeadersInit form reaches the request", () => {
   /** Read a header from whatever shape the store handed to fetch. */
   function sent(fetchMock: { mock: { calls: unknown[][] } }, method: string, name: string): string | null {
     const call = fetchMock.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === method);
@@ -785,7 +785,7 @@ describe("HttpStore — HeadersInit forms (S4)", () => {
 // onNext saves when a sub-path returns to its parent (review finding S5)
 // ---------------------------------------------------------------------------
 
-describe("persistence onNext — sub-path return (S5)", () => {
+describe("persistence onNext — returning from a sub-path is persisted", () => {
   const parent: PathDefinition = {
     id: "parent",
     steps: [{ id: "p1", onSubPathComplete: (_id, data) => ({ child: data.answer }) }, { id: "p2" }],
@@ -886,7 +886,7 @@ class SlowDeleteStore {
   }
 }
 
-describe("persistence — completion delete vs. reset save (S6)", () => {
+describe("persistence — a completion delete never outlives the next session", () => {
   const resetting: PathDefinition = {
     id: "kiosk",
     steps: [{ id: "a" }, { id: "b" }],

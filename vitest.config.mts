@@ -18,6 +18,10 @@ export default defineConfig({
       "packages/**/test/**/*.test.ts",
       "packages/**/test/**/*.test.tsx",
       "apps/shared-workflows/**/test/**/*.test.ts",
+      // Properties over the demo path definitions. These live outside
+      // packages/ on purpose: they import demo app source, and the
+      // published engine's test suite must not depend on unpublished demos.
+      "apps/demo-path-tests/test/**/*.test.ts",
     ],
   },
   resolve: {

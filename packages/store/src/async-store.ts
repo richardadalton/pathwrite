@@ -1,3 +1,4 @@
+import { UnusableStateError } from "./errors.js";
 import type { SerializedPathState, PathStore } from "@daltonr/pathwrite-core";
 
 /**
@@ -53,12 +54,19 @@ export class AsyncStorageStore implements PathStore {
   }
 
   async load(key: string): Promise<SerializedPathState | null> {
+    const raw = await this.storage.getItem(this.storageKey(key));
+    if (raw === null || raw === undefined) return null;
     try {
-      const raw = await this.storage.getItem(this.storageKey(key));
-      if (raw === null || raw === undefined) return null;
       return JSON.parse(raw) as SerializedPathState;
     } catch (err) {
-      throw err instanceof Error ? err : new Error(String(err));
+      // We read the record; its contents are not JSON. That is a property of
+      // the record, not of the storage, so it is reported as unusable and
+      // restoreOrStart may clear it. A getItem() failure above is left to
+      // propagate as-is: it says nothing about the record.
+      throw new UnusableStateError(
+        `AsyncStorageStore.load: the stored value for "${key}" is not valid JSON.`,
+        { cause: err }
+      );
     }
   }
 

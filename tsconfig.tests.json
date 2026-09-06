@@ -20,6 +20,6 @@
       "react-native": ["packages/react-native-adapter/test/__mocks__/react-native.ts"]
     }
   },
-  "include": ["packages/*/test/**/*.ts", "packages/*/test/**/*.tsx"],
+  "include": ["packages/*/test/**/*.ts", "packages/*/test/**/*.tsx", "apps/demo-path-tests/test/**/*.ts"],
   "exclude": ["**/node_modules", "**/dist", "packages/solid-adapter/**"]
 }

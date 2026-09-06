@@ -5,20 +5,17 @@ import type { PathStep, StepChoice } from "@daltonr/pathwrite-core";
 
 // Demo path definitions live in apps/. All adapter imports there are type-only
 // (import type ...) so they are stripped at runtime and cause no resolution issue.
-import { subscriptionPath } from "../../../apps/react-demos/demo-react-skip/src/subscription";
-import { onboardingPath } from "../../../apps/react-demos/demo-react-wizard/src/onboarding";
+import { subscriptionPath } from "../../react-demos/demo-react-skip/src/subscription";
+import { onboardingPath } from "../../react-demos/demo-react-wizard/src/onboarding";
 import {
   addressPath,
   INITIAL_DATA as ADDRESS_INITIAL,
-} from "../../../apps/react-demos/demo-react-stepchoice/src/address-path";
-import { mainPath as skipPath } from "../../../apps/react-native-demos/demo-rn-showcase/src/features/demo-path";
-import {
-  getQuizScore,
-  INITIAL_DATA as COURSE_INITIAL,
-} from "../../../apps/vue-demos/demo-vue-course/src/course";
-import { TOPIC_IDS, TOPICS } from "../../../apps/vue-demos/demo-vue-course/src/topics";
-import { contactFormPath } from "../../../apps/react-demos/demo-react-form/src/path";
-import { approvalWorkflowPath } from "../../../apps/react-demos/demo-react-subwizard/src/approval";
+} from "../../react-demos/demo-react-stepchoice/src/address-path";
+import { mainPath as skipPath } from "../../react-native-demos/demo-rn-showcase/src/features/demo-path";
+import { getQuizScore, INITIAL_DATA as COURSE_INITIAL } from "../../vue-demos/demo-vue-course/src/course";
+import { TOPIC_IDS, TOPICS } from "../../vue-demos/demo-vue-course/src/topics";
+import { contactFormPath } from "../../react-demos/demo-react-form/src/path";
+import { approvalWorkflowPath } from "../../react-demos/demo-react-subwizard/src/approval";
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -253,10 +250,14 @@ describe("workflow demo — coursePath quiz scoring", () => {
     );
   });
 
-  it("FINDING — 3-question topics: getting 2/3 correct scores 67%, which fails the >70 pass threshold", async () => {
-    // All topics have exactly 3 questions. Math.round((2/3) * 100) = 67.
-    // 67 is not > 70, so learners must answer all three correctly to advance.
-    // There is no partial-credit route: only 100% passes.
+  // Stating the rule, not flagging it. Every topic has three questions and the
+  // gate is `score > 70`, so two correct rounds to 67 and only a perfect score
+  // advances. That is a property of the demo's content, and whether a demo
+  // course should demand 100% is a design question for the demo, not the
+  // engine. Pinned here so a change to either number is deliberate.
+  it("a topic quiz advances only on a perfect score: three questions against a >70% gate", async () => {
+    // Math.round((2/3) * 100) = 67, which is not > 70, so there is no
+    // partial-credit route through any topic.
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom(...TOPIC_IDS),
