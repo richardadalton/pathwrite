@@ -1,3 +1,20 @@
+"use client";
+
+// Every export here needs client-only React: hooks, context, refs. Under the
+// Next.js App Router components are Server Components by default, and importing
+// any of this from one fails the build with an error naming React's internals
+// rather than this package, which reads like the application's mistake.
+//
+// This does not stop anything rendering on a server. Client Components are
+// still server-rendered to HTML and then hydrated, which is what the tests in
+// test/ssr.test.ts exercise. The directive marks which side of the RSC boundary
+// this module belongs to, not where it may run.
+//
+// Server-side code that wants the engine itself should import it from
+// `@daltonr/pathwrite-core`, which is framework-free and has no boundary. The
+// `PathEngine` re-export at the bottom of this file is a convenience for client
+// code and is pulled into the client bundle along with everything else.
+
 import {
   createContext,
   createElement,

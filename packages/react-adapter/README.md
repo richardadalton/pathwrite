@@ -159,6 +159,32 @@ Both work inside a `<PathShell>` or a `<PathProvider>`. For inputs that need a v
 
 ---
 
+## Next.js and React Server Components
+
+This package is a Client Component library. Its entry point carries the
+`"use client"` directive, so you can import it from anywhere in a Next.js App
+Router application without adding a wrapper of your own.
+
+That does not stop it rendering on a server. Client Components are still
+server-rendered to HTML and then hydrated, and `usePath` supplies a
+`getServerSnapshot` so the first server render is well defined: `snapshot` is
+`null` until `start()` runs, which happens in an effect and therefore only on
+the client. `PathShell` renders its empty state on the server, and
+`PathProvider` renders its `fallback`.
+
+If you want the engine itself on the server — resolving a path definition,
+running guards, or driving a flow in a route handler or a Server Component —
+import it from the core package, which is framework-free and has no client
+boundary:
+
+```ts
+import { PathEngine } from "@daltonr/pathwrite-core";
+```
+
+`PathEngine` is also re-exported from this package for convenience, but that
+re-export sits behind the `"use client"` boundary, so prefer the core import in
+server code.
+
 ## Further reading
 
 - [React getting started guide](../../docs/getting-started/frameworks/react.md)

@@ -13,10 +13,15 @@
  *   - @daltonr/pathwrite-store re-exported "./local-store" with no file
  *     extension, so Node and webpack refused to load it.
  *
- * This script packs each package, installs the tarballs into a throwaway
- * project, and imports them the way a consumer does. It is deliberately slow
- * and deliberately outside the workspace: resolution must not be able to fall
- * back to the monorepo.
+ * This script builds every package, packs each one, installs the tarballs into
+ * a throwaway project, and imports them the way a consumer does. It is
+ * deliberately slow and deliberately outside the workspace: resolution must not
+ * be able to fall back to the monorepo.
+ *
+ * The build is not optional. `npm pack` runs `prepack` and `prepare` but NOT
+ * `prepublishOnly`, which is where these packages put their rebuild, so packing
+ * alone captures whatever happens to be sitting in `dist/`. An earlier version
+ * of this script assumed otherwise and cheerfully validated stale output.
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -46,6 +51,18 @@ const PACKAGES = [
 // always ship.
 const REQUIRED = ["README.md", "LICENSE"];
 
+/**
+ * Directives that must survive the build into the published entry point.
+ *
+ * `"use client"` is a string literal at the top of a file. Nothing type-checks
+ * it, no test that imports source can see it, and a bundler that hoists or
+ * strips the prologue removes it without a word. Its absence only shows up in
+ * someone else's Next.js build, so it is checked here against the real tarball.
+ */
+const REQUIRED_DIRECTIVES = {
+  "@daltonr/pathwrite-react": "use client",
+};
+
 const run = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 
@@ -62,7 +79,12 @@ try {
     JSON.stringify({ name: "verify", private: true, type: "module" }, null, 2)
   );
 
-  // 1. Pack. npm pack runs prepublishOnly, so this is the real publish output.
+  // 1. Build from source, so what gets packed reflects the working tree rather
+  //    than a leftover dist/ from an earlier run.
+  console.log("building all packages...");
+  run("npm", ["run", "build"], repoRoot);
+
+  // 2. Pack each package.
   const tarballs = [];
   for (const p of PACKAGES) {
     const out = run("npm", ["pack", join(repoRoot, "packages", p.dir), "--pack-destination", work], work);
@@ -79,6 +101,18 @@ try {
       if (!listing.includes(required)) fail(p.name, `tarball is missing ${required}`);
     }
 
+    const directive = REQUIRED_DIRECTIVES[p.name];
+    if (directive) {
+      const entry = run("tar", ["xzOf", p.tarball, "package/dist/index.js"], work);
+      const firstLine = entry.split("\n", 1)[0].trim();
+      if (!firstLine.startsWith(`"${directive}"`) && !firstLine.startsWith(`'${directive}'`)) {
+        fail(
+          p.name,
+          `dist/index.js must begin with the ${directive} directive, found: ${firstLine.slice(0, 40)}`
+        );
+      }
+    }
+
     // Every path an export condition names must actually be in the tarball.
     const manifest = JSON.parse(run("tar", ["xzOf", p.tarball, "package/package.json"], work));
     const targets = new Set();
@@ -93,12 +127,12 @@ try {
     }
   }
 
-  // 2. Install every tarball together, so internal dependency ranges resolve
+  // 3. Install every tarball together, so internal dependency ranges resolve
   //    against each other exactly as they will for a consumer.
   run("npm", ["install", "--no-audit", "--no-fund", ...tarballs.map((t) => `./${t}`)], work);
   run("npm", ["install", "--no-audit", "--no-fund", "--no-save", "solid-js", "react", "vue"], work);
 
-  // 3. Import each package as a consumer. Resolution failures are packaging
+  // 4. Import each package as a consumer. Resolution failures are packaging
   //    bugs; a framework refusing to boot under bare Node is not.
   mkdirSync(join(work, "probe"), { recursive: true });
   for (const p of PACKAGES) {
