@@ -334,7 +334,7 @@
   <div class="container">
     <div class="pillars__grid">
       <div class="pillar">
-        <div class="pillar__num">810</div>
+        <div class="pillar__num">1,020</div>
         <h3>Tests — and zero framework dependencies</h3>
         <p>Every guard, hook, and navigation path is tested in pure Node. The engine runs identically in a browser, a test runner, and React Native.</p>
       </div>
@@ -640,7 +640,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
 
 <span class="cm">// job-application.component.html</span>
 &lt;<span class="tag">pw-shell</span> <span class="attr">[path]</span>="path" <span class="attr">[initialData]</span>="{ roleId: '', yearsExperience: '' }"
-          <span class="attr">(completed)</span>="handleSubmit($event)"&gt;
+          <span class="attr">(complete)</span>="handleSubmit($event)"&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="role"&gt;&lt;<span class="tag">app-role-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="experience"&gt;&lt;<span class="tag">app-experience-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
   &lt;<span class="tag">ng-template</span> <span class="attr">pwStep</span>="eligibility"&gt;&lt;<span class="tag">app-eligibility-step</span> /&gt;&lt;/<span class="tag">ng-template</span>&gt;
@@ -667,16 +667,20 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
   <span class="kw">const</span> path = createApplicationPath(apiServices);
 &lt;/<span class="tag">script</span>&gt;
 
-&lt;<span class="tag">PathShell</span> {path} initialData={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
-           <span class="attr">oncomplete</span>={handleSubmit}&gt;
-  {<span class="kw">#snippet</span> role()}&lt;<span class="tag">RoleStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> experience()}&lt;<span class="tag">ExperienceStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> eligibility()}&lt;<span class="tag">EligibilityStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> coverLetter()}&lt;<span class="tag">CoverLetterStep</span> /&gt;{/<span class="kw">snippet</span>}
-  {<span class="kw">#snippet</span> review()}&lt;<span class="tag">ReviewStep</span> /&gt;{/<span class="kw">snippet</span>}
+&lt;<span class="tag">PathShell</span>
+  {path}
+  initialData={{ roleId: <span class="str">""</span>, yearsExperience: <span class="str">""</span> }}
+  <span class="attr">oncomplete</span>={handleSubmit}
+  <span class="attr">steps</span>={{
+    role:           RoleStep,
+    experience:     ExperienceStep,
+    eligibility:    EligibilityStep,
+    <span class="str">"cover-letter"</span>: CoverLetterStep,
+    review:         ReviewStep,
+  }}
 &lt;/<span class="tag">PathShell</span>&gt;</code></pre>
         </div>
-        <p class="code-caption">Svelte 5 snippets replace JSX. The workflow import is identical to every other framework.</p>
+        <p class="code-caption">Step components are passed as a <code>steps</code> record, exactly as in React and Solid. The workflow import is identical to every other framework.</p>
       </div>
 
       <!-- Solid -->
@@ -918,8 +922,8 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
 </script>
 
 <script type="module">
-  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.8.0';
-  import { LocalStorageStore, persistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store@0.10.1';
+  import { PathEngine } from 'https://esm.sh/@daltonr/pathwrite-core@0.14.0';
+  import { LocalStorageStore, persistence, restoreOrStart } from 'https://esm.sh/@daltonr/pathwrite-store@0.14.0';
 
   // ── Path definitions ──────────────────────────────────────────────────────
   const DEMO_KEY = 'pw-hero-demo-v2';
@@ -1120,14 +1124,10 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
     document.getElementById('start-sub')?.addEventListener('click', () =>
       engine.startSubPath(subPath, {})
     );
-    document.getElementById('demo-reset')?.addEventListener('click', () =>
-      doResetStep(engine)
-    );
-    document.getElementById('restart-btn')?.addEventListener('click', () => {
-      trackedStepId = null;
-      stepEntryData = {};
-      engine.restart(mainPath, INITIAL_DATA);
-    });
+    document.getElementById('demo-reset')?.addEventListener('click', () => engine.resetStep());
+    // restart() re-runs the root path with the initialData from start(), including
+    // after the engine was restored from LocalStorage.
+    document.getElementById('restart-btn')?.addEventListener('click', () => engine.restart());
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1136,13 +1136,7 @@ it(<span class="str">"skips cover letter for non-engineering roles"</span>, <spa
     const prevBtn = document.getElementById('pw-prev');
     const nextBtn = document.getElementById('pw-next');
 
-    const currentStepId = snap ? (snap.formId ?? snap.stepId) : null;
-    if (snap && currentStepId !== trackedStepId) {
-      trackedStepId = currentStepId;
-      stepEntryData = { ...(snap.data || {}) };
-    }
-
-    const isDirty = computeIsDirty(snap);
+    const isDirty = !!snap?.isDirty;
 
     const renderStepId = snap ? (snap.formId ?? snap.stepId) : null;
     document.getElementById('pw-tag').textContent =

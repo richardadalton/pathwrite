@@ -176,7 +176,7 @@ const engine2 = saved
 | React | `@daltonr/pathwrite-react` | `usePath()` hook (`useSyncExternalStore`) | `<PathShell>` |
 | Vue 3 | `@daltonr/pathwrite-vue` | `usePath()` composable (`shallowRef` + `onScopeDispose`) | `<PathShell>` |
 | Angular | `@daltonr/pathwrite-angular` | `PathFacade` injectable (RxJS `Observable` + `Signal`) | `<pw-shell>` |
-| Svelte 5 | `@daltonr/pathwrite-svelte` | `usePath()` (runes-based store) | `PathShell` with snippets |
+| Svelte 5 | `@daltonr/pathwrite-svelte` | `usePath()` (runes-based store) | `PathShell` with a `steps` record + header/footer/completion snippets |
 | SolidJS | `@daltonr/pathwrite-solid` | `usePath()` (`createSignal` accessor, `onCleanup`) | `<PathShell>` |
 | React Native | `@daltonr/pathwrite-react-native` | `usePath()` hook | `PathShell` (Expo / bare RN) |
 
