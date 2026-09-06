@@ -7,6 +7,7 @@
     "jsxImportSource": "solid-js",
     "baseUrl": "../..",
     "paths": {
+      "#test-utils/console": ["test-utils/console.ts"],
       "@daltonr/pathwrite-core": ["packages/core/src/index.ts"],
       "@daltonr/pathwrite-solid": ["packages/solid-adapter/src/index.tsx"]
     }

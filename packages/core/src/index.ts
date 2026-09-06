@@ -1943,7 +1943,7 @@ export class PathEngine<TData extends PathData = PathData> {
         if (!this._hasWarnedAsyncShouldSkip) {
           this._hasWarnedAsyncShouldSkip = true;
           console.warn(
-            `[Pathwrite] Step "${item.id}" has an async shouldSkip. ` +
+            `[pathwrite] Step "${item.id}" has an async shouldSkip. ` +
               `snapshot().stepCount and progress may be approximate until after the first navigation.`
           );
         }

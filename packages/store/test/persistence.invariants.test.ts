@@ -1,7 +1,14 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PathEngine } from "@daltonr/pathwrite-core";
 import type { PathDefinition, PathStore, SerializedPathState } from "@daltonr/pathwrite-core";
 import { persistence, restoreOrStart } from "../src/index";
+import { captureExpectedConsole } from "#test-utils/console";
+
+// The tombstone test forces the completion delete to fail, which the observer
+// reports with console.warn. Expected here; anything else still fails.
+beforeEach(() => {
+  captureExpectedConsole(["Failed to delete saved state after completion"]);
+});
 
 /**
  * Invariants for persistence.

@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
+      "#test-utils/console": ["test-utils/console.ts"],
       "@daltonr/pathwrite-core": ["packages/core/src/index.ts"],
       "@daltonr/pathwrite-react": ["packages/react-adapter/src/index.ts"],
       "@daltonr/pathwrite-react-native": ["packages/react-native-adapter/src/index.tsx"],

@@ -1,6 +1,19 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import fc from "fast-check";
+import { captureConsole } from "#test-utils/console";
 import { PathEngine } from "@daltonr/pathwrite-core";
+
+// Every test in this file drives a workflow whose `eligibility` guard and
+// `coverLetter` shouldSkip are genuinely async. The engine therefore warns each
+// time a snapshot falls back to the optimistic default, which is correct and
+// happens once per engine — but these tests build hundreds of engines, and the
+// warnings buried every other line in the run. Captured file-wide; the
+// eligibility tests still assert the warning is being emitted.
+let warnings: string[] = [];
+beforeEach(() => {
+  warnings = captureConsole(["warn"]);
+});
+
 import {
   MockApplicationServices,
   createApplicationPath,
@@ -203,6 +216,10 @@ describe("createApplicationPath (property) — eligibility guard", () => {
         }
       )
     );
+
+    // Assert the warning rather than merely swallow it: if the engine stopped
+    // warning about an async guard in a snapshot, that would be a real change.
+    expect(warnings.some((w) => w.includes('Async guard detected on step "eligibility"'))).toBe(true);
   });
 
   it("allows navigation for every integer years value >= 2, regardless of role", async () => {

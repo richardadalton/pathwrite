@@ -1,5 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PathEngine } from "@daltonr/pathwrite-core";
+import { captureConsole } from "#test-utils/console";
+
+// Every test in this file drives a workflow whose `eligibility` guard and
+// `coverLetter` shouldSkip are genuinely async. The engine therefore warns each
+// time a snapshot falls back to the optimistic default, which is correct and
+// happens once per engine — but these tests build hundreds of engines, and the
+// warnings buried every other line in the run. Captured file-wide; the
+// eligibility tests still assert the warning is being emitted.
+let warnings: string[] = [];
+beforeEach(() => {
+  warnings = captureConsole(["warn"]);
+});
+
 import {
   MockApplicationServices,
   services,

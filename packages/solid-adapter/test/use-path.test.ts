@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi } from "vitest";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import { createRoot } from "solid-js";
 import { usePath } from "../src/index.js";
 import { PathEngine } from "@daltonr/pathwrite-core";
 import type { PathDefinition } from "@daltonr/pathwrite-core";
+import { captureExpectedConsole } from "#test-utils/console";
+
+// These tests call usePath() outside a createRoot on purpose, to prove it works
+// without an owner. Solid warns that such computations are never disposed.
+beforeEach(() => {
+  captureExpectedConsole(["computations created outside", "cleanups created outside"], ["warn", "error"]);
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

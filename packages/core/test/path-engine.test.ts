@@ -1,4 +1,20 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { captureExpectedConsole } from "#test-utils/console";
+
+// Several suites below drive async or throwing guards on purpose, and the
+// engine warns each time a snapshot falls back to a default. Those warnings are
+// correct and asserted where they matter; here they are silenced so they stop
+// burying real output. Anything not on this list still fails the test.
+beforeEach(() => {
+  captureExpectedConsole([
+    "Async guard detected",
+    "Async fieldErrors detected",
+    "Async fieldWarnings detected",
+    "has an async shouldSkip",
+    "threw an error during snapshot evaluation",
+  ]);
+});
+
 import {
   GuardResult,
   PathData,

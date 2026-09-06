@@ -9,12 +9,23 @@
 // React Native test environment; see README for setup instructions.
 
 import { createElement } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
 
 afterEach(() => cleanup());
 import { PathDefinition, PathEngine, PathEvent, PathStepContext } from "@daltonr/pathwrite-core";
 import { usePath, PathProvider, PathShell, usePathContext } from "../src/index";
+import { captureExpectedConsole } from "#test-utils/console";
+
+// One test asserts that usePathContext throws outside a provider. React logs
+// every caught render error via console.error, so a passing assertion still
+// printed a full component stack.
+beforeEach(() => {
+  captureExpectedConsole(
+    ["usePathContext must be used within", "The above error occurred"],
+    ["warn", "error"]
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
