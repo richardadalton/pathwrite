@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-react-native",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -45,7 +45,7 @@
     "react-native": ">=0.72.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.14.1"
+    "@daltonr/pathwrite-core": "^0.15.0"
   },
   "devDependencies": {
     "react": "^18.3.1",
