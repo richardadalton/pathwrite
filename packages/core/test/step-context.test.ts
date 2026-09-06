@@ -62,7 +62,14 @@ describe("PathStepContext shape", () => {
               record("select")(ctx);
               return "x";
             },
-            steps: [{ id: "x", canMovePrevious: (ctx) => (record("canMovePrevious")(ctx), true) }],
+            steps: [
+              {
+                id: "x",
+                canMovePrevious: (ctx) => (record("canMovePrevious")(ctx), true),
+                canMoveNext: (ctx) => (record("innerCanMoveNext")(ctx), true),
+                onLeave: record("innerOnLeave"),
+              },
+            ],
           },
           {
             id: "host",
@@ -107,11 +114,16 @@ describe("PathStepContext shape", () => {
     expect(first("select").isFirstEntry).toBe(true);
     // The choice was resolved again on the way back and forward.
     expect(seen.select.some((c) => c.isFirstEntry === false)).toBe(true);
-    // Inside a StepChoice the synchronous snapshot evaluators pass the choice's
-    // own id while the real guard (run by previous()) passes the inner step's.
-    // Pinned as-is; see the review doc (found on the way).
+    // Inside a StepChoice every hook sees the choice's own id (the same id the
+    // snapshot reports as stepId; formId carries the inner step), whether it is
+    // run by the snapshot evaluators or by real navigation.
     checkCtx(first("canMovePrevious"), "p", "choice", { v: 2 });
-    expect(seen.canMovePrevious.some((c) => c.stepId === "x")).toBe(true);
+    for (const name of ["canMovePrevious", "innerCanMoveNext", "innerOnLeave"]) {
+      expect(seen[name].map((c) => c.stepId)).toEqual(seen[name].map(() => "choice"));
+    }
+    // Leaving the inner step is not a first entry: the choice was entered.
+    expect(first("innerOnLeave").isFirstEntry).toBe(false);
+    expect(seen.innerCanMoveNext.every((c) => c.isFirstEntry === false)).toBe(true);
     checkCtx(first("onSubPathCancel"), "p", "host", { v: 2 });
     expect(first("onSubPathCancel").isFirstEntry).toBe(false);
     checkCtx(first("onSubPathComplete"), "p", "host", { v: 2 });

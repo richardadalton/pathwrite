@@ -1946,7 +1946,7 @@ export class PathEngine<TData extends PathData = PathData> {
 
   private async leaveCurrentStep(active: ActivePath, step: PathStep): Promise<Partial<PathData> | void> {
     if (!step.onLeave) return;
-    const ctx = PathEngine.makeCtx(active, step.id);
+    const ctx = PathEngine.makeCtx(active, this.getCurrentItem(active).id);
     return step.onLeave(ctx);
   }
 
@@ -1955,7 +1955,7 @@ export class PathEngine<TData extends PathData = PathData> {
     step: PathStep
   ): Promise<{ allowed: boolean; reason: string | null }> {
     if (step.canMoveNext) {
-      const ctx = PathEngine.makeCtx(active, step.id);
+      const ctx = PathEngine.makeCtx(active, this.getCurrentItem(active).id);
       const result = await step.canMoveNext(ctx);
       return PathEngine.normaliseGuardResult(result);
     }
@@ -1971,7 +1971,7 @@ export class PathEngine<TData extends PathData = PathData> {
     step: PathStep
   ): Promise<{ allowed: boolean; reason: string | null }> {
     if (!step.canMovePrevious) return { allowed: true, reason: null };
-    const ctx = PathEngine.makeCtx(active, step.id);
+    const ctx = PathEngine.makeCtx(active, this.getCurrentItem(active).id);
     const result = await step.canMovePrevious(ctx);
     return PathEngine.normaliseGuardResult(result);
   }
