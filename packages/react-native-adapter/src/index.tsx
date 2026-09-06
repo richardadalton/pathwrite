@@ -432,6 +432,14 @@ export interface PathShellProps {
  * />
  * ```
  */
+/**
+ * A screen-reader label for one progress dot. Rendered, these are just circled
+ * numbers and a tick; announced without a label they are a row of loose digits
+ * with no indication of where the user is.
+ */
+const stepDotLabel = (index: number, total: number, status: string): string =>
+  `Step ${index + 1} of ${total}, ${status}`;
+
 export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function PathShell(
   {
     path: pathDef,
@@ -578,7 +586,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No active path.</Text>
             {!autoStart && (
-              <Pressable style={styles.btnPrimary} onPress={() => start(pathDef, initialData)}>
+              <Pressable
+                style={styles.btnPrimary}
+                onPress={() => start(pathDef, initialData)}
+                accessibilityRole="button"
+                accessibilityLabel="Start"
+              >
                 <Text style={styles.btnPrimaryText}>Start</Text>
               </Pressable>
             )}
@@ -603,6 +616,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
               step.status === "completed" && styles.dotCompleted,
               step.status === "current" && styles.dotCurrent,
             ]}
+            accessibilityLabel={stepDotLabel(i, snap.steps.length, step.status)}
           >
             <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
               {step.status === "completed" ? "✓" : String(i + 1)}
@@ -615,7 +629,16 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         const title = cur?.title ?? cur?.id;
         return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
       })()}
-      <View style={styles.track}>
+      <View
+        style={styles.track}
+        accessibilityRole="progressbar"
+        accessibilityValue={{
+          now: Math.round(snap.progress * 100),
+          min: 0,
+          max: 100,
+          text: `Step ${snap.stepIndex + 1} of ${snap.stepCount}`,
+        }}
+      >
         <View style={[styles.trackFill, { width: `${snap.progress * 100}%` }]} />
       </View>
     </View>
@@ -633,6 +656,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
               step.status === "completed" && styles.dotCompleted,
               step.status === "current" && styles.dotCurrent,
             ]}
+            accessibilityLabel={stepDotLabel(i, root.steps.length, step.status)}
           >
             <Text style={[styles.dotLabel, step.status === "upcoming" && styles.dotLabelUpcoming]}>
               {step.status === "completed" ? "✓" : String(i + 1)}
@@ -654,7 +678,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
           {completionContent ?? (
             <View style={styles.completionPanel}>
               <Text style={styles.completionMessage}>All done.</Text>
-              <Pressable style={styles.btnPrimary} onPress={() => restart()}>
+              <Pressable
+                style={styles.btnPrimary}
+                onPress={() => restart()}
+                accessibilityRole="button"
+                accessibilityLabel="Start over"
+              >
                 <Text style={styles.btnPrimaryText}>Start over</Text>
               </Pressable>
             </View>
@@ -707,7 +736,15 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         {validationDisplay !== "inline" &&
           (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
           Object.keys(snapshot.fieldErrors).length > 0 && (
-            <View style={styles.validation}>
+            <View
+              style={styles.validation}
+              testID="pw-validation"
+              // The summary appears in response to pressing Next, after focus
+              // has already moved on. Without a live region a screen reader
+              // never mentions it.
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+            >
               {Object.entries(snapshot.fieldErrors).map(([key, msg]) => (
                 <Text key={key} style={styles.validationItem}>
                   {key !== "_" && <Text style={styles.validationLabel}>{formatFieldKey(key)}: </Text>}
@@ -719,7 +756,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
 
         {/* Warning messages */}
         {validationDisplay !== "inline" && Object.keys(snapshot.fieldWarnings).length > 0 && (
-          <View style={styles.warnings}>
+          <View style={styles.warnings} testID="pw-warnings" accessibilityLiveRegion="polite">
             {Object.entries(snapshot.fieldWarnings).map(([key, msg]) => (
               <Text key={key} style={styles.warningItem}>
                 {key !== "_" && <Text style={styles.warningLabel}>{formatFieldKey(key)}: </Text>}
@@ -732,7 +769,16 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         {/* Blocking error — guard returned { allowed: false, reason } */}
         {validationDisplay !== "inline" &&
           (snapshot.hasAttemptedNext || snapshot.hasValidated) &&
-          snapshot.blockingError && <Text style={styles.blockingError}>{snapshot.blockingError}</Text>}
+          snapshot.blockingError && (
+            <Text
+              style={styles.blockingError}
+              testID="pw-blocking-error"
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+            >
+              {snapshot.blockingError}
+            </Text>
+          )}
 
         {/* Error panel — replaces footer when an async operation has failed */}
         {snapshot.status === "error" && snapshot.error ? (
@@ -740,7 +786,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
             const err = snapshot.error!;
             const escalated = err.retryCount >= 2;
             return (
-              <View style={styles.errorPanel}>
+              <View
+                style={styles.errorPanel}
+                testID="pw-error"
+                accessibilityLiveRegion="assertive"
+                accessibilityRole="alert"
+              >
                 <Text style={styles.errorTitle}>
                   {escalated ? "Still having trouble." : "Something went wrong."}
                 </Text>
@@ -750,7 +801,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                 </Text>
                 <View style={styles.errorActions}>
                   {!escalated && (
-                    <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                    <Pressable
+                      style={[styles.btn, styles.btnRetry]}
+                      onPress={retry}
+                      accessibilityRole="button"
+                      accessibilityLabel="Try again"
+                    >
                       <Text style={styles.btnPrimaryText}>Try again</Text>
                     </Pressable>
                   )}
@@ -758,6 +814,8 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     <Pressable
                       style={[styles.btn, escalated ? styles.btnRetry : styles.btnSuspend]}
                       onPress={suspend}
+                      accessibilityRole="button"
+                      accessibilityLabel="Save and come back later"
                     >
                       <Text style={escalated ? styles.btnPrimaryText : styles.btnCancelText}>
                         Save and come back later
@@ -765,7 +823,12 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     </Pressable>
                   )}
                   {escalated && !snapshot.hasPersistence && (
-                    <Pressable style={[styles.btn, styles.btnRetry]} onPress={retry}>
+                    <Pressable
+                      style={[styles.btn, styles.btnRetry]}
+                      onPress={retry}
+                      accessibilityRole="button"
+                      accessibilityLabel="Try again"
+                    >
                       <Text style={styles.btnPrimaryText}>Try again</Text>
                     </Pressable>
                   )}
@@ -784,6 +847,9 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     style={[styles.btn, styles.btnCancel, snapshot.status !== "idle" && styles.btnDisabled]}
                     onPress={cancel}
                     disabled={snapshot.status !== "idle"}
+                    accessibilityRole="button"
+                    accessibilityLabel={cancelLabel}
+                    accessibilityState={{ disabled: snapshot.status !== "idle" }}
                   >
                     <Text style={styles.btnCancelText}>{cancelLabel}</Text>
                   </Pressable>
@@ -797,6 +863,11 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     ]}
                     onPress={previous}
                     disabled={snapshot.status !== "idle" || !snapshot.canMovePrevious}
+                    accessibilityRole="button"
+                    accessibilityLabel={backLabel}
+                    accessibilityState={{
+                      disabled: snapshot.status !== "idle" || !snapshot.canMovePrevious,
+                    }}
                   >
                     <Text style={styles.btnBackText}>← {backLabel}</Text>
                   </Pressable>
@@ -808,6 +879,9 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                     style={[styles.btn, styles.btnCancel, snapshot.status !== "idle" && styles.btnDisabled]}
                     onPress={cancel}
                     disabled={snapshot.status !== "idle"}
+                    accessibilityRole="button"
+                    accessibilityLabel={cancelLabel}
+                    accessibilityState={{ disabled: snapshot.status !== "idle" }}
                   >
                     <Text style={styles.btnCancelText}>{cancelLabel}</Text>
                   </Pressable>
@@ -819,6 +893,21 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
                   style={[styles.btn, styles.btnPrimary, snapshot.status !== "idle" && styles.btnDisabled]}
                   onPress={next}
                   disabled={snapshot.status !== "idle"}
+                  accessibilityRole="button"
+                  // While busy the visible text is replaced by a spinner, so the
+                  // button needs a label of its own or there is nothing to
+                  // announce. `busy` is what makes a screen reader say so.
+                  accessibilityLabel={
+                    snapshot.status !== "idle"
+                      ? (loadingLabel ?? "Working, please wait")
+                      : snapshot.isLastStep
+                        ? completeLabel
+                        : nextLabel
+                  }
+                  accessibilityState={{
+                    disabled: snapshot.status !== "idle",
+                    busy: snapshot.status !== "idle",
+                  }}
                 >
                   {snapshot.status !== "idle" && loadingLabel ? (
                     <Text style={styles.btnPrimaryText}>{loadingLabel}</Text>

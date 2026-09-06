@@ -13,9 +13,33 @@ import { createElement } from "react";
 
 const noop = (..._args: any[]) => null;
 
+/**
+ * Maps the accessibility props to their closest ARIA equivalents so tests can
+ * assert them. React Native hands these to the platform accessibility APIs
+ * rather than to the DOM, so this is an approximation — but asserting the props
+ * are set at all is the point: the shell shipped with none of them, and screen
+ * readers announced every control as static text.
+ */
 const domProps = (props: any) => ({
   "data-testid": props.testID,
   ...(props.accessibilityRole ? { role: props.accessibilityRole } : {}),
+  ...(props.accessibilityLabel ? { "aria-label": props.accessibilityLabel } : {}),
+  ...(props.accessibilityHint ? { "aria-description": props.accessibilityHint } : {}),
+  ...(props.accessibilityLiveRegion ? { "aria-live": props.accessibilityLiveRegion } : {}),
+  ...(props.accessibilityState?.disabled !== undefined
+    ? { "aria-disabled": String(!!props.accessibilityState.disabled) }
+    : {}),
+  ...(props.accessibilityState?.busy !== undefined
+    ? { "aria-busy": String(!!props.accessibilityState.busy) }
+    : {}),
+  ...(props.accessibilityValue?.now !== undefined
+    ? {
+        "aria-valuenow": String(props.accessibilityValue.now),
+        "aria-valuemin": String(props.accessibilityValue.min ?? 0),
+        "aria-valuemax": String(props.accessibilityValue.max ?? 100),
+      }
+    : {}),
+  ...(props.accessibilityValue?.text ? { "aria-valuetext": props.accessibilityValue.text } : {}),
 });
 
 export const View = (props: any) => createElement("div", domProps(props), props.children);
