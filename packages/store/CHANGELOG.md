@@ -1,5 +1,16 @@
 # @daltonr/pathwrite-store
 
+## 0.14.1
+
+### Patch Changes
+
+- **`@daltonr/pathwrite-store` can now be loaded by Node, webpack and Next.js.** Its entry re-exported `./local-store` and `./async-store` without file extensions. The package declares `"type": "module"`, so Node rejected it with `ERR_MODULE_NOT_FOUND`, webpack refused it as not fully specified, and TypeScript under `node16`/`nodenext` raised TS2835. Vite and esbuild resolve extensionless paths, which is why every storage demo passed. This shipped in every release since 0.9.0. The same defect in `@daltonr/pathwrite-angular`, whose shell imported `./index`, is fixed too.
+
+  `@daltonr/pathwrite-store` also gains the `clean` and `prepublishOnly` scripts every other package has, so a single-package hotfix publish rebuilds instead of shipping a stale `dist`, and now ships `src` so the source maps in `dist` resolve for consumers.
+
+  `LICENSE` is now present in `@daltonr/pathwrite-store`, `@daltonr/pathwrite-solid` and `@daltonr/pathwrite-react-native`. All three listed it in `files` but the file did not exist, so it was absent from the published tarballs.
+  - @daltonr/pathwrite-core@0.14.1
+
 ## 0.14.0
 
 ### Minor Changes

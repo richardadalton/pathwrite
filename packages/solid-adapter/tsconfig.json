@@ -4,6 +4,7 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "dist",
+    "emitDeclarationOnly": true,
     "jsx": "react-jsx",
     "jsxImportSource": "solid-js",
     "baseUrl": ".",

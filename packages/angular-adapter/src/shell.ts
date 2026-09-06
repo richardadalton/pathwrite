@@ -31,7 +31,7 @@ import {
   formatFieldKey,
   errorPhaseMessage,
 } from "@daltonr/pathwrite-core";
-import { PathFacade } from "./index";
+import { PathFacade } from "./index.js";
 
 // ---------------------------------------------------------------------------
 // PathShellActions

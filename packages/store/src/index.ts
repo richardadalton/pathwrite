@@ -553,8 +553,8 @@ export type {
   PathStore,
 } from "@daltonr/pathwrite-core";
 
-export { LocalStorageStore } from "./local-store";
-export type { LocalStorageStoreOptions, StorageAdapter } from "./local-store";
+export { LocalStorageStore } from "./local-store.js";
+export type { LocalStorageStoreOptions, StorageAdapter } from "./local-store.js";
 
-export { AsyncStorageStore } from "./async-store";
-export type { AsyncStorageStoreOptions, AsyncStorageAdapter } from "./async-store";
+export { AsyncStorageStore } from "./async-store.js";
+export type { AsyncStorageStoreOptions, AsyncStorageAdapter } from "./async-store.js";

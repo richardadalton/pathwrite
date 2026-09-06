@@ -1,5 +1,18 @@
 # @daltonr/pathwrite-solid
 
+## 0.14.1
+
+### Patch Changes
+
+- **`@daltonr/pathwrite-solid` can now be imported.** Every published version from 0.6.0 to 0.14.0 shipped a `dist` built by `tsc`, which cannot compile Solid: `solid-js/jsx-runtime` is types only, and Solid's JSX has to be transformed by `babel-preset-solid` into fine-grained DOM operations. The emitted bundle imported `jsx`, `jsxs` and `Fragment` from a module that exports none of them, so `import "@daltonr/pathwrite-solid"` threw for every consumer. The repository never caught it because the eight Solid demos aliased the package to its source.
+
+  The runtime build now goes through `vite-plugin-solid` and `tsc` emits declarations only. Two builds are published, because a Solid component compiled for the DOM calls client-only APIs at module scope and throws under a server runtime: `dist/index.js` (`generate: "dom"`) and `dist/server.js` (`generate: "ssr"`), both hydratable so they can be used as a pair.
+
+  **New `solid` export condition.** The package now exposes its source at the `solid` condition, which `vite-plugin-solid` puts first in its resolve conditions. A consumer running their own Solid toolchain compiles `src/index.tsx` for their own target, so dom versus ssr generation and hydration match their application exactly, and the output tree-shakes against their build. Consumers without a Solid compiler in the pipeline fall back to the `node`, `browser` and `import` conditions.
+
+  The eight Solid demos no longer alias the adapter to its source. They resolve it through the published export map, the same way a consumer's project does.
+  - @daltonr/pathwrite-core@0.14.1
+
 ## 0.14.0
 
 ### Minor Changes

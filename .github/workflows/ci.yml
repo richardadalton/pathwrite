@@ -37,3 +37,10 @@ jobs:
       # assertions and a tsc pass over every test file.
       - name: Test
         run: npm test
+
+      # Packs each package, installs the tarballs into a throwaway project
+      # outside the workspace, and imports them as a consumer. Every other check
+      # here runs against src, so this is the only step that exercises what
+      # users actually install.
+      - name: Verify published artifacts
+        run: npm run verify:packages

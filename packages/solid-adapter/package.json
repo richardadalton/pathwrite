@@ -1,6 +1,6 @@
 {
   "name": "@daltonr/pathwrite-solid",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "type": "module",
   "license": "MIT",
   "description": "SolidJS adapter for @daltonr/pathwrite-core — reactive usePath() composable and optional PathShell component.",
@@ -25,6 +25,9 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "solid": "./src/index.tsx",
+      "node": "./dist/server.js",
+      "browser": "./dist/index.js",
       "import": "./dist/index.js"
     },
     "./styles.css": "./dist/index.css",
@@ -39,7 +42,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp ../shell.css dist/index.css",
+    "build": "npm run clean && vite build && vite build --mode ssr && tsc -p tsconfig.json && cp ../shell.css dist/index.css",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "prepublishOnly": "npm run clean && npm run build"
   },
@@ -47,7 +50,7 @@
     "solid-js": ">=1.8.0"
   },
   "dependencies": {
-    "@daltonr/pathwrite-core": "^0.14.0"
+    "@daltonr/pathwrite-core": "^0.14.1"
   },
   "devDependencies": {
     "solid-js": "^1.9.0"

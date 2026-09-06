@@ -1,5 +1,13 @@
 # @daltonr/pathwrite-core
 
+## 0.14.1
+
+### Patch Changes
+
+- Version alignment only. All eight packages release together, and this one fixes packaging
+  defects in `@daltonr/pathwrite-solid`, `@daltonr/pathwrite-store` and
+  `@daltonr/pathwrite-angular`. The engine itself is unchanged from 0.14.0.
+
 ## 0.14.0
 
 ### Minor Changes
