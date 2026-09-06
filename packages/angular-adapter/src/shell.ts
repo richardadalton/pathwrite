@@ -415,7 +415,7 @@ export class PathShellCompletionDirective {
 })
 export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
   /** The path definition to run. Required unless [engine] is provided. */
-  @Input() path?: PathDefinition<any>;
+  @Input() path?: PathDefinition;
   /**
    * An externally-managed `PathEngine` to adopt — for example, the engine
    * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
@@ -523,7 +523,7 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
     cancel: () => this.facade.cancel(),
     goToStep: (id, options) => this.facade.goToStep(id, options),
     goToStepChecked: (id, options) => this.facade.goToStepChecked(id, options),
-    setData: (key, value) => this.facade.setData(key, value as never),
+    setData: (key, value) => this.facade.setData(key, value),
     restart: () => this.facade.restart(),
     retry: () => this.facade.retry(),
     suspend: () => this.facade.suspend(),
@@ -556,10 +556,10 @@ export class PathShellComponent implements OnInit, OnChanges, OnDestroy {
         this.started = false;
       }
       if (this.restoreKey && this.outerFacade && event.type === "stateChanged") {
-        this.outerFacade.setData(
-          this.restoreKey as any,
-          { ...(event as any).snapshot, serializedState: this.facade.engine.exportState() } as any
-        );
+        this.outerFacade.setData(this.restoreKey, {
+          ...event.snapshot,
+          serializedState: this.facade.engine.exportState(),
+        });
       }
     });
 

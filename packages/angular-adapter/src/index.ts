@@ -6,21 +6,25 @@ import { PathData, PathDefinition, PathEngine, PathEvent, PathSnapshot } from "@
  * Angular facade over PathEngine. Provide at component level for an isolated
  * instance per component; Angular handles cleanup via ngOnDestroy.
  *
- * The optional generic `TData` narrows `state$`, `stateSignal`, `snapshot()`,
- * and `setData()` to your data shape. It is a **type-level assertion** — no
- * runtime validation is performed. Inject as `PathFacade` (untyped default)
- * then cast:
+ * The optional generic `TData` narrows `start()`, `state$`, `stateSignal`,
+ * `events$`, `snapshot()`, `setData()` and the underlying `engine` to your
+ * data shape. It is a **type-level assertion** — no runtime validation is
+ * performed. Angular's injector cannot infer a type argument, so inject as
+ * `PathFacade` (untyped default) then cast:
  *
  * ```typescript
  * const facade = inject(PathFacade) as PathFacade<MyData>;
  * facade.snapshot()?.data.name; // typed as string (or whatever MyData defines)
  * ```
+ *
+ * The default type parameter keeps the loose surface: an untyped `PathFacade`
+ * accepts any `PathDefinition` and any `setData` key.
  */
 @Injectable()
 export class PathFacade<TData extends PathData = PathData> implements OnDestroy {
-  private _engine = new PathEngine();
+  private _engine = new PathEngine<TData>();
   private readonly _state$ = new BehaviorSubject<PathSnapshot<TData> | null>(null);
-  private readonly _events$ = new Subject<PathEvent>();
+  private readonly _events$ = new Subject<PathEvent<TData>>();
   private _unsubscribeFromEngine: () => void = () => {};
   private readonly _stateSignal = signal<PathSnapshot<TData> | null>(null);
 
@@ -32,12 +36,17 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   public services: unknown = null;
 
   public readonly state$: Observable<PathSnapshot<TData> | null> = this._state$.asObservable();
-  public readonly events$: Observable<PathEvent> = this._events$.asObservable();
+  public readonly events$: Observable<PathEvent<TData>> = this._events$.asObservable();
   /** Signal version of state$. Updates on every path state change. Requires Angular 16+. */
   public readonly stateSignal: Signal<PathSnapshot<TData> | null> = this._stateSignal.asReadonly();
 
   public constructor() {
     this.connectEngine(this._engine);
+  }
+
+  /** The engine this facade is connected to (its own, or the one given to `adoptEngine`). */
+  public get engine(): PathEngine<TData> {
+    return this._engine;
   }
 
   /**
@@ -52,33 +61,32 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
    * const { engine } = await restoreOrStart({ store, key, path, initialData, observers: [...] });
    * facade.adoptEngine(engine);
    * ```
+   *
+   * The engine's data type must match the facade's. Adopting an untyped
+   * `PathEngine` into a `PathFacade<MyData>` is the same type-level assertion
+   * as the inject cast: `facade.adoptEngine(engine as PathEngine<MyData>)`.
    */
-  /** The engine this facade is connected to (its own, or the one given to `adoptEngine`). */
-  public get engine(): PathEngine {
-    return this._engine;
-  }
-
-  public adoptEngine(engine: PathEngine): void {
+  public adoptEngine(engine: PathEngine<TData>): void {
     // Disconnect from whatever engine we're currently listening to
     this._unsubscribeFromEngine();
     this._engine = engine;
     this.connectEngine(engine);
   }
 
-  private connectEngine(engine: PathEngine): void {
+  private connectEngine(engine: PathEngine<TData>): void {
     // Seed state immediately — critical when restoring a persisted path since
     // the engine is already running before the facade connects to it.
-    const current = engine.snapshot() as PathSnapshot<TData> | null;
+    const current = engine.snapshot();
     this._state$.next(current);
     this._stateSignal.set(current);
 
     this._unsubscribeFromEngine = engine.subscribe((event) => {
       this._events$.next(event);
       if (event.type === "stateChanged" || event.type === "resumed") {
-        this._state$.next(event.snapshot as PathSnapshot<TData>);
-        this._stateSignal.set(event.snapshot as PathSnapshot<TData>);
+        this._state$.next(event.snapshot);
+        this._stateSignal.set(event.snapshot);
       } else if (event.type === "completed" || event.type === "cancelled") {
-        const snap = engine.snapshot() as PathSnapshot<TData> | null;
+        const snap = engine.snapshot();
         this._state$.next(snap);
         this._stateSignal.set(snap);
       }
@@ -91,7 +99,7 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     this._state$.complete();
   }
 
-  public start(path: PathDefinition<any>, initialData: PathData = {}): Promise<void> {
+  public start(path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> {
     return this._engine.start(path, initialData);
   }
 
@@ -116,8 +124,9 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
     return this._engine.suspend();
   }
 
+  /** Sub-paths carry their own data, so the definition is not tied to `TData`. */
   public startSubPath(
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData: PathData = {},
     meta?: Record<string, unknown>
   ): Promise<void> {
@@ -137,7 +146,7 @@ export class PathFacade<TData extends PathData = PathData> implements OnDestroy 
   }
 
   public setData<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> {
-    return this._engine.setData(key, value as unknown);
+    return this._engine.setData(key, value);
   }
 
   /** Reset the current step's data to what it was when the step was entered.
