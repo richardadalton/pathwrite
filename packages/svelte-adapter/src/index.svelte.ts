@@ -23,7 +23,7 @@ export type {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UsePathOptions {
+export interface UsePathOptions<TData extends PathData = PathData> {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, the engine
    * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
@@ -40,9 +40,9 @@ export interface UsePathOptions {
    * later (e.g. from an async `restoreOrStart()`) or is swapped is adopted —
    * the hook re-subscribes and re-seeds its snapshot from the new engine.
    */
-  engine?: PathEngine;
+  engine?: PathEngine<TData>;
   /** Called for every engine event (stateChanged, completed, cancelled, resumed). */
-  onEvent?: (event: PathEvent) => void;
+  onEvent?: (event: PathEvent<TData>) => void;
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
@@ -54,10 +54,10 @@ export interface UsePathReturn<TData extends PathData = PathData> {
    */
   readonly snapshot: PathSnapshot<TData> | null;
   /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
-  /** Push a sub-path onto the stack. Requires an active path. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
+  start: (path: PathDefinition<TData>, initialData?: Partial<TData>) => Promise<void>;
+  /** Push a sub-path onto the stack. Requires an active path. A sub-path has its own data, so any definition is accepted. Pass an optional `meta` object for correlation — it is returned unchanged to the parent step's `onSubPathComplete` / `onSubPathCancel` hooks. */
   startSubPath: (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData?: PathData,
     meta?: Record<string, unknown>
   ) => Promise<void>;
@@ -148,22 +148,25 @@ export interface UsePathReturn<TData extends PathData = PathData> {
  * {/if}
  * ```
  */
-export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
-  let ownEngine: PathEngine | null = null;
-  const resolveEngine = (): PathEngine => options?.engine ?? (ownEngine ??= new PathEngineClass());
+export function usePath<TData extends PathData = PathData>(
+  options?: UsePathOptions<TData>
+): UsePathReturn<TData> {
+  let ownEngine: PathEngine<TData> | null = null;
+  const resolveEngine = (): PathEngine<TData> =>
+    options?.engine ?? (ownEngine ??= new PathEngineClass<TData>());
   let engine = resolveEngine();
 
   // `$state.raw`, not `$state`: snapshots are immutable values the engine
   // replaces wholesale on every change and nothing mutates them in place, so a
   // deep proxy over each one (and its `data`) would be pure overhead. Every
   // update below reassigns the whole value, which is what `$state.raw` tracks.
-  let _snapshot: PathSnapshot<TData> | null = $state.raw(engine.snapshot() as PathSnapshot<TData> | null);
+  let _snapshot: PathSnapshot<TData> | null = $state.raw(engine.snapshot());
 
-  const onEngineEvent = (event: PathEvent): void => {
+  const onEngineEvent = (event: PathEvent<TData>): void => {
     if (event.type === "stateChanged" || event.type === "resumed") {
-      _snapshot = event.snapshot as PathSnapshot<TData>;
+      _snapshot = event.snapshot;
     } else if (event.type === "completed" || event.type === "cancelled") {
-      _snapshot = engine.snapshot() as PathSnapshot<TData> | null;
+      _snapshot = engine.snapshot();
     }
     options?.onEvent?.(event);
   };
@@ -178,7 +181,7 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
       if (next === engine) return;
       unsubscribe();
       engine = next;
-      _snapshot = engine.snapshot() as PathSnapshot<TData> | null;
+      _snapshot = engine.snapshot();
       unsubscribe = engine.subscribe(onEngineEvent);
     });
   });
@@ -189,11 +192,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     stopWatching();
   });
 
-  const start = (path: PathDefinition<any>, initialData: PathData = {}): Promise<void> =>
+  const start = (path: PathDefinition<TData>, initialData: Partial<TData> = {}): Promise<void> =>
     engine.start(path, initialData);
 
   const startSubPath = (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData: PathData = {},
     meta?: Record<string, unknown>
   ): Promise<void> => engine.startSubPath(path, initialData, meta);
@@ -207,8 +210,8 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const goToStepChecked = (stepId: string, options?: { validateOnLeave?: boolean }): Promise<void> =>
     engine.goToStepChecked(stepId, options);
 
-  const setData = (<K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
-    engine.setData(key, value as unknown)) as UsePathReturn<TData>["setData"];
+  const setData = <K extends string & keyof TData>(key: K, value: TData[K]): Promise<void> =>
+    engine.setData(key, value);
 
   const resetStep = (): Promise<void> => engine.resetStep();
 

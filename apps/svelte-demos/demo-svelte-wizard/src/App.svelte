@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PathShell } from "@daltonr/pathwrite-svelte";
+  import { PathShell, type PathSnapshot } from "@daltonr/pathwrite-svelte";
   import { INITIAL_DATA, type OnboardingData } from "./onboarding";
   import PersonalInfoStep from "./PersonalInfoStep.svelte";
   import AboutYouStep from "./AboutYouStep.svelte";
@@ -81,8 +81,10 @@
         review: ReviewStep,
       }}
     >
+      <!-- The shell renders any path, so its snippet hands a plain PathSnapshot;
+           narrow it to this demo's data type for the panel. -->
       {#snippet completion(snap)}
-        <CompletionPanel {snap} />
+        <CompletionPanel snap={snap as PathSnapshot<OnboardingData>} />
       {/snippet}
     </PathShell>
   {/if}

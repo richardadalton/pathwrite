@@ -22,7 +22,7 @@
   import type { Snippet, Component } from "svelte";
 
   interface Props {
-    path?: PathDefinition<any>;
+    path?: PathDefinition;
     engine?: PathEngine;
     initialData?: PathData;
     /**
@@ -84,10 +84,10 @@
     oncancel?: (data: PathData) => void;
     onevent?: (event: PathEvent) => void;
     // Optional override snippets for header and footer
-    header?: Snippet<[PathSnapshot<any>]>;
-    footer?: Snippet<[PathSnapshot<any>, PathShellActions]>;
+    header?: Snippet<[PathSnapshot]>;
+    footer?: Snippet<[PathSnapshot, PathShellActions]>;
     /** Snippet rendered when `snapshot.status === "completed"`. Defaults to a simple "All done." panel with a restart button. */
-    completion?: Snippet<[PathSnapshot<any>]>;
+    completion?: Snippet<[PathSnapshot]>;
   }
 
   let {
@@ -155,7 +155,7 @@
       if (event.type === "completed") oncomplete?.(event.data);
       if (event.type === "cancelled") oncancel?.(event.data);
       if (restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.setData as unknown as (key: string, value: unknown) => Promise<void>)(restoreKey, {
+        void outerCtx.setData(restoreKey, {
           ...event.snapshot,
           serializedState: currentEngine().exportState(),
         });
@@ -232,7 +232,7 @@
       let startData: PathData = initialData ?? {};
       let restoreStepId: string | undefined;
       if (restoreKey && outerCtx) {
-        const stored = outerCtx.snapshot?.data[restoreKey] as PathSnapshot<any> | undefined;
+        const stored = outerCtx.snapshot?.data[restoreKey] as PathSnapshot | undefined;
         if (stored != null && typeof stored === "object" && "stepId" in stored) {
           startData = stored.data as PathData;
           if (stored.stepIndex > 0) restoreStepId = stored.stepId as string;
@@ -265,7 +265,7 @@
     cancel,
     goToStep,
     goToStepChecked,
-    setData: (key, value) => setData(key as never, value as never),
+    setData,
     restart: () => restartFn(),
     retry,
     suspend,

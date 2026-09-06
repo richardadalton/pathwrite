@@ -6,7 +6,7 @@
   // where every prop is `any` and none of these assertions could fail.
   import { expectTypeOf } from "vitest";
   import type { Component, ComponentProps } from "svelte";
-  import type { PathEvent } from "@daltonr/pathwrite-core";
+  import type { PathDefinition, PathEvent } from "@daltonr/pathwrite-core";
   import PathShell from "../src/PathShell.svelte";
 
   type Props = ComponentProps<typeof PathShell>;
@@ -21,5 +21,14 @@
   // Step components are passed as one record keyed by step id.
   expectTypeOf<NonNullable<Props["steps"]>>().toEqualTypeOf<Record<string, Component>>();
 
+  // `path` accepts a definition over typed data: the shell renders any path,
+  // so its prop is the plain `PathDefinition`, to which a `PathDefinition<Form>`
+  // is assignable.
+  type Form = { name: string; age: number };
+  const typed: PathDefinition<Form> = { id: "form", steps: [{ id: "one" }] };
+  const path: Props["path"] = typed;
+  expectTypeOf<Props["path"]>().toEqualTypeOf<PathDefinition | undefined>();
+
   void typo;
+  void path;
 </script>
