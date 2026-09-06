@@ -58,10 +58,10 @@ Creates an isolated path engine instance. The adapter registers an `onCleanup` h
 ### Type parameter
 
 ```tsx
-interface ApplicationData {
+type ApplicationData = {
   firstName: string;
   agreed: boolean;
-}
+};
 
 const { snapshot, setData } = usePath<ApplicationData>();
 snapshot()?.data.firstName;           // typed as string

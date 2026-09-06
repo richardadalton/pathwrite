@@ -551,7 +551,7 @@ interface PathStore {
 | `delete(key)` | Remove the stored state for the given key (e.g. after path completion). |
 
 `@daltonr/pathwrite-store` provides three implementations:
-- **`HttpStore`** — saves state to a REST API (`POST /baseUrl/:key`, `GET /baseUrl/:key`, `DELETE /baseUrl/:key`).
+- **`HttpStore`** — saves state to a REST API (`PUT /baseUrl/state/:key`, `GET /baseUrl/state/:key`, `DELETE /baseUrl/state/:key`). Each URL is overridable with the `saveUrl` / `loadUrl` / `deleteUrl` options.
 - **`LocalStorageStore`** — saves state to `window.localStorage` (browser only).
 - **`AsyncStorageStore`** — saves state through an `AsyncStorage`-style adapter (React Native).
 

@@ -129,7 +129,7 @@ In frameworks with function-based rendering (Solid), steps are render functions:
 />
 ```
 
-In Vue, each step value is a component reference. In Svelte, the shell uses a `{#snippet}` map or a slot-based API — see the framework-specific getting-started guide for the exact syntax.
+In Vue, each step value is a component reference. In Svelte the shell takes the same shape — a `steps` record of components — while `header`, `footer` and `completion` remain snippets. See the framework-specific getting-started guide for the exact syntax.
 
 ### Core props
 

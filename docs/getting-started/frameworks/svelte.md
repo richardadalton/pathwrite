@@ -130,31 +130,34 @@ The package README ([packages/svelte-adapter/README.md](../../../packages/svelte
 | `oncancel` | `(data: PathData) => void` | Called when the path is cancelled. |
 | `onevent` | `(event: PathEvent) => void` | Called for every engine event. |
 
-### Snippets
+### Step components
 
-Step content is provided as Svelte 5 snippets passed as children of `<PathShell>`. The snippet name must match the step ID exactly:
+Step content is passed as the `steps` prop: a record keyed by step ID whose
+values are components. The keys are plain object keys, so hyphenated step IDs
+work directly.
 
 ```svelte
-<PathShell path={myPath}>
-  {#snippet details()}
-    <DetailsStep />
-  {/snippet}
-  {#snippet review()}
-    <ReviewStep />
-  {/snippet}
-</PathShell>
+<script lang="ts">
+  import { PathShell } from "@daltonr/pathwrite-svelte";
+  import DetailsStep from "./DetailsStep.svelte";
+  import ReviewStep from "./ReviewStep.svelte";
+</script>
+
+<PathShell path={myPath} steps={{ details: DetailsStep, review: ReviewStep }} />
 ```
+
+Step content used to be passed as loose snippets named after each step ID.
+That changed in 0.14.0, to match the React and Solid shells and so that a
+mistyped prop is a type error rather than a silently missing step.
+
+### Snippets
 
 You can also replace the header, footer and completion panel with custom snippets. A custom `header` is shown even for single-step paths and hidden under `hideProgress` or `layout="tabs"`; `completion(snap)` replaces the default "All done." panel when `snap.status === "completed"` (`completionBehaviour: "stayOnFinal"`, the default):
 
 ```svelte
-<PathShell path={myPath}>
+<PathShell path={myPath} steps={{ details: DetailsStep }}>
   {#snippet header(snap)}
     <p>Step {snap.stepIndex + 1} of {snap.stepCount} — {snap.stepTitle}</p>
-  {/snippet}
-
-  {#snippet details()}
-    <DetailsStep />
   {/snippet}
 
   {#snippet footer(snap, actions)}
@@ -177,30 +180,30 @@ You can also replace the header, footer and completion panel with custom snippet
 | Export | Description |
 |--------|-------------|
 | `bindData(getSnapshot, setData, key)` | Two-way binding helper for inputs. Returns an object with a reactive `value` getter (reads `getSnapshot()?.data[key]`) and a `set(value)` method that calls `setData(key, value)`: `const name = bindData(() => path.snapshot, path.setData, "name")`, then `<input value={name.value} oninput={(e) => name.set(e.currentTarget.value)} />`. |
-| `stepIdToCamelCase(id)` | Converts a hyphenated step ID to camelCase (`"cover-note"` → `"coverNote"`). This is the conversion `<PathShell>` uses to resolve snippets for hyphenated step IDs. |
+| `stepIdToCamelCase(id)` | Converts a hyphenated step ID to camelCase (`"cover-note"` → `"coverNote"`). This is the conversion `<PathShell>` also accepts as a key in the `steps` record. |
 | `setPathContext(ctx)` | Sets the `PathContext` that `usePathContext()` reads, under the adapter's private `Symbol` key. Used internally by `<PathShell>`; call it only if you are building your own shell component. |
 | `getPathContextOrNull()` | Reads the nearest ancestor `PathContext`, or `undefined` when there is none. Used internally by `<PathShell>` to reach the outer shell for `restoreKey`; it must be called before `setPathContext()` so it reads the parent rather than self. |
 
 ---
 
-## Gotcha — camelCase fallback for hyphenated step IDs
+## Hyphenated step IDs
 
-Svelte snippet names must be valid JavaScript identifiers, so they cannot contain hyphens. If your workflow uses a hyphenated step ID such as `"cover-note"`, you cannot write `{#snippet cover-note()}`.
-
-`<PathShell>` handles this automatically: it first looks for a snippet matching the exact step ID, and if it finds nothing it converts the ID to camelCase and checks again. So `"cover-note"` falls back to `"coverNote"`, and `"personal-info"` falls back to `"personalInfo"`.
+Since step components are passed in the `steps` record rather than as snippets,
+a hyphenated step ID is just an object key and needs no special handling:
 
 ```svelte
 <!-- Path has a step with id="cover-note" -->
-<PathShell path={myPath}>
-  {#snippet coverNote()}      <!-- camelCase — resolved automatically -->
-    <CoverNoteStep />
-  {/snippet}
-</PathShell>
+<PathShell path={myPath} steps={{ "cover-note": CoverNoteStep }} />
 ```
 
-If `<PathShell>` cannot find a snippet under either the exact ID or the camelCase form, it renders `No content for step "cover-note"` and fires a `console.warn` in development to help you diagnose the mismatch.
+`<PathShell>` also accepts the camelCase form, so `{ coverNote: CoverNoteStep }`
+resolves a step with id `"cover-note"`. That fallback exists because snippet
+names cannot contain hyphens, which mattered when step content was passed as
+snippets; with the record it is a convenience rather than a requirement. Use
+`stepIdToCamelCase(id)` if you need the same conversion yourself.
 
-The rule is simple: if your step ID is hyphenated, pass the camelCase snippet name. If it is already a valid identifier (no hyphens), the snippet name and step ID must match exactly.
+If `<PathShell>` finds nothing under either the exact ID or the camelCase form,
+it renders `No content for step "cover-note"` and warns in development.
 
 ---
 
@@ -339,24 +342,17 @@ export const applicationPath: PathDefinition<ApplicationData> = {
   }
 </script>
 
+<!--
+  Step IDs are plain keys in the `steps` record, so the hyphenated
+  "cover-note" needs no special handling. PathShell also accepts the
+  camelCase form, and warns in development if it finds neither.
+-->
 <PathShell
   path={applicationPath}
   initialData={{ firstName: "", email: "", coverNote: "" }}
   oncomplete={handleComplete}
->
-  {#snippet details()}
-    <DetailsStep />
-  {/snippet}
-
-  <!--
-    Step ID is "cover-note". Svelte snippets can't contain hyphens,
-    so PathShell falls back to the camelCase form "coverNote" automatically.
-    A console.warn fires during development if neither form is found.
-  -->
-  {#snippet coverNote()}
-    <CoverNoteStep />
-  {/snippet}
-</PathShell>
+  steps={{ details: DetailsStep, "cover-note": CoverNoteStep }}
+/>
 ```
 
 **What this demonstrates:**
@@ -378,9 +374,11 @@ export const applicationPath: PathDefinition<ApplicationData> = {
 </script>
 
 {#if isActive}
-  <PathShell path={myPath} oncomplete={() => (isActive = false)}>
-    {#snippet details()}<DetailsStep />{/snippet}
-  </PathShell>
+  <PathShell
+    path={myPath}
+    steps={{ details: DetailsStep }}
+    oncomplete={() => (isActive = false)}
+  />
 {:else}
   <button onclick={() => (isActive = true)}>Try Again</button>
 {/if}
@@ -393,9 +391,12 @@ export const applicationPath: PathDefinition<ApplicationData> = {
   let shellRef;
 </script>
 
-<PathShell bind:this={shellRef} path={myPath} oncomplete={onDone}>
-  {#snippet details()}<DetailsStep />{/snippet}
-</PathShell>
+<PathShell
+  bind:this={shellRef}
+  path={myPath}
+  steps={{ details: DetailsStep }}
+  oncomplete={onDone}
+/>
 
 <button onclick={() => shellRef.restart()}>Start Over</button>
 ```

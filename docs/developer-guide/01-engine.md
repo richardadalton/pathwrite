@@ -55,10 +55,10 @@ Here is the engine running in pure TypeScript — no framework, no component:
 ```typescript
 import { PathEngine, PathDefinition } from "@daltonr/pathwrite-core";
 
-interface SignupData {
+type SignupData = {
   name: string;
   email: string;
-}
+};
 
 const signupPath: PathDefinition<SignupData> = {
   id: "signup",

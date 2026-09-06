@@ -9,11 +9,11 @@ Pathwrite is not a wizard library. That is worth saying plainly, because the wiz
 A `PathDefinition` with one step is a single form. The engine does not know it is a form; it knows there is one step, a validation function, and an `onComplete` callback. The rest falls out naturally.
 
 ```typescript
-interface ContactData {
+type ContactData = {
   name: string;
   email: string;
   message: string;
-}
+};
 
 const contactForm: PathDefinition<ContactData> = {
   id: "contact-form",
@@ -59,14 +59,14 @@ function SubmitButton() {
 A shopping cart checkout — cart review, shipping, payment, confirmation — looks like a wizard on the surface, but the requirements diverge quickly. Users jump back to edit the cart from the payment screen. The completion step calls an external payments API, not just an internal save. The billing address step is skipped entirely if the user chooses to use their shipping address. These are normal e-commerce requirements, and they are a bad fit for a traditional linear wizard library.
 
 ```typescript
-interface CheckoutData {
+type CheckoutData = {
   items: CartItem[];
   shippingAddress: Address | null;
   billingAddress: Address | null;
   sameAddressForBilling: boolean;
   paymentToken: string | null;
   orderId: string | null;
-}
+};
 
 const checkout: PathDefinition<CheckoutData> = {
   id: "checkout",
@@ -125,7 +125,7 @@ const checkout: PathDefinition<CheckoutData> = {
 A linear path does not have to feel linear. Replace the default navigation with a custom tab bar and the same engine becomes a tabbed form — one step per tab, free switching between them, no Back or Next buttons in sight.
 
 ```typescript
-interface ProfileData {
+type ProfileData = {
   firstName: string;
   lastName: string;
   jobTitle: string;
@@ -133,7 +133,7 @@ interface ProfileData {
   phone: string;
   linkedinUrl: string;
   bio: string;
-}
+};
 
 const profileForm: PathDefinition<ProfileData> = {
   id: "profile-form",
@@ -249,10 +249,10 @@ The outer data type declares `details` as an optional `PathSnapshot`:
 ```typescript
 import type { PathSnapshot } from "@daltonr/pathwrite-core";
 
-interface OnboardingData {
+type OnboardingData = {
   employeeName: string;
   details?: PathSnapshot<EmployeeDetails>;
-}
+};
 ```
 
 `restoreKey` is a no-op when the shell has no outer `PathShell` ancestor, so the same inner `PathShell` component can safely be used at the top level in tests or standalone.
@@ -264,14 +264,14 @@ interface OnboardingData {
 Not all processes have a human clicking Next. Consider a document that moves through states: draft, review, approved, published. Each state is a step. An author advances from draft to review by submitting; a reviewer advances to approved or sends back to draft by making a decision. Finance may skip the review stage for certain document types.
 
 ```typescript
-interface DocumentData {
+type DocumentData = {
   title: string;
   body: string;
   docType: "memo" | "policy" | "contract";
   reviewerRole: string | null;
   reviewDecision: "pending" | "approved" | "rejected" | null;
   publishedAt: number | null;
-}
+};
 
 const documentLifecycle: PathDefinition<DocumentData> = {
   id: "document-lifecycle",
@@ -320,14 +320,14 @@ There is no UI here at all. The engine runs on a server. An API endpoint receive
 The engine has zero browser dependencies. `@daltonr/pathwrite-core` is plain TypeScript with no DOM globals, which means a background job can use it as a workflow engine.
 
 ```typescript
-interface EnrichmentJob {
+type EnrichmentJob = {
   sourceId: string;
   rawData: Record<string, unknown> | null;
   validationResult: { valid: boolean; errors: string[] } | null;
   enrichedData: Record<string, unknown> | null;
   submittedAt: number | null;
   notificationSent: boolean;
-}
+};
 
 const enrichmentPipeline: PathDefinition<EnrichmentJob> = {
   id: "enrichment-pipeline",
@@ -385,13 +385,13 @@ The "UI" for this pipeline is a status API and a log stream. The engine manages 
 Any product feature with a defined sequence of states and transitions is a candidate. An onboarding checklist where each item must be completed in order, with branching based on the user's subscription plan, does not look or feel like a wizard — but the underlying structure is identical.
 
 ```typescript
-interface OnboardingData {
+type OnboardingData = {
   plan: "starter" | "growth" | "enterprise";
   profileComplete: boolean;
   integrationConnected: boolean;
   teamInviteSent: boolean;
   billingConfigured: boolean;
-}
+};
 
 const onboarding: PathDefinition<OnboardingData> = {
   id: "onboarding",
@@ -432,13 +432,13 @@ The wizard metaphor does not apply here. There is no Back button — the checkli
 `PathDefinition` has no concept of rendering. A step is an object with hooks and guards. It does not know whether it will be displayed as a form page, a dialog, or a chat bubble.
 
 ```typescript
-interface QuoteData {
+type QuoteData = {
   insuranceType: "home" | "auto" | "life" | null;
   yearBuilt: number | null;
   vehicleMake: string | null;
   dateOfBirth: string | null;
   coverageLevel: "basic" | "standard" | "comprehensive" | null;
-}
+};
 
 const quoteFlow: PathDefinition<QuoteData> = {
   id: "insurance-quote",

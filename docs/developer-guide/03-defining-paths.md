@@ -11,11 +11,11 @@ The top-level shape is straightforward. Four fields, two of which are optional:
 ```typescript
 import type { PathDefinition } from "@daltonr/pathwrite-core";
 
-interface OnboardingData {
+type OnboardingData = {
   name: string;
   role: string;
   acceptedTerms: boolean;
-}
+};
 
 const onboardingPath: PathDefinition<OnboardingData> = {
   id: "onboarding",            // required — unique within your app

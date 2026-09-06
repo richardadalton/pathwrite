@@ -54,10 +54,10 @@ Here is a complete example. A course path has a "subjects" step whose component 
 ```ts
 import { PathDefinition } from "@daltonr/pathwrite-core";
 
-interface CourseData {
+type CourseData = {
   courseName: string;
   subjects: { name: string; teacher: string }[];
-}
+};
 
 // The sub-path runs 3 steps to collect a single subject's details.
 const addSubjectPath: PathDefinition = {
