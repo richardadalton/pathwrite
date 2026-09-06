@@ -102,7 +102,7 @@ export class HttpStore implements PathStore {
    */
   private async buildHeaders(defaults: Record<string, string>): Promise<Headers> {
     const merged = new Headers(defaults);
-    new Headers(await this.getHeaders()).forEach((value, name) => merged.set(name, value));
+    new Headers(await this.getHeaders()).forEach((value: string, name: string) => merged.set(name, value));
     return merged;
   }
 
