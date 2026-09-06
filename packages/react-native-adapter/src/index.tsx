@@ -39,7 +39,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UsePathOptions {
+export interface UsePathOptions<TData extends PathData = PathData> {
   /**
    * An externally-managed `PathEngine` to subscribe to — for example, one
    * returned by `restoreOrStart()` from `@daltonr/pathwrite-store`.
@@ -49,19 +49,19 @@ export interface UsePathOptions {
    * - The snapshot is seeded immediately from the engine's current state.
    * - The engine lifecycle (start / cleanup) is the **caller's responsibility**.
    */
-  engine?: PathEngine;
+  engine?: PathEngine<TData>;
   /** Called for every engine event. The callback ref is kept current — changing it does not re-subscribe. */
-  onEvent?: (event: PathEvent) => void;
+  onEvent?: (event: PathEvent<TData>) => void;
 }
 
 export interface UsePathReturn<TData extends PathData = PathData> {
   /** Current path snapshot, or `null` when no path is active. Triggers a re-render on change. */
   snapshot: PathSnapshot<TData> | null;
-  /** Start (or restart) a path. */
-  start: (path: PathDefinition<any>, initialData?: PathData) => Promise<void>;
-  /** Push a sub-path onto the stack. */
+  /** Start (or restart) a path. When `TData` is specified, the definition and initial data are type-checked against it. */
+  start: (path: PathDefinition<TData>, initialData?: Partial<TData>) => Promise<void>;
+  /** Push a sub-path onto the stack. A sub-path has its own data, so any definition is accepted. */
   startSubPath: (
-    path: PathDefinition<any>,
+    path: PathDefinition,
     initialData?: PathData,
     meta?: Record<string, unknown>
   ) => Promise<void>;
@@ -94,7 +94,7 @@ export type PathProviderProps = PropsWithChildren<{
    * The path to start when the provider mounts. Required unless `engine` is
    * given. Started once, in an effect, with `initialData`.
    */
-  path?: PathDefinition<any>;
+  path?: PathDefinition;
   /** Initial data for `path`. Ignored when `engine` is given. */
   initialData?: PathData;
   /**
@@ -124,23 +124,25 @@ export type PathProviderProps = PropsWithChildren<{
 // usePath hook
 // ---------------------------------------------------------------------------
 
-export function usePath<TData extends PathData = PathData>(options?: UsePathOptions): UsePathReturn<TData> {
+export function usePath<TData extends PathData = PathData>(
+  options?: UsePathOptions<TData>
+): UsePathReturn<TData> {
   // Use the provided engine, or one created once for this hook's lifetime.
   // `options.engine` is read on every render: an engine that arrives later
   // (e.g. from an async restoreOrStart()) or is swapped is adopted — the hook
   // re-subscribes and re-seeds its snapshot from the new engine.
-  const ownEngineRef = useRef<PathEngine | null>(null);
-  const engine = options?.engine ?? (ownEngineRef.current ??= new PathEngine());
+  const ownEngineRef = useRef<PathEngine<TData> | null>(null);
+  const engine = options?.engine ?? (ownEngineRef.current ??= new PathEngine<TData>());
 
   const onEventRef = useRef(options?.onEvent);
   onEventRef.current = options?.onEvent;
 
-  const seededForRef = useRef<PathEngine | null>(null);
+  const seededForRef = useRef<PathEngine<TData> | null>(null);
   const snapshotRef = useRef<PathSnapshot<TData> | null>(null);
   if (seededForRef.current !== engine) {
     seededForRef.current = engine;
     try {
-      snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
+      snapshotRef.current = engine.snapshot();
     } catch {
       snapshotRef.current = null;
     }
@@ -148,11 +150,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
 
   const subscribe = useCallback(
     (callback: () => void) =>
-      engine.subscribe((event: PathEvent) => {
+      engine.subscribe((event) => {
         if (event.type === "stateChanged" || event.type === "resumed") {
-          snapshotRef.current = event.snapshot as PathSnapshot<TData>;
+          snapshotRef.current = event.snapshot;
         } else if (event.type === "completed" || event.type === "cancelled") {
-          snapshotRef.current = engine.snapshot() as PathSnapshot<TData> | null;
+          snapshotRef.current = engine.snapshot();
         }
         onEventRef.current?.(event);
         callback();
@@ -167,11 +169,11 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const start = useCallback(
-    (path: PathDefinition<any>, initialData: PathData = {}) => engine.start(path, initialData),
+    (path: PathDefinition<TData>, initialData: Partial<TData> = {}) => engine.start(path, initialData),
     [engine]
   );
   const startSubPath = useCallback(
-    (path: PathDefinition<any>, initialData: PathData = {}, meta?: Record<string, unknown>) =>
+    (path: PathDefinition, initialData: PathData = {}, meta?: Record<string, unknown>) =>
       engine.startSubPath(path, initialData, meta),
     [engine]
   );
@@ -187,9 +189,9 @@ export function usePath<TData extends PathData = PathData>(options?: UsePathOpti
     [engine]
   );
   const setData = useCallback(
-    <K extends string & keyof TData>(key: K, value: TData[K]) => engine.setData(key, value as unknown),
+    <K extends string & keyof TData>(key: K, value: TData[K]) => engine.setData(key, value),
     [engine]
-  ) as UsePathReturn<TData>["setData"];
+  );
   const resetStep = useCallback(() => engine.resetStep(), [engine]);
   const restart = useCallback(() => engine.restart(), [engine]);
   const retry = useCallback(() => engine.retry(), [engine]);
@@ -314,8 +316,8 @@ export interface PathShellActions {
 }
 
 export interface PathShellProps {
-  /** The path definition to drive. */
-  path: PathDefinition<any>;
+  /** The path definition to drive. Accepts a definition typed over any data. */
+  path: PathDefinition;
   /** An externally-managed engine. When supplied, PathShell skips its own start() call. */
   engine?: PathEngine;
   /** Map of step ID → React Native content. The shell renders `steps[snapshot.stepId]` for the current step. */
@@ -491,7 +493,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
       if (event.type === "completed") onComplete?.(event.data);
       if (event.type === "cancelled") onCancel?.(event.data);
       if (restoreKey && outerCtx && event.type === "stateChanged") {
-        (outerCtx.path.setData as unknown as (key: string, value: unknown) => void)(restoreKey, {
+        void outerCtx.path.setData(restoreKey, {
           ...event.snapshot,
           serializedState: engine.exportState(),
         });
@@ -614,7 +616,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         return title ? <Text style={styles.stepTitle}>{title}</Text> : null;
       })()}
       <View style={styles.track}>
-        <View style={[styles.trackFill, { width: `${snap.progress * 100}%` as any }]} />
+        <View style={[styles.trackFill, { width: `${snap.progress * 100}%` }]} />
       </View>
     </View>
   );
@@ -639,7 +641,7 @@ export const PathShell = forwardRef<PathShellHandle, PathShellProps>(function Pa
         ))}
       </View>
       <View style={styles.track}>
-        <View style={[styles.trackFill, { width: `${root.progress * 100}%` as any }]} />
+        <View style={[styles.trackFill, { width: `${root.progress * 100}%` }]} />
       </View>
     </View>
   );
